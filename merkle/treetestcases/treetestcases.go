@@ -65,7 +65,8 @@ func LoadFixtures(testdatapath string) {
 	loadPath(testdatapath+"/path-abcde-4.json", &pathABCDE4)
 }
 
-// Factory contains functions to allocate and free a Merkle tree.
+// Factory wraps functions to allocate and free a Merkle tree,
+// and is used to run the tests on a Merkle tree implementation.
 type Factory struct {
 	// New create a Merkle tree from leaves.
 	New func(leaves []merkle.Hash) (merkle.Tree, error)
