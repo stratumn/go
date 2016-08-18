@@ -5,7 +5,6 @@
 package merkle
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"errors"
 	"math"
@@ -35,9 +34,6 @@ type StaticTree struct {
 	// levels[2] = {F,G}
 	// levels[3] = {A,B,C,D,E}
 	levels [][]byte
-
-	// To implement io.Reader.
-	reader *bytes.Reader
 }
 
 // NewStaticTree creates a static Merkle tree from a slice of leaves.
@@ -168,11 +164,6 @@ func (t *StaticTree) Path(index int) Path {
 	return path[:pathDepth]
 }
 
-// Read implements io.Reader.Read.
-func (t *StaticTree) Read(p []byte) (n int, err error) {
-	return t.reader.Read(p)
-}
-
 // Allocates memory for the buffer and creates the level slices that map to the buffer.
 func alloc(numLeaves int) *StaticTree {
 	var (
@@ -180,7 +171,7 @@ func alloc(numLeaves int) *StaticTree {
 		buf       = make([]byte, bufl)
 		levelLens = staticTreeLevelsLen(numLeaves)
 		depth     = len(levelLens)
-		tree      = &StaticTree{buf, make([][]byte, depth), bytes.NewReader(buf)}
+		tree      = &StaticTree{buf, make([][]byte, depth)}
 		start     = 0
 		end       = 0
 	)
