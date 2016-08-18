@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/merkle/treetestcases"
+	"github.com/stratumn/goprivate/merkle/merkletesting"
 )
 
 func TestHashTripletValidateOK(t *testing.T) {
 	var (
-		left  = treetestcases.RandomHash()
-		right = treetestcases.RandomHash()
+		left  = merkletesting.RandomHash()
+		right = merkletesting.RandomHash()
 		h     = merkle.HashTriplet{Left: left, Right: right}
 		hash  = sha256.New()
 	)
@@ -35,9 +35,9 @@ func TestHashTripletValidateOK(t *testing.T) {
 
 func TestHashTripletValidateNotOK(t *testing.T) {
 	h := merkle.HashTriplet{
-		treetestcases.RandomHash(),
-		treetestcases.RandomHash(),
-		treetestcases.RandomHash(),
+		merkletesting.RandomHash(),
+		merkletesting.RandomHash(),
+		merkletesting.RandomHash(),
 	}
 	if err := h.Validate(); err == nil {
 		t.Fatal("expected error not to be nil")

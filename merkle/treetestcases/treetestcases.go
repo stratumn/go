@@ -10,11 +10,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"math/rand"
 	"reflect"
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/goprivate/merkle/merkletesting"
 )
 
 var (
@@ -96,7 +96,7 @@ func (f Factory) free(tree merkle.Tree) {
 
 // TestNumLeaves tests that the implementation returns the correct number of leaves.
 func (f Factory) TestNumLeaves(t *testing.T) {
-	tree, err := f.New([]merkle.Hash{RandomHash(), RandomHash(), RandomHash()})
+	tree, err := f.New([]merkle.Hash{merkletesting.RandomHash(), merkletesting.RandomHash(), merkletesting.RandomHash()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func (f Factory) TestLeaf(t *testing.T) {
 	for i := 1; i < 128; i++ {
 		var leaves []merkle.Hash
 		for j := 0; j < i; j++ {
-			leaves = append(leaves, RandomHash())
+			leaves = append(leaves, merkletesting.RandomHash())
 		}
 
 		tree, err := f.New(leaves)
@@ -246,7 +246,7 @@ func (f Factory) TestPath(t *testing.T) {
 func (f Factory) BenchmarkCreateWithSize(b *testing.B, size int) {
 	leaves := make([]merkle.Hash, size)
 	for i := 0; i < size; i++ {
-		leaves[i] = RandomHash()
+		leaves[i] = merkletesting.RandomHash()
 	}
 
 	b.ResetTimer()
@@ -275,7 +275,7 @@ func (f Factory) BenchmarkCreate(b *testing.B) {
 func (f Factory) BenchmarkPathWithSize(b *testing.B, size int) {
 	leaves := make([]merkle.Hash, size)
 	for i := 0; i < size; i++ {
-		leaves[i] = RandomHash()
+		leaves[i] = merkletesting.RandomHash()
 	}
 
 	tree, err := f.New(leaves)
@@ -300,16 +300,6 @@ func (f Factory) BenchmarkPath(b *testing.B) {
 	b.Run("100-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 100) })
 	b.Run("1000-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 1000) })
 	b.Run("10000-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 10000) })
-}
-
-var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-// RandomHash creates a random hash.
-func RandomHash() (hash merkle.Hash) {
-	for i := range hash {
-		hash[i] = letters[rand.Intn(len(letters))]
-	}
-	return
 }
 
 func atos(a merkle.Hash) []byte {
