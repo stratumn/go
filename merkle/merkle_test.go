@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
@@ -83,6 +85,49 @@ func TestPathValidateNotOK(t *testing.T) {
 	}
 	if err := pathInvalid1.Validate(); err == nil {
 		t.Fatal("expected error not to be nil")
+	}
+}
+
+func TestTreeConsistency(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		leaves := make([]merkle.Hash, 1+rand.Intn(1000))
+		for j := range leaves {
+			leaves[j] = merkletesting.RandomHash()
+		}
+
+		static, err := merkle.NewStaticTree(leaves)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if static == nil {
+			t.Fatal("expected tree not to be nil")
+		}
+
+		dyn := merkle.NewDynTree(len(leaves) * 2)
+		if dyn == nil {
+			t.Fatal("expected tree not to be nil")
+		}
+		for _, leaf := range leaves {
+			if err := dyn.Add(leaf); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		if static.Root() != dyn.Root() {
+			t.Fatal("expected roots to be the same")
+		}
+
+		for j := range leaves {
+			p1 := static.Path(j)
+			p2 := dyn.Path(j)
+
+			if !reflect.DeepEqual(p1, p2) {
+				json1, _ := json.MarshalIndent(p1, "", "  ")
+				json2, _ := json.MarshalIndent(p2, "", "  ")
+				t.Logf("static: %s; dyn: %s\n", json1, json2)
+				t.Error("expected paths to be the same")
+			}
+		}
 	}
 }
 

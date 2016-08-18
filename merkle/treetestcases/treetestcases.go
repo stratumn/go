@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
+	"math/rand"
 	"reflect"
 	"testing"
 
@@ -81,6 +82,7 @@ func (f Factory) RunTests(t *testing.T) {
 	t.Run("Root", f.TestRoot)
 	t.Run("Leaf", f.TestLeaf)
 	t.Run("Path", f.TestPath)
+	t.Run("PathRandom", f.TestPathRandom)
 }
 
 // RunBenchmarks runs all the benchmarks.
@@ -230,14 +232,49 @@ func (f Factory) TestPath(t *testing.T) {
 		defer f.free(tree)
 
 		for i := range row.leaves {
-			var (
-				a = tree.Path(i)
-				e = row.expected[i]
-			)
+			a, _ := json.MarshalIndent(tree.Path(i), "", "  ")
+			e, _ := json.MarshalIndent(row.expected[i], "", "  ")
 
 			if !reflect.DeepEqual(e, a) {
-				t.Logf("actual: %v; expected: %v\n", a, e)
-				t.Error("unexpected root")
+				t.Logf("actual: %s; expected: %s\n", a, e)
+				t.Error("unexpected path")
+			}
+		}
+	}
+}
+
+// TestPathRandom tests that the implementation correctly computes paths given random trees.
+func (f Factory) TestPathRandom(t *testing.T) {
+	for i := 0; i < 10; i++ {
+		leaves := make([]merkle.Hash, 1+rand.Intn(10000))
+		for j := range leaves {
+			leaves[j] = merkletesting.RandomHash()
+		}
+
+		tree, err := f.New(leaves)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if tree == nil {
+			t.Fatal("expected tree not to be nil")
+		}
+		defer f.free(tree)
+
+		for j := range leaves {
+			path := tree.Path(j)
+
+			if err := path.Validate(); err != nil {
+				t.Error(err)
+			}
+
+			a := path[len(path)-1].Parent
+			e := tree.Root()
+
+			if a != e {
+				ajs, _ := json.Marshal(a)
+				ejs, _ := json.Marshal(e)
+				t.Logf("actual: %s; expected %s\n", ajs, ejs)
+				t.Error("expected last parent to be root")
 			}
 		}
 	}
@@ -270,6 +307,7 @@ func (f Factory) BenchmarkCreate(b *testing.B) {
 	b.Run("100-leaves", func(b *testing.B) { f.BenchmarkCreateWithSize(b, 100) })
 	b.Run("1000-leaves", func(b *testing.B) { f.BenchmarkCreateWithSize(b, 1000) })
 	b.Run("10000-leaves", func(b *testing.B) { f.BenchmarkCreateWithSize(b, 10000) })
+	b.Run("100000-leaves", func(b *testing.B) { f.BenchmarkCreateWithSize(b, 100000) })
 }
 
 // BenchmarkPathWithSize benchmarks computing paths for trees of given size.
@@ -301,6 +339,7 @@ func (f Factory) BenchmarkPath(b *testing.B) {
 	b.Run("100-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 100) })
 	b.Run("1000-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 1000) })
 	b.Run("10000-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 10000) })
+	b.Run("100000-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 100000) })
 }
 
 func atos(a merkle.Hash) []byte {
