@@ -94,78 +94,88 @@ func (t *StaticTree) Path(index int) Path {
 	// Comments refer to this Merkle tree.
 
 	var (
-		depth  = len(t.levels)
-		path   = make(Path, 0, depth-1)
-		left   Hash
-		right  Hash
-		orphan *Hash
+		depth = len(t.levels)
+		l     = depth - 1
 	)
-
-	l := len(t.levels) - 1
 	if l == 0 {
 		return Path{}
 	}
 
-	// Note we don't care about the root level (Merkle root), because it can be computed
-	// from the last pair of the path.
+	var (
+		path      = make(Path, depth-1)
+		hash      Hash
+		orphan    *Hash
+		pathDepth = 0
+	)
+
 	for ; l > 0; l-- {
-		level := t.levels[l]
-		levelLen := len(level) / HashByteLen
+		var (
+			level       = t.levels[l]
+			levelLen    = len(level) / HashByteLen
+			parentLevel = t.levels[l-1]
+			parentIndex = index / 2
+			triplet     = &path[pathDepth]
+		)
 
 		if orphan != nil {
 			if levelLen%2 == 1 {
 				// This case happens for instance if we at level 1, up from E.
 				// E was previously marked as orphan, and H is available.
-				// We can append HashPair{H,E}.
-				copy(left[:], level[HashByteLen*(levelLen-1):])
-				path = append(path, HashPair{left, *orphan})
+				// We can append HashTriplet{H,E,I}.
+				copy(triplet.Left[:], level[HashByteLen*(levelLen-1):])
+				triplet.Right = *orphan
+				copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
+				pathDepth++
 				orphan = nil
 			}
 			// Otherwise we keep going up the tree.
 		} else if levelLen == 1 {
 			// This case happens for instance if we are at node H.
 			// We must go down until we find an orphan, E in the example.
-			// We can append HashPair{H,E}.
-			copy(left[:], level[:])
+			// We can append HashTriple{H,E,I}.
+			copy(triplet.Left[:], level[:])
 			for rl := l + 1; rl < depth; rl++ {
 				rlevel := t.levels[rl]
 				rlevelLen := len(rlevel) / HashByteLen
 				if rlevelLen%2 > 0 {
-					copy(right[:], rlevel[HashByteLen*(rlevelLen-1):])
+					copy(triplet.Right[:], rlevel[HashByteLen*(rlevelLen-1):])
 					break
 				}
 			}
-			path = append(path, HashPair{left, right})
+			copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
+			pathDepth++
 			orphan = nil
 		} else if index%2 == 0 {
 			if index+1 < levelLen {
 				// This case happens for instance if we are at node F.
 				// We can simply use node G as the right node.
-				// We can append HashPair{F,G}.
-				copy(left[:], level[HashByteLen*(index):])
-				copy(right[:], level[HashByteLen*(index+1):])
-				path = append(path, HashPair{left, right})
+				// We can append HashTriple{F,G,H}.
+				copy(triplet.Left[:], level[HashByteLen*(index):])
+				copy(triplet.Right[:], level[HashByteLen*(index+1):])
+				copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
+				pathDepth++
 			} else {
 				// This case happens for instance if we are at node E.
 				// We don't have a neighbor available at this level, so we tag E
 				// as orphan, which will eventually be used as a
 				// right node further up.
-				copy(right[:], level[HashByteLen*(index):])
-				orphan = &right
+				copy(hash[:], level[HashByteLen*(index):])
+				orphan = &hash
 			}
 		} else {
 			// This case happens for instance if we are at node G.
 			// We can simply use node F as the left node.
-			// We can append HashPair{F,G}.
-			copy(left[:], level[HashByteLen*(index-1):])
-			copy(right[:], level[HashByteLen*(index):])
-			path = append(path, HashPair{left, right})
+			// We can append HashTriple{F,G,H}.
+			copy(triplet.Left[:], level[HashByteLen*(index-1):])
+			copy(triplet.Right[:], level[HashByteLen*(index):])
+			copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
+			pathDepth++
 		}
 
-		index /= 2
+		index = parentIndex
 	}
 
-	return path
+	return path[:pathDepth]
 }
 
 // Read implements io.Reader.Read.

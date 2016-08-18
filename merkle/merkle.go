@@ -17,11 +17,15 @@ const (
 // Hash is a binary encoded 32-bit hash.
 type Hash [HashByteLen]byte
 
-// HashPair is a pair of hashes.
-type HashPair [2]Hash
+// HashTriplet contains a left, right, and parent hash.
+type HashTriplet struct {
+	Left   Hash `json:"left"`
+	Right  Hash `json:"right"`
+	Parent Hash `json:"parent"`
+}
 
-// Path contains the necessary hashes to go from a leaf to a Merkle root.
-type Path []HashPair
+// Path contains the necessary NodeDescriptor to go from a leaf to a Merkle root.
+type Path []HashTriplet
 
 // Tree must be implemented by Merkle tree implementations.
 type Tree interface {
