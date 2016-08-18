@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/goprivate/merkle/merkletesting"
 	"github.com/stratumn/goprivate/merkle/treetestcases"
 )
 
@@ -20,7 +21,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNewStaticTree(t *testing.T) {
-	tree, err := merkle.NewStaticTree([]merkle.Hash{treetestcases.RandomHash()})
+	tree, err := merkle.NewStaticTree([]merkle.Hash{merkletesting.RandomHash()})
 	if err != nil {
 		t.Fatal(err)
 	}
