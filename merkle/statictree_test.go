@@ -7,11 +7,64 @@ package merkle
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"reflect"
 	"testing"
 )
+
+var (
+	pathA0     Path
+	pathAB0    Path
+	pathAB1    Path
+	pathABC0   Path
+	pathABC1   Path
+	pathABC2   Path
+	pathABCD0  Path
+	pathABCD1  Path
+	pathABCD2  Path
+	pathABCD3  Path
+	pathABCDE0 Path
+	pathABCDE1 Path
+	pathABCDE2 Path
+	pathABCDE3 Path
+	pathABCDE4 Path
+)
+
+func loadPath(filename string, path *Path) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	if err = json.Unmarshal(data, path); err != nil {
+		panic(err)
+	}
+}
+
+func TestMain(m *testing.M) {
+	// Load fixtures.
+	loadPath("testdata/path-a-0.json", &pathA0)
+	loadPath("testdata/path-ab-0.json", &pathAB0)
+	loadPath("testdata/path-ab-1.json", &pathAB1)
+	loadPath("testdata/path-abc-0.json", &pathABC0)
+	loadPath("testdata/path-abc-1.json", &pathABC1)
+	loadPath("testdata/path-abc-2.json", &pathABC2)
+	loadPath("testdata/path-abcd-0.json", &pathABCD0)
+	loadPath("testdata/path-abcd-1.json", &pathABCD1)
+	loadPath("testdata/path-abcd-2.json", &pathABCD2)
+	loadPath("testdata/path-abcd-3.json", &pathABCD3)
+	loadPath("testdata/path-abcde-0.json", &pathABCDE0)
+	loadPath("testdata/path-abcde-1.json", &pathABCDE1)
+	loadPath("testdata/path-abcde-2.json", &pathABCDE2)
+	loadPath("testdata/path-abcde-3.json", &pathABCDE3)
+	loadPath("testdata/path-abcde-4.json", &pathABCDE4)
+
+	flag.Parse()
+	os.Exit(m.Run())
+}
 
 func TestNewStaticTree(t *testing.T) {
 	tree, err := NewStaticTree([]Hash{randomHash()})
@@ -22,6 +75,7 @@ func TestNewStaticTree(t *testing.T) {
 		t.Fatal("expected tree not to be nil")
 	}
 
+	// Compiling will fail if interface is not implemented.
 	_ = Tree(tree)
 }
 
@@ -194,159 +248,27 @@ func TestStaticTreeLeaf(t *testing.T) {
 func TestStaticTreePath(t *testing.T) {
 	grid := [...]struct {
 		leaves   []string
-		expected [][]string
+		expected []Path
 	}{
 		{
 			[]string{"a"},
-			[][]string{
-				[]string{},
-			},
+			[]Path{pathA0},
 		},
 		{
 			[]string{"a", "b"},
-			[][]string{
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-				},
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-				},
-			},
+			[]Path{pathAB0, pathAB1},
 		},
 		{
 			[]string{"a", "b", "c"},
-			[][]string{
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"7075152d03a5cd92104887b476862778ec0c87be5c2fa1c0a90f87c49fad6eff",
-				},
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"7075152d03a5cd92104887b476862778ec0c87be5c2fa1c0a90f87c49fad6eff",
-				},
-				[]string{
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"7075152d03a5cd92104887b476862778ec0c87be5c2fa1c0a90f87c49fad6eff",
-				},
-			},
+			[]Path{pathABC0, pathABC1, pathABC2},
 		},
 		{
 			[]string{"a", "b", "c", "d"},
-			[][]string{
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-				},
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-				},
-				[]string{
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-				},
-				[]string{
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-				},
-			},
+			[]Path{pathABCD0, pathABCD1, pathABCD2, pathABCD3},
 		},
 		{
 			[]string{"a", "b", "c", "d", "e"},
-			[][]string{
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-					"3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea",
-					"d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba",
-				},
-				[]string{
-					"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-					"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-					"3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea",
-					"d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba",
-				},
-				[]string{
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-					"3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea",
-					"d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba",
-				},
-				[]string{
-					"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-					"18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-
-					"e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
-					"bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-					"3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea",
-					"d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba",
-				},
-				[]string{
-					"14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
-					"3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea",
-					"d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba",
-				},
-			},
+			[]Path{pathABCDE0, pathABCDE1, pathABCDE2, pathABCDE3, pathABCDE4},
 		},
 	}
 
@@ -366,16 +288,11 @@ func TestStaticTreePath(t *testing.T) {
 
 		for i := range row.leaves {
 			var (
-				path = tree.Path(i)
-				e    = row.expected[i]
-				a    []string
+				a = tree.Path(i)
+				e = row.expected[i]
 			)
 
-			for _, p := range path {
-				a = append(a, hex.EncodeToString(p.Left[:]), hex.EncodeToString(p.Right[:]), hex.EncodeToString(p.Parent[:]))
-			}
-
-			if !(len(e) == 0 && len(a) == 0) && !reflect.DeepEqual(e, a) {
+			if !reflect.DeepEqual(e, a) {
 				t.Logf("actual: %v; expected: %v\n", a, e)
 				t.Error("unexpected root")
 			}
@@ -482,44 +399,13 @@ func benchmarkNewStaticTree(size int, b *testing.B) {
 	}
 }
 
-func BenchmarkNewStaticTree10(b *testing.B) {
-	benchmarkNewStaticTree(10, b)
-}
-
-func BenchmarkNewStaticTree100(b *testing.B) {
-	benchmarkNewStaticTree(100, b)
-}
-
-func BenchmarkNewStaticTree1000(b *testing.B) {
-	benchmarkNewStaticTree(1000, b)
-}
-
-func BenchmarkNewStaticTree10000(b *testing.B) {
-	benchmarkNewStaticTree(10000, b)
-}
-
-func BenchmarkNewStaticTree100000(b *testing.B) {
-	benchmarkNewStaticTree(100000, b)
-}
-
-func BenchmarkNewStaticTree1000000(b *testing.B) {
-	benchmarkNewStaticTree(1000000, b)
-}
-
-func BenchmarkSha256_1000000(b *testing.B) {
-	size := 1000000
-	leaves := make([]Hash, size)
-	for i := 0; i < size; i++ {
-		leaves[i] = randomHash()
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < size; j++ {
-			sha256.Sum256(leaves[j][:])
-		}
-	}
+func BenchmarkNewStaticTree(b *testing.B) {
+	b.Run("10-leaves", func(b *testing.B) { benchmarkNewStaticTree(10, b) })
+	b.Run("100-leaves", func(b *testing.B) { benchmarkNewStaticTree(100, b) })
+	b.Run("1000-leaves", func(b *testing.B) { benchmarkNewStaticTree(1000, b) })
+	b.Run("10000-leaves", func(b *testing.B) { benchmarkNewStaticTree(10000, b) })
+	b.Run("100000-leaves", func(b *testing.B) { benchmarkNewStaticTree(100000, b) })
+	b.Run("1000000-leaves", func(b *testing.B) { benchmarkNewStaticTree(1000000, b) })
 }
 
 func benchmarkStaticTreePath(size int, b *testing.B) {
@@ -540,28 +426,13 @@ func benchmarkStaticTreePath(size int, b *testing.B) {
 	}
 }
 
-func BenchmarkStaticTreePath10(b *testing.B) {
-	benchmarkStaticTreePath(10, b)
-}
-
-func BenchmarkStaticTreePath100(b *testing.B) {
-	benchmarkStaticTreePath(100, b)
-}
-
-func BenchmarkStaticTreePath1000(b *testing.B) {
-	benchmarkStaticTreePath(1000, b)
-}
-
-func BenchmarkStaticTreePath10000(b *testing.B) {
-	benchmarkStaticTreePath(10000, b)
-}
-
-func BenchmarkStaticTreePath100000(b *testing.B) {
-	benchmarkStaticTreePath(100000, b)
-}
-
-func BenchmarkStaticTreePath1000000(b *testing.B) {
-	benchmarkStaticTreePath(1000000, b)
+func BenchmarkStaticTreePath(b *testing.B) {
+	b.Run("10-leaves", func(b *testing.B) { benchmarkStaticTreePath(10, b) })
+	b.Run("100-leaves", func(b *testing.B) { benchmarkStaticTreePath(100, b) })
+	b.Run("1000-leaves", func(b *testing.B) { benchmarkStaticTreePath(1000, b) })
+	b.Run("10000-leaves", func(b *testing.B) { benchmarkStaticTreePath(10000, b) })
+	b.Run("100000-leaves", func(b *testing.B) { benchmarkStaticTreePath(100000, b) })
+	b.Run("1000000-leaves", func(b *testing.B) { benchmarkStaticTreePath(1000000, b) })
 }
 
 var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

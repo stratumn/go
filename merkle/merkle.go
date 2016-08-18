@@ -7,6 +7,8 @@ package merkle
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 )
 
 const (
@@ -16,6 +18,25 @@ const (
 
 // Hash is a binary encoded 32-bit hash.
 type Hash [HashByteLen]byte
+
+// MarshalJSON implements encoding/json.Marshaler.MarshalJSON.
+func (h *Hash) MarshalJSON() ([]byte, error) {
+	return json.Marshal(hex.EncodeToString(h[:]))
+}
+
+// UnmarshalJSON implements encoding/json.Unarshaler.UnmarshalJSON.
+func (h *Hash) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	if _, err := hex.Decode(h[:], []byte(s)); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // HashTriplet contains a left, right, and parent hash.
 type HashTriplet struct {
