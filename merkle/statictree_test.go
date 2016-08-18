@@ -14,7 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	treetestcases.LoadFixtures("treetestcases/testdata")
+	treetestcases.LoadFixtures("testdata")
 	flag.Parse()
 	os.Exit(m.Run())
 }
