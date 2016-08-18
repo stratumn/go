@@ -158,7 +158,7 @@ func alloc(numLeaves int) *StaticTree {
 		buf       = make([]byte, bufl)
 		levelLens = staticTreeLevelsLen(numLeaves)
 		depth     = len(levelLens)
-		tree      = &StaticTree{numLeaves, buf, make([][]byte, depth, depth)}
+		tree      = &StaticTree{numLeaves, buf, make([][]byte, depth)}
 		start     = 0
 		end       = 0
 	)
