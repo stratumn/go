@@ -9,6 +9,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 )
 
 const (
@@ -45,8 +47,57 @@ type HashTriplet struct {
 	Parent Hash `json:"parent"`
 }
 
+// Validate validates the integrity of a hash triplet.
+func (h HashTriplet) Validate() error {
+	hash := sha256.New()
+
+	if _, err := hash.Write(h.Left[:]); err != nil {
+		return err
+	}
+	if _, err := hash.Write(h.Right[:]); err != nil {
+		return err
+	}
+
+	var expected Hash
+	copy(expected[:], hash.Sum(nil))
+
+	if h.Parent != expected {
+		var (
+			a = hex.EncodeToString(h.Parent[:])
+			e = hex.EncodeToString(expected[:])
+		)
+		return errors.New(fmt.Sprintf("unexpected parent hash, got %s expected %s\n", a, e))
+	}
+
+	return nil
+}
+
 // Path contains the necessary hashes to go from a leaf to a Merkle root.
 type Path []HashTriplet
+
+// Validate validates the integrity of a Merkle path.
+func (p Path) Validate() error {
+	for i, h := range p {
+		if err := h.Validate(); err != nil {
+			return err
+		}
+
+		if i < len(p)-1 {
+			up := p[i+1]
+
+			if h.Parent != up.Left && h.Parent != up.Right {
+				var (
+					e  = hex.EncodeToString(h.Parent[:])
+					a1 = hex.EncodeToString(up.Left[:])
+					a2 = hex.EncodeToString(up.Right[:])
+				)
+				return errors.New(fmt.Sprintf("could not find parent hash %s, got %s and %s\n", e, a1, a2))
+			}
+		}
+	}
+
+	return nil
+}
 
 // Tree must be implemented by Merkle tree implementations.
 type Tree interface {
