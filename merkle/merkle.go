@@ -24,7 +24,7 @@ func (h *Hash) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hex.EncodeToString(h[:]))
 }
 
-// UnmarshalJSON implements encoding/json.Unarshaler.UnmarshalJSON.
+// UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON.
 func (h *Hash) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
