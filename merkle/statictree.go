@@ -47,9 +47,8 @@ func NewStaticTree(leaves []Hash) (*StaticTree, error) {
 
 	tree := alloc(numLeaves)
 	tree.copyLeaves(leaves)
-	tree.compute()
 
-	return tree, nil
+	return tree, tree.compute()
 }
 
 // Root returns the Merkle root of the tree.
@@ -182,7 +181,7 @@ func (t *StaticTree) copyLeaves(leaves []Hash) {
 }
 
 // Computes all the hashes. Assumes that the leaves have been copied to the buffer.
-func (t *StaticTree) compute() {
+func (t *StaticTree) compute() error {
 	// 0        I
 	//         / \
 	// 1      H   \
@@ -229,10 +228,10 @@ func (t *StaticTree) compute() {
 
 				hash := sha256.New()
 				if _, err := hash.Write(left); err != nil {
-					panic(err)
+					return err
 				}
 				if _, err := hash.Write(right); err != nil {
-					panic(err)
+					return err
 				}
 
 				copy(parent[start/2:], hash.Sum(nil))
@@ -244,6 +243,8 @@ func (t *StaticTree) compute() {
 			}
 		}
 	}
+
+	return nil
 }
 
 // Returns the number of tree nodes needed for the given number of leaves.
