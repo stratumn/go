@@ -36,25 +36,6 @@ func TestNewStaticTreeNoLeaves(t *testing.T) {
 	}
 }
 
-func TestStaticTreeNumNodes(t *testing.T) {
-	tree, err := NewStaticTree([]Hash{randomHash(), randomHash(), randomHash()})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if tree == nil {
-		t.Fatal("expected tree not to be nil")
-	}
-
-	var (
-		a = tree.NumNodes()
-		e = 5
-	)
-	if a != e {
-		t.Logf("actual: %d; expected: %d\n", a, e)
-		t.Error("unexpected number of nodes")
-	}
-}
-
 func TestStaticTreeNumLeaves(t *testing.T) {
 	tree, err := NewStaticTree([]Hash{randomHash(), randomHash(), randomHash()})
 	if err != nil {
@@ -71,25 +52,6 @@ func TestStaticTreeNumLeaves(t *testing.T) {
 	if a != e {
 		t.Logf("actual: %d; expected: %d\n", a, e)
 		t.Error("unexpected number of leaves")
-	}
-}
-
-func TestStaticTreeDepth(t *testing.T) {
-	tree, err := NewStaticTree([]Hash{randomHash(), randomHash(), randomHash()})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if tree == nil {
-		t.Fatal("expected tree not to be nil")
-	}
-
-	var (
-		a = tree.Depth()
-		e = 3
-	)
-	if a != e {
-		t.Logf("actual: %d; expected: %d\n", a, e)
-		t.Error("unexpected depth")
 	}
 }
 
