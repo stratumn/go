@@ -29,14 +29,8 @@ type Path []HashTriplet
 
 // Tree must be implemented by Merkle tree implementations.
 type Tree interface {
-	// NumNodes returns the total number of nodes, including the root and leaves.
-	NumNodes() int
-
 	// NumLeaves returns the number of leaves.
 	NumLeaves() int
-
-	// Depth returns the depth of the tree.
-	Depth() int
 
 	// Leaf returns the Merkle root.
 	Root() Hash

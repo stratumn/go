@@ -53,19 +53,9 @@ func NewStaticTree(leaves []Hash) (*StaticTree, error) {
 	return tree, tree.compute()
 }
 
-// NumNodes implements Tree.NumNodes.
-func (t *StaticTree) NumNodes() int {
-	return len(t.buffer) / HashByteLen
-}
-
 // NumLeaves implements Tree.NumLeaves.
 func (t *StaticTree) NumLeaves() int {
 	return len(t.levels[len(t.levels)-1]) / HashByteLen
-}
-
-// Depth implements Tree.Depth.
-func (t *StaticTree) Depth() int {
-	return len(t.levels)
 }
 
 // Root implements Tree.Root.
