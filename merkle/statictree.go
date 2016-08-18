@@ -105,7 +105,7 @@ func (t *StaticTree) Path(index int) Path {
 
 		if orphan != nil {
 			if levelLen%2 == 1 {
-				// This case happens for instance if we at level 1, up from E.
+				// This case happens for instance if we are at level 1, up from E.
 				// E was previously marked as orphan, and H is available.
 				// We can append HashTriplet{H,E,I}.
 				copy(triplet.Left[:], level[HashByteLen*(levelLen-1):])
