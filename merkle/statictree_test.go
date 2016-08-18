@@ -27,9 +27,6 @@ func TestNewStaticTree(t *testing.T) {
 	if tree == nil {
 		t.Fatal("expected tree not to be nil")
 	}
-
-	// Compiling will fail if interface is not implemented.
-	_ = merkle.Tree(tree)
 }
 
 func TestNewStaticTreeNoLeaves(t *testing.T) {
