@@ -45,7 +45,7 @@ type HashTriplet struct {
 	Parent Hash `json:"parent"`
 }
 
-// Path contains the necessary NodeDescriptor to go from a leaf to a Merkle root.
+// Path contains the necessary hashes to go from a leaf to a Merkle root.
 type Path []HashTriplet
 
 // Tree must be implemented by Merkle tree implementations.
