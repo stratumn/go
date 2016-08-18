@@ -5,6 +5,7 @@
 package merkle
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"math"
@@ -13,15 +14,13 @@ import (
 // StaticTree is designed for Merkle trees with leaves that do not change.
 // It is ideal when computing a tree from a batch of hashes.
 type StaticTree struct {
-	numLeaves int
-
 	// We use a single buffer to store all the hashes top down.
 	// For instance, given the tree:
 	//
 	// 0        I
 	//         / \
 	// 1      H   \
-	//       /  \  \
+	//       / \   \
 	// 2    F   G   \
 	//     / \ / \   \
 	// 3   A B C D   E
@@ -36,6 +35,9 @@ type StaticTree struct {
 	// levels[2] = {F,G}
 	// levels[3] = {A,B,C,D,E}
 	levels [][]byte
+
+	// To implement io.Reader.
+	reader *bytes.Reader
 }
 
 // NewStaticTree creates a static Merkle tree from a slice of leaves.
@@ -51,7 +53,22 @@ func NewStaticTree(leaves []Hash) (*StaticTree, error) {
 	return tree, tree.compute()
 }
 
-// Root returns the Merkle root of the tree.
+// NumNodes implements Tree.NumNodes.
+func (t *StaticTree) NumNodes() int {
+	return len(t.buffer) / HashByteLen
+}
+
+// NumLeaves implements Tree.NumLeaves.
+func (t *StaticTree) NumLeaves() int {
+	return len(t.levels[len(t.levels)-1]) / HashByteLen
+}
+
+// Depth implements Tree.Depth.
+func (t *StaticTree) Depth() int {
+	return len(t.levels)
+}
+
+// Root implements Tree.Root.
 func (t *StaticTree) Root() (hash Hash) {
 	copy(hash[:], t.buffer[:])
 	return
@@ -69,7 +86,7 @@ func (t *StaticTree) Path(index int) Path {
 	// 0        I
 	//         / \
 	// 1      H   \
-	//       /  \  \
+	//       / \   \
 	// 2    F   G   \
 	//     / \ / \   \
 	// 3   A B C D   E
@@ -151,6 +168,11 @@ func (t *StaticTree) Path(index int) Path {
 	return path
 }
 
+// Read implements io.Reader.Read.
+func (t *StaticTree) Read(p []byte) (n int, err error) {
+	return t.reader.Read(p)
+}
+
 // Allocates memory for the buffer and creates the level slices that map to the buffer.
 func alloc(numLeaves int) *StaticTree {
 	var (
@@ -158,7 +180,7 @@ func alloc(numLeaves int) *StaticTree {
 		buf       = make([]byte, bufl)
 		levelLens = staticTreeLevelsLen(numLeaves)
 		depth     = len(levelLens)
-		tree      = &StaticTree{numLeaves, buf, make([][]byte, depth)}
+		tree      = &StaticTree{buf, make([][]byte, depth), bytes.NewReader(buf)}
 		start     = 0
 		end       = 0
 	)
@@ -185,7 +207,7 @@ func (t *StaticTree) compute() error {
 	// 0        I
 	//         / \
 	// 1      H   \
-	//       /  \  \
+	//       / \   \
 	// 2    F   G   \
 	//     / \ / \   \
 	// 3   A B C D   E
