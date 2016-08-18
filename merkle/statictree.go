@@ -54,14 +54,14 @@ func NewStaticTree(leaves []Hash) (*StaticTree, error) {
 
 // Root returns the Merkle root of the tree.
 func (t *StaticTree) Root() (hash Hash) {
-	copy(hash[:], t.buffer[0:HashByteLen])
+	copy(hash[:], t.buffer[:])
 	return
 }
 
 // Leaf implements Tree.Leaf.
 func (t *StaticTree) Leaf(index int) (hash Hash) {
 	offset := index * HashByteLen
-	copy(hash[:], t.levels[len(t.levels)-1][offset:offset+HashByteLen])
+	copy(hash[:], t.levels[len(t.levels)-1][offset:])
 	return
 }
 
