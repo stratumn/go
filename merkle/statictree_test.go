@@ -5,20 +5,12 @@
 package merkle_test
 
 import (
-	"flag"
-	"os"
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
 	"github.com/stratumn/goprivate/merkle/merkletesting"
 	"github.com/stratumn/goprivate/merkle/treetestcases"
 )
-
-func TestMain(m *testing.M) {
-	treetestcases.LoadFixtures("testdata")
-	flag.Parse()
-	os.Exit(m.Run())
-}
 
 func TestNewStaticTree(t *testing.T) {
 	tree, err := merkle.NewStaticTree([]merkle.Hash{merkletesting.RandomHash()})

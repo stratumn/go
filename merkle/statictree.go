@@ -27,13 +27,13 @@ type StaticTree struct {
 	// The buffer will contain {I,H,F,G,A,B,C,D,E}.
 	buffer []byte
 
-	// These slices map levels to the buffer.
+	// These slices map rows to the buffer.
 	// For instance, given the tree above:
-	// levels[0] = {I}
-	// levels[1] = {H}
-	// levels[2] = {F,G}
-	// levels[3] = {A,B,C,D,E}
-	levels [][]byte
+	// rows[0] = {I}
+	// rows[1] = {H}
+	// rows[2] = {F,G}
+	// rows[3] = {A,B,C,D,E}
+	rows [][]byte
 }
 
 // NewStaticTree creates a static Merkle tree from a slice of leaves.
@@ -51,7 +51,7 @@ func NewStaticTree(leaves []Hash) (*StaticTree, error) {
 
 // NumLeaves implements Tree.NumLeaves.
 func (t *StaticTree) NumLeaves() int {
-	return len(t.levels[len(t.levels)-1]) / HashByteLen
+	return len(t.rows[len(t.rows)-1]) / HashByteLen
 }
 
 // Root implements Tree.Root.
@@ -63,122 +63,47 @@ func (t *StaticTree) Root() (hash Hash) {
 // Leaf implements Tree.Leaf.
 func (t *StaticTree) Leaf(index int) (hash Hash) {
 	offset := index * HashByteLen
-	copy(hash[:], t.levels[len(t.levels)-1][offset:])
+	copy(hash[:], t.rows[len(t.rows)-1][offset:])
 	return
 }
 
 // Path implements Tree.Path.
 func (t *StaticTree) Path(index int) Path {
-	// 0        I
-	//         / \
-	// 1      H   \
-	//       / \   \
-	// 2    F   G   \
-	//     / \ / \   \
-	// 3   A B C D   E
-	//
-	// Comments refer to this Merkle tree.
-
-	var (
-		depth = len(t.levels)
-		l     = depth - 1
-	)
-	if l == 0 {
+	row := len(t.rows) - 1
+	if row < 0 {
 		return Path{}
 	}
 
 	var (
-		path      = make(Path, depth-1)
-		hash      Hash
-		orphan    *Hash
-		pathDepth = 0
+		col   = index
+		depth = 0
+		path  = make(Path, row)
 	)
 
-	for ; l > 0; l-- {
-		var (
-			level       = t.levels[l]
-			levelLen    = len(level) / HashByteLen
-			parentLevel = t.levels[l-1]
-			parentIndex = index / 2
-			triplet     = &path[pathDepth]
-		)
-
-		if orphan != nil {
-			if levelLen%2 == 1 {
-				// This case happens for instance if we are at level 1, up from E.
-				// E was previously marked as orphan, and H is available.
-				// We can append HashTriplet{H,E,I}.
-				copy(triplet.Left[:], level[HashByteLen*(levelLen-1):])
-				triplet.Right = *orphan
-				copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
-				pathDepth++
-				orphan = nil
-			}
-			// Otherwise we keep going up the tree.
-		} else if levelLen == 1 {
-			// This case happens for instance if we are at node H.
-			// We must go down until we find an orphan, E in the example.
-			// We can append HashTriple{H,E,I}.
-			copy(triplet.Left[:], level[:])
-			for rl := l + 1; rl < depth; rl++ {
-				rlevel := t.levels[rl]
-				rlevelLen := len(rlevel) / HashByteLen
-				if rlevelLen%2 > 0 {
-					copy(triplet.Right[:], rlevel[HashByteLen*(rlevelLen-1):])
-					break
-				}
-			}
-			copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
-			pathDepth++
-			orphan = nil
-		} else if index%2 == 0 {
-			if index+1 < levelLen {
-				// This case happens for instance if we are at node F.
-				// We can simply use node G as the right node.
-				// We can append HashTriple{F,G,H}.
-				copy(triplet.Left[:], level[HashByteLen*(index):])
-				copy(triplet.Right[:], level[HashByteLen*(index+1):])
-				copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
-				pathDepth++
-			} else {
-				// This case happens for instance if we are at node E.
-				// We don't have a neighbor available at this level, so we tag E
-				// as orphan, which will eventually be used as a
-				// right node further up.
-				copy(hash[:], level[HashByteLen*(index):])
-				orphan = &hash
-			}
-		} else {
-			// This case happens for instance if we are at node G.
-			// We can simply use node F as the left node.
-			// We can append HashTriple{F,G,H}.
-			copy(triplet.Left[:], level[HashByteLen*(index-1):])
-			copy(triplet.Right[:], level[HashByteLen*(index):])
-			copy(triplet.Parent[:], parentLevel[HashByteLen*(parentIndex):])
-			pathDepth++
-		}
-
-		index = parentIndex
+	for row > 0 {
+		t.triplet(&path[depth], row, col)
+		row, col = t.parent(row, col)
+		depth++
 	}
 
-	return path[:pathDepth]
+	return path[:depth]
 }
 
-// Allocates memory for the buffer and creates the level slices that map to the buffer.
+// Allocates memory for the buffer and creates the row slices that map to the buffer.
 func alloc(numLeaves int) *StaticTree {
 	var (
-		bufl      = staticTreeBufferLen(numLeaves)
-		buf       = make([]byte, bufl)
-		levelLens = staticTreeLevelsLen(numLeaves)
-		depth     = len(levelLens)
-		tree      = &StaticTree{buf, make([][]byte, depth)}
-		start     = 0
-		end       = 0
+		bufl    = staticTreeBufferLen(numLeaves)
+		buf     = make([]byte, bufl)
+		rowsLen = staticTreeRowsLen(numLeaves)
+		depth   = len(rowsLen)
+		tree    = &StaticTree{buf, make([][]byte, depth)}
+		start   = 0
+		end     = 0
 	)
 
-	for i, l := range levelLens {
+	for i, l := range rowsLen {
 		end = start + l*HashByteLen
-		tree.levels[i] = tree.buffer[start:end]
+		tree.rows[i] = tree.buffer[start:end]
 		start = end
 	}
 
@@ -187,77 +112,123 @@ func alloc(numLeaves int) *StaticTree {
 
 // Copies the leaves at the end of the buffer.
 func (t *StaticTree) copyLeaves(leaves []Hash) {
-	level := t.levels[len(t.levels)-1]
+	row := t.rows[len(t.rows)-1]
 	for i, v := range leaves {
-		copy(level[i*HashByteLen:], v[:])
+		copy(row[i*HashByteLen:], v[:])
 	}
 }
 
 // Computes all the hashes. Assumes that the leaves have been copied to the buffer.
 func (t *StaticTree) compute() error {
-	// 0        I
-	//         / \
-	// 1      H   \
-	//       / \   \
-	// 2    F   G   \
-	//     / \ / \   \
-	// 3   A B C D   E
-	//
-	// Comments refer to this Merkle tree.
-
-	var (
-		depth  = len(t.levels)
-		orphan []byte
-	)
-
-	for l := depth - 1; l > 0; l-- {
-		var (
-			parent      = t.levels[l-1]
-			level       = t.levels[l]
-			levelLength = len(level)
-		)
-
-		// Iterate nodes of the current level two by two.
-		for start := 0; start < levelLength; start += 2 * HashByteLen {
-			var (
-				end  = start + HashByteLen
-				left = level[start:end]
-			)
-
-			if end < levelLength || orphan != nil {
-				var right []byte
-
-				if end >= levelLength && orphan != nil {
-					// This case happens for instance if we are computing I. H doesn't have a
-					// right neighbor, but E was previously marked as orphan.
-					// We can compute Hash(I,E).
-					right = orphan
-					orphan = nil
-				} else {
-					// This case happens for instance if we are computing H.
-					// We can simply compute Hash(F,G).
-					right = level[end : end+HashByteLen]
-				}
-
-				hash := sha256.New()
-				if _, err := hash.Write(left); err != nil {
-					return err
-				}
-				if _, err := hash.Write(right); err != nil {
-					return err
-				}
-
-				copy(parent[start/2:], hash.Sum(nil))
-			} else {
-				// This case happens for instance if we are trying to compute the parent of E.
-				// We don't have a parent at the next level, so we mark E as orphan,
-				// which will eventually be used further up.
-				orphan = left
+	for row := len(t.rows) - 2; row >= 0; row-- {
+		rowLen := len(t.rows[row]) / HashByteLen
+		for col := 0; col < rowLen; col++ {
+			hash := sha256.New()
+			r, c := t.dleft(row, col)
+			offset := c * HashByteLen
+			if _, err := hash.Write(t.rows[r][offset : offset+HashByteLen]); err != nil {
+				return err
 			}
+			r, c = t.dright(row, col)
+			offset = c * HashByteLen
+			if _, err := hash.Write(t.rows[r][offset : offset+HashByteLen]); err != nil {
+				return err
+			}
+			t.write(hash.Sum(nil), row, col)
 		}
 	}
 
 	return nil
+}
+
+// Computes the values of a hash triplet for given row and column.
+func (t *StaticTree) triplet(triplet *HashTriplet, row, col int) {
+	r, c := t.left(row, col)
+	if r >= 0 {
+		t.read(triplet.Left[:], r, c)
+		t.read(triplet.Right[:], row, col)
+	} else {
+		t.read(triplet.Left[:], row, col)
+		r, c = t.right(row, col)
+		t.read(triplet.Right[:], r, c)
+	}
+
+	if row > 0 {
+		r, c = t.parent(row, col)
+		t.read(triplet.Parent[:], r, c)
+	}
+}
+
+// Reads the hash for given row and column.
+func (t *StaticTree) read(dst []byte, row, col int) {
+	offset := col * HashByteLen
+	copy(dst, t.rows[row][offset:offset+HashByteLen])
+}
+
+// Writes the hash for given row and column.
+func (t *StaticTree) write(src []byte, row, col int) {
+	offset := col * HashByteLen
+	copy(t.rows[row][offset:offset+HashByteLen], src)
+}
+
+// Returns the position of the node to the left of given row and column.
+func (t *StaticTree) left(row, col int) (int, int) {
+	if row < 1 {
+		return -1, -1
+	}
+	r, c := t.parent(row, col)
+	r, c = t.dleft(r, c)
+	if r == row && c == col {
+		return -1, -1
+	}
+	return r, c
+}
+
+// Returns the position of the node to the right of given row and column.
+func (t *StaticTree) right(row, col int) (int, int) {
+	if row < 1 {
+		return -1, -1
+	}
+	r, c := t.parent(row, col)
+	r, c = t.dright(r, c)
+	if r == row && c == col {
+		return -1, -1
+	}
+	return r, c
+}
+
+// Returns the position of the parent node of given row and column.
+func (t *StaticTree) parent(row, col int) (int, int) {
+	r, c := row-1, col/2
+	for r >= 0 {
+		if c < len(t.rows[r])/HashByteLen {
+			return r, c
+		}
+		r, c = r-1, c/2
+	}
+	return -1, -1
+}
+
+// Returns the position of the left child node of given row and column.
+func (t *StaticTree) dleft(row, col int) (int, int) {
+	if row >= len(t.rows) {
+		return -1, -1
+	}
+	return row + 1, col * 2
+}
+
+// Returns the position of the right child node of given row and column.
+func (t *StaticTree) dright(row, col int) (int, int) {
+	r, c := row+1, col*2+1
+
+	for r < len(t.rows) {
+		if c < len(t.rows[r])/HashByteLen {
+			return r, c
+		}
+
+		r, c = r+1, c*2 // Note no plus one (orphan)!
+	}
+	return -1, -1
 }
 
 // Returns the number of tree nodes needed for the given number of leaves.
@@ -270,17 +241,17 @@ func staticTreeBufferLen(numLeaves int) int {
 	return HashByteLen * numStaticTreeNodes(numLeaves)
 }
 
-// Returns the length of each tree level needed for the given number of leaves.
-func staticTreeLevelsLen(numLeaves int) []int {
+// Returns the length of each tree row needed for the given number of leaves.
+func staticTreeRowsLen(numLeaves int) []int {
 	var (
-		depth  = int(math.Ceil(math.Log2(float64(numLeaves)))) + 1
-		lens   = make([]int, depth)
-		curr   = numLeaves
-		orphan = false
+		depth   = int(math.Ceil(math.Log2(float64(numLeaves)))) + 1
+		lengths = make([]int, depth)
+		curr    = numLeaves
+		orphan  = false
 	)
 
-	for level := depth - 1; level >= 0; level-- {
-		lens[level] = curr
+	for row := depth - 1; row >= 0; row-- {
+		lengths[row] = curr
 
 		if curr%2 > 0 {
 			if orphan {
@@ -294,5 +265,5 @@ func staticTreeLevelsLen(numLeaves int) []int {
 		curr /= 2
 	}
 
-	return lens
+	return lengths
 }
