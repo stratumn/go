@@ -3,7 +3,7 @@
 // that can be found in the LICENSE file.
 
 // Package batchfossilizer implements a fossilizer that fossilize batches of data using a Merkle tree.
-// The evidence will contain the Merkle root and path.
+// The evidence will contain the Merkle root, the Merkle path, and a timestamp.
 package batchfossilizer
 
 // TODO: save pending leaves to file and recover them on start
