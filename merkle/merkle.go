@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 )
 
@@ -22,7 +21,7 @@ const (
 type Hash [HashByteLen]byte
 
 // MarshalJSON implements encoding/json.Marshaler.MarshalJSON.
-func (h *Hash) MarshalJSON() ([]byte, error) {
+func (h Hash) MarshalJSON() ([]byte, error) {
 	return json.Marshal(hex.EncodeToString(h[:]))
 }
 
@@ -66,7 +65,7 @@ func (h HashTriplet) Validate() error {
 			a = hex.EncodeToString(h.Parent[:])
 			e = hex.EncodeToString(expected[:])
 		)
-		return errors.New(fmt.Sprintf("unexpected parent hash, got %s expected %s\n", a, e))
+		return fmt.Errorf("unexpected parent hash, got %s expected %s\n", a, e)
 	}
 
 	return nil
@@ -91,7 +90,7 @@ func (p Path) Validate() error {
 					a1 = hex.EncodeToString(up.Left[:])
 					a2 = hex.EncodeToString(up.Right[:])
 				)
-				return errors.New(fmt.Sprintf("could not find parent hash %s, got %s and %s\n", e, a1, a2))
+				return fmt.Errorf("could not find parent hash %s, got %s and %s\n", e, a1, a2)
 			}
 		}
 	}

@@ -6,13 +6,19 @@ package merkle_test
 
 import (
 	"flag"
+	"fmt"
+	"math/rand"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stratumn/goprivate/merkle/treetestcases"
 )
 
 func TestMain(m *testing.M) {
+	seed := int64(time.Now().Nanosecond())
+	fmt.Printf("using seed %d\n", seed)
+	rand.Seed(seed)
 	treetestcases.LoadFixtures("testdata")
 	flag.Parse()
 	os.Exit(m.Run())

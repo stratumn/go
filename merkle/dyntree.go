@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-// DynTree node is a node within a DynTree.
+// DynTreeNode is a node within a DynTree.
 type DynTreeNode struct {
 	hash   Hash
 	left   *DynTreeNode
@@ -170,6 +170,23 @@ func (t *DynTree) Add(leaf Hash) error {
 		if err := parent.rehash(left.hash, leaf); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// Update updates a leaf of the tree.
+func (t *DynTree) Update(index int, hash Hash) error {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	node := t.leaves[index]
+	node.hash = hash
+
+	if node.left != nil {
+		return node.parent.rehash(node.left.hash, hash)
+	} else if node.right != nil {
+		return node.parent.rehash(hash, node.right.hash)
 	}
 
 	return nil
