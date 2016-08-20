@@ -38,6 +38,10 @@ func main() {
 		Interval:  *interval,
 		MaxLeaves: *maxLeaves,
 	})
+
+	go a.Start()
+	defer a.Stop()
+
 	c := &fossilizerhttp.Config{
 		Config: jsonhttp.Config{
 			Port:     *port,
@@ -47,8 +51,8 @@ func main() {
 		},
 		NumResultWorkers: *numResultWorkers,
 		CallbackTimeout:  *callbackTimeout,
-		MinDataLen:       merkle.HashByteLen,
-		MaxDataLen:       merkle.HashByteLen,
+		MinDataLen:       merkle.HashByteLen * 2,
+		MaxDataLen:       merkle.HashByteLen * 2,
 	}
 	h := fossilizerhttp.New(a, c)
 
