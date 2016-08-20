@@ -37,9 +37,9 @@ func TestHashTripletValidateOK(t *testing.T) {
 
 func TestHashTripletValidateNotOK(t *testing.T) {
 	h := merkle.HashTriplet{
-		merkletesting.RandomHash(),
-		merkletesting.RandomHash(),
-		merkletesting.RandomHash(),
+		Left:   merkletesting.RandomHash(),
+		Right:  merkletesting.RandomHash(),
+		Parent: merkletesting.RandomHash(),
 	}
 	if err := h.Validate(); err == nil {
 		t.Fatal("expected error not to be nil")

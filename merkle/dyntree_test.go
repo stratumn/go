@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/goprivate/merkle/merkletesting"
 	"github.com/stratumn/goprivate/merkle/treetestcases"
 )
 
@@ -28,6 +29,44 @@ func TestDynTree(t *testing.T) {
 			return tree, nil
 		},
 	}.RunTests(t)
+}
+
+func TestDynTreeUpdate(t *testing.T) {
+	tree := merkle.NewDynTree(16)
+
+	for i := 0; i < 10; i++ {
+		tree.Add(merkletesting.RandomHash())
+	}
+
+	r0 := tree.Root()
+	l2 := tree.Leaf(2)
+	l5 := tree.Leaf(5)
+
+	tree.Update(2, merkletesting.RandomHash())
+
+	r1 := tree.Root()
+
+	if r1 == r0 {
+		t.Fatal("expected root to change")
+	}
+
+	tree.Update(5, merkletesting.RandomHash())
+
+	if tree.Root() == r1 {
+		t.Fatal("expected root to change")
+	}
+
+	tree.Update(5, l5)
+
+	if tree.Root() != r1 {
+		t.Fatal("unexpected root")
+	}
+
+	tree.Update(2, l2)
+
+	if tree.Root() != r0 {
+		t.Fatal("unexpected root")
+	}
 }
 
 func BenchmarkDynTree(b *testing.B) {
