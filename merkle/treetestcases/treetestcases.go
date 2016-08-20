@@ -246,7 +246,7 @@ func (f Factory) TestPath(t *testing.T) {
 // TestPathRandom tests that the implementation correctly computes paths given random trees.
 func (f Factory) TestPathRandom(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		leaves := make([]merkle.Hash, 1+rand.Intn(10000))
+		leaves := make([]merkle.Hash, 2+rand.Intn(10000))
 		for j := range leaves {
 			leaves[j] = merkletesting.RandomHash()
 		}
