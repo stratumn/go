@@ -17,7 +17,7 @@ const (
 	HashByteLen = sha256.Size
 )
 
-// Hash is a binary encoded 32-bit hash.
+// Hash is a binary encoded 32-byte hash.
 type Hash [HashByteLen]byte
 
 // MarshalJSON implements encoding/json.Marshaler.MarshalJSON.
