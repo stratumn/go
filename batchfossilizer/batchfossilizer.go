@@ -16,6 +16,7 @@ import (
 
 	"github.com/stratumn/go/fossilizer"
 	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/goprivate/types"
 )
 
 const (
@@ -44,31 +45,43 @@ type Config struct {
 	MaxLeaves int
 }
 
+// Evidence is the evidence sent to the result channel.
+type Evidence struct {
+	Time int64         `json:"time"`
+	Root types.Bytes32 `json:"merkleRoot"`
+	Path merkle.Path   `json:"merklePath"`
+}
+
+// EvidenceWrapper wraps evidence with a namespace.
+type EvidenceWrapper struct {
+	Evidence *Evidence `json:"batch"`
+}
+
 type batch struct {
-	leaves []merkle.Hash
+	leaves []types.Bytes32
 	meta   [][]byte
 }
 
-// BatchFossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
-type BatchFossilizer struct {
+// Fossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
+type Fossilizer struct {
 	config      *Config
 	resultChans []chan *fossilizer.Result
-	leaves      []merkle.Hash
+	leaves      []types.Bytes32
 	meta        [][]byte
 	mutex       sync.Mutex
 	closeChan   chan struct{}
 }
 
-// New creates an instance of a BatchFossilizer.
-func New(config *Config) *BatchFossilizer {
+// New creates an instance of a Fossilizer.
+func New(config *Config) *Fossilizer {
 	maxLeaves := config.MaxLeaves
 	if maxLeaves == 0 {
 		maxLeaves = DefaultMaxLeaves
 	}
 
-	a := &BatchFossilizer{
+	a := &Fossilizer{
 		config:    config,
-		leaves:    make([]merkle.Hash, 0, maxLeaves),
+		leaves:    make([]types.Bytes32, 0, maxLeaves),
 		meta:      make([][]byte, 0, maxLeaves),
 		closeChan: make(chan struct{}),
 	}
@@ -77,7 +90,7 @@ func New(config *Config) *BatchFossilizer {
 }
 
 // Start starts the fossilizer.
-func (a *BatchFossilizer) Start() {
+func (a *Fossilizer) Start() {
 	interval := a.config.Interval
 	if interval == 0 {
 		interval = DefaultInterval
@@ -93,7 +106,7 @@ func (a *BatchFossilizer) Start() {
 					maxLeaves = DefaultMaxLeaves
 				}
 				go a.batch(batch{a.leaves, a.meta})
-				a.leaves, a.meta = make([]merkle.Hash, 0, maxLeaves), make([][]byte, 0, maxLeaves)
+				a.leaves, a.meta = make([]types.Bytes32, 0, maxLeaves), make([][]byte, 0, maxLeaves)
 			}
 			a.mutex.Unlock()
 		case <-a.closeChan:
@@ -103,12 +116,12 @@ func (a *BatchFossilizer) Start() {
 }
 
 // Stop stops the fossilizer.
-func (a *BatchFossilizer) Stop() {
+func (a *Fossilizer) Stop() {
 	a.closeChan <- struct{}{}
 }
 
 // GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
-func (a *BatchFossilizer) GetInfo() (interface{}, error) {
+func (a *Fossilizer) GetInfo() (interface{}, error) {
 	return map[string]interface{}{
 		"name":        Name,
 		"description": Description,
@@ -117,16 +130,16 @@ func (a *BatchFossilizer) GetInfo() (interface{}, error) {
 }
 
 // AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
-func (a *BatchFossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
+func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 	a.resultChans = append(a.resultChans, resultChan)
 }
 
 // Fossilize implements github.com/stratumn/go/fossilizer.Adapter.Fossilize.
-func (a *BatchFossilizer) Fossilize(data []byte, meta []byte) error {
+func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	var leaf merkle.Hash
+	var leaf types.Bytes32
 	copy(leaf[:], data)
 	a.leaves = append(a.leaves, leaf)
 	a.meta = append(a.meta, meta)
@@ -137,23 +150,13 @@ func (a *BatchFossilizer) Fossilize(data []byte, meta []byte) error {
 	}
 	if len(a.leaves) >= maxLeaves {
 		go a.batch(batch{a.leaves, a.meta})
-		a.leaves, a.meta = make([]merkle.Hash, 0, maxLeaves), make([][]byte, 0, maxLeaves)
+		a.leaves, a.meta = make([]types.Bytes32, 0, maxLeaves), make([][]byte, 0, maxLeaves)
 	}
 
 	return nil
 }
 
-type evidence struct {
-	Time int64       `json:"time"`
-	Root merkle.Hash `json:"merkleRoot"`
-	Path merkle.Path `json:"merklePath"`
-}
-
-type evidenceWrapper struct {
-	Evidence evidence `json:"batch"`
-}
-
-func (a *BatchFossilizer) batch(b batch) {
+func (a *Fossilizer) batch(b batch) {
 	tree, err := merkle.NewStaticTree(b.leaves)
 
 	// TODO: handle error properly
@@ -168,11 +171,11 @@ func (a *BatchFossilizer) batch(b batch) {
 		root = tree.Root()
 	)
 
-	for i := 0; i < tree.NumLeaves(); i++ {
+	for i := 0; i < tree.LeavesLen(); i++ {
 		leaf := tree.Leaf(i)
 		r := &fossilizer.Result{
-			Evidence: evidenceWrapper{
-				evidence{
+			Evidence: &EvidenceWrapper{
+				&Evidence{
 					Time: ts,
 					Root: root,
 					Path: tree.Path(i),
@@ -182,10 +185,8 @@ func (a *BatchFossilizer) batch(b batch) {
 			Meta: meta[i],
 		}
 
-		go func(chans []chan *fossilizer.Result) {
-			for _, c := range chans {
-				c <- r
-			}
-		}(a.resultChans)
+		for _, c := range a.resultChans {
+			c <- r
+		}
 	}
 }
