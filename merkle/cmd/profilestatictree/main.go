@@ -11,13 +11,14 @@ import (
 	"github.com/pkg/profile"
 
 	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/goprivate/types"
 )
 
 const size = 10000
 const paths = 10000
 
 func main() {
-	leaves := make([]merkle.Hash, size)
+	leaves := make([]types.Bytes32, size)
 	for i := 0; i < size; i++ {
 		leaves[i] = randomHash()
 	}
@@ -36,7 +37,7 @@ func main() {
 
 var letters = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-func randomHash() (hash merkle.Hash) {
+func randomHash() (hash types.Bytes32) {
 	for i := range hash {
 		hash[i] = letters[rand.Intn(len(letters))]
 	}
