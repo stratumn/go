@@ -8,42 +8,21 @@ package merkle
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
+
+	"github.com/stratumn/goprivate/types"
 )
 
 const (
-	// HashByteLen is the length of a hash or leaf measured in bytes.
-	HashByteLen = sha256.Size
+	// HashByteSize is the length of a hash or leaf measured in bytes.
+	HashByteSize = types.Hash32Size
 )
-
-// Hash is a binary encoded 32-byte hash.
-type Hash [HashByteLen]byte
-
-// MarshalJSON implements encoding/json.Marshaler.MarshalJSON.
-func (h Hash) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(h[:]))
-}
-
-// UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON.
-func (h *Hash) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-
-	if _, err := hex.Decode(h[:], []byte(s)); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 // HashTriplet contains a left, right, and parent hash.
 type HashTriplet struct {
-	Left   Hash `json:"left"`
-	Right  Hash `json:"right"`
-	Parent Hash `json:"parent"`
+	Left   types.Bytes32 `json:"left"`
+	Right  types.Bytes32 `json:"right"`
+	Parent types.Bytes32 `json:"parent"`
 }
 
 // Validate validates the integrity of a hash triplet.
@@ -57,7 +36,7 @@ func (h HashTriplet) Validate() error {
 		return err
 	}
 
-	var expected Hash
+	var expected types.Bytes32
 	copy(expected[:], hash.Sum(nil))
 
 	if h.Parent != expected {
@@ -101,13 +80,13 @@ func (p Path) Validate() error {
 // Tree must be implemented by Merkle tree implementations.
 type Tree interface {
 	// NumLeaves returns the number of leaves.
-	NumLeaves() int
+	LeavesLen() int
 
 	// Leaf returns the Merkle root.
-	Root() Hash
+	Root() types.Bytes32
 
 	// Leaf returns the leaf at the specified index.
-	Leaf(index int) Hash
+	Leaf(index int) types.Bytes32
 
 	// Path returns the path of a leaf to the Merkle root.
 	Path(index int) Path

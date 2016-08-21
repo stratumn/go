@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/merkle/merkletesting"
+	"github.com/stratumn/goprivate/testutil"
+	"github.com/stratumn/goprivate/types"
 )
 
 func TestHashTripletValidateOK(t *testing.T) {
 	var (
-		left  = merkletesting.RandomHash()
-		right = merkletesting.RandomHash()
+		left  = testutil.RandomHash()
+		right = testutil.RandomHash()
 		h     = merkle.HashTriplet{Left: left, Right: right}
 		hash  = sha256.New()
 	)
@@ -37,9 +38,9 @@ func TestHashTripletValidateOK(t *testing.T) {
 
 func TestHashTripletValidateNotOK(t *testing.T) {
 	h := merkle.HashTriplet{
-		Left:   merkletesting.RandomHash(),
-		Right:  merkletesting.RandomHash(),
-		Parent: merkletesting.RandomHash(),
+		Left:   testutil.RandomHash(),
+		Right:  testutil.RandomHash(),
+		Parent: testutil.RandomHash(),
 	}
 	if err := h.Validate(); err == nil {
 		t.Fatal("expected error not to be nil")
@@ -90,9 +91,9 @@ func TestPathValidateNotOK(t *testing.T) {
 
 func TestTreeConsistency(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		leaves := make([]merkle.Hash, 1+rand.Intn(1000))
+		leaves := make([]types.Bytes32, 1+rand.Intn(1000))
 		for j := range leaves {
-			leaves[j] = merkletesting.RandomHash()
+			leaves[j] = testutil.RandomHash()
 		}
 
 		static, err := merkle.NewStaticTree(leaves)

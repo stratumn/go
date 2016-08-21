@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/merkle/merkletesting"
 	"github.com/stratumn/goprivate/merkle/treetestcases"
+	"github.com/stratumn/goprivate/testutil"
+	"github.com/stratumn/goprivate/types"
 )
 
 func TestNewStaticTree(t *testing.T) {
-	tree, err := merkle.NewStaticTree([]merkle.Hash{merkletesting.RandomHash()})
+	tree, err := merkle.NewStaticTree([]types.Bytes32{testutil.RandomHash()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,7 +36,7 @@ func TestNewStaticTreeNoLeaves(t *testing.T) {
 
 func TestStaticTree(t *testing.T) {
 	treetestcases.Factory{
-		New: func(leaves []merkle.Hash) (merkle.Tree, error) {
+		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
 			return merkle.NewStaticTree(leaves)
 		},
 	}.RunTests(t)
@@ -43,7 +44,7 @@ func TestStaticTree(t *testing.T) {
 
 func BenchmarkStaticTree(b *testing.B) {
 	treetestcases.Factory{
-		New: func(leaves []merkle.Hash) (merkle.Tree, error) {
+		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
 			return merkle.NewStaticTree(leaves)
 		},
 	}.RunBenchmarks(b)
