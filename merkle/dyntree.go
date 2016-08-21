@@ -7,11 +7,13 @@ package merkle
 import (
 	"crypto/sha256"
 	"sync"
+
+	"github.com/stratumn/goprivate/types"
 )
 
 // DynTreeNode is a node within a DynTree.
 type DynTreeNode struct {
-	hash   Hash
+	hash   types.Bytes32
 	left   *DynTreeNode
 	right  *DynTreeNode
 	parent *DynTreeNode
@@ -19,7 +21,7 @@ type DynTreeNode struct {
 }
 
 // Hash returns the hash of the node.
-func (n *DynTreeNode) Hash() Hash {
+func (n *DynTreeNode) Hash() types.Bytes32 {
 	return n.hash
 }
 
@@ -38,7 +40,7 @@ func (n *DynTreeNode) Parent() *DynTreeNode {
 	return n.parent
 }
 
-func (n *DynTreeNode) rehash(a, b Hash) error {
+func (n *DynTreeNode) rehash(a, b types.Bytes32) error {
 	h := sha256.New()
 	if _, err := h.Write(a[:]); err != nil {
 		return err
@@ -75,18 +77,18 @@ func NewDynTree(initialCap int) *DynTree {
 	}
 }
 
-// NumLeaves implements Tree.NumLeaves.
-func (t *DynTree) NumLeaves() int {
+// LeavesLen implements Tree.LeavesLen.
+func (t *DynTree) LeavesLen() int {
 	return len(t.leaves)
 }
 
 // Root implements Tree.Root.
-func (t *DynTree) Root() Hash {
+func (t *DynTree) Root() types.Bytes32 {
 	return t.root.hash
 }
 
 // Leaf implements Tree.Leaf.
-func (t *DynTree) Leaf(index int) Hash {
+func (t *DynTree) Leaf(index int) types.Bytes32 {
 	return t.leaves[index].hash
 }
 
@@ -128,7 +130,7 @@ func (t *DynTree) Path(index int) Path {
 }
 
 // Add adds a leaf to the tree.
-func (t *DynTree) Add(leaf Hash) error {
+func (t *DynTree) Add(leaf types.Bytes32) error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
@@ -176,7 +178,7 @@ func (t *DynTree) Add(leaf Hash) error {
 }
 
 // Update updates a leaf of the tree.
-func (t *DynTree) Update(index int, hash Hash) error {
+func (t *DynTree) Update(index int, hash types.Bytes32) error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 

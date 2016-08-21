@@ -8,6 +8,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"math"
+
+	"github.com/stratumn/goprivate/types"
 )
 
 // StaticTree is designed for Merkle trees with leaves that do not change.
@@ -37,7 +39,7 @@ type StaticTree struct {
 }
 
 // NewStaticTree creates a static Merkle tree from a slice of leaves.
-func NewStaticTree(leaves []Hash) (*StaticTree, error) {
+func NewStaticTree(leaves []types.Bytes32) (*StaticTree, error) {
 	numLeaves := len(leaves)
 	if numLeaves < 1 {
 		return nil, errors.New("tree should have at least one leaf")
@@ -49,20 +51,20 @@ func NewStaticTree(leaves []Hash) (*StaticTree, error) {
 	return tree, tree.compute()
 }
 
-// NumLeaves implements Tree.NumLeaves.
-func (t *StaticTree) NumLeaves() int {
-	return len(t.rows[len(t.rows)-1]) / HashByteLen
+// LeavesLen implements Tree.LeavesLen.
+func (t *StaticTree) LeavesLen() int {
+	return len(t.rows[len(t.rows)-1]) / HashByteSize
 }
 
 // Root implements Tree.Root.
-func (t *StaticTree) Root() (hash Hash) {
+func (t *StaticTree) Root() (hash types.Bytes32) {
 	copy(hash[:], t.buffer[:])
 	return
 }
 
 // Leaf implements Tree.Leaf.
-func (t *StaticTree) Leaf(index int) (hash Hash) {
-	offset := index * HashByteLen
+func (t *StaticTree) Leaf(index int) (hash types.Bytes32) {
+	offset := index * HashByteSize
 	copy(hash[:], t.rows[len(t.rows)-1][offset:])
 	return
 }
@@ -102,7 +104,7 @@ func alloc(numLeaves int) *StaticTree {
 	)
 
 	for i, l := range rowsLen {
-		end = start + l*HashByteLen
+		end = start + l*HashByteSize
 		tree.rows[i] = tree.buffer[start:end]
 		start = end
 	}
@@ -111,27 +113,27 @@ func alloc(numLeaves int) *StaticTree {
 }
 
 // Copies the leaves at the end of the buffer.
-func (t *StaticTree) copyLeaves(leaves []Hash) {
+func (t *StaticTree) copyLeaves(leaves []types.Bytes32) {
 	row := t.rows[len(t.rows)-1]
 	for i, v := range leaves {
-		copy(row[i*HashByteLen:], v[:])
+		copy(row[i*HashByteSize:], v[:])
 	}
 }
 
 // Computes all the hashes. Assumes that the leaves have been copied to the buffer.
 func (t *StaticTree) compute() error {
 	for row := len(t.rows) - 2; row >= 0; row-- {
-		rowLen := len(t.rows[row]) / HashByteLen
+		rowLen := len(t.rows[row]) / HashByteSize
 		for col := 0; col < rowLen; col++ {
 			hash := sha256.New()
 			r, c := t.dleft(row, col)
-			offset := c * HashByteLen
-			if _, err := hash.Write(t.rows[r][offset : offset+HashByteLen]); err != nil {
+			offset := c * HashByteSize
+			if _, err := hash.Write(t.rows[r][offset : offset+HashByteSize]); err != nil {
 				return err
 			}
 			r, c = t.dright(row, col)
-			offset = c * HashByteLen
-			if _, err := hash.Write(t.rows[r][offset : offset+HashByteLen]); err != nil {
+			offset = c * HashByteSize
+			if _, err := hash.Write(t.rows[r][offset : offset+HashByteSize]); err != nil {
 				return err
 			}
 			t.write(hash.Sum(nil), row, col)
@@ -161,14 +163,14 @@ func (t *StaticTree) triplet(triplet *HashTriplet, row, col int) {
 
 // Reads the hash for given row and column.
 func (t *StaticTree) read(dst []byte, row, col int) {
-	offset := col * HashByteLen
-	copy(dst, t.rows[row][offset:offset+HashByteLen])
+	offset := col * HashByteSize
+	copy(dst, t.rows[row][offset:offset+HashByteSize])
 }
 
 // Writes the hash for given row and column.
 func (t *StaticTree) write(src []byte, row, col int) {
-	offset := col * HashByteLen
-	copy(t.rows[row][offset:offset+HashByteLen], src)
+	offset := col * HashByteSize
+	copy(t.rows[row][offset:offset+HashByteSize], src)
 }
 
 // Returns the position of the node to the left of given row and column.
@@ -201,7 +203,7 @@ func (t *StaticTree) right(row, col int) (int, int) {
 func (t *StaticTree) parent(row, col int) (int, int) {
 	r, c := row-1, col/2
 	for r >= 0 {
-		if c < len(t.rows[r])/HashByteLen {
+		if c < len(t.rows[r])/HashByteSize {
 			return r, c
 		}
 		r, c = r-1, c/2
@@ -222,7 +224,7 @@ func (t *StaticTree) dright(row, col int) (int, int) {
 	r, c := row+1, col*2+1
 
 	for r < len(t.rows) {
-		if c < len(t.rows[r])/HashByteLen {
+		if c < len(t.rows[r])/HashByteSize {
 			return r, c
 		}
 
@@ -238,7 +240,7 @@ func numStaticTreeNodes(numLeaves int) int {
 
 // Returns the length of the buffer needed for the given number of leaves.
 func staticTreeBufferLen(numLeaves int) int {
-	return HashByteLen * numStaticTreeNodes(numLeaves)
+	return HashByteSize * numStaticTreeNodes(numLeaves)
 }
 
 // Returns the length of each tree row needed for the given number of leaves.

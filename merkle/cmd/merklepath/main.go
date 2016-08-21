@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/goprivate/types"
 )
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 		s = len(l)
 	)
 
-	leaves := make([]merkle.Hash, s)
+	leaves := make([]types.Bytes32, s)
 	for j, v := range l {
 		leaves[j] = sha256.Sum256([]byte(v))
 	}

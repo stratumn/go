@@ -15,7 +15,8 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/merkle/merkletesting"
+	"github.com/stratumn/goprivate/testutil"
+	"github.com/stratumn/goprivate/types"
 )
 
 var (
@@ -70,7 +71,7 @@ func LoadFixtures(testdatapath string) {
 // and is used to run the tests on a Merkle tree implementation.
 type Factory struct {
 	// New create a Merkle tree from leaves.
-	New func(leaves []merkle.Hash) (merkle.Tree, error)
+	New func(leaves []types.Bytes32) (merkle.Tree, error)
 
 	// Free is an optional function to free a Merkle tree.
 	Free func(tree merkle.Tree)
@@ -99,7 +100,7 @@ func (f Factory) free(tree merkle.Tree) {
 
 // TestNumLeaves tests that the implementation returns the correct number of leaves.
 func (f Factory) TestNumLeaves(t *testing.T) {
-	tree, err := f.New([]merkle.Hash{merkletesting.RandomHash(), merkletesting.RandomHash(), merkletesting.RandomHash()})
+	tree, err := f.New([]types.Bytes32{testutil.RandomHash(), testutil.RandomHash(), testutil.RandomHash()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +110,7 @@ func (f Factory) TestNumLeaves(t *testing.T) {
 	defer f.free(tree)
 
 	var (
-		a = tree.NumLeaves()
+		a = tree.LeavesLen()
 		e = 3
 	)
 	if a != e {
@@ -136,7 +137,7 @@ func (f Factory) TestRoot(t *testing.T) {
 	}
 
 	for _, row := range grid {
-		var leaves = make([]merkle.Hash, len(row.leaves), len(row.leaves))
+		var leaves = make([]types.Bytes32, len(row.leaves), len(row.leaves))
 		for i, s := range row.leaves {
 			leaves[i] = sha256.Sum256([]byte(s))
 		}
@@ -163,9 +164,9 @@ func (f Factory) TestRoot(t *testing.T) {
 // TestLeaf tests that the implementation correctly returns leaves.
 func (f Factory) TestLeaf(t *testing.T) {
 	for i := 1; i < 128; i++ {
-		var leaves []merkle.Hash
+		var leaves []types.Bytes32
 		for j := 0; j < i; j++ {
-			leaves = append(leaves, merkletesting.RandomHash())
+			leaves = append(leaves, testutil.RandomHash())
 		}
 
 		tree, err := f.New(leaves)
@@ -217,7 +218,7 @@ func (f Factory) TestPath(t *testing.T) {
 	}
 
 	for _, row := range grid {
-		var leaves = make([]merkle.Hash, len(row.leaves), len(row.leaves))
+		var leaves = make([]types.Bytes32, len(row.leaves), len(row.leaves))
 		for i, s := range row.leaves {
 			leaves[i] = sha256.Sum256([]byte(s))
 		}
@@ -246,9 +247,9 @@ func (f Factory) TestPath(t *testing.T) {
 // TestPathRandom tests that the implementation correctly computes paths given random trees.
 func (f Factory) TestPathRandom(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		leaves := make([]merkle.Hash, 2+rand.Intn(10000))
+		leaves := make([]types.Bytes32, 2+rand.Intn(10000))
 		for j := range leaves {
-			leaves[j] = merkletesting.RandomHash()
+			leaves[j] = testutil.RandomHash()
 		}
 
 		tree, err := f.New(leaves)
@@ -282,9 +283,9 @@ func (f Factory) TestPathRandom(t *testing.T) {
 
 // BenchmarkCreateWithSize benchmarks creating trees of given size.
 func (f Factory) BenchmarkCreateWithSize(b *testing.B, size int) {
-	leaves := make([]merkle.Hash, size)
+	leaves := make([]types.Bytes32, size)
 	for i := 0; i < size; i++ {
-		leaves[i] = merkletesting.RandomHash()
+		leaves[i] = testutil.RandomHash()
 	}
 
 	b.ResetTimer()
@@ -312,9 +313,9 @@ func (f Factory) BenchmarkCreate(b *testing.B) {
 
 // BenchmarkPathWithSize benchmarks computing paths for trees of given size.
 func (f Factory) BenchmarkPathWithSize(b *testing.B, size int) {
-	leaves := make([]merkle.Hash, size)
+	leaves := make([]types.Bytes32, size)
 	for i := 0; i < size; i++ {
-		leaves[i] = merkletesting.RandomHash()
+		leaves[i] = testutil.RandomHash()
 	}
 
 	tree, err := f.New(leaves)
@@ -342,6 +343,6 @@ func (f Factory) BenchmarkPath(b *testing.B) {
 	b.Run("100000-leaves", func(b *testing.B) { f.BenchmarkPathWithSize(b, 100000) })
 }
 
-func atos(a merkle.Hash) []byte {
+func atos(a types.Bytes32) []byte {
 	return a[:]
 }

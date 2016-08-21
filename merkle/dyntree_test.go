@@ -8,8 +8,9 @@ import (
 	"testing"
 
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/merkle/merkletesting"
 	"github.com/stratumn/goprivate/merkle/treetestcases"
+	"github.com/stratumn/goprivate/testutil"
+	"github.com/stratumn/goprivate/types"
 )
 
 func TestNewDynTree(t *testing.T) {
@@ -21,7 +22,7 @@ func TestNewDynTree(t *testing.T) {
 
 func TestDynTree(t *testing.T) {
 	treetestcases.Factory{
-		New: func(leaves []merkle.Hash) (merkle.Tree, error) {
+		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
 			tree := merkle.NewDynTree(len(leaves) * 2)
 			for _, leaf := range leaves {
 				tree.Add(leaf)
@@ -35,14 +36,14 @@ func TestDynTreeUpdate(t *testing.T) {
 	tree := merkle.NewDynTree(16)
 
 	for i := 0; i < 10; i++ {
-		tree.Add(merkletesting.RandomHash())
+		tree.Add(testutil.RandomHash())
 	}
 
 	r0 := tree.Root()
 	l2 := tree.Leaf(2)
 	l5 := tree.Leaf(5)
 
-	tree.Update(2, merkletesting.RandomHash())
+	tree.Update(2, testutil.RandomHash())
 
 	r1 := tree.Root()
 
@@ -50,7 +51,7 @@ func TestDynTreeUpdate(t *testing.T) {
 		t.Fatal("expected root to change")
 	}
 
-	tree.Update(5, merkletesting.RandomHash())
+	tree.Update(5, testutil.RandomHash())
 
 	if tree.Root() == r1 {
 		t.Fatal("expected root to change")
@@ -71,7 +72,7 @@ func TestDynTreeUpdate(t *testing.T) {
 
 func BenchmarkDynTree(b *testing.B) {
 	treetestcases.Factory{
-		New: func(leaves []merkle.Hash) (merkle.Tree, error) {
+		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
 			tree := merkle.NewDynTree(len(leaves) * 2)
 			for _, leaf := range leaves {
 				tree.Add(leaf)
