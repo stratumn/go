@@ -11,6 +11,8 @@ import (
 	"github.com/stratumn/go/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go/jsonhttp"
 	"github.com/stratumn/goprivate/batchfossilizer"
+	"github.com/stratumn/goprivate/bcbatchfossilizer"
+	"github.com/stratumn/goprivate/blockchain/dummytimestamper"
 	"github.com/stratumn/goprivate/merkle"
 )
 
@@ -27,13 +29,15 @@ var (
 )
 
 func init() {
-	log.SetPrefix("batchfossilizer ")
+	log.SetPrefix("dummybatchfossilizer ")
 }
 
 func main() {
 	flag.Parse()
 
-	a := batchfossilizer.New(&batchfossilizer.Config{
+	a := bcbatchfossilizer.New(&bcbatchfossilizer.Config{
+		HashTimestamper: dummytimestamper.Timestamper{},
+	}, &batchfossilizer.Config{
 		Version:   version,
 		Interval:  *interval,
 		MaxLeaves: *maxLeaves,
@@ -51,8 +55,8 @@ func main() {
 		},
 		NumResultWorkers: *numResultWorkers,
 		CallbackTimeout:  *callbackTimeout,
-		MinDataLen:       merkle.HashByteLen * 2,
-		MaxDataLen:       merkle.HashByteLen * 2,
+		MinDataLen:       merkle.HashByteSize * 2,
+		MaxDataLen:       merkle.HashByteSize * 2,
 	}
 	h := fossilizerhttp.New(a, c)
 
