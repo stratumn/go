@@ -26,6 +26,7 @@ var (
 	interval         = flag.Duration("interval", batchfossilizer.DefaultInterval, "batch interval")
 	maxLeaves        = flag.Int("maxleaves", batchfossilizer.DefaultMaxLeaves, "maximum number of leaves in a Merkle tree")
 	version          = ""
+	commit           = ""
 )
 
 func init() {
@@ -39,6 +40,7 @@ func main() {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		Version:   version,
+		Commit:    commit,
 		Interval:  *interval,
 		MaxLeaves: *maxLeaves,
 	})
