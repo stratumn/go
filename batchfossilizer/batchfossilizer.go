@@ -38,6 +38,9 @@ type Config struct {
 	// A version string that will set in the store's information.
 	Version string
 
+	// A git commit sha that will set in the store's information.
+	Commit string
+
 	// Interval between batches.
 	Interval time.Duration
 
@@ -126,6 +129,7 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 		"name":        Name,
 		"description": Description,
 		"version":     a.config.Version,
+		"commit":      a.config.Commit,
 	}, nil
 }
 
