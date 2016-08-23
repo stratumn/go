@@ -15,7 +15,7 @@ import (
 
 const (
 	// HashByteSize is the length of a hash or leaf measured in bytes.
-	HashByteSize = types.Hash32Size
+	HashByteSize = types.Bytes32Size
 )
 
 // HashTriplet contains a left, right, and parent hash.
