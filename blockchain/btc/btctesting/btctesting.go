@@ -1,0 +1,86 @@
+// Copyright 2016 Stratumn SAS. All rights reserved.
+// Use of this source code is governed by an Apache License 2.0
+// that can be found in the LICENSE file.
+
+// Package btctesting defines helpers to test Bitcoin.
+package btctesting
+
+import (
+	"github.com/stratumn/goprivate/blockchain/btc"
+	"github.com/stratumn/goprivate/types"
+)
+
+// Mock is used to mock a UnspentFinder and Broadcaster.
+//
+// It implements github.com/stratumn/go/fossilizer.Adapter.
+type Mock struct {
+	// The mock for the FindUnspent function.
+	MockFindUnspent MockFindUnspent
+
+	// The mock for the Broadcast function.
+	MockBroadcast MockBroadcast
+}
+
+// MockFindUnspent mocks the FindUnspent function.
+type MockFindUnspent struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The address that was passed to each call.
+	CalledWithAddress160 []*types.Bytes20
+
+	// The amount that was passed to each call.
+	CalledWithAmount []int64
+
+	// The last address that was passed.
+	LastCalledWithAddress160 *types.Bytes20
+
+	// The last amount that was passed.
+	LastCalledWithAmount int64
+
+	// An optional implementation of the function.
+	Fn func(*types.Bytes20, int64) ([]btc.Output, int64, error)
+}
+
+// MockBroadcast mocks the Broadcast function.
+type MockBroadcast struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The transaction that was passed to each call.
+	CalledWith [][]byte
+
+	// The last transaction that was passed.
+	LastCalledWith []byte
+
+	// An optional implementation of the function.
+	Fn func([]byte) error
+}
+
+// FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
+func (a *Mock) FindUnspent(address160 *types.Bytes20, amount int64) ([]btc.Output, int64, error) {
+	a.MockFindUnspent.CalledCount++
+	a.MockFindUnspent.CalledWithAddress160 = append(a.MockFindUnspent.CalledWithAddress160, address160)
+	a.MockFindUnspent.LastCalledWithAddress160 = address160
+	a.MockFindUnspent.CalledWithAmount = append(a.MockFindUnspent.CalledWithAmount, amount)
+	a.MockFindUnspent.LastCalledWithAmount = amount
+
+	if a.MockFindUnspent.Fn != nil {
+		return a.MockFindUnspent.Fn(address160, amount)
+	}
+
+	return nil, 0, nil
+}
+
+// Broadcast implements github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
+func (a *Mock) Broadcast(raw []byte) error {
+	a.MockBroadcast.CalledCount++
+	a.MockBroadcast.CalledWith = append(a.MockBroadcast.CalledWith, raw)
+	a.MockBroadcast.LastCalledWith = raw
+
+	if a.MockBroadcast.Fn != nil {
+		return a.MockBroadcast.Fn(raw)
+	}
+
+	return nil
+}

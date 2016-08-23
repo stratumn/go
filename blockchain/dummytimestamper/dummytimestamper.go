@@ -2,7 +2,7 @@
 // Use of this source code is governed by an Apache License 2.0
 // that can be found in the LICENSE file.
 
-// Package dummytimestamper implements a fake Bitcoin timestamper which can be used for testing.
+// Package dummytimestamper implements a fake blockchain timestamper which can be used for testing.
 package dummytimestamper
 
 import (
