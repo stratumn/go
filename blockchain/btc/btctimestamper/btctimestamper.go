@@ -147,10 +147,14 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.Transactio
 		return nil, err
 	}
 
-	txHash := tx.TxHash()
-	txHashBytes := (&txHash).CloneBytes()
-	log.Printf("created transaction %s for hash %s\n", hex.EncodeToString(txHashBytes), hash)
-	return txHashBytes, nil
+	// Reverse the bytes!
+	var txHash32 types.Bytes32
+	for i, b := range tx.TxHash() {
+		txHash32[types.Bytes32Size-i-1] = b
+	}
+
+	log.Printf("created transaction %s for hash %s\n", hex.EncodeToString(txHash32[:]), hash)
+	return txHash32[:], nil
 }
 
 func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
