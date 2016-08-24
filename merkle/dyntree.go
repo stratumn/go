@@ -40,7 +40,7 @@ func (n *DynTreeNode) Parent() *DynTreeNode {
 	return n.parent
 }
 
-func (n *DynTreeNode) rehash(a, b types.Bytes32) error {
+func (n *DynTreeNode) rehash(a, b *types.Bytes32) error {
 	h := sha256.New()
 	if _, err := h.Write(a[:]); err != nil {
 		return err
@@ -52,9 +52,9 @@ func (n *DynTreeNode) rehash(a, b types.Bytes32) error {
 
 	if n.parent != nil {
 		if n.left != nil {
-			n.parent.rehash(n.left.hash, n.hash)
+			n.parent.rehash(&n.left.hash, &n.hash)
 		} else {
-			n.parent.rehash(n.hash, n.right.hash)
+			n.parent.rehash(&n.hash, &n.right.hash)
 		}
 	}
 
@@ -130,11 +130,11 @@ func (t *DynTree) Path(index int) Path {
 }
 
 // Add adds a leaf to the tree.
-func (t *DynTree) Add(leaf types.Bytes32) error {
+func (t *DynTree) Add(leaf *types.Bytes32) error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
-	t.nodes = append(t.nodes, DynTreeNode{hash: leaf})
+	t.nodes = append(t.nodes, DynTreeNode{hash: *leaf})
 	node := &t.nodes[len(t.nodes)-1]
 	t.leaves = append(t.leaves, node)
 
@@ -169,7 +169,7 @@ func (t *DynTree) Add(leaf types.Bytes32) error {
 			t.height = parent.height
 		}
 
-		if err := parent.rehash(left.hash, leaf); err != nil {
+		if err := parent.rehash(&left.hash, leaf); err != nil {
 			return err
 		}
 	}
@@ -178,17 +178,17 @@ func (t *DynTree) Add(leaf types.Bytes32) error {
 }
 
 // Update updates a leaf of the tree.
-func (t *DynTree) Update(index int, hash types.Bytes32) error {
+func (t *DynTree) Update(index int, hash *types.Bytes32) error {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
 	node := t.leaves[index]
-	node.hash = hash
+	node.hash = *hash
 
 	if node.left != nil {
-		return node.parent.rehash(node.left.hash, hash)
+		return node.parent.rehash(&node.left.hash, hash)
 	} else if node.right != nil {
-		return node.parent.rehash(hash, node.right.hash)
+		return node.parent.rehash(hash, &node.right.hash)
 	}
 
 	return nil

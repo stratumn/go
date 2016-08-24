@@ -100,7 +100,7 @@ func (f Factory) free(tree merkle.Tree) {
 
 // TestNumLeaves tests that the implementation returns the correct number of leaves.
 func (f Factory) TestNumLeaves(t *testing.T) {
-	tree, err := f.New([]types.Bytes32{testutil.RandomHash(), testutil.RandomHash(), testutil.RandomHash()})
+	tree, err := f.New([]types.Bytes32{*testutil.RandomHash(), *testutil.RandomHash(), *testutil.RandomHash()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func (f Factory) TestLeaf(t *testing.T) {
 	for i := 1; i < 128; i++ {
 		var leaves []types.Bytes32
 		for j := 0; j < i; j++ {
-			leaves = append(leaves, testutil.RandomHash())
+			leaves = append(leaves, *testutil.RandomHash())
 		}
 
 		tree, err := f.New(leaves)
@@ -249,7 +249,7 @@ func (f Factory) TestPathRandom(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		leaves := make([]types.Bytes32, 2+rand.Intn(10000))
 		for j := range leaves {
-			leaves[j] = testutil.RandomHash()
+			leaves[j] = *testutil.RandomHash()
 		}
 
 		tree, err := f.New(leaves)
@@ -285,7 +285,7 @@ func (f Factory) TestPathRandom(t *testing.T) {
 func (f Factory) BenchmarkCreateWithSize(b *testing.B, size int) {
 	leaves := make([]types.Bytes32, size)
 	for i := 0; i < size; i++ {
-		leaves[i] = testutil.RandomHash()
+		leaves[i] = *testutil.RandomHash()
 	}
 
 	b.ResetTimer()
@@ -315,7 +315,7 @@ func (f Factory) BenchmarkCreate(b *testing.B) {
 func (f Factory) BenchmarkPathWithSize(b *testing.B, size int) {
 	leaves := make([]types.Bytes32, size)
 	for i := 0; i < size; i++ {
-		leaves[i] = testutil.RandomHash()
+		leaves[i] = *testutil.RandomHash()
 	}
 
 	tree, err := f.New(leaves)

@@ -15,8 +15,8 @@ import (
 
 func TestHashTripletValidateOK(t *testing.T) {
 	var (
-		left  = testutil.RandomHash()
-		right = testutil.RandomHash()
+		left  = *testutil.RandomHash()
+		right = *testutil.RandomHash()
 		h     = merkle.HashTriplet{Left: left, Right: right}
 		hash  = sha256.New()
 	)
@@ -38,9 +38,9 @@ func TestHashTripletValidateOK(t *testing.T) {
 
 func TestHashTripletValidateNotOK(t *testing.T) {
 	h := merkle.HashTriplet{
-		Left:   testutil.RandomHash(),
-		Right:  testutil.RandomHash(),
-		Parent: testutil.RandomHash(),
+		Left:   *testutil.RandomHash(),
+		Right:  *testutil.RandomHash(),
+		Parent: *testutil.RandomHash(),
 	}
 	if err := h.Validate(); err == nil {
 		t.Fatal("expected error not to be nil")
@@ -93,7 +93,7 @@ func TestTreeConsistency(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		leaves := make([]types.Bytes32, 1+rand.Intn(1000))
 		for j := range leaves {
-			leaves[j] = testutil.RandomHash()
+			leaves[j] = *testutil.RandomHash()
 		}
 
 		static, err := merkle.NewStaticTree(leaves)
@@ -109,7 +109,7 @@ func TestTreeConsistency(t *testing.T) {
 			t.Fatal("expected tree not to be nil")
 		}
 		for _, leaf := range leaves {
-			if err := dyn.Add(leaf); err != nil {
+			if err := dyn.Add(&leaf); err != nil {
 				t.Fatal(err)
 			}
 		}
