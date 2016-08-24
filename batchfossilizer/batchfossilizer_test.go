@@ -217,7 +217,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 
 	data := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
-		data[i] = atos(testutil.RandomHash())
+		data[i] = atos(*testutil.RandomHash())
 	}
 
 	b.ResetTimer()
