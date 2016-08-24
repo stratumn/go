@@ -27,7 +27,7 @@ func TestTimestamperNetworkTest3(t *testing.T) {
 	}
 
 	if ts.Network() != btc.NetworkTest3 {
-		t.Logf("actual: %s, expected: %s", ts.Network().String(), btc.NetworkTest3.String())
+		t.Logf("actual: %s, expected: %s", ts.Network(), btc.NetworkTest3)
 		t.Fatal("unexpected network")
 	}
 }
@@ -45,7 +45,7 @@ func TestTimestamperNetworkMain(t *testing.T) {
 	}
 
 	if ts.Network() != btc.NetworkMain {
-		t.Logf("actual: %s, expected: %s", ts.Network().String(), btc.NetworkMain.String())
+		t.Logf("actual: %s, expected: %s", ts.Network(), btc.NetworkMain)
 		t.Fatal("unexpected network")
 	}
 }
