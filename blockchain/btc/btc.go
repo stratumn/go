@@ -19,7 +19,7 @@ const (
 	NetworkMain Network = "bitcoin:main"
 )
 
-// String implements github.com/stratumn/goprivate/blockchain.Network.
+// String implements fmt.Stringer.
 func (n Network) String() string {
 	return string(n)
 }
