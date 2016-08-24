@@ -8,14 +8,14 @@ package blockchain
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 
 	"github.com/stratumn/goprivate/types"
 )
 
 // Network represents a blockchain network.
 type Network interface {
-	// String returns a string representation of the network.
-	String() string
+	fmt.Stringer
 }
 
 // Networker must be able to return a network identifier.
