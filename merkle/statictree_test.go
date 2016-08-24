@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewStaticTree(t *testing.T) {
-	tree, err := merkle.NewStaticTree([]types.Bytes32{testutil.RandomHash()})
+	tree, err := merkle.NewStaticTree([]types.Bytes32{*testutil.RandomHash()})
 	if err != nil {
 		t.Fatal(err)
 	}
