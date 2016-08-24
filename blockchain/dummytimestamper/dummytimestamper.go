@@ -18,7 +18,7 @@ const networkString = "dummy"
 // Network is the identifier of the dummy network.
 type Network struct{}
 
-// Timestamper is the type that implements github.com/stratumn/goprivate/blockchain.Network.
+// Timestamper is the type that implements fmt.Stringer.
 func (Network) String() string {
 	return networkString
 }
@@ -26,7 +26,7 @@ func (Network) String() string {
 // Timestamper is the type that implements github.com/stratumn/goprivate/blockchain.Timestamper.
 type Timestamper struct{}
 
-// Network implements github.com/stratumn/goprivate/blockchain.Networker.
+// Network implements fmt.Stringer.
 func (Timestamper) Network() blockchain.Network {
 	return Network{}
 }

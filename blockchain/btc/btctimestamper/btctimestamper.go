@@ -87,7 +87,7 @@ func New(config *Config) (*Timestamper, error) {
 	return ts, nil
 }
 
-// Network implements github.com/stratumn/goprivate/blockchain.Networker.
+// Network implements fmt.Stringer.
 func (ts *Timestamper) Network() blockchain.Network {
 	return ts.net
 }
