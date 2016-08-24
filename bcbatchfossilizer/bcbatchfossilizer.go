@@ -58,7 +58,7 @@ func (a *Fossilizer) Start() {
 	go func() {
 		var (
 			err               error
-			lastRoot          types.Bytes32
+			lastRoot          *types.Bytes32
 			lastTransactionID blockchain.TransactionID
 		)
 
@@ -69,9 +69,9 @@ func (a *Fossilizer) Start() {
 				continue
 			}
 
-			root := batchEvidenceWrapper.Evidence.Root
+			root := &batchEvidenceWrapper.Evidence.Root
 
-			if root != lastRoot {
+			if lastRoot == nil || *root != *lastRoot {
 				lastTransactionID, err = a.config.HashTimestamper.TimestampHash(root)
 				if err != nil {
 					log.Println(err)
