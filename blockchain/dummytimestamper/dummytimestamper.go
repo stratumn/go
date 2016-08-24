@@ -42,7 +42,7 @@ func (Timestamper) Timestamp(data interface{}) (blockchain.TransactionID, error)
 }
 
 // TimestampHash implements github.com/stratumn/goprivate/blockchain.HashTimestamper.
-func (Timestamper) TimestampHash(hash types.Bytes32) (blockchain.TransactionID, error) {
+func (Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.TransactionID, error) {
 	sum := sha256.Sum256(hash[:])
 	return sum[:], nil
 }
