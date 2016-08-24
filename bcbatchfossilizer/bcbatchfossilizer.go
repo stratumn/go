@@ -12,6 +12,7 @@ import (
 	"github.com/stratumn/go/fossilizer"
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/blockchain"
+	"github.com/stratumn/goprivate/types"
 )
 
 const (
@@ -55,6 +56,12 @@ func (a *Fossilizer) Start() {
 	a.Fossilizer.AddResultChan(a.resultChan)
 
 	go func() {
+		var (
+			err               error
+			lastRoot          types.Bytes32
+			lastTransactionID blockchain.TransactionID
+		)
+
 		for r := range a.resultChan {
 			batchEvidenceWrapper, ok := r.Evidence.(*batchfossilizer.EvidenceWrapper)
 			if !ok {
@@ -63,22 +70,27 @@ func (a *Fossilizer) Start() {
 			}
 
 			root := batchEvidenceWrapper.Evidence.Root
-			transactionID, err := a.config.HashTimestamper.TimestampHash(root)
-			if err != nil {
-				log.Println(err)
-				continue
+
+			if root != lastRoot {
+				lastTransactionID, err = a.config.HashTimestamper.TimestampHash(root)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
 			}
 
 			evidenceWrapper := map[string]*Evidence{}
 			evidenceWrapper[a.config.HashTimestamper.Network().String()] = &Evidence{
 				Evidence:      batchEvidenceWrapper.Evidence,
-				TransactionID: transactionID,
+				TransactionID: lastTransactionID,
 			}
 			r.Evidence = evidenceWrapper
 
 			for _, c := range a.resultChans {
 				c <- r
 			}
+
+			lastRoot = root
 		}
 	}()
 
