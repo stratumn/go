@@ -27,9 +27,14 @@ type Networker interface {
 // TransactionID is a blockchain transaction ID.
 type TransactionID []byte
 
+// String returns a hex encoded string.
+func (txid TransactionID) String() string {
+	return hex.EncodeToString(txid)
+}
+
 // MarshalJSON implements encoding/json.Marshaler.MarshalJSON.
 func (txid TransactionID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(hex.EncodeToString(txid))
+	return json.Marshal(txid.String())
 }
 
 // UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON.
