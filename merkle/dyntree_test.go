@@ -25,7 +25,7 @@ func TestDynTree(t *testing.T) {
 		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
 			tree := merkle.NewDynTree(len(leaves) * 2)
 			for _, leaf := range leaves {
-				tree.Add(leaf)
+				tree.Add(&leaf)
 			}
 			return tree, nil
 		},
@@ -57,13 +57,13 @@ func TestDynTreeUpdate(t *testing.T) {
 		t.Fatal("expected root to change")
 	}
 
-	tree.Update(5, l5)
+	tree.Update(5, &l5)
 
 	if tree.Root() != r1 {
 		t.Fatal("unexpected root")
 	}
 
-	tree.Update(2, l2)
+	tree.Update(2, &l2)
 
 	if tree.Root() != r0 {
 		t.Fatal("unexpected root")
@@ -75,7 +75,7 @@ func BenchmarkDynTree(b *testing.B) {
 		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
 			tree := merkle.NewDynTree(len(leaves) * 2)
 			for _, leaf := range leaves {
-				tree.Add(leaf)
+				tree.Add(&leaf)
 			}
 			return tree, nil
 		},
