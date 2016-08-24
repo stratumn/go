@@ -93,7 +93,7 @@ func (ts *Timestamper) Network() blockchain.Network {
 }
 
 // TimestampHash implements github.com/stratumn/goprivate/blockchain.HashTimestamper.
-func (ts *Timestamper) TimestampHash(hash types.Bytes32) (blockchain.TransactionID, error) {
+func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.TransactionID, error) {
 	var prevPKScripts [][]byte
 
 	addr := (*types.Bytes20)(ts.address.Hash160())
@@ -162,7 +162,7 @@ func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
 	return wire.NewTxOut(amount, PKScript), nil
 }
 
-func (ts *Timestamper) createNullDataTxOut(hash types.Bytes32) (*wire.TxOut, error) {
+func (ts *Timestamper) createNullDataTxOut(hash *types.Bytes32) (*wire.TxOut, error) {
 	PKScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(hash[:]).Script()
 	if err != nil {
 		return nil, err
