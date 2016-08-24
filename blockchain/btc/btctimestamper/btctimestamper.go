@@ -7,6 +7,7 @@ package btctimestamper
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -147,8 +148,9 @@ func (ts *Timestamper) TimestampHash(hash types.Bytes32) (blockchain.Transaction
 	}
 
 	txHash := tx.TxHash()
-	log.Printf("created transaction %s for hash %s\n", txHash, hash)
-	return (&txHash).CloneBytes(), nil
+	txHashBytes := (&txHash).CloneBytes()
+	log.Printf("created transaction %s for hash %s\n", hex.EncodeToString(txHashBytes), hash)
+	return txHashBytes, nil
 }
 
 func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
