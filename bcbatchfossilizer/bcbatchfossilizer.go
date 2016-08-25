@@ -43,15 +43,20 @@ type Fossilizer struct {
 }
 
 // New creates an instance of a Fossilizer.
-func New(config *Config, batchConfig *batchfossilizer.Config) *Fossilizer {
-	return &Fossilizer{
-		Fossilizer: batchfossilizer.New(batchConfig),
-		config:     config,
+func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, error) {
+	b, err := batchfossilizer.New(batchConfig)
+	if err != nil {
+		return nil, err
 	}
+
+	return &Fossilizer{
+		Fossilizer: b,
+		config:     config,
+	}, err
 }
 
 // Start starts the fossilizer.
-func (a *Fossilizer) Start() {
+func (a *Fossilizer) Start() error {
 	a.resultChan = make(chan *fossilizer.Result)
 	a.Fossilizer.AddResultChan(a.resultChan)
 
@@ -94,7 +99,7 @@ func (a *Fossilizer) Start() {
 		}
 	}()
 
-	a.Fossilizer.Start()
+	return a.Fossilizer.Start()
 }
 
 // Stop stops the fossilizer.

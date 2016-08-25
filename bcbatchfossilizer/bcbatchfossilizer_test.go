@@ -71,9 +71,12 @@ func TestMain(m *testing.M) {
 }
 
 func TestGetInfo(t *testing.T) {
-	a := New(&Config{
+	a, err := New(&Config{
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	info, err := a.GetInfo()
 	if err != nil {
 		t.Fatal(err)
@@ -94,11 +97,14 @@ func loadPath(filename string, path *merkle.Path) {
 }
 
 func TestFossilize(t *testing.T) {
-	a := New(&Config{
+	a, err := New(&Config{
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		Interval: interval,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
 		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
@@ -212,7 +218,10 @@ RESULT_LOOP:
 }
 
 func benchmarkFossilize(b *testing.B, config *Config, batchConfig *batchfossilizer.Config) {
-	a := New(config, batchConfig)
+	a, err := New(config, batchConfig)
+	if err != nil {
+		b.Fatal(err)
+	}
 	go a.Start()
 	defer a.Stop()
 	rc := make(chan *fossilizer.Result)
