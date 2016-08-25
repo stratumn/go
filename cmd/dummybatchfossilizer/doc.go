@@ -10,12 +10,20 @@
 //
 //	$ dummybatchfossilizer -h
 //	Usage of dummybatchfossilizer:
+//	  -archive
+//	    	whether to archive completed batches (requires path) (default true)
 //	  -callbacktimeout duration
 //	    	callback requests timeout (default 10s)
+//	  -exitbatch
+//	    	whether to do a batch on exit (default true)
+//	  -fsync
+//	    	whether to fsync after saving a pending hash
 //	  -interval duration
 //	    	batch interval (default 1m0s)
 //	  -maxleaves int
 //	    	maximum number of leaves in a Merkle tree (default 32768)
+//	  -path string
+//	    	an optional path to store files
 //	  -port string
 //	    	server port (default ":6000")
 //	  -tlscert string
