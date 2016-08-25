@@ -25,6 +25,10 @@ var (
 	verbose          = flag.Bool("verbose", fossilizerhttp.DefaultVerbose, "verbose output")
 	interval         = flag.Duration("interval", batchfossilizer.DefaultInterval, "batch interval")
 	maxLeaves        = flag.Int("maxleaves", batchfossilizer.DefaultMaxLeaves, "maximum number of leaves in a Merkle tree")
+	path             = flag.String("path", "", "an optional path to store files")
+	archive          = flag.Bool("archive", batchfossilizer.DefaultArchive, "whether to archive completed batches (requires path)")
+	exitBatch        = flag.Bool("exitbatch", batchfossilizer.DefaultStopBatch, "whether to do a batch on exit")
+	fsync            = flag.Bool("fsync", batchfossilizer.DefaultFSync, "whether to fsync after saving a pending hash")
 	version          = ""
 	commit           = ""
 )
@@ -36,16 +40,23 @@ func init() {
 func main() {
 	flag.Parse()
 
-	a := bcbatchfossilizer.New(&bcbatchfossilizer.Config{
+	a, err := bcbatchfossilizer.New(&bcbatchfossilizer.Config{
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		Version:   version,
 		Commit:    commit,
 		Interval:  *interval,
 		MaxLeaves: *maxLeaves,
+		Path:      *path,
+		Archive:   *archive,
+		StopBatch: *exitBatch,
+		FSync:     *fsync,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	go a.Start()
+	go log.Fatal(a.Start())
 	defer a.Stop()
 
 	c := &fossilizerhttp.Config{

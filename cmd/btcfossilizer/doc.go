@@ -10,16 +10,24 @@
 //
 //	$ btcfossilizer -h
 //	Usage of btcfossilizer:
+//	  -archive
+//	    	whether to archive completed batches (requires path) (default true)
 //	  -bcyapikey string
 //	    	BlockCypher API key
 //	  -callbacktimeout duration
 //	    	callback requests timeout (default 10s)
+//	  -exitbatch
+//	    	whether to do a batch on exit (default true)
 //	  -fee int
 //	    	transaction fee (satoshis) (default 15000)
+//	  -fsync
+//	    	whether to fsync after saving a pending hash (requires path)
 //	  -interval duration
 //	    	batch interval (default 1m0s)
 //	  -maxleaves int
 //	    	maximum number of leaves in a Merkle tree (default 32768)
+//	  -path string
+//	    	an optional path to store files
 //	  -port string
 //	    	server port (default ":6000")
 //	  -tlscert string
