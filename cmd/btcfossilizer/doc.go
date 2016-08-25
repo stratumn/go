@@ -36,5 +36,5 @@
 //
 // A Docker image is available. To create a container, run:
 //
-//	$ docker run -p 6000:6000 stratumn/btcfossilizer /opt/stratumn/bin/btcfossilizer -wif "your WIF key"
+//	$ docker run -p 6000:6000 stratumn/btcfossilizer btcfossilizer -wif "your WIF key"
 package main
