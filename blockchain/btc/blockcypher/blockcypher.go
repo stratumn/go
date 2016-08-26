@@ -36,9 +36,9 @@ func New(network btc.Network, apiKey string) *Client {
 func (c *Client) FindUnspent(address160 *types.Bytes20, amount int64) ([]btc.Output, int64, error) {
 	addr := base58.CheckEncode(address160[:], c.network.ID())
 
-	addrInfo, err := c.api.GetAddrFull(addr, map[string]string{
+	addrInfo, err := c.api.GetAddr(addr, map[string]string{
 		"unspentOnly":         "true",
-		"includeHex":          "true",
+		"includeScript":       "true",
 		"includeConfidence":   "false",
 		"omitWalletAddresses": "true",
 	})
@@ -52,30 +52,29 @@ func (c *Client) FindUnspent(address160 *types.Bytes20, amount int64) ([]btc.Out
 	)
 
 TX_LOOP:
-	for _, TX := range addrInfo.TXs {
-		for index, TXOutput := range TX.Outputs {
-			output := btc.Output{Index: index}
+	for _, TXRef := range addrInfo.TXRefs {
+		output := btc.Output{Index: TXRef.TXOutputN}
 
-			output.TX, err = hex.DecodeString(TX.Hex)
-			if err != nil {
-				return nil, 0, err
-			}
+		TXHash, err := hex.DecodeString(TXRef.TXHash)
+		if err != nil {
+			return nil, 0, err
+		}
 
-			TXHash, err := hex.DecodeString(TX.Hash)
-			if err != nil {
-				return nil, 0, err
-			}
+		// Reverse the bytes!
+		for i, b := range TXHash {
+			output.TXHash[types.Bytes32Size-i-1] = b
+		}
 
-			// Reverse the bytes!
-			for i, b := range TXHash {
-				output.TXHash[types.Bytes32Size-i-1] = b
-			}
+		output.PKScript, err = hex.DecodeString(TXRef.Script)
+		if err != nil {
+			return nil, 0, err
+		}
 
-			outputs = append(outputs, output)
-			total += int64(TXOutput.Value)
-			if total >= amount {
-				break TX_LOOP
-			}
+		outputs = append(outputs, output)
+
+		total += int64(TXRef.Value)
+		if total >= amount {
+			break TX_LOOP
 		}
 	}
 
