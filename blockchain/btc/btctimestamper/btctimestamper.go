@@ -104,13 +104,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.Transactio
 
 	tx := wire.NewMsgTx()
 	for _, output := range outputs {
-		origin, err := btcutil.NewTxFromBytes(output.TX)
-		if err != nil {
-			return nil, err
-		}
-
-		prevPKScripts = append(prevPKScripts, origin.MsgTx().TxOut[output.Index].PkScript)
-
+		prevPKScripts = append(prevPKScripts, output.PKScript)
 		out := wire.NewOutPoint((*chainhash.Hash)(&output.TXHash), uint32(output.Index))
 		tx.AddTxIn(wire.NewTxIn(out, nil))
 	}

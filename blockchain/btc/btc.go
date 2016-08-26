@@ -38,9 +38,9 @@ func (n Network) ID() byte {
 
 // Output represents a transaction output.
 type Output struct {
-	TX     []byte
-	TXHash types.Bytes32
-	Index  int
+	TXHash   types.Bytes32
+	PKScript []byte
+	Index    int
 }
 
 // UnspentFinder is find unspent outputs.
