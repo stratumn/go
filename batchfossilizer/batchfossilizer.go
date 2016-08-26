@@ -49,6 +49,9 @@ const (
 	// PendingExt is the pending hashes filename extension.
 	PendingExt = "pending"
 
+	// DirPerm is the directory's permissions.
+	DirPerm = 0644
+
 	// FilePerm is the files's permissions.
 	FilePerm = 0644
 )
@@ -132,6 +135,10 @@ func New(config *Config) (*Fossilizer, error) {
 	}
 
 	if a.config.Path != "" {
+		if err := os.MkdirAll(a.config.Path, DirPerm); err != nil {
+			return nil, err
+		}
+
 		if err := a.recover(); err != nil {
 			return nil, err
 		}
