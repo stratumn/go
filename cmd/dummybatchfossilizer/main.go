@@ -56,7 +56,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go log.Fatal(a.Start())
+	go func() { log.Fatal(a.Start()) }()
 	defer a.Stop()
 
 	c := &fossilizerhttp.Config{
