@@ -62,7 +62,7 @@ func main() {
 
 	defer func() {
 		if err := a.Stop(); err != nil {
-			log.Println(err)
+			log.Printf("Error: %s\n", err)
 		}
 	}()
 
@@ -81,5 +81,8 @@ func main() {
 	h := fossilizerhttp.New(a, c)
 
 	log.Printf("Listening on %s", *port)
-	log.Fatal(h.ListenAndServe())
+
+	if err := h.ListenAndServe(); err != nil {
+		log.Fatalf("Fatal: %s\n")
+	}
 }
