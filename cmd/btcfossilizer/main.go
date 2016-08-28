@@ -100,20 +100,18 @@ func main() {
 		}
 	}()
 
-	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		for {
-			sig := <-sigc
-			log.Printf("Got signal %q.", sig)
-			log.Print("Cleaning up.")
-			if err := a.Stop(); err != nil {
-				log.Printf("Error: %s", err)
-				os.Exit(1)
-			}
-			log.Print("Stopped.")
-			os.Exit(0)
+		sigc := make(chan os.Signal)
+		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-sigc
+		log.Printf("Got signal %q.", sig)
+		log.Print("Cleaning up.")
+		if err := a.Stop(); err != nil {
+			log.Printf("Error: %s", err)
+			os.Exit(1)
 		}
+		log.Print("Stopped.")
+		os.Exit(0)
 	}()
 
 	c := &fossilizerhttp.Config{
