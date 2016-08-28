@@ -5,7 +5,6 @@
 package blockcypher
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -15,58 +14,50 @@ import (
 	"github.com/stratumn/goprivate/types"
 )
 
-func TestFindUnspentOK(t *testing.T) {
+func TestFindUnspent(t *testing.T) {
 	bcy := New(btc.NetworkTest3, "")
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var addr20 types.Bytes20
+	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
 	outputs, total, err := bcy.FindUnspent(&addr20, 1000000)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	if total < 1000000 {
-		t.Logf("actual: %d; expected: %d", total, 1000000)
-		t.Fatal("unexpected total")
+		t.Errorf("bcy.FindUnspent(): total = %d want %d", total, 1000000)
 	}
-	if len(outputs) < 1 {
-		t.Fatal("expected outputs")
+	if l := len(outputs); l < 1 {
+		t.Errorf("bcy.FindUnspent(): len(outputs) = %d want > 0", l)
 	}
 
 	for _, output := range outputs {
-		var TXHash types.Bytes32
-		// Invert bytes!
-		for i, b := range output.TXHash {
-			TXHash[types.Bytes32Size-i-1] = b
-		}
-		TXHashString := hex.EncodeToString(TXHash[:])
-		tx, err := bcy.api.GetTX(TXHashString, nil)
+		tx, err := bcy.api.GetTX(output.TXHash.String(), nil)
 		if err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if !testutil.ContainsString(tx.Addresses, "n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX") {
-			t.Log(tx.Addresses)
-			t.Fatal("unexpected output")
+			t.Errorf("bcy.FindUnspent(): can't find address in output addresses %s", tx.Addresses)
 		}
 	}
 }
 
-func TestFindUnspentNotEnough(t *testing.T) {
+func TestFindUnspent_notEnough(t *testing.T) {
 	api := New(btc.NetworkTest3, "")
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
 		t.Fatal(err)
 	}
-	var addr20 types.Bytes20
+	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
 	_, _, err = api.FindUnspent(&addr20, 1000000000000)
 	if err == nil {
-		t.Fatal("expected error not to be nil")
+		t.Errorf("bcy.FindUnspent(): err = nil want Error")
 	}
 }
