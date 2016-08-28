@@ -109,7 +109,7 @@ func (a *Fossilizer) Start() error {
 				continue
 			}
 
-			root := &batchEvidenceWrapper.Evidence.Root
+			root := batchEvidenceWrapper.Evidence.Root
 
 			if lastRoot == nil || *root != *lastRoot {
 				lastTransactionID, err = a.config.HashTimestamper.TimestampHash(root)
@@ -138,7 +138,8 @@ func (a *Fossilizer) Start() error {
 }
 
 // Stop stops the fossilizer.
-func (a *Fossilizer) Stop() {
-	a.Fossilizer.Stop()
+func (a *Fossilizer) Stop() error {
+	err := a.Fossilizer.Stop()
 	close(a.resultChan)
+	return err
 }
