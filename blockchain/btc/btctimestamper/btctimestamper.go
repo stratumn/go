@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"errors"
 	"io/ioutil"
-	"log"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -146,7 +145,6 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.Transactio
 		txHash32[types.Bytes32Size-i-1] = b
 	}
 
-	log.Printf("Created transaction %q for hash %q", txHash32.String(), hash)
 	return txHash32[:], nil
 }
 
