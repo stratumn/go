@@ -293,11 +293,11 @@ func (a *Fossilizer) batch(b batch) {
 		if a.config.Archive {
 			path := filepath.Join(a.config.Path, root.String())
 			if err := os.Rename(b.path, path); err != nil {
-				log.Printf("Error: %s\n", err)
+				log.Printf("Error: %s", err)
 			}
 		} else {
 			if err := os.Remove(b.path); err != nil {
-				log.Printf("Error: %s\n", err)
+				log.Printf("Error: %s", err)
 			}
 		}
 	}
@@ -365,7 +365,7 @@ func (a *Fossilizer) recover() error {
 			return err
 		}
 
-		log.Printf("Recovered pending hashes file %q\n", filepath.Base(path))
+		log.Printf("Recovered pending hashes file %q", filepath.Base(path))
 	}
 
 	return nil
