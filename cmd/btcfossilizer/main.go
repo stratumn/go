@@ -5,10 +5,12 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
@@ -46,12 +48,12 @@ func main() {
 	flag.Parse()
 
 	if *key == "" {
-		log.Fatal("WIF required")
+		log.Fatal("Fatal: a WIF encoded private key is required")
 	}
 
 	WIF, err := btcutil.DecodeWIF(*key)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Fatal: %s", err)
 	}
 
 	var network btc.Network
@@ -60,7 +62,7 @@ func main() {
 	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
 		network = btc.NetworkMain
 	} else {
-		log.Fatal(errors.New("unsupported network"))
+		log.Fatal("Fatal: unknown Bitcoin network")
 	}
 
 	log.SetPrefix(fmt.Sprintf("btcfossilizer:%s ", network))
@@ -73,7 +75,7 @@ func main() {
 		Fee:           *fee,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Fatal: %s", err)
 	}
 
 	a, err := bcbatchfossilizer.New(&bcbatchfossilizer.Config{
@@ -89,16 +91,28 @@ func main() {
 		FSync:     *fsync,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Fatal: %s", err)
 	}
 
 	go func() {
-		log.Fatal(a.Start())
+		if err := a.Start(); err != nil {
+			log.Fatalf("Fatal: %s", err)
+		}
 	}()
 
-	defer func() {
-		if err := a.Stop(); err != nil {
-			log.Printf("Error: %s\n", err)
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		for {
+			sig := <-sigc
+			log.Printf("Got signal %q.", sig)
+			log.Print("Cleaning up.")
+			if err := a.Stop(); err != nil {
+				log.Printf("Error: %s", err)
+				os.Exit(1)
+			}
+			log.Print("Stopped.")
+			os.Exit(0)
 		}
 	}()
 
@@ -116,9 +130,8 @@ func main() {
 	}
 	h := fossilizerhttp.New(a, c)
 
-	log.Printf("Listening on %s", *port)
-
+	log.Printf("Listening on %q.", *port)
 	if err := h.ListenAndServe(); err != nil {
-		log.Fatalf("Fatal: %s\n")
+		log.Fatalf("Fatal: %s", err)
 	}
 }
