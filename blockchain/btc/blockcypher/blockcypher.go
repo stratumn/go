@@ -33,8 +33,8 @@ func New(network btc.Network, apiKey string) *Client {
 }
 
 // FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
-func (c *Client) FindUnspent(address160 *types.Bytes20, amount int64) ([]btc.Output, int64, error) {
-	addr := base58.CheckEncode(address160[:], c.network.ID())
+func (c *Client) FindUnspent(address *types.Bytes20, amount int64) ([]btc.Output, int64, error) {
+	addr := base58.CheckEncode(address[:], c.network.ID())
 
 	addrInfo, err := c.api.GetAddr(addr, map[string]string{
 		"unspentOnly":         "true",

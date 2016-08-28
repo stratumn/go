@@ -47,7 +47,7 @@ type Output struct {
 type UnspentFinder interface {
 	// FindUnspent find unspent outputs for the given address and the required amount.
 	// It returns the outputs and the total amount of the outputs.
-	FindUnspent(address160 *types.Bytes20, amount int64) (outputs []Output, total int64, err error)
+	FindUnspent(address *types.Bytes20, amount int64) (outputs []Output, total int64, err error)
 }
 
 // Broadcaster is able to broadcast raw Bitcoin transactions.
