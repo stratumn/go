@@ -21,8 +21,9 @@ type DynTreeNode struct {
 }
 
 // Hash returns the hash of the node.
-func (n *DynTreeNode) Hash() types.Bytes32 {
-	return n.hash
+func (n *DynTreeNode) Hash() *types.Bytes32 {
+	hash := n.hash
+	return &hash
 }
 
 // Left returns the node to the left, if any.
@@ -83,13 +84,13 @@ func (t *DynTree) LeavesLen() int {
 }
 
 // Root implements Tree.Root.
-func (t *DynTree) Root() types.Bytes32 {
-	return t.root.hash
+func (t *DynTree) Root() *types.Bytes32 {
+	return t.root.Hash()
 }
 
 // Leaf implements Tree.Leaf.
-func (t *DynTree) Leaf(index int) types.Bytes32 {
-	return t.leaves[index].hash
+func (t *DynTree) Leaf(index int) *types.Bytes32 {
+	return t.leaves[index].Hash()
 }
 
 // Path implements Tree.Path.
