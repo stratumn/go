@@ -27,19 +27,19 @@ type MockFindUnspent struct {
 	CalledCount int
 
 	// The address that was passed to each call.
-	CalledWithAddress []*types.Bytes20
+	CalledWithAddress []*types.ReversedBytes20
 
 	// The amount that was passed to each call.
 	CalledWithAmount []int64
 
 	// The last address that was passed.
-	LastCalledWithAddress *types.Bytes20
+	LastCalledWithAddress *types.ReversedBytes20
 
 	// The last amount that was passed.
 	LastCalledWithAmount int64
 
 	// An optional implementation of the function.
-	Fn func(*types.Bytes20, int64) ([]btc.Output, int64, error)
+	Fn func(*types.ReversedBytes20, int64) ([]btc.Output, int64, error)
 }
 
 // MockBroadcast mocks the Broadcast function.
@@ -58,7 +58,7 @@ type MockBroadcast struct {
 }
 
 // FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
-func (a *Mock) FindUnspent(address *types.Bytes20, amount int64) ([]btc.Output, int64, error) {
+func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	a.MockFindUnspent.CalledCount++
 	a.MockFindUnspent.CalledWithAddress = append(a.MockFindUnspent.CalledWithAddress, address)
 	a.MockFindUnspent.LastCalledWithAddress = address

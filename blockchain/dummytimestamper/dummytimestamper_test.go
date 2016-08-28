@@ -11,25 +11,22 @@ import (
 	"github.com/stratumn/goprivate/types"
 )
 
-func TestNetwork(t *testing.T) {
+func TestNetworkString(t *testing.T) {
 	n := Network{}
-	if s := n.String(); s != networkString {
-		t.Logf("actual: %s, expected %s\n", s, networkString)
-		t.Fatal("unexpected network string")
+	if got := n.String(); got != networkString {
+		t.Errorf("n.String() = %q want %q", got, networkString)
 	}
 }
 
 func TestTimestamperNetwork(t *testing.T) {
 	ts := Timestamper{}
-
 	if n, ok := ts.Network().(Network); !ok {
-		t.Fatalf("expected network to be a Network, got %v\n", n)
+		t.Errorf("ts.Network = %#v want Network", n)
 	}
 }
 
 func TestTimestamperTimestamp(t *testing.T) {
 	ts := Timestamper{}
-
 	if _, err := ts.Timestamp(map[string]types.Bytes32{"hash": *testutil.RandomHash()}); err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +34,6 @@ func TestTimestamperTimestamp(t *testing.T) {
 
 func TestTimestamperTimestampHash(t *testing.T) {
 	ts := Timestamper{}
-
 	if _, err := ts.TimestampHash(testutil.RandomHash()); err != nil {
 		t.Fatal(err)
 	}

@@ -96,7 +96,7 @@ func (ts *Timestamper) Network() blockchain.Network {
 func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.TransactionID, error) {
 	var prevPKScripts [][]byte
 
-	addr := (*types.Bytes20)(ts.address.Hash160())
+	addr := (*types.ReversedBytes20)(ts.address.Hash160())
 	outputs, total, err := ts.config.UnspentFinder.FindUnspent(addr, ts.config.Fee)
 	if err != nil {
 		return nil, err

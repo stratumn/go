@@ -33,7 +33,7 @@ func New(network btc.Network, apiKey string) *Client {
 }
 
 // FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
-func (c *Client) FindUnspent(address *types.Bytes20, amount int64) ([]btc.Output, int64, error) {
+func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	addr := base58.CheckEncode(address[:], c.network.ID())
 
 	addrInfo, err := c.api.GetAddr(addr, map[string]string{
@@ -54,15 +54,8 @@ func (c *Client) FindUnspent(address *types.Bytes20, amount int64) ([]btc.Output
 TX_LOOP:
 	for _, TXRef := range addrInfo.TXRefs {
 		output := btc.Output{Index: TXRef.TXOutputN}
-
-		TXHash, err := hex.DecodeString(TXRef.TXHash)
-		if err != nil {
+		if err := output.TXHash.Unstring(TXRef.TXHash); err != nil {
 			return nil, 0, err
-		}
-
-		// Reverse the bytes!
-		for i, b := range TXHash {
-			output.TXHash[types.Bytes32Size-i-1] = b
 		}
 
 		output.PKScript, err = hex.DecodeString(TXRef.Script)
@@ -79,7 +72,7 @@ TX_LOOP:
 	}
 
 	if total < amount {
-		return nil, 0, fmt.Errorf("could not get amount requested, got %d, want %d", total, amount)
+		return nil, 0, fmt.Errorf("could not get amount %d got %d", amount, total)
 	}
 
 	return outputs, total, nil
