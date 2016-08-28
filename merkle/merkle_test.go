@@ -1,9 +1,12 @@
+// Copyright 2016 Stratumn SAS. All rights reserved.
+// Use of this source code is governed by the license
+// that can be found in the LICENSE file.
+
 package merkle_test
 
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"io/ioutil"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -13,7 +16,7 @@ import (
 	"github.com/stratumn/goprivate/types"
 )
 
-func TestHashTripletValidateOK(t *testing.T) {
+func TestHashTripletValidate_OK(t *testing.T) {
 	var (
 		left  = *testutil.RandomHash()
 		right = *testutil.RandomHash()
@@ -31,23 +34,22 @@ func TestHashTripletValidateOK(t *testing.T) {
 	copy(h.Parent[:], hash.Sum(nil))
 
 	if err := h.Validate(); err != nil {
-		t.Log(err)
-		t.Fatal("expected error to be nil")
+		t.Error(err)
 	}
 }
 
-func TestHashTripletValidateNotOK(t *testing.T) {
+func TestHashTripletValidate_Error(t *testing.T) {
 	h := merkle.HashTriplet{
 		Left:   *testutil.RandomHash(),
 		Right:  *testutil.RandomHash(),
 		Parent: *testutil.RandomHash(),
 	}
 	if err := h.Validate(); err == nil {
-		t.Fatal("expected error not to be nil")
+		t.Error("h.Validate(): err = nil want Error")
 	}
 }
 
-func TestPathValidateOK(t *testing.T) {
+func TestPathValidate_OK(t *testing.T) {
 	var (
 		pathABCDE0 merkle.Path
 		pathABCDE4 merkle.Path
@@ -60,16 +62,14 @@ func TestPathValidateOK(t *testing.T) {
 	}
 
 	if err := pathABCDE0.Validate(); err != nil {
-		t.Log(err)
-		t.Error("expected error to be nil")
+		t.Error(err)
 	}
 	if err := pathABCDE4.Validate(); err != nil {
-		t.Log(err)
-		t.Error("expected error to be nil")
+		t.Error(err)
 	}
 }
 
-func TestPathValidateNotOK(t *testing.T) {
+func TestPathValidate_Error(t *testing.T) {
 	var (
 		pathInvalid0 merkle.Path
 		pathInvalid1 merkle.Path
@@ -82,63 +82,45 @@ func TestPathValidateNotOK(t *testing.T) {
 	}
 
 	if err := pathInvalid0.Validate(); err == nil {
-		t.Fatal("expected error not to be nil")
+		t.Error("pathInvalid0.Validate(): err = nil want Error")
 	}
 	if err := pathInvalid1.Validate(); err == nil {
-		t.Fatal("expected error not to be nil")
+		t.Error("pathInvalid1.Validate(): err = nil want Error")
 	}
 }
 
 func TestTreeConsistency(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		leaves := make([]types.Bytes32, 1+rand.Intn(1000))
-		for j := range leaves {
-			leaves[j] = *testutil.RandomHash()
+		tests := make([]types.Bytes32, 1+rand.Intn(1000))
+		for j := range tests {
+			tests[j] = *testutil.RandomHash()
 		}
 
-		static, err := merkle.NewStaticTree(leaves)
+		static, err := merkle.NewStaticTree(tests)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if static == nil {
-			t.Fatal("expected tree not to be nil")
-		}
 
-		dyn := merkle.NewDynTree(len(leaves) * 2)
-		if dyn == nil {
-			t.Fatal("expected tree not to be nil")
-		}
-		for _, leaf := range leaves {
+		dyn := merkle.NewDynTree(len(tests) * 2)
+		for _, leaf := range tests {
 			if err := dyn.Add(&leaf); err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 		}
 
-		if static.Root() != dyn.Root() {
-			t.Fatal("expected roots to be the same")
+		if got, want := static.Root().String(), dyn.Root().String(); got != want {
+			t.Errorf("static.Root() = %q want %q", got, want)
 		}
 
-		for j := range leaves {
+		for j := range tests {
 			p1 := static.Path(j)
 			p2 := dyn.Path(j)
 
 			if !reflect.DeepEqual(p1, p2) {
-				json1, _ := json.MarshalIndent(p1, "", "  ")
-				json2, _ := json.MarshalIndent(p2, "", "  ")
-				t.Logf("static: %s; dyn: %s\n", json1, json2)
-				t.Error("expected paths to be the same")
+				got, _ := json.MarshalIndent(p1, "", "  ")
+				want, _ := json.MarshalIndent(p2, "", "  ")
+				t.Errorf("test#%d: static.Path() = %s\nwant %s\n", got, want)
 			}
 		}
 	}
-}
-
-func loadPath(filename string, path *merkle.Path) error {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-	if err = json.Unmarshal(data, path); err != nil {
-		return err
-	}
-	return nil
 }

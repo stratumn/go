@@ -13,13 +13,6 @@ import (
 	"github.com/stratumn/goprivate/types"
 )
 
-func TestNewDynTree(t *testing.T) {
-	tree := merkle.NewDynTree(16)
-	if tree == nil {
-		t.Fatal("expected tree not to be nil")
-	}
-}
-
 func TestDynTree(t *testing.T) {
 	treetestcases.Factory{
 		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
@@ -39,34 +32,31 @@ func TestDynTreeUpdate(t *testing.T) {
 		tree.Add(testutil.RandomHash())
 	}
 
-	r0 := tree.Root()
-	l2 := tree.Leaf(2)
-	l5 := tree.Leaf(5)
+	var (
+		r0 = tree.Root()
+		l2 = tree.Leaf(2)
+		l5 = tree.Leaf(5)
+	)
 
 	tree.Update(2, testutil.RandomHash())
-
 	r1 := tree.Root()
-
-	if r1 == r0 {
-		t.Fatal("expected root to change")
+	if got, notWant := r1.String(), r0.String(); got == notWant {
+		t.Errorf("tree.Root() = %q want not %q", got, notWant)
 	}
 
 	tree.Update(5, testutil.RandomHash())
-
-	if tree.Root() == r1 {
-		t.Fatal("expected root to change")
+	if got, notWant := tree.Root().String(), r1.String(); got == notWant {
+		t.Errorf("tree.Root() = %q want not %q", got, notWant)
 	}
 
-	tree.Update(5, &l5)
-
-	if tree.Root() != r1 {
-		t.Fatal("unexpected root")
+	tree.Update(5, l5)
+	if got, want := tree.Root().String(), r1.String(); got != want {
+		t.Errorf("tree.Root() = %q want %q", got, want)
 	}
 
-	tree.Update(2, &l2)
-
-	if tree.Root() != r0 {
-		t.Fatal("unexpected root")
+	tree.Update(2, l2)
+	if got, want := tree.Root().String(), r0.String(); got != want {
+		t.Errorf("tree.Root() = %q want %q", got, want)
 	}
 }
 
