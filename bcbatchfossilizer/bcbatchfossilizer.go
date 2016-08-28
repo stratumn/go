@@ -6,7 +6,7 @@
 package bcbatchfossilizer
 
 import (
-	"errors"
+	"fmt"
 	"log"
 
 	"github.com/stratumn/go/fossilizer"
@@ -73,7 +73,7 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 
 	info, ok := batchInfo.(*batchfossilizer.Info)
 	if !ok {
-		return nil, errors.New("unexpected batchfossilizer info")
+		return nil, fmt.Errorf("unexpected batchfossilizer info %#v", batchInfo)
 	}
 
 	return &Info{
@@ -105,7 +105,7 @@ func (a *Fossilizer) Start() error {
 		for r := range a.resultChan {
 			batchEvidenceWrapper, ok := r.Evidence.(*batchfossilizer.EvidenceWrapper)
 			if !ok {
-				log.Printf("unexpected batchfossilizer evidence: %v\n", batchEvidenceWrapper)
+				log.Printf("Error: unexpected batchfossilizer evidence %#v\n", batchEvidenceWrapper)
 				continue
 			}
 
@@ -114,7 +114,7 @@ func (a *Fossilizer) Start() error {
 			if lastRoot == nil || *root != *lastRoot {
 				lastTransactionID, err = a.config.HashTimestamper.TimestampHash(root)
 				if err != nil {
-					log.Println(err)
+					log.Printf("Error: %s\n", err)
 					continue
 				}
 			}
