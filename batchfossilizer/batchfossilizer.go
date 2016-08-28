@@ -2,8 +2,6 @@
 // Use of this source code is governed by the license
 // that can be found in the LICENSE file.
 
-// BUG(stephan): Optimize memory allocation.
-
 // Package batchfossilizer implements a fossilizer that fossilize batches of data using a Merkle tree.
 // The evidence will contain the Merkle root, the Merkle path, and a timestamp.
 package batchfossilizer
@@ -295,11 +293,11 @@ func (a *Fossilizer) batch(b batch) {
 		if a.config.Archive {
 			path := filepath.Join(a.config.Path, root.String())
 			if err := os.Rename(b.path, path); err != nil {
-				log.Println(err)
+				log.Printf("Error: %s\n", err)
 			}
 		} else {
 			if err := os.Remove(b.path); err != nil {
-				log.Println(err)
+				log.Printf("Error: %s\n", err)
 			}
 		}
 	}
@@ -367,7 +365,7 @@ func (a *Fossilizer) recover() error {
 			return err
 		}
 
-		log.Printf("recovered %s\n", filepath.Base(path))
+		log.Printf("Recovered pending hashes file %q\n", filepath.Base(path))
 	}
 
 	return nil
