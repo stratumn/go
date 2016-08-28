@@ -7,7 +7,6 @@ package btctimestamper
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -147,7 +146,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.Transactio
 		txHash32[types.Bytes32Size-i-1] = b
 	}
 
-	log.Printf("created transaction %s for hash %s\n", hex.EncodeToString(txHash32[:]), hash)
+	log.Printf("Created transaction %q for hash %q\n", txHash32.String(), hash)
 	return txHash32[:], nil
 }
 
