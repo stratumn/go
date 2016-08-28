@@ -22,10 +22,10 @@ func TestFindUnspentOK(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var addr160 types.Bytes20
-	copy(addr160[:], addr.ScriptAddress())
+	var addr20 types.Bytes20
+	copy(addr20[:], addr.ScriptAddress())
 
-	outputs, total, err := bcy.FindUnspent(&addr160, 1000000)
+	outputs, total, err := bcy.FindUnspent(&addr20, 1000000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,10 +62,10 @@ func TestFindUnspentNotEnough(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var addr160 types.Bytes20
-	copy(addr160[:], addr.ScriptAddress())
+	var addr20 types.Bytes20
+	copy(addr20[:], addr.ScriptAddress())
 
-	_, _, err = api.FindUnspent(&addr160, 1000000000000)
+	_, _, err = api.FindUnspent(&addr20, 1000000000000)
 	if err == nil {
 		t.Fatal("expected error not to be nil")
 	}
