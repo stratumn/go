@@ -94,9 +94,9 @@ type Info struct {
 
 // Evidence is the evidence sent to the result channel.
 type Evidence struct {
-	Time int64         `json:"time"`
-	Root types.Bytes32 `json:"merkleRoot"`
-	Path merkle.Path   `json:"merklePath"`
+	Time int64          `json:"time"`
+	Root *types.Bytes32 `json:"merkleRoot"`
+	Path merkle.Path    `json:"merklePath"`
 }
 
 // EvidenceWrapper wraps evidence with a namespace.

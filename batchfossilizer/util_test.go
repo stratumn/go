@@ -5,8 +5,8 @@
 package batchfossilizer
 
 import (
-	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -32,12 +32,13 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 	if start {
 		go func() {
 			if err := a.Start(); err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 		}()
-
 		defer func() {
-			a.Stop()
+			if err := a.Stop(); err != nil {
+				t.Error(err)
+			}
 			close(rc)
 		}()
 	}
@@ -45,7 +46,7 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 	if fossilize {
 		for _, test := range tests {
 			if err := a.Fossilize(test.data, test.meta); err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 			if test.sleep > 0 {
 				time.Sleep(test.sleep)
@@ -58,30 +59,29 @@ RESULT_LOOP:
 		r := <-rc
 		for i := range tests {
 			test := &tests[i]
-			if string(test.meta) == string(r.Meta) {
+			if fmt.Sprint(test.meta) == fmt.Sprint(r.Meta) {
 				test.fossilized = true
 				if !reflect.DeepEqual(r.Data, test.data) {
-					a := hex.EncodeToString(r.Data)
-					e := hex.EncodeToString(test.data)
-					t.Logf("actual: %s; expected %s\n", a, e)
-					t.Error("unexpected result data")
+					got := fmt.Sprintf("%x", r.Data)
+					want := fmt.Sprintf("%x", test.data)
+					t.Errorf("test#%d: Data = %q want %q", i, got, want)
 				}
 				evidence := r.Evidence.(*EvidenceWrapper).Evidence
 				if !reflect.DeepEqual(evidence.Path, test.path) {
-					ajs, _ := json.MarshalIndent(evidence.Path, "", "  ")
-					ejs, _ := json.MarshalIndent(test.path, "", "  ")
-					t.Logf("actual: %s; expected %s\n", string(ajs), string(ejs))
-					t.Error("unexpected merkle path")
+					got, _ := json.MarshalIndent(evidence.Path, "", "  ")
+					want, _ := json.MarshalIndent(test.path, "", "  ")
+					t.Errorf("test#%d: Path = %s\nwant %s", i, got, want)
 				}
 				continue RESULT_LOOP
 			}
 		}
-		t.Errorf("unexpected result meta: %s", r.Meta)
+		a := fmt.Sprintf("%x", r.Meta)
+		t.Errorf("unexpected Meta %q", a)
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		if !test.fossilized {
-			t.Errorf("not fossilized: %s\n", test.meta)
+			t.Errorf("test#%d: not fossilized", i)
 		}
 	}
 }
@@ -91,15 +91,20 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	go func() {
-		if err := a.Start(); err != nil {
-			b.Fatal(err)
-		}
-	}()
+
 	rc := make(chan *fossilizer.Result)
 	a.AddResultChan(rc)
+
+	go func() {
+		if err := a.Start(); err != nil {
+			b.Error(err)
+		}
+	}()
+
 	defer func() {
-		a.Stop()
+		if err := a.Stop(); err != nil {
+			b.Error(err)
+		}
 		close(rc)
 	}()
 
@@ -112,7 +117,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 
 	for i := 0; i < b.N; i++ {
 		if err := a.Fossilize(data[i], data[i]); err != nil {
-			b.Fatal(err)
+			b.Error(err)
 		}
 	}
 
