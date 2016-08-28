@@ -105,7 +105,7 @@ func (a *Fossilizer) Start() error {
 		for r := range a.resultChan {
 			batchEvidenceWrapper, ok := r.Evidence.(*batchfossilizer.EvidenceWrapper)
 			if !ok {
-				log.Printf("Error: unexpected batchfossilizer evidence %#v\n", batchEvidenceWrapper)
+				log.Printf("Error: unexpected batchfossilizer evidence %#v", batchEvidenceWrapper)
 				continue
 			}
 
@@ -114,7 +114,7 @@ func (a *Fossilizer) Start() error {
 			if lastRoot == nil || *root != *lastRoot {
 				lastTransactionID, err = a.config.HashTimestamper.TimestampHash(root)
 				if err != nil {
-					log.Printf("Error: %s\n", err)
+					log.Printf("Error: %s", err)
 					continue
 				}
 			}
