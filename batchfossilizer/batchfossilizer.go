@@ -395,7 +395,7 @@ func (a *Fossilizer) open() error {
 	if err != nil {
 		return err
 	}
-	log.Print("Opened pending hashes file %s", filepath.Base(path))
+	log.Printf("Opened pending hashes file %q", filepath.Base(path))
 
 	a.file, a.encoder = file, gob.NewEncoder(file)
 
