@@ -84,6 +84,14 @@ type Config struct {
 	FSync bool
 }
 
+// Info is the info returned by GetInfo.
+type Info struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Version     string `json:"version"`
+	Commit      string `json:"commit"`
+}
+
 // Evidence is the evidence sent to the result channel.
 type Evidence struct {
 	Time int64         `json:"time"`
@@ -147,59 +155,13 @@ func New(config *Config) (*Fossilizer, error) {
 	return a, nil
 }
 
-// Start starts the fossilizer.
-func (a *Fossilizer) Start() error {
-	interval := a.config.Interval
-	if interval == 0 {
-		interval = DefaultInterval
-	}
-
-	for {
-		select {
-		case <-time.After(interval):
-			a.mutex.Lock()
-			if len(a.leaves) > 0 {
-				if err := a.makeBatch(); err != nil {
-					return err
-				}
-			}
-			a.mutex.Unlock()
-		case err := <-a.closeChan:
-			return err
-		}
-	}
-}
-
-// Stop stops the fossilizer.
-func (a *Fossilizer) Stop() error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	close(a.closeChan)
-	a.closeChan = nil
-
-	if a.config.StopBatch && len(a.leaves) > 0 {
-		if err := a.makeBatch(); err != nil {
-			return err
-		}
-	}
-
-	a.waitGroup.Wait()
-
-	if a.file != nil {
-		return a.file.Close()
-	}
-
-	return nil
-}
-
 // GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo() (interface{}, error) {
-	return map[string]interface{}{
-		"name":        Name,
-		"description": Description,
-		"version":     a.config.Version,
-		"commit":      a.config.Commit,
+	return &Info{
+		Name:        Name,
+		Description: Description,
+		Version:     a.config.Version,
+		Commit:      a.config.Commit,
 	}, nil
 }
 
@@ -243,6 +205,52 @@ func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 			a.closeChan <- err
 			return err
 		}
+	}
+
+	return nil
+}
+
+// Start starts the fossilizer.
+func (a *Fossilizer) Start() error {
+	interval := a.config.Interval
+	if interval == 0 {
+		interval = DefaultInterval
+	}
+
+	for {
+		select {
+		case <-time.After(interval):
+			a.mutex.Lock()
+			if len(a.leaves) > 0 {
+				if err := a.makeBatch(); err != nil {
+					return err
+				}
+			}
+			a.mutex.Unlock()
+		case err := <-a.closeChan:
+			return err
+		}
+	}
+}
+
+// Stop stops the fossilizer.
+func (a *Fossilizer) Stop() error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	close(a.closeChan)
+	a.closeChan = nil
+
+	if a.config.StopBatch && len(a.leaves) > 0 {
+		if err := a.makeBatch(); err != nil {
+			return err
+		}
+	}
+
+	a.waitGroup.Wait()
+
+	if a.file != nil {
+		return a.file.Close()
 	}
 
 	return nil
