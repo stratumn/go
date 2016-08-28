@@ -83,10 +83,10 @@ type Tree interface {
 	LeavesLen() int
 
 	// Leaf returns the Merkle root.
-	Root() types.Bytes32
+	Root() *types.Bytes32
 
 	// Leaf returns the leaf at the specified index.
-	Leaf(index int) types.Bytes32
+	Leaf(index int) *types.Bytes32
 
 	// Path returns the path of a leaf to the Merkle root.
 	Path(index int) Path

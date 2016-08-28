@@ -57,16 +57,18 @@ func (t *StaticTree) LeavesLen() int {
 }
 
 // Root implements Tree.Root.
-func (t *StaticTree) Root() (hash types.Bytes32) {
-	copy(hash[:], t.buffer[:])
-	return
+func (t *StaticTree) Root() *types.Bytes32 {
+	var r types.Bytes32
+	copy(r[:], t.buffer[:])
+	return &r
 }
 
 // Leaf implements Tree.Leaf.
-func (t *StaticTree) Leaf(index int) (hash types.Bytes32) {
+func (t *StaticTree) Leaf(index int) *types.Bytes32 {
 	offset := index * HashByteSize
-	copy(hash[:], t.rows[len(t.rows)-1][offset:])
-	return
+	var l types.Bytes32
+	copy(l[:], t.rows[len(t.rows)-1][offset:])
+	return &l
 }
 
 // Path implements Tree.Path.

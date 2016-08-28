@@ -7,7 +7,6 @@ package treetestcases
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
@@ -104,24 +103,16 @@ func (f Factory) TestNumLeaves(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tree == nil {
-		t.Fatal("expected tree not to be nil")
-	}
 	defer f.free(tree)
 
-	var (
-		a = tree.LeavesLen()
-		e = 3
-	)
-	if a != e {
-		t.Logf("actual: %d; expected: %d\n", a, e)
-		t.Error("unexpected number of leaves")
+	if got, want := tree.LeavesLen(), 3; got != want {
+		t.Errorf("tree.LeavesLen() = %d want %d", got, want)
 	}
 }
 
 // TestRoot tests that the implementation computes the root correctly.
 func (f Factory) TestRoot(t *testing.T) {
-	grid := [...]struct {
+	tests := [...]struct {
 		leaves   []string
 		expected string
 	}{
@@ -136,9 +127,9 @@ func (f Factory) TestRoot(t *testing.T) {
 		{[]string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}, "386ced54bdc7456fecfc9b43018bbda2fe0a105f4cf7cad6bbb429c18fe852cc"},
 	}
 
-	for _, row := range grid {
-		var leaves = make([]types.Bytes32, len(row.leaves), len(row.leaves))
-		for i, s := range row.leaves {
+	for i, test := range tests {
+		var leaves = make([]types.Bytes32, len(test.leaves), len(test.leaves))
+		for i, s := range test.leaves {
 			leaves[i] = sha256.Sum256([]byte(s))
 		}
 
@@ -146,17 +137,10 @@ func (f Factory) TestRoot(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if tree == nil {
-			t.Fatal("expected tree not to be nil")
-		}
 		defer f.free(tree)
 
-		a := hex.EncodeToString(atos(tree.Root()))
-		e := row.expected
-
-		if a != e {
-			t.Logf("actual: %s; expected: %s\n", a, e)
-			t.Error("unexpected root")
+		if got, want := tree.Root().String(), test.expected; got != want {
+			t.Errorf("test#%d: tree.Root() = %q want %q", i, got, want)
 		}
 	}
 }
@@ -173,17 +157,11 @@ func (f Factory) TestLeaf(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if tree == nil {
-			t.Fatal("expected tree not to be nil")
-		}
 		defer f.free(tree)
 
 		for j := 0; j < i; j++ {
-			a := tree.Leaf(j)
-			e := leaves[j]
-			if !reflect.DeepEqual(a, e) {
-				t.Logf("actual: %s; expected: %s\n", a, e)
-				t.Error("unexpected leaf")
+			if got, want := tree.Leaf(j).String(), leaves[j].String(); got != want {
+				t.Errorf("test#%d: tree.Leaf(%d) = %q want %q", i, j, got, want)
 			}
 		}
 	}
@@ -191,7 +169,7 @@ func (f Factory) TestLeaf(t *testing.T) {
 
 // TestPath tests that the implementation correctly computes paths.
 func (f Factory) TestPath(t *testing.T) {
-	grid := [...]struct {
+	tests := [...]struct {
 		leaves   []string
 		expected []merkle.Path
 	}{
@@ -217,9 +195,9 @@ func (f Factory) TestPath(t *testing.T) {
 		},
 	}
 
-	for _, row := range grid {
-		var leaves = make([]types.Bytes32, len(row.leaves), len(row.leaves))
-		for i, s := range row.leaves {
+	for i, test := range tests {
+		var leaves = make([]types.Bytes32, len(test.leaves), len(test.leaves))
+		for i, s := range test.leaves {
 			leaves[i] = sha256.Sum256([]byte(s))
 		}
 
@@ -227,18 +205,17 @@ func (f Factory) TestPath(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if tree == nil {
-			t.Fatal("expected tree not to be nil")
-		}
 		defer f.free(tree)
 
-		for i := range row.leaves {
-			a, _ := json.MarshalIndent(tree.Path(i), "", "  ")
-			e, _ := json.MarshalIndent(row.expected[i], "", "  ")
-
-			if !reflect.DeepEqual(e, a) {
-				t.Logf("actual: %s; expected: %s\n", a, e)
-				t.Error("unexpected path")
+		for j := range test.leaves {
+			var (
+				got  = tree.Path(j)
+				want = test.expected[j]
+			)
+			if !reflect.DeepEqual(got, want) {
+				g, _ := json.MarshalIndent(got, "", "  ")
+				w, _ := json.MarshalIndent(want, "", "  ")
+				t.Errorf("test#%d: tree.Path(%d) = %s\nwant %s", i, j, g, w)
 			}
 		}
 	}
@@ -247,35 +224,25 @@ func (f Factory) TestPath(t *testing.T) {
 // TestPathRandom tests that the implementation correctly computes paths given random trees.
 func (f Factory) TestPathRandom(t *testing.T) {
 	for i := 0; i < 10; i++ {
-		leaves := make([]types.Bytes32, 2+rand.Intn(10000))
-		for j := range leaves {
-			leaves[j] = *testutil.RandomHash()
+		tests := make([]types.Bytes32, 2+rand.Intn(10000))
+		for j := range tests {
+			tests[j] = *testutil.RandomHash()
 		}
 
-		tree, err := f.New(leaves)
+		tree, err := f.New(tests)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if tree == nil {
-			t.Fatal("expected tree not to be nil")
-		}
 		defer f.free(tree)
 
-		for j := range leaves {
+		for j := range tests {
 			path := tree.Path(j)
-
 			if err := path.Validate(); err != nil {
 				t.Error(err)
 			}
 
-			a := path[len(path)-1].Parent
-			e := tree.Root()
-
-			if a != e {
-				ajs, _ := json.Marshal(a)
-				ejs, _ := json.Marshal(e)
-				t.Logf("actual: %s; expected %s\n", ajs, ejs)
-				t.Error("expected last parent to be root")
+			if got, want := path[len(path)-1].Parent.String(), tree.Root().String(); got != want {
+				t.Errorf("test#%d: tree.Path(%d) last parent = %q want %q", i, j, got, want)
 			}
 		}
 	}
@@ -293,10 +260,7 @@ func (f Factory) BenchmarkCreateWithSize(b *testing.B, size int) {
 	for i := 0; i < b.N; i++ {
 		tree, err := f.New(leaves)
 		if err != nil {
-			b.Fatal(err)
-		}
-		if tree == nil {
-			b.Fatal("expected tree not to be nil")
+			b.Error(err)
 		}
 		defer f.free(tree)
 	}
@@ -321,9 +285,6 @@ func (f Factory) BenchmarkPathWithSize(b *testing.B, size int) {
 	tree, err := f.New(leaves)
 	if err != nil {
 		b.Fatal(err)
-	}
-	if tree == nil {
-		b.Fatal("expected tree not to be nil")
 	}
 	defer f.free(tree)
 
