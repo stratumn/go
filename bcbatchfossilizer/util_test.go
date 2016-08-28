@@ -111,11 +111,13 @@ func benchmarkFossilize(b *testing.B, config *Config, batchConfig *batchfossiliz
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
-		if err := a.Fossilize(data[i], data[i]); err != nil {
-			b.Error(err)
+	go func() {
+		for i := 0; i < b.N; i++ {
+			if err := a.Fossilize(data[i], data[i]); err != nil {
+				b.Error(err)
+			}
 		}
-	}
+	}()
 
 	for i := 0; i < b.N; i++ {
 		<-rc
