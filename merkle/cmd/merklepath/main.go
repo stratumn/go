@@ -35,17 +35,17 @@ func main() {
 
 	index, err := strconv.Atoi(i)
 	if err != nil {
-		log.Fatalf("Fatal: %s\n", err)
+		log.Fatalf("Fatal: %s", err)
 	}
 
 	tree, err := merkle.NewStaticTree(leaves)
 	if err != nil {
-		log.Fatalf("Fatal: %s\n", err)
+		log.Fatalf("Fatal: %s", err)
 	}
 
 	b, err := json.MarshalIndent(tree.Path(index), "", "  ")
 	if err != nil {
-		log.Fatalf("Fatal: %s\n", err)
+		log.Fatalf("Fatal: %s", err)
 	}
 
 	fmt.Println(string(b))
