@@ -18,7 +18,7 @@ import (
 
 func main() {
 	if len(os.Args) < 3 {
-		log.Fatal("unexpected number of arguments")
+		log.Fatal("Fatal: unexpected number of arguments")
 	}
 
 	var (
@@ -35,17 +35,17 @@ func main() {
 
 	index, err := strconv.Atoi(i)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Fatal: %s\n", err)
 	}
 
 	tree, err := merkle.NewStaticTree(leaves)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Fatal: %s\n", err)
 	}
 
 	b, err := json.MarshalIndent(tree.Path(index), "", "  ")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Fatal: %s\n", err)
 	}
 
 	fmt.Println(string(b))

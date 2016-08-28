@@ -36,15 +36,15 @@ func (h HashTriplet) Validate() error {
 		return err
 	}
 
-	var want types.Bytes32
-	copy(want[:], hash.Sum(nil))
+	var expected types.Bytes32
+	copy(expected[:], hash.Sum(nil))
 
-	if h.Parent != want {
+	if h.Parent != expected {
 		var (
-			a = hex.EncodeToString(h.Parent[:])
-			e = hex.EncodeToString(want[:])
+			got  = h.Parent.String()
+			want = hex.EncodeToString(expected[:])
 		)
-		return fmt.Errorf("unexpected parent hash got %q want %q\n", a, e)
+		return fmt.Errorf("unexpected parent hash got %q want %q\n", got, want)
 	}
 
 	return nil
