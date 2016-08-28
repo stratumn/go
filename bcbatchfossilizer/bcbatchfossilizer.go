@@ -28,6 +28,15 @@ type Config struct {
 	HashTimestamper blockchain.HashTimestamper
 }
 
+// Info is the info returned by GetInfo.
+type Info struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Version     string `json:"version"`
+	Commit      string `json:"commit"`
+	Blockchain  string `json:"blockchain"`
+}
+
 // Evidence is the evidence sent to the result channel.
 type Evidence struct {
 	*batchfossilizer.Evidence
@@ -55,6 +64,32 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 	}, err
 }
 
+// GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
+func (a *Fossilizer) GetInfo() (interface{}, error) {
+	batchInfo, err := a.Fossilizer.GetInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	info, ok := batchInfo.(*batchfossilizer.Info)
+	if !ok {
+		return nil, errors.New("unexpected batchfossilizer info")
+	}
+
+	return &Info{
+		Name:        Name,
+		Description: Description,
+		Version:     info.Version,
+		Commit:      info.Commit,
+		Blockchain:  a.config.HashTimestamper.Network().String(),
+	}, nil
+}
+
+// AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
+func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
+	a.resultChans = append(a.resultChans, resultChan)
+}
+
 // Start starts the fossilizer.
 func (a *Fossilizer) Start() error {
 	a.resultChan = make(chan *fossilizer.Result)
@@ -70,7 +105,7 @@ func (a *Fossilizer) Start() error {
 		for r := range a.resultChan {
 			batchEvidenceWrapper, ok := r.Evidence.(*batchfossilizer.EvidenceWrapper)
 			if !ok {
-				log.Printf("unexpected batch evidence: %v\n", batchEvidenceWrapper)
+				log.Printf("unexpected batchfossilizer evidence: %v\n", batchEvidenceWrapper)
 				continue
 			}
 
@@ -106,28 +141,4 @@ func (a *Fossilizer) Start() error {
 func (a *Fossilizer) Stop() {
 	a.Fossilizer.Stop()
 	close(a.resultChan)
-}
-
-// GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
-func (a *Fossilizer) GetInfo() (interface{}, error) {
-	batchInfo, err := a.Fossilizer.GetInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	info, ok := batchInfo.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("unexpected batchfossilizer info")
-	}
-
-	info["name"] = Name
-	info["description"] = Description
-	info["blockchain"] = a.config.HashTimestamper.Network().String()
-
-	return info, nil
-}
-
-// AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
-func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
-	a.resultChans = append(a.resultChans, resultChan)
 }
