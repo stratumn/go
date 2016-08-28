@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/stratumn/go/fossilizer/fossilizerhttp"
@@ -32,8 +33,8 @@ var (
 	archive          = flag.Bool("archive", batchfossilizer.DefaultArchive, "whether to archive completed batches (requires path)")
 	exitBatch        = flag.Bool("exitbatch", batchfossilizer.DefaultStopBatch, "whether to do a batch on exit")
 	fsync            = flag.Bool("fsync", batchfossilizer.DefaultFSync, "whether to fsync after saving a pending hash")
-	version          = ""
-	commit           = ""
+	version          = "0.1.0"
+	commit           = "00000000000000000000000000000000"
 )
 
 func init() {
@@ -42,6 +43,11 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	log.Printf("%s v%s@%s", batchfossilizer.Description, version, commit[:6])
+	log.Print("Copyright (c) 2016 Stratumn SAS")
+	log.Print("All Rights Reserved")
+	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	a, err := bcbatchfossilizer.New(&bcbatchfossilizer.Config{
 		HashTimestamper: dummytimestamper.Timestamper{},
@@ -69,13 +75,13 @@ func main() {
 		sigc := make(chan os.Signal)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigc
-		log.Printf("Got signal %q.", sig)
-		log.Print("Cleaning up.")
+		log.Printf("Got signal %q", sig)
+		log.Print("Cleaning up")
 		if err := a.Stop(); err != nil {
 			log.Printf("Error: %s", err)
 			os.Exit(1)
 		}
-		log.Print("Stopped.")
+		log.Print("Stopped")
 		os.Exit(0)
 	}()
 
@@ -93,7 +99,7 @@ func main() {
 	}
 	h := fossilizerhttp.New(a, c)
 
-	log.Printf("Listening on %q.", *port)
+	log.Printf("Listening on %q", *port)
 	if err := h.ListenAndServe(); err != nil {
 		log.Fatalf("Fatal: %s", err)
 	}
