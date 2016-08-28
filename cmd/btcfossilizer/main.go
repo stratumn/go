@@ -92,8 +92,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	go func() { log.Fatal(a.Start()) }()
-	defer a.Stop()
+	go func() {
+		log.Fatal(a.Start())
+	}()
+
+	defer func() {
+		if err := a.Stop(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	c := &fossilizerhttp.Config{
 		Config: jsonhttp.Config{
