@@ -20,7 +20,7 @@ func TestNetwork_NetworkTest3(t *testing.T) {
 		Fee: int64(10000),
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 
 	if got := ts.Network(); got != btc.NetworkTest3 {
@@ -34,7 +34,7 @@ func TestNetwork_NetworkMain(t *testing.T) {
 		Fee: int64(10000),
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 
 	if got := ts.Network(); got != btc.NetworkMain {
@@ -61,11 +61,11 @@ func TestTimestamperTimestampHash(t *testing.T) {
 		Fee:           int64(10000),
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 
 	if _, err := ts.TimestampHash(testutil.RandomHash()); err != nil {
-		t.Fatal(err)
+		t.Fatalf("ts.TimestampHash(): err: %s", err)
 	}
 
 	if got := mock.MockBroadcast.CalledCount; got != 1 {

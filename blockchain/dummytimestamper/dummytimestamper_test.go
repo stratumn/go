@@ -28,13 +28,13 @@ func TestTimestamperNetwork(t *testing.T) {
 func TestTimestamperTimestamp(t *testing.T) {
 	ts := Timestamper{}
 	if _, err := ts.Timestamp(map[string]types.Bytes32{"hash": *testutil.RandomHash()}); err != nil {
-		t.Fatal(err)
+		t.Errorf("ts.Timestamp(): err: %s", err)
 	}
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
 	ts := Timestamper{}
 	if _, err := ts.TimestampHash(testutil.RandomHash()); err != nil {
-		t.Fatal(err)
+		t.Errorf("ts.TimestampHash(): err: %s", err)
 	}
 }
