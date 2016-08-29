@@ -102,7 +102,7 @@ func (f Factory) free(tree merkle.Tree) {
 func (f Factory) TestNumLeaves(t *testing.T) {
 	tree, err := f.New([]types.Bytes32{*testutil.RandomHash(), *testutil.RandomHash(), *testutil.RandomHash()})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("f.New(): err: %s", err)
 	}
 	defer f.free(tree)
 
@@ -136,7 +136,7 @@ func (f Factory) TestRoot(t *testing.T) {
 
 		tree, err := f.New(leaves)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("f.New(): err: %s", err)
 		}
 		defer f.free(tree)
 
@@ -156,7 +156,7 @@ func (f Factory) TestLeaf(t *testing.T) {
 
 		tree, err := f.New(leaves)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("f.New(): err: %s", err)
 		}
 		defer f.free(tree)
 
@@ -204,7 +204,7 @@ func (f Factory) TestPath(t *testing.T) {
 
 		tree, err := f.New(leaves)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("f.New(): err: %s", err)
 		}
 		defer f.free(tree)
 
@@ -232,14 +232,14 @@ func (f Factory) TestPathRandom(t *testing.T) {
 
 		tree, err := f.New(tests)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("f.New(): err: %s", err)
 		}
 		defer f.free(tree)
 
 		for j := range tests {
 			path := tree.Path(j)
 			if err := path.Validate(); err != nil {
-				t.Error(err)
+				t.Errorf("path.Validate(): err: %s", err)
 			}
 
 			if got, want := path[len(path)-1].Parent.String(), tree.Root().String(); got != want {
@@ -262,7 +262,7 @@ func (f Factory) BenchmarkCreateWithSize(b *testing.B, size int) {
 	for i := 0; i < b.N; i++ {
 		tree, err := f.New(leaves)
 		if err != nil {
-			b.Error(err)
+			b.Errorf("f.New(): err: %s", err)
 		}
 		defer f.free(tree)
 	}
@@ -286,7 +286,7 @@ func (f Factory) BenchmarkPathWithSize(b *testing.B, size int) {
 
 	tree, err := f.New(leaves)
 	if err != nil {
-		b.Fatal(err)
+		b.Fatalf("f.New(): err: %s", err)
 	}
 	defer f.free(tree)
 
