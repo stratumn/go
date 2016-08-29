@@ -25,16 +25,16 @@ func TestHashTripletValidate_OK(t *testing.T) {
 	)
 
 	if _, err := hash.Write(left[:]); err != nil {
-		t.Fatal(err)
+		t.Fatalf("hash.Write(): err: %s", err)
 	}
 	if _, err := hash.Write(right[:]); err != nil {
-		t.Fatal(err)
+		t.Fatalf("hash.Write(): err: %s", err)
 	}
 
 	copy(h.Parent[:], hash.Sum(nil))
 
 	if err := h.Validate(); err != nil {
-		t.Error(err)
+		t.Errorf("h.Validate(): err: %s", err)
 	}
 }
 
@@ -55,17 +55,17 @@ func TestPathValidate_OK(t *testing.T) {
 		pathABCDE4 merkle.Path
 	)
 	if err := loadPath("testdata/path-abcde-0.json", &pathABCDE0); err != nil {
-		t.Fatal(err)
+		t.Fatalf("loadPath(): err: %s", err)
 	}
 	if err := loadPath("testdata/path-abcde-4.json", &pathABCDE4); err != nil {
-		t.Fatal(err)
+		t.Fatalf("loadPath(): err: %s", err)
 	}
 
 	if err := pathABCDE0.Validate(); err != nil {
-		t.Error(err)
+		t.Errorf("pathABCDE0.Validate(): err: %s", err)
 	}
 	if err := pathABCDE4.Validate(); err != nil {
-		t.Error(err)
+		t.Errorf("pathABCDE4.Validate(): err: %s", err)
 	}
 }
 
@@ -75,10 +75,10 @@ func TestPathValidate_Error(t *testing.T) {
 		pathInvalid1 merkle.Path
 	)
 	if err := loadPath("testdata/path-invalid-0.json", &pathInvalid0); err != nil {
-		t.Fatal(err)
+		t.Fatalf("loadPath(): err: %s", err)
 	}
 	if err := loadPath("testdata/path-invalid-1.json", &pathInvalid1); err != nil {
-		t.Fatal(err)
+		t.Fatalf("loadPath(): err: %s", err)
 	}
 
 	if err := pathInvalid0.Validate(); err == nil {
@@ -98,13 +98,13 @@ func TestTreeConsistency(t *testing.T) {
 
 		static, err := merkle.NewStaticTree(tests)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("merkle.NewStaticTree(): err: %s", err)
 		}
 
 		dyn := merkle.NewDynTree(len(tests) * 2)
 		for _, leaf := range tests {
 			if err := dyn.Add(&leaf); err != nil {
-				t.Error(err)
+				t.Errorf("dyn.Add(): err: %s", err)
 			}
 		}
 
