@@ -43,7 +43,7 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest) {
 
 	for _, test := range tests {
 		if err := a.Fossilize(test.data, test.meta); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 		if test.sleep > 0 {
 			time.Sleep(test.sleep)
