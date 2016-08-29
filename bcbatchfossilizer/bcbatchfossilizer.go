@@ -10,9 +10,9 @@ import (
 	"log"
 
 	"github.com/stratumn/go/fossilizer"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/blockchain"
-	"github.com/stratumn/goprivate/types"
 )
 
 const (
