@@ -12,8 +12,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/types"
 )
 
 func main() {
