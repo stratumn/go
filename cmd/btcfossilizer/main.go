@@ -41,8 +41,8 @@ var (
 	key              = flag.String("wif", "", "wallet import format key")
 	fee              = flag.Int64("fee", btctimestamper.DefaultFee, "transaction fee (satoshis)")
 	bcyAPIKey        = flag.String("bcyapikey", "", "BlockCypher API key")
-	version          = ""
-	commit           = ""
+	version          = "0.1.0"
+	commit           = "00000000000000000000000000000000"
 )
 
 func main() {
