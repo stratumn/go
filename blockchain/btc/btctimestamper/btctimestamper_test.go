@@ -8,10 +8,10 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stratumn/go/testutil"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
 	"github.com/stratumn/goprivate/blockchain/btc/btctesting"
-	"github.com/stratumn/goprivate/testutil"
-	"github.com/stratumn/goprivate/types"
 )
 
 func TestNetwork_NetworkTest3(t *testing.T) {

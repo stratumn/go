@@ -10,8 +10,8 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/stratumn/go/testutil"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
-	"github.com/stratumn/goprivate/types"
 )
 
 func TestFindUnspent(t *testing.T) {

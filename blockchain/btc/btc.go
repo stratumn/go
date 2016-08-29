@@ -5,7 +5,7 @@
 // Package btc defines primitives to work with Bitcoin.
 package btc
 
-import "github.com/stratumn/goprivate/types"
+import "github.com/stratumn/go/types"
 import "github.com/btcsuite/btcd/chaincfg"
 
 // Network represents a Bitcoin network.

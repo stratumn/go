@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/stratumn/goprivate/types"
+	"github.com/stratumn/go/types"
 )
 
 // Network represents a blockchain network.
