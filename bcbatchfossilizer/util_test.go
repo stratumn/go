@@ -6,6 +6,8 @@ package bcbatchfossilizer
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -110,6 +112,7 @@ func benchmarkFossilize(b *testing.B, config *Config, batchConfig *batchfossiliz
 	}
 
 	b.ResetTimer()
+	log.SetOutput(ioutil.Discard)
 
 	go func() {
 		for i := 0; i < b.N; i++ {
