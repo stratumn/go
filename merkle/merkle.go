@@ -10,7 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/stratumn/goprivate/types"
+	"github.com/stratumn/go/types"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/stratumn/goprivate/types"
+	"github.com/stratumn/go/types"
 )
 
 // StaticTree is designed for Merkle trees with leaves that do not change.
