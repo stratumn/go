@@ -25,7 +25,7 @@ func TestGetInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, ok := got.(*Info); !ok {
-		t.Errorf("a.GetInfo(): info = %#v want *batchfossilizer.Info", got)
+		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
 	}
 }
 
