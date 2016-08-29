@@ -18,11 +18,11 @@ const interval = 10 * time.Millisecond
 func TestGetInfo(t *testing.T) {
 	a, err := New(&Config{})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	got, err := a.GetInfo()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("a.GetInfo(): err: %s", err)
 	}
 	if _, ok := got.(*Info); !ok {
 		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
@@ -32,7 +32,7 @@ func TestGetInfo(t *testing.T) {
 func TestFossilize(t *testing.T) {
 	a, err := New(&Config{Interval: interval})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
@@ -47,7 +47,7 @@ func TestFossilize(t *testing.T) {
 func TestFossilize_MaxLeaves(t *testing.T) {
 	a, err := New(&Config{Interval: interval, MaxLeaves: 4})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a 1"), pathABCD0, 0, false},
@@ -64,7 +64,7 @@ func TestFossilize_MaxLeaves(t *testing.T) {
 func TestFossilize_Interval(t *testing.T) {
 	a, err := New(&Config{Interval: interval})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a 1"), pathABC0, 0, false},
@@ -84,17 +84,17 @@ func TestFossilize_Interval(t *testing.T) {
 func TestFossilize_stopped(t *testing.T) {
 	a, err := New(&Config{Interval: interval})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 
 	go func() {
 		if err := a.Start(); err != nil {
-			t.Error(err)
+			t.Errorf("a.Start(): err: %s", err)
 		}
 	}()
 
 	if err := a.Stop(); err != nil {
-		t.Error(err)
+		t.Errorf("a.Stop(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("test"))), []byte("test meta")); err == nil {
 		t.Error("a.Fossilize(); err = nil want Error")
@@ -104,37 +104,37 @@ func TestFossilize_stopped(t *testing.T) {
 func TestNew_recover(t *testing.T) {
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("ioutil.TempDir(): err: %s", err)
 	}
 	defer os.RemoveAll(path)
 
 	a, err := New(&Config{Path: path, StopBatch: false})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Stop(); err != nil {
-		t.Error(err)
+		t.Errorf("a.Stop(): err: %s", err)
 	}
 
 	a, err = New(&Config{Interval: interval, Path: path})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
@@ -149,39 +149,40 @@ func TestNew_recover(t *testing.T) {
 func TestStop_StopBatch(t *testing.T) {
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("ioutil.TempDir(): err: %s", err)
 	}
 	defer os.RemoveAll(path)
 
 	a, err := New(&Config{Interval: interval, Path: path, StopBatch: true})
+	if err != nil {
+		t.Fatalf("New(): err: %s", err)
+	}
+
 	go func() {
 		if err := a.Start(); err != nil {
-			t.Fatal(err)
+			t.Fatalf("a.Start(): err: %s", err)
 		}
 	}()
 
-	if err != nil {
-		t.Fatal(err)
-	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 	if err := a.Fossilize(atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
-		t.Error(err)
+		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 
 	go func() {
 		if err := a.Stop(); err != nil {
-			t.Error(err)
+			t.Errorf("a.Stop(): err: %s", err)
 		}
 	}()
 
@@ -198,13 +199,13 @@ func TestStop_StopBatch(t *testing.T) {
 func TestFossilize_Archive(t *testing.T) {
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("ioutil.TempDir(): err: %s", err)
 	}
 	defer os.RemoveAll(path)
 
 	a, err := New(&Config{Path: path, Archive: true, MaxLeaves: 5})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 
 	tests := []fossilizeTest{
@@ -219,6 +220,6 @@ func TestFossilize_Archive(t *testing.T) {
 	archive := filepath.Join(path, "d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba")
 
 	if _, err := os.Stat(archive); err != nil {
-		t.Error(err)
+		t.Errorf("os.Stat(): err: %s", err)
 	}
 }

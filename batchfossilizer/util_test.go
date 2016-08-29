@@ -34,12 +34,12 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 	if start {
 		go func() {
 			if err := a.Start(); err != nil {
-				t.Error(err)
+				t.Errorf("a.Start(): err: %s", err)
 			}
 		}()
 		defer func() {
 			if err := a.Stop(); err != nil {
-				t.Error(err)
+				t.Errorf("a.Stop(): err: %s", err)
 			}
 			close(rc)
 		}()
@@ -48,7 +48,7 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 	if fossilize {
 		for _, test := range tests {
 			if err := a.Fossilize(test.data, test.meta); err != nil {
-				t.Error(err)
+				t.Errorf("a.Fossilize(): err: %s", err)
 			}
 			if test.sleep > 0 {
 				time.Sleep(test.sleep)
@@ -91,7 +91,7 @@ RESULT_LOOP:
 func benchmarkFossilize(b *testing.B, config *Config) {
 	a, err := New(config)
 	if err != nil {
-		b.Fatal(err)
+		b.Fatalf("New(): err: %s", err)
 	}
 
 	rc := make(chan *fossilizer.Result)
@@ -99,13 +99,13 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 
 	go func() {
 		if err := a.Start(); err != nil {
-			b.Error(err)
+			b.Errorf("a.Start(): err: %s", err)
 		}
 	}()
 
 	defer func() {
 		if err := a.Stop(); err != nil {
-			b.Error(err)
+			b.Errorf("a.Stop(): err: %s", err)
 		}
 		close(rc)
 	}()
@@ -121,7 +121,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 	go func() {
 		for i := 0; i < b.N; i++ {
 			if err := a.Fossilize(data[i], data[i]); err != nil {
-				b.Error(err)
+				b.Errorf("a.Fossilize(): err: %s", err)
 			}
 		}
 	}()
