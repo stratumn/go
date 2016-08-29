@@ -20,11 +20,11 @@ func TestGetInfo(t *testing.T) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	got, err := a.GetInfo()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("a.GetInfo(): err: %s", err)
 	}
 	if _, ok := got.(*Info); !ok {
 		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
@@ -38,7 +38,7 @@ func TestFossilize(t *testing.T) {
 		Interval: interval,
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("New(): err: %s", err)
 	}
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
