@@ -8,7 +8,7 @@ import (
 	"crypto/sha256"
 	"sync"
 
-	"github.com/stratumn/goprivate/types"
+	"github.com/stratumn/go/types"
 )
 
 // DynTreeNode is a node within a DynTree.

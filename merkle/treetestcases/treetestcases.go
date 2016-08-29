@@ -13,9 +13,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stratumn/go/testutil"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/testutil"
-	"github.com/stratumn/goprivate/types"
 )
 
 var (
