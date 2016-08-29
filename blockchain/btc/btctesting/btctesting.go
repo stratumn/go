@@ -6,8 +6,8 @@
 package btctesting
 
 import (
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
-	"github.com/stratumn/goprivate/types"
 )
 
 // Mock is used to mock a UnspentFinder and Broadcaster.

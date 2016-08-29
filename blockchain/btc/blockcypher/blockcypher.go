@@ -12,8 +12,8 @@ import (
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
-	"github.com/stratumn/goprivate/types"
 )
 
 // Client is a BlockCypher API client.
