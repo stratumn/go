@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/stratumn/go/fossilizer"
+	"github.com/stratumn/go/testutil"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/testutil"
-	"github.com/stratumn/goprivate/types"
 )
 
 type fossilizeTest struct {
