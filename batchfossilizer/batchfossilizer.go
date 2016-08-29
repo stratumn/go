@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/stratumn/go/fossilizer"
+	"github.com/stratumn/go/types"
 	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/types"
 )
 
 const (
