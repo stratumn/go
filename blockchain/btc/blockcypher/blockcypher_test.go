@@ -19,14 +19,14 @@ func TestFindUnspent(t *testing.T) {
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("btcutil.DecodeAddress(): err: %s", err)
 	}
 	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
 	outputs, total, err := bcy.FindUnspent(&addr20, 1000000)
 	if err != nil {
-		t.Error(err)
+		t.Errorf("bcy.FindUnspent(): err: %s", err)
 	}
 	if total < 1000000 {
 		t.Errorf("bcy.FindUnspent(): total = %d want %d", total, 1000000)
@@ -38,7 +38,7 @@ func TestFindUnspent(t *testing.T) {
 	for _, output := range outputs {
 		tx, err := bcy.api.GetTX(output.TXHash.String(), nil)
 		if err != nil {
-			t.Error(err)
+			t.Errorf("bcy.api.GetTX(): err: %s", err)
 		}
 		if !testutil.ContainsString(tx.Addresses, "n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX") {
 			t.Errorf("bcy.FindUnspent(): can't find address in output addresses %s", tx.Addresses)
@@ -51,7 +51,7 @@ func TestFindUnspent_notEnough(t *testing.T) {
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("btcutil.DecodeAddress(): err: %s", err)
 	}
 	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
