@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -256,6 +257,7 @@ func (f Factory) BenchmarkCreateWithSize(b *testing.B, size int) {
 	}
 
 	b.ResetTimer()
+	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
 		tree, err := f.New(leaves)
@@ -289,6 +291,7 @@ func (f Factory) BenchmarkPathWithSize(b *testing.B, size int) {
 	defer f.free(tree)
 
 	b.ResetTimer()
+	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
 		tree.Path(i % size)
