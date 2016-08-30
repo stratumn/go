@@ -56,10 +56,10 @@ const (
 
 // Config contains configuration options for the fossilizer.
 type Config struct {
-	// A version string that will set in the store's information.
+	// A version string that will be set in the store's information.
 	Version string
 
-	// A git commit sha that will set in the store's information.
+	// A git commit sha that will be set in the store's information.
 	Commit string
 
 	// Interval between batches.
