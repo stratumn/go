@@ -41,6 +41,7 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]bt
 		"includeScript":       "true",
 		"includeConfidence":   "false",
 		"omitWalletAddresses": "true",
+		"confirmations":       "0",
 	})
 	if err != nil {
 		return nil, 0, err
