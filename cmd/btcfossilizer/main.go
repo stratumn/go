@@ -121,19 +121,19 @@ func main() {
 		os.Exit(0)
 	}()
 
-	c := &fossilizerhttp.Config{
-		Config: jsonhttp.Config{
-			Port:     *port,
-			CertFile: *certFile,
-			KeyFile:  *keyFile,
-			Verbose:  *verbose,
-		},
+	config := &fossilizerhttp.Config{
 		NumResultWorkers: *numResultWorkers,
 		CallbackTimeout:  *callbackTimeout,
 		MinDataLen:       merkle.HashByteSize * 2,
 		MaxDataLen:       merkle.HashByteSize * 2,
 	}
-	h := fossilizerhttp.New(a, c)
+	httpConfig := &jsonhttp.Config{
+		Port:     *port,
+		CertFile: *certFile,
+		KeyFile:  *keyFile,
+		Verbose:  *verbose,
+	}
+	h := fossilizerhttp.New(a, config, httpConfig)
 
 	log.Printf("Listening on %q", *port)
 	if err := h.ListenAndServe(); err != nil {
