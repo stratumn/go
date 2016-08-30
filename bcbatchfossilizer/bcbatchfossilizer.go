@@ -53,6 +53,10 @@ type Fossilizer struct {
 
 // New creates an instance of a Fossilizer.
 func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, error) {
+	if batchConfig.MaxSimBatches > 1 {
+		return nil, fmt.Errorf("MaxSimBatches is want %d less than 1", batchConfig.MaxSimBatches)
+	}
+
 	b, err := batchfossilizer.New(batchConfig)
 	if err != nil {
 		return nil, err
