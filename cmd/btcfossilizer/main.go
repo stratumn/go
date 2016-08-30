@@ -69,7 +69,7 @@ func main() {
 
 	log.SetPrefix(fmt.Sprintf("btcfossilizer:%s ", network))
 
-	log.Printf("%s v%s@%s", bcbatchfossilizer.Description, version, commit[:6])
+	log.Printf("%s v%s@%s", bcbatchfossilizer.Description, version, commit[:7])
 	log.Print("Copyright (c) 2016 Stratumn SAS")
 	log.Print("All Rights Reserved")
 	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
