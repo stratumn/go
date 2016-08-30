@@ -121,7 +121,7 @@ func (a *Fossilizer) Start() error {
 					log.Printf("Error: %s", err)
 					continue
 				}
-				log.Printf("Broadcasted transaction %q for Merkle root %q", fmt.Sprintf("%x", lastTransactionID), root)
+				log.Printf("Broadcasted transaction %q for Merkle root %q", lastTransactionID, root)
 			}
 
 			evidenceWrapper := map[string]*Evidence{}
