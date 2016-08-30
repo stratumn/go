@@ -17,7 +17,7 @@ func TestTransactionIDString(t *testing.T) {
 	txid := TransactionID(buf)
 
 	if got, want := txid.String(), str; got != want {
-		t.Errorf("tix.String() = %q want %q", got, want)
+		t.Errorf("txid.String() = %q want %q", got, want)
 	}
 }
 
@@ -31,7 +31,7 @@ func TestTransactionMarshalJSON(t *testing.T) {
 	}
 
 	if got, want := string(marshalled), fmt.Sprintf(`"%s"`, str); got != want {
-		t.Errorf("tix.MarshalJSON() = %q want %q", got, want)
+		t.Errorf("txid.MarshalJSON() = %q want %q", got, want)
 	}
 }
 
@@ -45,7 +45,7 @@ func TestTransactionUnmarshalJSON(t *testing.T) {
 	}
 
 	if got, want := txid.String(), str; got != want {
-		t.Errorf("tix.UnmarshalJSON() = %q want %q", got, want)
+		t.Errorf("txid.UnmarshalJSON() = %q want %q", got, want)
 	}
 }
 
