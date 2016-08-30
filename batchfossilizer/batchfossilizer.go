@@ -35,6 +35,9 @@ const (
 	// DefaultMaxLeaves if the default maximum number of leaves of a Merkle tree.
 	DefaultMaxLeaves = 32 * 1024
 
+	// DefaultMaxSimBatches is the default maximum number of simultaneous batches.
+	DefaultMaxSimBatches = 1
+
 	// DefaultArchive is whether to archive completed batches by default.
 	DefaultArchive = true
 
@@ -67,6 +70,9 @@ type Config struct {
 
 	// Maximum number of leaves of a Merkle tree.
 	MaxLeaves int
+
+	// Maximum number of simultaneous batches.
+	MaxSimBatches int
 
 	// Where to store pending hashes.
 	// If empty, pending hashes are not saved and will be lost if stopped abruptly.
@@ -123,6 +129,7 @@ type Fossilizer struct {
 	encoder     *gob.Encoder
 	mutex       sync.Mutex
 	waitGroup   sync.WaitGroup
+	sem         chan struct{}
 	closeChan   chan error
 }
 
@@ -133,10 +140,16 @@ func New(config *Config) (*Fossilizer, error) {
 		maxLeaves = DefaultMaxLeaves
 	}
 
+	maxSimBatches := config.MaxSimBatches
+	if maxSimBatches == 0 {
+		maxSimBatches = DefaultMaxSimBatches
+	}
+
 	a := &Fossilizer{
 		config:    config,
 		leaves:    make([]types.Bytes32, 0, maxLeaves),
 		meta:      make([][]byte, 0, maxLeaves),
+		sem:       make(chan struct{}, maxSimBatches),
 		closeChan: make(chan error),
 	}
 
@@ -255,6 +268,7 @@ func (a *Fossilizer) Stop() error {
 	}
 
 	a.waitGroup.Wait()
+	close(a.sem)
 
 	if a.file != nil {
 		return a.file.Close()
@@ -264,7 +278,12 @@ func (a *Fossilizer) Stop() error {
 }
 
 func (a *Fossilizer) batch(b batch) {
-	defer a.waitGroup.Done()
+	defer func() {
+		a.waitGroup.Done()
+		<-a.sem
+	}()
+
+	a.sem <- struct{}{}
 
 	tree, err := merkle.NewStaticTree(b.leaves)
 
