@@ -38,17 +38,13 @@ func (txid TransactionID) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON.
-func (txid TransactionID) UnmarshalJSON(data []byte) error {
+func (txid *TransactionID) UnmarshalJSON(data []byte) (err error) {
 	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
+	if err = json.Unmarshal(data, &s); err != nil {
+		return
 	}
-
-	if _, err := hex.Decode([]byte(txid), []byte(s)); err != nil {
-		return err
-	}
-
-	return nil
+	*txid, err = hex.DecodeString(s)
+	return
 }
 
 // Timestamper must be able to timestamp data.
