@@ -10,9 +10,12 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stratumn/goprivate/merkle"
 )
+
+const interval = 100 * time.Millisecond
 
 var (
 	pathA0     merkle.Path
