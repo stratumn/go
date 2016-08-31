@@ -46,15 +46,15 @@ type Evidence struct {
 // Fossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
 type Fossilizer struct {
 	*batchfossilizer.Fossilizer
-	config      *Config
-	resultChans []chan *fossilizer.Result
-	resultChan  chan *fossilizer.Result
+	config            *Config
+	lastRoot          *types.Bytes32
+	lastTransactionID blockchain.TransactionID
 }
 
 // New creates an instance of a Fossilizer.
 func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, error) {
 	if batchConfig.MaxSimBatches > 1 {
-		return nil, fmt.Errorf("MaxSimBatches is want %d less than 1", batchConfig.MaxSimBatches)
+		return nil, fmt.Errorf("MaxSimBatches is %d want less than 2", batchConfig.MaxSimBatches)
 	}
 
 	b, err := batchfossilizer.New(batchConfig)
@@ -62,10 +62,14 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 		return nil, err
 	}
 
-	return &Fossilizer{
+	f := Fossilizer{
 		Fossilizer: b,
 		config:     config,
-	}, err
+	}
+
+	f.SetTransformer(f.transform)
+
+	return &f, err
 }
 
 // GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
@@ -89,62 +93,35 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
-func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
-	a.resultChans = append(a.resultChans, resultChan)
-}
+func (a *Fossilizer) transform(evidence *batchfossilizer.Evidence, data, meta []byte) (*fossilizer.Result, error) {
+	var (
+		root = evidence.Root
+		txid blockchain.TransactionID
+		err  error
+	)
 
-// Start starts the fossilizer.
-func (a *Fossilizer) Start() error {
-	a.resultChan = make(chan *fossilizer.Result)
-	a.Fossilizer.AddResultChan(a.resultChan)
-
-	go func() {
-		var (
-			err               error
-			lastRoot          *types.Bytes32
-			lastTransactionID blockchain.TransactionID
-		)
-
-		for r := range a.resultChan {
-			batchEvidenceWrapper, ok := r.Evidence.(*batchfossilizer.EvidenceWrapper)
-			if !ok {
-				log.Printf("Error: unexpected batchfossilizer evidence %#v", batchEvidenceWrapper)
-				continue
-			}
-
-			root := batchEvidenceWrapper.Evidence.Root
-
-			if lastRoot == nil || *root != *lastRoot {
-				lastTransactionID, err = a.config.HashTimestamper.TimestampHash(root)
-				if err != nil {
-					log.Printf("Error: %s", err)
-					continue
-				}
-				log.Printf("Broadcasted transaction %q for Merkle root %q", lastTransactionID, root)
-			}
-
-			evidenceWrapper := map[string]*Evidence{}
-			evidenceWrapper[a.config.HashTimestamper.Network().String()] = &Evidence{
-				Evidence:      batchEvidenceWrapper.Evidence,
-				TransactionID: lastTransactionID,
-			}
-			r.Evidence = evidenceWrapper
-
-			for _, c := range a.resultChans {
-				c <- r
-			}
-
-			lastRoot = root
+	if a.lastRoot == nil || *root != *a.lastRoot {
+		txid, err = a.config.HashTimestamper.TimestampHash(root)
+		if err != nil {
+			return nil, err
 		}
-	}()
+		log.Printf("Broadcasted transaction %q for Merkle root %q", txid, root)
+	}
 
-	return a.Fossilizer.Start()
-}
+	evidenceWrapper := map[string]*Evidence{}
+	evidenceWrapper[a.config.HashTimestamper.Network().String()] = &Evidence{
+		Evidence:      evidence,
+		TransactionID: txid,
+	}
 
-// Stop stops the fossilizer.
-func (a *Fossilizer) Stop() error {
-	err := a.Fossilizer.Stop()
-	close(a.resultChan)
-	return err
+	r := fossilizer.Result{
+		Evidence: evidenceWrapper,
+		Data:     data,
+		Meta:     meta,
+	}
+
+	a.lastRoot = root
+	a.lastTransactionID = txid
+
+	return &r, nil
 }

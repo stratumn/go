@@ -17,6 +17,8 @@ import (
 	"github.com/stratumn/goprivate/merkle"
 )
 
+const interval = 100 * time.Millisecond
+
 var (
 	pathA0     merkle.Path
 	pathAB0    merkle.Path
