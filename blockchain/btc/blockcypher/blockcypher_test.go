@@ -27,6 +27,7 @@ func TestFindUnspent(t *testing.T) {
 	copy(addr20[:], addr.ScriptAddress())
 
 	outputs, total, err := bcy.FindUnspent(&addr20, 1000000)
+
 	if err != nil {
 		t.Errorf("bcy.FindUnspent(): err: %s", err)
 	}

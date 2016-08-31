@@ -71,8 +71,8 @@ func New(c *Config) *Client {
 
 // FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
-	if err := c.wait(); err != nil {
-		return nil, 0, err
+	for _ = range c.limiter {
+		break
 	}
 	c.waitGroup.Add(1)
 	defer c.waitGroup.Done()
@@ -121,8 +121,8 @@ TX_LOOP:
 
 // Broadcast implements github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(raw []byte) error {
-	if err := c.wait(); err != nil {
-		return err
+	for _ = range c.limiter {
+		break
 	}
 	c.waitGroup.Add(1)
 	defer c.waitGroup.Done()
@@ -137,12 +137,13 @@ func (c *Client) Start() {
 	if size == 0 {
 		size = DefaultLimiterSize
 	}
+	for i := 0; i < size; i++ {
+		c.limiter <- struct{}{}
+	}
+
 	interval := c.config.LimiterInterval
 	if interval == 0 {
 		interval = DefaultLimiterInterval
-	}
-	for i := 0; i < size; i++ {
-		c.limiter <- struct{}{}
 	}
 
 	c.timer = time.NewTimer(interval)
