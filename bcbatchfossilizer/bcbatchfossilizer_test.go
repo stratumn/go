@@ -7,13 +7,10 @@ package bcbatchfossilizer
 import (
 	"crypto/sha256"
 	"testing"
-	"time"
 
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/blockchain/dummytimestamper"
 )
-
-const interval = 10 * time.Millisecond
 
 func TestGetInfo(t *testing.T) {
 	a, err := New(&Config{
