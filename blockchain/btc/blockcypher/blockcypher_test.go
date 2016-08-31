@@ -15,7 +15,9 @@ import (
 )
 
 func TestFindUnspent(t *testing.T) {
-	bcy := New(btc.NetworkTest3, "")
+	bcy := New(&Config{Network: btc.NetworkTest3})
+	go bcy.Start()
+	defer bcy.Stop()
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
@@ -47,7 +49,9 @@ func TestFindUnspent(t *testing.T) {
 }
 
 func TestFindUnspent_notEnough(t *testing.T) {
-	api := New(btc.NetworkTest3, "")
+	bcy := New(&Config{Network: btc.NetworkTest3})
+	go bcy.Start()
+	defer bcy.Stop()
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
@@ -56,7 +60,7 @@ func TestFindUnspent_notEnough(t *testing.T) {
 	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
-	_, _, err = api.FindUnspent(&addr20, 1000000000000)
+	_, _, err = bcy.FindUnspent(&addr20, 1000000000000)
 	if err == nil {
 		t.Errorf("bcy.FindUnspent(): err = nil want Error")
 	}
