@@ -41,6 +41,8 @@ var (
 	key              = flag.String("wif", "", "wallet import format key")
 	fee              = flag.Int64("fee", btctimestamper.DefaultFee, "transaction fee (satoshis)")
 	bcyAPIKey        = flag.String("bcyapikey", "", "BlockCypher API key")
+	limiterInterval  = flag.Duration("limiterinterval", blockcypher.DefaultLimiterInterval, "BlockCypher API limiter interval")
+	limiterSize      = flag.Int("limitersize", blockcypher.DefaultLimiterSize, "BlockCypher API limiter size")
 	version          = "0.1.0"
 	commit           = "00000000000000000000000000000000"
 )
@@ -74,7 +76,12 @@ func main() {
 	log.Print("All Rights Reserved")
 	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	bcy := blockcypher.New(network, *bcyAPIKey)
+	bcy := blockcypher.New(&blockcypher.Config{
+		Network:         network,
+		APIKey:          *bcyAPIKey,
+		LimiterInterval: *limiterInterval,
+		LimiterSize:     *limiterSize,
+	})
 	ts, err := btctimestamper.New(&btctimestamper.Config{
 		UnspentFinder: bcy,
 		Broadcaster:   bcy,
@@ -107,6 +114,8 @@ func main() {
 		}
 	}()
 
+	go bcy.Start()
+
 	go func() {
 		sigc := make(chan os.Signal)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
@@ -114,9 +123,11 @@ func main() {
 		log.Printf("Got signal %q", sig)
 		log.Print("Cleaning up")
 		if err := a.Stop(); err != nil {
+			bcy.Stop()
 			log.Printf("Error: %s", err)
 			os.Exit(1)
 		}
+		bcy.Stop()
 		log.Print("Stopped")
 		os.Exit(0)
 	}()
