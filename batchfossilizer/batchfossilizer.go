@@ -8,7 +8,6 @@ package batchfossilizer
 
 import (
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -88,6 +87,30 @@ type Config struct {
 	FSync bool
 }
 
+// GetInterval returns the configuration's interval or the default value.
+func (c *Config) GetInterval() time.Duration {
+	if c.Interval > 0 {
+		return c.Interval
+	}
+	return DefaultInterval
+}
+
+// GetMaxLeaves returns the configuration's maximum number of leaves of a Merkle tree or the default value.
+func (c *Config) GetMaxLeaves() int {
+	if c.MaxLeaves > 0 {
+		return c.MaxLeaves
+	}
+	return DefaultMaxLeaves
+}
+
+// GetMaxSimBatches returns the configuration's maximum number of simultaneous batches or the default value.
+func (c *Config) GetMaxSimBatches() int {
+	if c.MaxSimBatches > 0 {
+		return c.MaxSimBatches
+	}
+	return DefaultMaxSimBatches
+}
+
 // Info is the info returned by GetInfo.
 type Info struct {
 	Name        string `json:"name"`
@@ -108,58 +131,41 @@ type EvidenceWrapper struct {
 	Evidence *Evidence `json:"batch"`
 }
 
-type batch struct {
-	leaves []types.Bytes32
-	meta   [][]byte
-	path   string
-}
-
-type chunk struct {
-	Data []byte
-	Meta []byte
-}
-
 // Fossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
 type Fossilizer struct {
 	config      *Config
+	startedChan chan chan struct{}
+	fossilChan  chan *fossil
+	resultChan  chan error
+	batchChan   chan *batch
+	stopChan    chan error
+	semChan     chan struct{}
 	resultChans []chan *fossilizer.Result
-	leaves      []types.Bytes32
-	meta        [][]byte
-	file        *os.File
-	encoder     *gob.Encoder
-	mutex       sync.Mutex
 	waitGroup   sync.WaitGroup
-	sem         chan struct{}
-	resetChan   chan struct{}
-	closeChan   chan error
+	transformer Transformer
+	pending     *batch
 }
+
+// Transformer is the type of a function to transform results.
+type Transformer func(evidence *Evidence, data, meta []byte) (*fossilizer.Result, error)
 
 // New creates an instance of a Fossilizer.
 func New(config *Config) (*Fossilizer, error) {
-	maxLeaves := config.MaxLeaves
-	if maxLeaves == 0 {
-		maxLeaves = DefaultMaxLeaves
-	}
-
-	maxSimBatches := config.MaxSimBatches
-	if maxSimBatches == 0 {
-		maxSimBatches = DefaultMaxSimBatches
-	}
-
 	a := &Fossilizer{
-		config:    config,
-		leaves:    make([]types.Bytes32, 0, maxLeaves),
-		meta:      make([][]byte, 0, maxLeaves),
-		sem:       make(chan struct{}, maxSimBatches),
-		resetChan: make(chan struct{}),
-		closeChan: make(chan error),
+		config:      config,
+		startedChan: make(chan chan struct{}),
+		fossilChan:  make(chan *fossil),
+		resultChan:  make(chan error),
+		batchChan:   make(chan *batch, 1),
+		stopChan:    make(chan error, 1),
+		semChan:     make(chan struct{}, config.GetMaxSimBatches()),
+		pending:     newBatch(config.GetMaxLeaves()),
 	}
 
 	if a.config.Path != "" {
-		if err := os.MkdirAll(a.config.Path, DirPerm); err != nil {
+		if err := a.ensurePath(); err != nil {
 			return nil, err
 		}
-
 		if err := a.recover(); err != nil {
 			return nil, err
 		}
@@ -185,85 +191,204 @@ func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 
 // Fossilize implements github.com/stratumn/go/fossilizer.Adapter.Fossilize.
 func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
+	f := fossil{Meta: meta}
+	copy(f.Data[:], data)
+	a.fossilChan <- &f
+	return <-a.resultChan
+}
 
-	if a.closeChan == nil {
-		return errors.New("fossilizer is stopped")
+// Start starts the fossilizer.
+func (a *Fossilizer) Start() error {
+	var (
+		interval = a.config.GetInterval()
+		timer    = time.NewTimer(interval)
+	)
+
+	for {
+		select {
+		case c := <-a.startedChan:
+			c <- struct{}{}
+		case f := <-a.fossilChan:
+			a.resultChan <- a.fossilize(f)
+		case b := <-a.batchChan:
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(interval)
+			if err := a.batch(b); err != nil {
+				a.stopChan <- err
+			}
+		case <-timer.C:
+			timer.Stop()
+			timer.Reset(interval)
+			if len(a.pending.data) > 0 {
+				a.sendBatch()
+				log.Printf("Requested new batch because the %s interval was reached", interval)
+			} else {
+				log.Printf("No batch is needed after the %s interval because there are no pending hashes", interval)
+			}
+		case err := <-a.stopChan:
+			e := a.stop(err)
+			a.stopChan <- e
+			return e
+		}
 	}
+}
 
+// Stop stops the fossilizer.
+func (a *Fossilizer) Stop() {
+	a.stopChan <- nil
+	<-a.stopChan
+}
+
+// Started return a channel that will receive once the fossilizer has started.
+func (a *Fossilizer) Started() <-chan struct{} {
+	c := make(chan struct{}, 1)
+	a.startedChan <- c
+	return c
+}
+
+// SetTransformer sets a transformer.
+func (a *Fossilizer) SetTransformer(t Transformer) {
+	a.transformer = t
+}
+
+func (a *Fossilizer) fossilize(f *fossil) error {
 	if a.config.Path != "" {
-		if a.file == nil {
-			if err := a.open(); err != nil {
+		if a.pending.file == nil {
+			if err := a.pending.open(a.pendingPath()); err != nil {
 				return err
 			}
 		}
-
-		if err := a.write(data, meta); err != nil {
+		if err := f.write(a.pending.encoder); err != nil {
 			return err
+		}
+		if a.config.FSync {
+			if err := a.pending.file.Sync(); err != nil {
+				return err
+			}
 		}
 	}
 
-	var leaf types.Bytes32
-	copy(leaf[:], data)
-	a.leaves = append(a.leaves, leaf)
-	a.meta = append(a.meta, meta)
+	a.pending.append(f)
 
-	maxLeaves := a.config.MaxLeaves
-	if maxLeaves == 0 {
-		maxLeaves = DefaultMaxLeaves
-	}
-	if len(a.leaves) >= maxLeaves {
-		if err := a.requestBatch(); err != nil {
-			a.closeChan <- err
-			return err
-		}
-		a.resetChan <- struct{}{}
+	if maxLeaves := a.config.GetMaxLeaves(); len(a.pending.data) >= maxLeaves {
+		a.sendBatch()
 		log.Printf("Requested new batch because the maximum number of leaves (%d) was reached", maxLeaves)
 	}
 
 	return nil
 }
 
-// Start starts the fossilizer.
-func (a *Fossilizer) Start() error {
-	interval := a.config.Interval
-	if interval == 0 {
-		interval = DefaultInterval
-	}
-
-	for {
-		select {
-		case <-time.After(interval):
-			a.mutex.Lock()
-			if len(a.leaves) > 0 {
-				if err := a.requestBatch(); err != nil {
-					return err
-				}
-				log.Printf("Requested new batch because the %s interval was reached", interval)
-			} else {
-				log.Printf("No batch is needed after the %s interval because there are no pending hashes", interval)
-			}
-			a.mutex.Unlock()
-		case <-a.resetChan:
-		case err := <-a.closeChan:
-			return err
-		}
-	}
+func (a *Fossilizer) sendBatch() {
+	batch := a.pending
+	a.pending = newBatch(a.config.GetMaxLeaves())
+	a.batchChan <- batch
 }
 
-// Stop stops the fossilizer.
-func (a *Fossilizer) Stop() error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
+func (a *Fossilizer) batch(b *batch) error {
+	var path string
 
-	close(a.closeChan)
-	a.closeChan = nil
+	if b.file != nil {
+		path = b.file.Name()
+		if err := b.file.Close(); err != nil {
+			return err
+		}
+		b.file = nil
+	}
 
+	a.waitGroup.Add(1)
+
+	go func() {
+		defer func() {
+			a.waitGroup.Done()
+			<-a.semChan
+		}()
+
+		a.semChan <- struct{}{}
+
+		tree, err := merkle.NewStaticTree(b.data)
+		if err != nil {
+			a.stop(err)
+			return
+		}
+
+		var (
+			meta = b.meta
+			ts   = time.Now().UTC().Unix()
+			root = tree.Root()
+		)
+
+		log.Printf("Created tree with Merkle root %q", root)
+
+		for i := 0; i < tree.LeavesLen(); i++ {
+			var (
+				l   = tree.Leaf(i)
+				d   = l[:]
+				m   = meta[i]
+				err error
+				r   *fossilizer.Result
+			)
+
+			evidence := Evidence{
+				Time: ts,
+				Root: root,
+				Path: tree.Path(i),
+			}
+
+			if a.transformer != nil {
+				r, err = a.transformer(&evidence, d, m)
+			} else {
+				r = &fossilizer.Result{
+					Evidence: &EvidenceWrapper{
+						&evidence,
+					},
+					Data: d,
+					Meta: m,
+				}
+			}
+
+			if err == nil {
+				for _, c := range a.resultChans {
+					c <- r
+				}
+			} else {
+				log.Printf("Error: %s", err)
+			}
+		}
+
+		log.Printf("Sent evidence for batch with Merkle root %q", root)
+
+		if path != "" {
+			if a.config.Archive {
+				archivePath := filepath.Join(a.config.Path, root.String())
+				if err := os.Rename(path, archivePath); err != nil {
+					log.Printf("Error: %s", err)
+				}
+				log.Printf("Renamed pending hashes file %q to %q", filepath.Base(path), filepath.Base(archivePath))
+			} else {
+				if err := os.Remove(path); err != nil {
+					log.Printf("Error: %s", err)
+				}
+				log.Printf("Removed pending hashes file %q", filepath.Base(path))
+			}
+		}
+
+		log.Printf("Finished batch with Merkle root %q", root)
+	}()
+
+	return nil
+}
+
+func (a *Fossilizer) stop(err error) error {
 	if a.config.StopBatch {
-		if len(a.leaves) > 0 {
-			if err := a.requestBatch(); err != nil {
-				return err
+		if len(a.pending.data) > 0 {
+			if e := a.batch(a.pending); e != nil {
+				if err == nil {
+					err = e
+				} else {
+					log.Printf("Error: %s", e)
+				}
 			}
 			log.Print("Requested final batch for pending hashes")
 		} else {
@@ -272,99 +397,25 @@ func (a *Fossilizer) Stop() error {
 	}
 
 	a.waitGroup.Wait()
-	close(a.sem)
-	close(a.resetChan)
+	a.transformer = nil
 
-	if a.file != nil {
-		return a.file.Close()
+	if a.pending.file != nil {
+		if e := a.pending.file.Close(); e != nil {
+			if err == nil {
+				err = e
+			} else {
+				log.Printf("Error: %s", e)
+			}
+		}
 	}
 
-	return nil
+	return err
 }
 
-func (a *Fossilizer) batch(b batch) {
-	defer func() {
-		a.waitGroup.Done()
-		<-a.sem
-	}()
-
-	a.sem <- struct{}{}
-
-	tree, err := merkle.NewStaticTree(b.leaves)
-
-	if err != nil {
-		a.closeChan <- err
-		return
+func (a *Fossilizer) ensurePath() error {
+	if err := os.MkdirAll(a.config.Path, DirPerm); err != nil && !os.IsExist(err) {
+		return err
 	}
-
-	var (
-		meta = b.meta
-		ts   = time.Now().UTC().Unix()
-		root = tree.Root()
-	)
-
-	log.Printf("Created tree with Merkle root %q", root)
-
-	for i := 0; i < tree.LeavesLen(); i++ {
-		leaf := tree.Leaf(i)
-		r := &fossilizer.Result{
-			Evidence: &EvidenceWrapper{
-				&Evidence{
-					Time: ts,
-					Root: root,
-					Path: tree.Path(i),
-				},
-			},
-			Data: leaf[:],
-			Meta: meta[i],
-		}
-
-		for _, c := range a.resultChans {
-			c <- r
-		}
-	}
-
-	log.Printf("Sent evidence for batch with Merkle root %q", root)
-
-	if b.path != "" {
-		if a.config.Archive {
-			path := filepath.Join(a.config.Path, root.String())
-			if err := os.Rename(b.path, path); err != nil {
-				log.Printf("Error: %s", err)
-			}
-			log.Printf("Renamed pending hashes file %q to %q", filepath.Base(b.path), filepath.Base(path))
-		} else {
-			if err := os.Remove(b.path); err != nil {
-				log.Printf("Error: %s", err)
-			}
-			log.Printf("Removed pending hashes file %q", filepath.Base(b.path))
-		}
-	}
-
-	log.Printf("Finished batch with Merkle root %q", root)
-}
-
-func (a *Fossilizer) requestBatch() error {
-	var path string
-
-	if a.file != nil {
-		path = a.file.Name()
-		if err := a.file.Close(); err != nil {
-			return err
-		}
-		a.file = nil
-	}
-
-	a.waitGroup.Add(1)
-	go a.batch(batch{a.leaves, a.meta, path})
-
-	maxLeaves := a.config.MaxLeaves
-	if maxLeaves == 0 {
-		maxLeaves = DefaultMaxLeaves
-	}
-
-	a.leaves, a.meta = make([]types.Bytes32, 0, maxLeaves), make([][]byte, 0, maxLeaves)
-
 	return nil
 }
 
@@ -379,28 +430,21 @@ func (a *Fossilizer) recover() error {
 		if err != nil {
 			return err
 		}
+		defer file.Close()
 
 		dec := gob.NewDecoder(file)
 
 		for {
-			var c chunk
-
-			if err := dec.Decode(&c); err != nil {
-				if err == io.EOF {
-					break
-				}
-				file.Close()
-				return err
+			f, err := newFossilFromDecoder(dec)
+			if err == io.EOF {
+				break
 			}
-
-			if err := a.Fossilize(c.Data, c.Meta); err != nil {
-				file.Close()
+			if err = a.fossilize(f); err != nil {
 				return err
 			}
 		}
 
 		a.waitGroup.Wait()
-		file.Close()
 
 		if err := os.Remove(path); err != nil {
 			return err
@@ -412,30 +456,7 @@ func (a *Fossilizer) recover() error {
 	return nil
 }
 
-func (a *Fossilizer) open() error {
+func (a *Fossilizer) pendingPath() string {
 	filename := fmt.Sprintf("%d.%s", time.Now().UTC().UnixNano(), PendingExt)
-	path := filepath.Join(a.config.Path, filename)
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_EXCL|os.O_CREATE, FilePerm)
-	if err != nil {
-		return err
-	}
-	log.Printf("Opened pending hashes file %q", filepath.Base(path))
-
-	a.file, a.encoder = file, gob.NewEncoder(file)
-
-	return nil
-}
-
-func (a *Fossilizer) write(data []byte, meta []byte) error {
-	if err := a.encoder.Encode(chunk{data, meta}); err != nil {
-		return err
-	}
-
-	if a.config.FSync {
-		if err := a.file.Sync(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return filepath.Join(a.config.Path, filename)
 }

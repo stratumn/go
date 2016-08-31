@@ -28,7 +28,7 @@ type fossilizeTest struct {
 }
 
 func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, start bool, fossilize bool) {
-	rc := make(chan *fossilizer.Result)
+	rc := make(chan *fossilizer.Result, 1)
 	a.AddResultChan(rc)
 
 	if start {
@@ -37,13 +37,9 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 				t.Errorf("a.Start(): err: %s", err)
 			}
 		}()
-		defer func() {
-			if err := a.Stop(); err != nil {
-				t.Errorf("a.Stop(): err: %s", err)
-			}
-			close(rc)
-		}()
 	}
+
+	<-a.Started()
 
 	if fossilize {
 		for _, test := range tests {
@@ -86,9 +82,15 @@ RESULT_LOOP:
 			t.Errorf("test#%d: not fossilized", i)
 		}
 	}
+
+	if start {
+		a.Stop()
+	}
 }
 
 func benchmarkFossilize(b *testing.B, config *Config) {
+	n := b.N
+
 	a, err := New(config)
 	if err != nil {
 		b.Fatalf("New(): err: %s", err)
@@ -103,32 +105,30 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 		}
 	}()
 
-	defer func() {
-		if err := a.Stop(); err != nil {
-			b.Errorf("a.Stop(): err: %s", err)
-		}
-		close(rc)
-	}()
-
-	data := make([][]byte, b.N)
-	for i := 0; i < b.N; i++ {
+	data := make([][]byte, n)
+	for i := 0; i < n; i++ {
 		data[i] = atos(*testutil.RandomHash())
 	}
+
+	<-a.Started()
 
 	b.ResetTimer()
 	log.SetOutput(ioutil.Discard)
 
 	go func() {
-		for i := 0; i < b.N; i++ {
+		for i := 0; i < n; i++ {
 			if err := a.Fossilize(data[i], data[i]); err != nil {
 				b.Errorf("a.Fossilize(): err: %s", err)
 			}
 		}
+		a.Stop()
 	}()
 
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < n; i++ {
 		<-rc
 	}
+
+	b.StopTimer()
 }
 
 func atos(a types.Bytes32) []byte {
