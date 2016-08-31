@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultLimiterInterval is the default BlockCypher API limiter interval.
-	DefaultLimiterInterval = 2 * time.Minute
+	DefaultLimiterInterval = time.Minute
 
 	// DefaultLimiterSize is the default BlockCypher API limiter size.
 	DefaultLimiterSize = 2
