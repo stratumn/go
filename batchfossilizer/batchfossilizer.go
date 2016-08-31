@@ -30,7 +30,7 @@ const (
 	Description = "Stratumn Batch Fossilizer"
 
 	// DefaultInterval is the default interval between batches.
-	DefaultInterval = time.Minute
+	DefaultInterval = 10 * time.Minute
 
 	// DefaultMaxLeaves if the default maximum number of leaves of a Merkle tree.
 	DefaultMaxLeaves = 32 * 1024
