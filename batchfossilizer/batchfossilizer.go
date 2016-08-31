@@ -130,6 +130,7 @@ type Fossilizer struct {
 	mutex       sync.Mutex
 	waitGroup   sync.WaitGroup
 	sem         chan struct{}
+	resetChan   chan struct{}
 	closeChan   chan error
 }
 
@@ -150,6 +151,7 @@ func New(config *Config) (*Fossilizer, error) {
 		leaves:    make([]types.Bytes32, 0, maxLeaves),
 		meta:      make([][]byte, 0, maxLeaves),
 		sem:       make(chan struct{}, maxSimBatches),
+		resetChan: make(chan struct{}),
 		closeChan: make(chan error),
 	}
 
@@ -216,6 +218,7 @@ func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 			a.closeChan <- err
 			return err
 		}
+		a.resetChan <- struct{}{}
 		log.Printf("Requested new batch because the maximum number of leaves (%d) was reached", maxLeaves)
 	}
 
@@ -242,6 +245,7 @@ func (a *Fossilizer) Start() error {
 				log.Printf("No batch is needed after the %s interval because there are no pending hashes", interval)
 			}
 			a.mutex.Unlock()
+		case <-a.resetChan:
 		case err := <-a.closeChan:
 			return err
 		}
@@ -269,6 +273,7 @@ func (a *Fossilizer) Stop() error {
 
 	a.waitGroup.Wait()
 	close(a.sem)
+	close(a.resetChan)
 
 	if a.file != nil {
 		return a.file.Close()
