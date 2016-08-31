@@ -77,10 +77,7 @@ func main() {
 		sig := <-sigc
 		log.Printf("Got signal %q", sig)
 		log.Print("Cleaning up")
-		if err := a.Stop(); err != nil {
-			log.Printf("Error: %s", err)
-			os.Exit(1)
-		}
+		a.Stop()
 		log.Print("Stopped")
 		os.Exit(0)
 	}()
