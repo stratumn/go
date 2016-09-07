@@ -106,12 +106,15 @@ func (a *Fossilizer) transform(evidence *batchfossilizer.Evidence, data, meta []
 			return nil, err
 		}
 		log.Printf("Broadcasted transaction %q for Merkle root %q", txid, root)
+
+		a.lastRoot = root
+		a.lastTransactionID = txid
 	}
 
 	evidenceWrapper := map[string]*Evidence{}
 	evidenceWrapper[a.config.HashTimestamper.Network().String()] = &Evidence{
 		Evidence:      evidence,
-		TransactionID: txid,
+		TransactionID: a.lastTransactionID,
 	}
 
 	r := fossilizer.Result{
@@ -119,9 +122,6 @@ func (a *Fossilizer) transform(evidence *batchfossilizer.Evidence, data, meta []
 		Data:     data,
 		Meta:     meta,
 	}
-
-	a.lastRoot = root
-	a.lastTransactionID = txid
 
 	return &r, nil
 }
