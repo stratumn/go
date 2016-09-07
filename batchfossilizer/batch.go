@@ -38,3 +38,11 @@ func (b *batch) open(path string) (err error) {
 	b.encoder = gob.NewEncoder(b.file)
 	return
 }
+
+func (b *batch) close() (err error) {
+	if b.file != nil {
+		err = b.file.Close()
+		b.file = nil
+	}
+	return
+}
