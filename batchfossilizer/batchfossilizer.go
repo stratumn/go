@@ -215,9 +215,7 @@ func (a *Fossilizer) Start() error {
 				<-timer.C
 			}
 			timer.Reset(interval)
-			if err := a.batch(b); err != nil {
-				a.stopChan <- err
-			}
+			a.batch(b)
 		case <-timer.C:
 			timer.Stop()
 			timer.Reset(interval)
@@ -281,22 +279,12 @@ func (a *Fossilizer) fossilize(f *fossil) error {
 }
 
 func (a *Fossilizer) sendBatch() {
-	batch := a.pending
+	b := a.pending
 	a.pending = newBatch(a.config.GetMaxLeaves())
-	a.batchChan <- batch
+	a.batchChan <- b
 }
 
-func (a *Fossilizer) batch(b *batch) error {
-	var path string
-
-	if b.file != nil {
-		path = b.file.Name()
-		if err := b.file.Close(); err != nil {
-			return err
-		}
-		b.file = nil
-	}
-
+func (a *Fossilizer) batch(b *batch) {
 	a.waitGroup.Add(1)
 
 	go func() {
@@ -313,53 +301,19 @@ func (a *Fossilizer) batch(b *batch) error {
 			return
 		}
 
-		var (
-			meta = b.meta
-			ts   = time.Now().UTC().Unix()
-			root = tree.Root()
-		)
-
+		root := tree.Root()
 		log.Printf("Created tree with Merkle root %q", root)
 
-		for i := 0; i < tree.LeavesLen(); i++ {
-			var (
-				l   = tree.Leaf(i)
-				d   = l[:]
-				m   = meta[i]
-				err error
-				r   *fossilizer.Result
-			)
-
-			evidence := Evidence{
-				Time: ts,
-				Root: root,
-				Path: tree.Path(i),
-			}
-
-			if a.transformer != nil {
-				r, err = a.transformer(&evidence, d, m)
-			} else {
-				r = &fossilizer.Result{
-					Evidence: &EvidenceWrapper{
-						&evidence,
-					},
-					Data: d,
-					Meta: m,
-				}
-			}
-
-			if err == nil {
-				for _, c := range a.resultChans {
-					c <- r
-				}
-			} else {
-				log.Printf("Error: %s", err)
-			}
-		}
-
+		a.sendEvidence(tree, b.meta)
 		log.Printf("Sent evidence for batch with Merkle root %q", root)
 
-		if path != "" {
+		if b.file != nil {
+			path := b.file.Name()
+
+			if err := b.close(); err != nil {
+				log.Printf("Error: %s", err)
+			}
+
 			if a.config.Archive {
 				archivePath := filepath.Join(a.config.Path, root.String())
 				if err := os.Rename(path, archivePath); err != nil {
@@ -376,20 +330,52 @@ func (a *Fossilizer) batch(b *batch) error {
 
 		log.Printf("Finished batch with Merkle root %q", root)
 	}()
+}
 
-	return nil
+func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
+	for i := 0; i < tree.LeavesLen(); i++ {
+		var (
+			err  error
+			ts   = time.Now().UTC().Unix()
+			root = tree.Root()
+			leaf = tree.Leaf(i)
+			d    = leaf[:]
+			m    = meta[i]
+			r    *fossilizer.Result
+		)
+
+		evidence := Evidence{
+			Time: ts,
+			Root: root,
+			Path: tree.Path(i),
+		}
+
+		if a.transformer != nil {
+			r, err = a.transformer(&evidence, d, m)
+		} else {
+			r = &fossilizer.Result{
+				Evidence: &EvidenceWrapper{
+					&evidence,
+				},
+				Data: d,
+				Meta: m,
+			}
+		}
+
+		if err == nil {
+			for _, c := range a.resultChans {
+				c <- r
+			}
+		} else {
+			log.Printf("Error: %s", err)
+		}
+	}
 }
 
 func (a *Fossilizer) stop(err error) error {
 	if a.config.StopBatch {
 		if len(a.pending.data) > 0 {
-			if e := a.batch(a.pending); e != nil {
-				if err == nil {
-					err = e
-				} else {
-					log.Printf("Error: %s", e)
-				}
-			}
+			a.batch(a.pending)
 			log.Print("Requested final batch for pending hashes")
 		} else {
 			log.Print("No final batch is needed because there are no pending hashes")
