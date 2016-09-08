@@ -50,10 +50,10 @@ const (
 	PendingExt = "pending"
 
 	// DirPerm is the directory's permissions.
-	DirPerm = 0644
+	DirPerm = 0600
 
 	// FilePerm is the files's permissions.
-	FilePerm = 0644
+	FilePerm = 0600
 )
 
 // Config contains configuration options for the fossilizer.
