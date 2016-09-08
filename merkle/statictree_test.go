@@ -18,7 +18,7 @@ func TestNewStaticTree_noLeaves(t *testing.T) {
 		t.Error("NewStaticTree(): err = nil want Error")
 	}
 	if got, want := err.Error(), "tree should have at least one leaf"; got != want {
-		t.Error("NewStaticTree(): err.Error() = %q want %q", got, want)
+		t.Errorf("NewStaticTree(): err.Error() = %q want %q", got, want)
 	}
 }
 

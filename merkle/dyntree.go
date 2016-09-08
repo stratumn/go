@@ -71,7 +71,7 @@ type DynTree struct {
 	mutex  sync.RWMutex
 }
 
-// NewDynTree creates a DynTree
+// NewDynTree creates a DynTree.
 func NewDynTree(initialCap int) *DynTree {
 	return &DynTree{
 		nodes: make([]DynTreeNode, 0, initialCap),
