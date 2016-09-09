@@ -47,8 +47,9 @@ func NewStaticTree(leaves []types.Bytes32) (*StaticTree, error) {
 
 	tree := alloc(numLeaves)
 	tree.copyLeaves(leaves)
+	tree.compute()
 
-	return tree, tree.compute()
+	return tree, nil
 }
 
 // LeavesLen implements Tree.LeavesLen.
@@ -117,7 +118,7 @@ func (t *StaticTree) copyLeaves(leaves []types.Bytes32) {
 }
 
 // Computes all the hashes. Assumes that the leaves have been copied to the buffer.
-func (t *StaticTree) compute() error {
+func (t *StaticTree) compute() {
 	hash := sha256.New()
 	for row := len(t.rows) - 2; row >= 0; row-- {
 		rowLen := len(t.rows[row])
@@ -131,8 +132,6 @@ func (t *StaticTree) compute() error {
 			hash.Reset()
 		}
 	}
-
-	return nil
 }
 
 // Computes the values of a hash triplet for given row and column.
