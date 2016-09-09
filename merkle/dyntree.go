@@ -6,6 +6,7 @@ package merkle
 
 import (
 	"crypto/sha256"
+	"hash"
 	"sync"
 
 	"github.com/stratumn/go/types"
@@ -41,25 +42,21 @@ func (n *DynTreeNode) Parent() *DynTreeNode {
 	return n.parent
 }
 
-func (n *DynTreeNode) rehash(a, b *types.Bytes32) error {
-	h := sha256.New()
-	if _, err := h.Write(a[:]); err != nil {
-		return err
-	}
-	if _, err := h.Write(b[:]); err != nil {
-		return err
-	}
+func (n *DynTreeNode) rehash(h hash.Hash, a, b *types.Bytes32, rehashParent bool) {
+	h.Reset()
+
+	// Write never returns an error.
+	h.Write(a[:])
+	h.Write(b[:])
 	copy(n.hash[:], h.Sum(nil))
 
-	if n.parent != nil {
+	if rehashParent && n.parent != nil {
 		if n.left != nil {
-			n.parent.rehash(&n.left.hash, &n.hash)
+			n.parent.rehash(h, &n.left.hash, &n.hash, true)
 		} else {
-			n.parent.rehash(&n.hash, &n.right.hash)
+			n.parent.rehash(h, &n.hash, &n.right.hash, true)
 		}
 	}
-
-	return nil
 }
 
 // DynTree is designed for Merkle trees that can mutate.
@@ -69,12 +66,16 @@ type DynTree struct {
 	leaves []*DynTreeNode
 	height int
 	mutex  sync.RWMutex
+	hash   hash.Hash
+	paused bool
 }
 
 // NewDynTree creates a DynTree.
 func NewDynTree(initialCap int) *DynTree {
 	return &DynTree{
-		nodes: make([]DynTreeNode, 0, initialCap),
+		nodes:  make([]DynTreeNode, 0, initialCap*2-1),
+		leaves: make([]*DynTreeNode, 0, initialCap),
+		hash:   sha256.New(),
 	}
 }
 
@@ -98,7 +99,7 @@ func (t *DynTree) Path(index int) Path {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
-	if len(t.nodes) < 2 {
+	if len(t.leaves) < 2 {
 		return Path{}
 	}
 
@@ -131,7 +132,7 @@ func (t *DynTree) Path(index int) Path {
 }
 
 // Add adds a leaf to the tree.
-func (t *DynTree) Add(leaf *types.Bytes32) error {
+func (t *DynTree) Add(leaf *types.Bytes32) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
@@ -170,27 +171,63 @@ func (t *DynTree) Add(leaf *types.Bytes32) error {
 			t.height = parent.height
 		}
 
-		if err := parent.rehash(&left.hash, leaf); err != nil {
-			return err
+		if !t.paused {
+			parent.rehash(t.hash, &left.hash, leaf, true)
 		}
 	}
-
-	return nil
 }
 
 // Update updates a leaf of the tree.
-func (t *DynTree) Update(index int, hash *types.Bytes32) error {
+func (t *DynTree) Update(index int, hash *types.Bytes32) {
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
 	node := t.leaves[index]
 	node.hash = *hash
 
-	if node.left != nil {
-		return node.parent.rehash(&node.left.hash, hash)
-	} else if node.right != nil {
-		return node.parent.rehash(hash, &node.right.hash)
+	if !t.paused {
+		if node.left != nil {
+			node.parent.rehash(t.hash, &node.left.hash, hash, true)
+		} else if node.right != nil {
+			node.parent.rehash(t.hash, hash, &node.right.hash, true)
+		}
 	}
+}
 
-	return nil
+// Pause pauses the computation of hashes.
+func (t *DynTree) Pause() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.paused = true
+}
+
+// Resume resumes the computation of hashes.
+func (t *DynTree) Resume() {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+	t.recompute()
+	t.paused = false
+}
+
+func (t *DynTree) recompute() {
+	rows := t.leaves
+
+	for {
+		if len(rows) < 1 {
+			break
+		}
+
+		top := make([]*DynTreeNode, 0, len(rows)/2)
+		height := rows[0].height
+
+		for i := 0; i < len(rows); i += 2 {
+			node := rows[i]
+			if node.parent != nil && node.parent.height == height+1 {
+				node.parent.rehash(t.hash, &node.hash, &node.right.hash, false)
+				top = append(top, node.parent)
+			}
+		}
+
+		rows = top
+	}
 }
