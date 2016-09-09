@@ -103,9 +103,7 @@ func TestTreeConsistency(t *testing.T) {
 
 		dyn := merkle.NewDynTree(len(tests) * 2)
 		for _, leaf := range tests {
-			if err := dyn.Add(&leaf); err != nil {
-				t.Errorf("dyn.Add(): err: %s", err)
-			}
+			dyn.Add(&leaf)
 		}
 
 		if got, want := static.Root().String(), dyn.Root().String(); got != want {

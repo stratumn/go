@@ -16,10 +16,24 @@ import (
 func TestDynTree(t *testing.T) {
 	treetestcases.Factory{
 		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
-			tree := merkle.NewDynTree(len(leaves) * 2)
+			tree := merkle.NewDynTree(len(leaves))
 			for _, leaf := range leaves {
 				tree.Add(&leaf)
 			}
+			return tree, nil
+		},
+	}.RunTests(t)
+}
+
+func TestDynTreePause(t *testing.T) {
+	treetestcases.Factory{
+		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
+			tree := merkle.NewDynTree(len(leaves))
+			tree.Pause()
+			for _, leaf := range leaves {
+				tree.Add(&leaf)
+			}
+			tree.Resume()
 			return tree, nil
 		},
 	}.RunTests(t)
@@ -63,10 +77,24 @@ func TestDynTreeUpdate(t *testing.T) {
 func BenchmarkDynTree(b *testing.B) {
 	treetestcases.Factory{
 		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
-			tree := merkle.NewDynTree(len(leaves) * 2)
+			tree := merkle.NewDynTree(len(leaves))
 			for _, leaf := range leaves {
 				tree.Add(&leaf)
 			}
+			return tree, nil
+		},
+	}.RunBenchmarks(b)
+}
+
+func BenchmarkDynTreePause(b *testing.B) {
+	treetestcases.Factory{
+		New: func(leaves []types.Bytes32) (merkle.Tree, error) {
+			tree := merkle.NewDynTree(len(leaves))
+			tree.Pause()
+			for _, leaf := range leaves {
+				tree.Add(&leaf)
+			}
+			tree.Resume()
 			return tree, nil
 		},
 	}.RunBenchmarks(b)
