@@ -119,7 +119,7 @@ func TestTreeConsistency(t *testing.T) {
 			if !reflect.DeepEqual(p1, p2) {
 				got, _ := json.MarshalIndent(p1, "", "  ")
 				want, _ := json.MarshalIndent(p2, "", "  ")
-				t.Errorf("test#%d: static.Path() = %s\nwant %s\n", got, want)
+				t.Errorf("test#%d: static.Path() = %s\nwant %s\n", j, got, want)
 			}
 		}
 	}
