@@ -33,20 +33,9 @@ const (
 	sqlFindSegments = `
 		SELECT data FROM segments
 		ORDER BY priority DESC, created_at DESC
-		OFFSET $1
-    `
-	sqlFindSegmentsWithLimit = `
-		SELECT data FROM segments
-		ORDER BY priority DESC, created_at DESC
 		OFFSET $1 LIMIT $2
     `
 	sqlFindSegmentsWithMapID = `
-		SELECT data FROM segments
-		WHERE map_id = $1
-		ORDER BY priority DESC, created_at DESC
-		OFFSET $2
-    `
-	sqlFindSegmentsWithMapIDAndLimit = `
 		SELECT data FROM segments
 		WHERE map_id = $1
 		ORDER BY priority DESC, created_at DESC
@@ -56,21 +45,9 @@ const (
 		SELECT data FROM segments
 		WHERE prev_link_hash = $1
 		ORDER BY priority DESC, created_at DESC
-		OFFSET $2
-    `
-	sqlFindSegmentsWithPrevLinkHashAndLimit = `
-		SELECT data FROM segments
-		WHERE prev_link_hash = $1
-		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
     `
 	sqlFindSegmentsWithTags = `
-		SELECT data FROM segments
-		WHERE tags @> $1
-		ORDER BY priority DESC, created_at DESC
-		OFFSET $2
-    `
-	sqlFindSegmentsWithTagsAndLimit = `
 		SELECT data FROM segments
 		WHERE tags @> $1
 		ORDER BY priority DESC, created_at DESC
@@ -80,32 +57,15 @@ const (
 		SELECT data FROM segments
 		WHERE map_id = $1 AND tags @> $2
 		ORDER BY priority DESC, created_at DESC
-		OFFSET $3
-    `
-	sqlFindSegmentsWithMapIDAndTagsAndLimit = `
-		SELECT data FROM segments
-		WHERE map_id = $1 AND tags @> $2
-		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
     `
 	sqlFindSegmentsWithPrevLinkHashAndTags = `
 		SELECT data FROM segments
 		WHERE prev_link_hash = $1 AND tags @> $2
 		ORDER BY priority DESC, created_at DESC
-		OFFSET $3
-    `
-	sqlFindSegmentsWithPrevLinkHashAndTagsAndLimit = `
-		SELECT data FROM segments
-		WHERE prev_link_hash = $1 AND tags @> $2
-		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
     `
 	sqlGetMapIDs = `
-		SELECT DISTINCT map_id FROM segments
-		ORDER BY map_id
-		OFFSET $1
-    `
-	sqlGetMapIDsWithLimit = `
 		SELECT DISTINCT map_id FROM segments
 		ORDER BY map_id
 		OFFSET $1 LIMIT $2
@@ -161,29 +121,23 @@ var sqlDrop = []string{
 	"DROP INDEX IF EXISTS segments_tags_idx",
 }
 
-type statements struct {
-	SaveSegment                                 *sql.Stmt
-	GetSegment                                  *sql.Stmt
-	DeleteSegment                               *sql.Stmt
-	FindSegments                                *sql.Stmt
-	FindSegmentsWithLimit                       *sql.Stmt
-	FindSegmentsWithMapID                       *sql.Stmt
-	FindSegmentsWithMapIDAndLimit               *sql.Stmt
-	FindSegmentsWithPrevLinkHash                *sql.Stmt
-	FindSegmentsWithPrevLinkHashAndLimit        *sql.Stmt
-	FindSegmentsWithTags                        *sql.Stmt
-	FindSegmentsWithTagsAndLimit                *sql.Stmt
-	FindSegmentsWithMapIDAndTags                *sql.Stmt
-	FindSegmentsWithMapIDAndTagsAndLimit        *sql.Stmt
-	FindSegmentsWithPrevLinkHashAndTags         *sql.Stmt
-	FindSegmentsWithPrevLinkHashAndTagsAndLimit *sql.Stmt
-	GetMapIDs                                   *sql.Stmt
-	GetMapIDsWithLimit                          *sql.Stmt
+type stmts struct {
+	SaveSegment                         *sql.Stmt
+	GetSegment                          *sql.Stmt
+	DeleteSegment                       *sql.Stmt
+	FindSegments                        *sql.Stmt
+	FindSegmentsWithMapID               *sql.Stmt
+	FindSegmentsWithPrevLinkHash        *sql.Stmt
+	FindSegmentsWithTags                *sql.Stmt
+	FindSegmentsWithTagsAndLimit        *sql.Stmt
+	FindSegmentsWithMapIDAndTags        *sql.Stmt
+	FindSegmentsWithPrevLinkHashAndTags *sql.Stmt
+	GetMapIDs                           *sql.Stmt
 }
 
-func newStatements(db *sql.DB) (*statements, error) {
+func newStmts(db *sql.DB) (*stmts, error) {
 	var (
-		s   statements
+		s   stmts
 		err error
 	)
 
@@ -198,19 +152,12 @@ func newStatements(db *sql.DB) (*statements, error) {
 	s.GetSegment = prepare(sqlGetSegment)
 	s.DeleteSegment = prepare(sqlDeleteSegment)
 	s.FindSegments = prepare(sqlFindSegments)
-	s.FindSegmentsWithLimit = prepare(sqlFindSegmentsWithLimit)
 	s.FindSegmentsWithMapID = prepare(sqlFindSegmentsWithMapID)
-	s.FindSegmentsWithMapIDAndLimit = prepare(sqlFindSegmentsWithMapIDAndLimit)
 	s.FindSegmentsWithPrevLinkHash = prepare(sqlFindSegmentsWithPrevLinkHash)
-	s.FindSegmentsWithPrevLinkHashAndLimit = prepare(sqlFindSegmentsWithPrevLinkHashAndLimit)
 	s.FindSegmentsWithTags = prepare(sqlFindSegmentsWithTags)
-	s.FindSegmentsWithTagsAndLimit = prepare(sqlFindSegmentsWithTagsAndLimit)
 	s.FindSegmentsWithMapIDAndTags = prepare(sqlFindSegmentsWithMapIDAndTags)
-	s.FindSegmentsWithMapIDAndTagsAndLimit = prepare(sqlFindSegmentsWithMapIDAndTagsAndLimit)
 	s.FindSegmentsWithPrevLinkHashAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndTags)
-	s.FindSegmentsWithPrevLinkHashAndTagsAndLimit = prepare(sqlFindSegmentsWithPrevLinkHashAndTagsAndLimit)
 	s.GetMapIDs = prepare(sqlGetMapIDs)
-	s.GetMapIDsWithLimit = prepare(sqlGetMapIDsWithLimit)
 
 	if err != nil {
 		return nil, err
