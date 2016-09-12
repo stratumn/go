@@ -91,7 +91,7 @@ var sqlCreate = []string{
 	`,
 	`
 		CREATE INDEX IF NOT EXISTS segments_tags_idx
-		ON segments USING gin((data#>>'{link,meta,tags}'))
+		ON segments USING gin((data#>'{link,meta,tags}'))
 	`,
 }
 
