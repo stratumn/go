@@ -9,7 +9,6 @@ package postgresstore
 import (
 	"database/sql"
 	"encoding/json"
-	"math"
 
 	"github.com/lib/pq"
 	"github.com/stratumn/go/cs"
@@ -79,65 +78,20 @@ func (a *Store) GetInfo() (interface{}, error) {
 
 // SaveSegment implements github.com/stratumn/go/store.Adapter.SaveSegment.
 func (a *Store) SaveSegment(segment *cs.Segment) error {
-	var (
-		err             error
-		ok              bool
-		linkHashStr     string
-		linkHash        []byte
-		priority        float64
-		mapID           string
-		prevLinkHashStr string
-		prevLinkHash    []byte
-		tags            []string
-		data            string
-	)
-
-	linkHashStr = segment.Meta["linkHash"].(string)
-	linkHash32, err := types.NewBytes32FromString(linkHashStr)
-	if err != nil {
-		return err
-	}
-	linkHash = linkHash32[:]
-
-	if priority, ok = segment.Link.Meta["priority"].(float64); !ok {
-		priority = math.Inf(-1)
-	}
-
-	mapID = segment.Link.Meta["mapId"].(string)
-
-	if prevLinkHashStr, ok = segment.Link.Meta["prevLinkHash"].(string); ok {
-		prevLinkHash32, err := types.NewBytes32FromString(prevLinkHashStr)
-		if err != nil {
-			return err
-		}
-		prevLinkHash = prevLinkHash32[:]
-	}
-
-	if b, err := json.Marshal(segment); err == nil {
-		data = string(b)
-	} else {
-		return err
-	}
-
-	if t, ok := segment.Link.Meta["tags"].([]interface{}); ok {
-		for _, v := range t {
-			tags = append(tags, v.(string))
-		}
-	}
-
-	_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), data)
+	data, err := json.Marshal(segment)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	_, err = a.stmts.SaveSegment.Exec(string(data))
+	return err
 }
 
 // GetSegment implements github.com/stratumn/go/store.Adapter.GetSegment.
 func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	var data string
 
-	if err := a.stmts.GetSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
+	if err := a.stmts.GetSegment.QueryRow(linkHash.String()).Scan(&data); err != nil {
 		if err.Error() == notFoundError {
 			return nil, nil
 		}
@@ -159,7 +113,7 @@ func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 		segment cs.Segment
 	)
 
-	if err := a.stmts.DeleteSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
+	if err := a.stmts.DeleteSegment.QueryRow(linkHash.String()).Scan(&data); err != nil {
 		if err.Error() == notFoundError {
 			return nil, nil
 		}
@@ -176,23 +130,22 @@ func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 // FindSegments implements github.com/stratumn/go/store.Adapter.FindSegments.
 func (a *Store) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
 	var (
-		rows         *sql.Rows
-		err          error
-		prevLinkHash = filter.PrevLinkHash
-		mapID        = filter.MapID
-		limit        = filter.Limit
-		offset       = filter.Offset
-		segments     = make(cs.SegmentSlice, 0, limit)
+		rows     *sql.Rows
+		err      error
+		limit    = filter.Limit
+		offset   = filter.Offset
+		segments = make(cs.SegmentSlice, 0, limit)
 	)
 
-	if prevLinkHash != nil {
+	if filter.PrevLinkHash != nil {
+		prevLinkHash := filter.PrevLinkHash.String()
 		if len(filter.Tags) > 0 {
 			tags := pq.Array(filter.Tags)
-			rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndTags.Query(prevLinkHash[:], tags, offset, limit)
+			rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndTags.Query(prevLinkHash, tags, offset, limit)
 		} else {
-			rows, err = a.stmts.FindSegmentsWithPrevLinkHash.Query(prevLinkHash[:], offset, limit)
+			rows, err = a.stmts.FindSegmentsWithPrevLinkHash.Query(prevLinkHash, offset, limit)
 		}
-	} else if mapID != "" {
+	} else if mapID := filter.MapID; mapID != "" {
 		if len(filter.Tags) > 0 {
 			tags := pq.Array(filter.Tags)
 			rows, err = a.stmts.FindSegmentsWithMapIDAndTags.Query(mapID, tags, offset, limit)
