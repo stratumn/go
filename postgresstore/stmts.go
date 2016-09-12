@@ -68,7 +68,7 @@ var sqlCreate = []string{
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
-    `,
+	`,
 	`
 		CREATE UNIQUE INDEX IF NOT EXISTS segments_link_hash_idx
 		ON segments ((data#>>'{meta,linkHash}'))
