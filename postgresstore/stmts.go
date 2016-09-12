@@ -8,65 +8,65 @@ const (
 		VALUES ($1)
 		ON CONFLICT ((data#>>'{meta,linkHash}'))
 		DO UPDATE SET data = $1
-    `
+	`
 	sqlGetSegment = `
 		SELECT data FROM segments
 		WHERE data#>>'{meta,linkHash}' = $1
-    `
+	`
 	sqlDeleteSegment = `
 		DELETE FROM segments
 		WHERE data#>>'{meta,linkHash}' = $1
 		RETURNING data
-    `
+	`
 	sqlFindSegments = `
 		SELECT data FROM segments
 		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
 		OFFSET $1 LIMIT $2
-    `
+	`
 	sqlFindSegmentsWithMapID = `
 		SELECT data FROM segments
 		WHERE data#>>'{link,meta,mapId}' = $1
 		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
 		OFFSET $2 LIMIT $3
-    `
+	`
 	sqlFindSegmentsWithPrevLinkHash = `
 		SELECT data FROM segments
 		WHERE data#>>'{link,meta,prevLinkHash}' = $1
 		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
 		OFFSET $2 LIMIT $3
-    `
+	`
 	sqlFindSegmentsWithTags = `
 		SELECT data FROM segments
 		WHERE data#>'{link,meta,tags}' ?& $1
 		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
 		OFFSET $2 LIMIT $3
-    `
+	`
 	sqlFindSegmentsWithMapIDAndTags = `
 		SELECT data FROM segments
 		WHERE data#>>'{link,meta,mapId}' = $1 AND data#>'{link,meta,tags}' ?& $2
 		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
 		OFFSET $3 LIMIT $4
-    `
+	`
 	sqlFindSegmentsWithPrevLinkHashAndTags = `
 		SELECT data FROM segments
 		WHERE data#>>'{link,meta,prevLinkHash}' = $1 AND data#>'{link,meta,tags}' ?& $2
 		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
 		OFFSET $3 LIMIT $4
-    `
+	`
 	sqlGetMapIDs = `
 		SELECT DISTINCT data#>>'{link,meta,mapId}' FROM segments
 		ORDER BY data#>>'{link,meta,mapId}'
 		OFFSET $1 LIMIT $2
-    `
+	`
 )
 
 var sqlCreate = []string{
 	`
 		CREATE TABLE IF NOT EXISTS segments (
-		    id BIGSERIAL PRIMARY KEY,
-		    data jsonb NOT NULL,
-		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			id BIGSERIAL PRIMARY KEY,
+			data jsonb NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
     `,
 	`
