@@ -248,6 +248,59 @@ func (f Factory) TestFindSegmentsMapID(t *testing.T) {
 	}
 }
 
+// TestFindSegmentsMapIDTags tests whan happens when you search for an existing map ID and tags.
+func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
+	a, err := f.New()
+	if err != nil {
+		t.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		t.Fatal("a = nil want store.Adapter")
+	}
+	defer f.free(a)
+
+	tag1 := testutil.RandomString(5)
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s := cstesting.RandomSegment()
+		s.Link.Meta["mapId"] = "map1"
+		s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+		a.SaveSegment(s)
+	}
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s := cstesting.RandomSegment()
+		s.Link.Meta["mapId"] = "map1"
+		s.Link.Meta["tags"] = []interface{}{testutil.RandomString(5)}
+		a.SaveSegment(s)
+	}
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s := cstesting.RandomSegment()
+		s.Link.Meta["mapId"] = "map2"
+		s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+		a.SaveSegment(s)
+	}
+
+	slice, err := a.FindSegments(&store.Filter{
+		Pagination: store.Pagination{
+			Limit: store.DefaultLimit * 3,
+		},
+		MapID: "map1",
+		Tags:  []string{tag1},
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nit want cs.SegmentSlice")
+	}
+	if got, want := len(slice), store.DefaultLimit; want != got {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
 // TestFindSegmentsMapIDNotFound tests whan happens when you search for a nonexistent map ID.
 func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
 	a, err := f.New()
@@ -297,6 +350,101 @@ func (f Factory) TestFindSegmentsPrevLinkHash(t *testing.T) {
 			Limit: store.DefaultLimit * 2,
 		},
 		PrevLinkHash: s.GetLinkHash(),
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nit want cs.SegmentSlice")
+	}
+	if got, want := len(slice), store.DefaultLimit; want != got {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestFindSegmentsPrevLinkHashTags tests whan happens when you search for a previous link hash and tags.
+func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
+	a, err := f.New()
+	if err != nil {
+		t.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		t.Fatal("a = nil want store.Adapter")
+	}
+	defer f.free(a)
+
+	s1 := cstesting.RandomSegment()
+	a.SaveSegment(s1)
+	tag1 := testutil.RandomString(5)
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s2 := cstesting.RandomBranch(s1)
+		s2.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+		a.SaveSegment(s2)
+	}
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s2 := cstesting.RandomBranch(s1)
+		s2.Link.Meta["tags"] = []interface{}{testutil.RandomString(5)}
+		a.SaveSegment(s2)
+	}
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s2 := cstesting.RandomSegment()
+		s2.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+		a.SaveSegment(s2)
+	}
+
+	slice, err := a.FindSegments(&store.Filter{
+		Pagination: store.Pagination{
+			Limit: store.DefaultLimit * 3,
+		},
+		PrevLinkHash: s1.GetLinkHash(),
+		Tags:         []string{tag1},
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nit want cs.SegmentSlice")
+	}
+	if got, want := len(slice), store.DefaultLimit; want != got {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestFindSegmentsPrevLinkHashMapID tests that the map ID is ignored if a previous link hash is given.
+func (f Factory) TestFindSegmentsPrevLinkHashMapID(t *testing.T) {
+	a, err := f.New()
+	if err != nil {
+		t.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		t.Fatal("a = nil want store.Adapter")
+	}
+	defer f.free(a)
+
+	s1 := cstesting.RandomSegment()
+	a.SaveSegment(s1)
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s2 := cstesting.RandomBranch(s1)
+		a.SaveSegment(s2)
+	}
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		s2 := cstesting.RandomSegment()
+		a.SaveSegment(s2)
+	}
+
+	slice, err := a.FindSegments(&store.Filter{
+		Pagination: store.Pagination{
+			Limit: store.DefaultLimit * 2,
+		},
+		PrevLinkHash: s1.GetLinkHash(),
+		MapID:        "test",
 	})
 	if err != nil {
 		t.Fatalf("a.FindSegments(): err: %s", err)
