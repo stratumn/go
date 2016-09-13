@@ -17,12 +17,28 @@ package cs
 
 import (
 	"errors"
+	"math"
+
+	"github.com/stratumn/go/types"
 )
 
 // Segment contains a link and meta data about the link.
 type Segment struct {
 	Link Link                   `json:"link"`
 	Meta map[string]interface{} `json:"meta"`
+}
+
+// GetLinkHash returns the link ID as bytes.
+// It assumes the segment is valid.
+func (s *Segment) GetLinkHash() *types.Bytes32 {
+	b, _ := types.NewBytes32FromString(s.GetLinkHashString())
+	return b
+}
+
+// GetLinkHashString returns the link ID as a string.
+// It assumes the segment is valid.
+func (s *Segment) GetLinkHashString() string {
+	return s.Meta["linkHash"].(string)
 }
 
 // Validate checks for errors in a segment.
@@ -66,6 +82,57 @@ type Link struct {
 	Meta  map[string]interface{} `json:"meta"`
 }
 
+// GetPriority returns the priority as a float64
+// It assumes the link is valid.
+// If priority is nil, it will return -Infinity.
+func (l *Link) GetPriority() float64 {
+	if f64, ok := l.Meta["priority"].(float64); ok {
+		return f64
+	}
+	return math.Inf(-1)
+}
+
+// GetMapID returns the map ID as a string.
+// It assumes the link is valid.
+func (l *Link) GetMapID() string {
+	return l.Meta["mapId"].(string)
+}
+
+// GetPrevLinkHash returns the previous link hash as a bytes.
+// It assumes the link is valid.
+// It will return nilif the previous link hash is null.
+func (l *Link) GetPrevLinkHash() *types.Bytes32 {
+	if str, ok := l.Meta["prevLinkHash"].(string); ok {
+		b, _ := types.NewBytes32FromString(str)
+		return b
+	}
+	return nil
+}
+
+// GetPrevLinkHashString returns the previous link hash as a string.
+// It assumes the link is valid.
+// It will return an empty string if the previous link hash is null.
+func (l *Link) GetPrevLinkHashString() string {
+	if str, ok := l.Meta["prevLinkHash"].(string); ok {
+		return str
+	}
+	return ""
+}
+
+// GetTags returns the tags as an array of string.
+// It assumes the link is valid.
+// It will return nil if there are no tags.
+func (l *Link) GetTags() []string {
+	if t, ok := l.Meta["tags"].([]interface{}); ok {
+		tags := make([]string, len(t))
+		for i, v := range t {
+			tags[i] = v.(string)
+		}
+		return tags
+	}
+	return nil
+}
+
 // SegmentSlice is a slice of segment pointers.
 type SegmentSlice []*Segment
 
@@ -82,23 +149,19 @@ func (s SegmentSlice) Swap(i, j int) {
 // Less implements sort.Interface.Less.
 func (s SegmentSlice) Less(i, j int) bool {
 	var (
-		s1      = s[i]
-		s2      = s[j]
-		p1, ok1 = s1.Link.Meta["priority"].(float64)
-		p2, ok2 = s2.Link.Meta["priority"].(float64)
+		s1 = s[i]
+		s2 = s[j]
+		p1 = s1.Link.GetPriority()
+		p2 = s2.Link.GetPriority()
 	)
 
-	if !ok1 && ok2 {
-		return false
-	}
-
-	if ok1 && !ok2 {
+	if p1 > p2 {
 		return true
 	}
 
-	if ok1 && ok2 && p1 != p2 {
-		return p1 > p2
+	if p1 < p2 {
+		return false
 	}
 
-	return s1.Meta["linkHash"].(string) < s2.Meta["linkHash"].(string)
+	return s1.GetLinkHashString() < s2.GetLinkHashString()
 }

@@ -15,12 +15,36 @@
 package cs_test
 
 import (
+	"math"
+	"reflect"
 	"sort"
 	"testing"
 
 	"github.com/stratumn/go/cs"
 	"github.com/stratumn/go/cs/cstesting"
+	"github.com/stratumn/go/types"
 )
+
+func TestSegmentGetLinkHash(t *testing.T) {
+	s := cstesting.RandomSegment()
+	wantStr := "0123456789012345678901234567890123456789012345678901234567890123"
+	s.Meta["linkHash"] = wantStr
+	got := s.GetLinkHash()
+	want, _ := types.NewBytes32FromString(wantStr)
+	if *got != *want {
+		t.Errorf("s.GetLinkHash() = %q want %q", got, want)
+	}
+}
+
+func TestSegmentGetLinkHashString(t *testing.T) {
+	s := cstesting.RandomSegment()
+	want := "0123456789012345678901234567890123456789012345678901234567890123"
+	s.Meta["linkHash"] = want
+	got := s.GetLinkHashString()
+	if got != want {
+		t.Errorf("s.GetLinkHash() = %q want %q", got, want)
+	}
+}
 
 func TestSegmentValidate_valid(t *testing.T) {
 	s := cstesting.RandomSegment()
@@ -181,5 +205,89 @@ func TestSegmentSliceSort_noPriority(t *testing.T) {
 		} else {
 			wantLTE = 0
 		}
+	}
+}
+
+func TestLinkGetPriority_notNil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	want := float64(1.0)
+	s.Link.Meta["priority"] = want
+	got := s.Link.GetPriority()
+	if got != want {
+		t.Errorf("s.Link.GetPriority() = %f want %f", got, want)
+	}
+}
+
+func TestLinkGetPriority_nil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	delete(s.Link.Meta, "priority")
+	if got := s.Link.GetPriority(); !math.IsInf(got, -1) {
+		t.Errorf("s.Link.GetPriority() = %f want -Inf", got)
+	}
+}
+
+func TestLinkGetMapID(t *testing.T) {
+	s := cstesting.RandomSegment()
+	want := "hello"
+	s.Link.Meta["mapId"] = want
+	got := s.Link.GetMapID()
+	if got != want {
+		t.Errorf("s.Link.GetMapID() = %q want %q", got, want)
+	}
+}
+
+func TestLinkGetPrevLinkHash_notNil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	wantStr := "0123456789012345678901234567890123456789012345678901234567890123"
+	s.Link.Meta["prevLinkHash"] = wantStr
+	got := s.Link.GetPrevLinkHash()
+	want, _ := types.NewBytes32FromString(wantStr)
+	if *got != *want {
+		t.Errorf("s.Link.GetPrevLinkHash() = %q want %q", got, want)
+	}
+}
+
+func TestLinkGetPrevLinkHash_nil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	delete(s.Link.Meta, "prevLinkHash")
+	if got := s.Link.GetPrevLinkHash(); got != nil {
+		t.Errorf("s.Link.GetPrevLinkHash() = %q want nil", got)
+	}
+}
+
+func TestLinkGetPrevLinkHashString_notNil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	want := "0123456789012345678901234567890123456789012345678901234567890123"
+	s.Link.Meta["prevLinkHash"] = want
+	got := s.Link.GetPrevLinkHashString()
+	if got != want {
+		t.Errorf("s.Link.GetPrevLinkHashString() = %q want %q", got, want)
+	}
+}
+
+func TestLinkGetPrevLinkHashString_nil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	delete(s.Link.Meta, "prevLinkHash")
+	if got, want := s.Link.GetPrevLinkHashString(), ""; got != want {
+		t.Errorf("s.Link.GetPrevLinkHashString() = %q want %q", got, want)
+	}
+}
+
+func TestLinkGetTags_notNil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	want := []string{"one", "two"}
+	s.Link.Meta["tags"] = []interface{}{"one", "two"}
+	got := s.Link.GetTags()
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("s.Link.GetTags() = %q want %q", got, want)
+	}
+}
+
+func TestLinkGetTags_nil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	delete(s.Link.Meta, "tags")
+	got := s.Link.GetTags()
+	if got != nil {
+		t.Errorf("s.Link.GetTags() = %q want nil", got)
 	}
 }
