@@ -41,11 +41,7 @@ func (f Factory) TestDeleteSegment(t *testing.T) {
 	s1 := cstesting.RandomSegment()
 	a.SaveSegment(s1)
 
-	linkHash, err := types.NewBytes32FromString(s1.Meta["linkHash"].(string))
-	if err != nil {
-		t.Fatalf("types.NewBytes32FromString(): err: %s", err)
-	}
-
+	linkHash := s1.GetLinkHash()
 	s2, err := a.DeleteSegment(linkHash)
 	if err != nil {
 		t.Fatalf("a.DeleteSegment(): err: %s", err)
@@ -107,7 +103,7 @@ func (f Factory) BenchmarkDeleteSegment(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s := cstesting.RandomSegment()
 		a.SaveSegment(s)
-		linkHashes[i], _ = types.NewBytes32FromString(s.Meta["linkHash"].(string))
+		linkHashes[i] = s.GetLinkHash()
 	}
 
 	b.ResetTimer()
@@ -137,7 +133,7 @@ func (f Factory) BenchmarkDeleteSegmentParallel(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s := cstesting.RandomSegment()
 		a.SaveSegment(s)
-		linkHashes[i], _ = types.NewBytes32FromString(s.Meta["linkHash"].(string))
+		linkHashes[i] = s.GetLinkHash()
 	}
 
 	var counter uint64

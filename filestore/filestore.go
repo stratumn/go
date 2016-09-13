@@ -141,24 +141,20 @@ func (a *FileStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) 
 	var segments cs.SegmentSlice
 
 	a.forEach(func(segment *cs.Segment) error {
-		if filter.MapID != "" && filter.MapID != segment.Link.Meta["mapId"].(string) {
+		if filter.MapID != "" && filter.MapID != segment.Link.GetMapID() {
 			return nil
 		}
 
 		if filter.PrevLinkHash != nil {
-			prevLinkHash, ok := segment.Link.Meta["prevLinkHash"].(string)
-			if !ok || filter.PrevLinkHash.String() != prevLinkHash {
+			prevLinkHash := segment.Link.GetPrevLinkHash()
+			if prevLinkHash == nil || *filter.PrevLinkHash != *prevLinkHash {
 				return nil
 			}
 		}
 
 		if len(filter.Tags) > 0 {
-			if t, ok := segment.Link.Meta["tags"].([]interface{}); ok {
-				var tags []string
-				for _, v := range t {
-					tags = append(tags, v.(string))
-				}
-
+			tags := segment.Link.GetTags()
+			if len(tags) > 0 {
 				for _, tag := range filter.Tags {
 					if !containsString(tags, tag) {
 						return nil
@@ -183,7 +179,7 @@ func (a *FileStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) 
 func (a *FileStore) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 	set := map[string]struct{}{}
 	a.forEach(func(segment *cs.Segment) error {
-		set[segment.Link.Meta["mapId"].(string)] = struct{}{}
+		set[segment.Link.GetMapID()] = struct{}{}
 		return nil
 	})
 

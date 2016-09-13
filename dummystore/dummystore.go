@@ -83,17 +83,12 @@ func (a *DummyStore) SaveSegment(segment *cs.Segment) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	linkHashStr := segment.Meta["linkHash"].(string)
-	linkHash, err := types.NewBytes32FromString(linkHashStr)
-	if err != nil {
-		return err
-	}
-
-	curr := a.segments[linkHash.String()]
-	mapID := segment.Link.Meta["mapId"].(string)
+	linkHashStr := segment.GetLinkHashString()
+	curr := a.segments[linkHashStr]
+	mapID := segment.Link.GetMapID()
 
 	if curr != nil {
-		currMapID := curr.Link.Meta["mapId"].(string)
+		currMapID := curr.Link.GetMapID()
 		if currMapID != mapID {
 			delete(a.maps[currMapID], linkHashStr)
 		}
@@ -130,7 +125,7 @@ func (a *DummyStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 	}
 
 	delete(a.segments, linkHashStr)
-	delete(a.maps[segment.Link.Meta["mapId"].(string)], linkHashStr)
+	delete(a.maps[segment.Link.GetMapID()], linkHashStr)
 
 	return segment, nil
 }
@@ -184,18 +179,15 @@ HASH_LOOP:
 		segment := a.segments[linkHash]
 
 		if filter.PrevLinkHash != nil {
-			prevLinkHash, ok := segment.Link.Meta["prevLinkHash"].(string)
-			if !ok || filter.PrevLinkHash.String() != prevLinkHash {
+			prevLinkHash := segment.Link.GetPrevLinkHash()
+			if prevLinkHash == nil || *filter.PrevLinkHash != *prevLinkHash {
 				continue
 			}
 		}
 
 		if len(filter.Tags) > 0 {
-			if t, ok := segment.Link.Meta["tags"].([]interface{}); ok {
-				var tags []string
-				for _, v := range t {
-					tags = append(tags, v.(string))
-				}
+			tags := segment.Link.GetTags()
+			if len(tags) > 0 {
 				for _, tag := range filter.Tags {
 					if !containsString(tags, tag) {
 						continue HASH_LOOP

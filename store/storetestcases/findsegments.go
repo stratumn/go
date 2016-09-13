@@ -22,7 +22,6 @@ import (
 	"github.com/stratumn/go/cs/cstesting"
 	"github.com/stratumn/go/store"
 	"github.com/stratumn/go/testutil"
-	"github.com/stratumn/go/types"
 )
 
 // TestFindSegments tests what happens when you search with default pagination.
@@ -55,7 +54,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	wantLTE := 100.0
 	for _, s := range slice {
-		got := s.Link.Meta["priority"].(float64)
+		got := s.Link.GetPriority()
 		if got > wantLTE {
 			t.Errorf("priority = %f want <= %f", got, wantLTE)
 		}
@@ -95,7 +94,7 @@ func (f Factory) TestFindSegmentsPagination(t *testing.T) {
 
 	wantLTE := 100.0
 	for _, s := range slice {
-		got := s.Link.Meta["priority"].(float64)
+		got := s.Link.GetPriority()
 		if got > wantLTE {
 			t.Errorf("priority = %f want <= %f", got, wantLTE)
 		}
@@ -293,16 +292,11 @@ func (f Factory) TestFindSegmentsPrevLinkHash(t *testing.T) {
 		a.SaveSegment(cstesting.RandomBranch(s))
 	}
 
-	linkHash, err := types.NewBytes32FromString(s.Meta["linkHash"].(string))
-	if err != nil {
-		t.Fatalf("types.NewBytes32FromString(): err: %s", err)
-	}
-
 	slice, err := a.FindSegments(&store.Filter{
 		Pagination: store.Pagination{
 			Limit: store.DefaultLimit * 2,
 		},
-		PrevLinkHash: linkHash,
+		PrevLinkHash: s.GetLinkHash(),
 	})
 	if err != nil {
 		t.Fatalf("a.FindSegments(): err: %s", err)
