@@ -140,7 +140,7 @@ func (a *DummyStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error)
 		exists     bool
 	)
 
-	if filter.MapID == "" {
+	if filter.MapID == "" || filter.PrevLinkHash != nil {
 		linkHashes = hashSet{}
 		for linkHash := range a.segments {
 			linkHashes[linkHash] = struct{}{}

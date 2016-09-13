@@ -141,15 +141,13 @@ func (a *FileStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) 
 	var segments cs.SegmentSlice
 
 	a.forEach(func(segment *cs.Segment) error {
-		if filter.MapID != "" && filter.MapID != segment.Link.GetMapID() {
-			return nil
-		}
-
 		if filter.PrevLinkHash != nil {
 			prevLinkHash := segment.Link.GetPrevLinkHash()
 			if prevLinkHash == nil || *filter.PrevLinkHash != *prevLinkHash {
 				return nil
 			}
+		} else if filter.MapID != "" && filter.MapID != segment.Link.GetMapID() {
+			return nil
 		}
 
 		if len(filter.Tags) > 0 {
