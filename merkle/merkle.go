@@ -69,7 +69,7 @@ func (p Path) Validate() error {
 					a1 = hex.EncodeToString(up.Left[:])
 					a2 = hex.EncodeToString(up.Right[:])
 				)
-				return fmt.Errorf("could not find parent hash %s, got %s and %s\n", e, a1, a2)
+				return fmt.Errorf("could not find parent hash %q, got %q and %q\n", e, a1, a2)
 			}
 		}
 	}
