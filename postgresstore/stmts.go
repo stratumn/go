@@ -4,104 +4,116 @@ import "database/sql"
 
 const (
 	sqlSaveSegment = `
-		INSERT INTO segments (data)
-		VALUES ($1)
-		ON CONFLICT ((data#>>'{meta,linkHash}'))
-		DO UPDATE SET data = $1
+		INSERT INTO segments (
+			link_hash,
+			priority,
+			map_id,
+			prev_link_hash,
+			tags,
+			data
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (link_hash)
+		DO UPDATE SET
+			priority = $2,
+			map_id = $3,
+			prev_link_hash = $4,
+			tags = $5,
+			data = $6
 	`
 	sqlGetSegment = `
 		SELECT data FROM segments
-		WHERE data#>>'{meta,linkHash}' = $1
+		WHERE link_hash = $1
 	`
 	sqlDeleteSegment = `
 		DELETE FROM segments
-		WHERE data#>>'{meta,linkHash}' = $1
+		WHERE link_hash = $1
 		RETURNING data
 	`
 	sqlFindSegments = `
 		SELECT data FROM segments
-		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
+		ORDER BY priority DESC, created_at DESC
 		OFFSET $1 LIMIT $2
 	`
 	sqlFindSegmentsWithMapID = `
 		SELECT data FROM segments
-		WHERE data#>>'{link,meta,mapId}' = $1
-		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
+		WHERE map_id = $1
+		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
 	`
 	sqlFindSegmentsWithPrevLinkHash = `
 		SELECT data FROM segments
-		WHERE data#>>'{link,meta,prevLinkHash}' = $1
-		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
+		WHERE prev_link_hash = $1
+		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
 	`
 	sqlFindSegmentsWithTags = `
 		SELECT data FROM segments
-		WHERE data#>'{link,meta,tags}' ?& $1
-		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
+		WHERE tags @> $1
+		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
 	`
 	sqlFindSegmentsWithMapIDAndTags = `
 		SELECT data FROM segments
-		WHERE data#>>'{link,meta,mapId}' = $1 AND data#>'{link,meta,tags}' ?& $2
-		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
+		WHERE map_id = $1 AND tags @> $2
+		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
 	`
 	sqlFindSegmentsWithPrevLinkHashAndTags = `
 		SELECT data FROM segments
-		WHERE data#>>'{link,meta,prevLinkHash}' = $1 AND data#>'{link,meta,tags}' ?& $2
-		ORDER BY data#>>'{link,meta,priority}' DESC NULLS LAST, created_at DESC
+		WHERE prev_link_hash = $1 AND tags @> $2
+		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
 	`
 	sqlGetMapIDs = `
-		SELECT DISTINCT data#>>'{link,meta,mapId}' FROM segments
-		ORDER BY data#>>'{link,meta,mapId}'
+		SELECT DISTINCT map_id FROM segments
+		ORDER BY map_id
 		OFFSET $1 LIMIT $2
 	`
 )
 
 var sqlCreate = []string{
 	`
-		CREATE TABLE IF NOT EXISTS segments (
+		CREATE TABLE segments (
 			id BIGSERIAL PRIMARY KEY,
+			link_hash bytea NOT NULL,
+			priority double precision NOT NULL,
+			map_id text NOT NULL,
+			prev_link_hash bytea DEFAULT NULL,
+			tags text[] DEFAULT NULL,
 			data jsonb NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX IF NOT EXISTS segments_link_hash_idx
-		ON segments ((data#>>'{meta,linkHash}'))
+		CREATE UNIQUE INDEX segments_link_hash_idx
+		ON segments (link_hash)
 	`,
 	`
-		CREATE INDEX IF NOT EXISTS segments_priority_created_at_idx
-		ON segments ((data#>>'{link,meta,priority}') NULLS LAST, created_at)
+		CREATE INDEX segments_priority_created_at_idx
+		ON segments (priority DESC, created_at DESC)
 	`,
 	`
-		CREATE INDEX IF NOT EXISTS segments_map_id_idx
-		ON segments ((data#>>'{link,meta,mapId}'))
+		CREATE INDEX segments_map_id_idx
+		ON segments (map_id)
 	`,
 	`
-		CREATE INDEX IF NOT EXISTS segments_map_id_priority_created_at_idx
-		ON segments ((data#>>'{link,meta,mapId}'), (data#>>'{link,meta,priority}') NULLS LAST, created_at)
+		CREATE INDEX segments_map_id_priority_created_at_idx
+		ON segments (map_id, priority DESC, created_at DESC)
 	`,
 	`
-		CREATE INDEX IF NOT EXISTS segments_prev_link_hash_priority_created_at_idx
-		ON segments ((data#>>'{link,meta,prevLinkHash}'), (data#>>'{link,meta,priority}') NULLS LAST, created_at)
+		CREATE INDEX segments_prev_link_hash_priority_created_at_idx
+		ON segments (prev_link_hash, priority DESC, created_at DESC)
 	`,
 	`
-		CREATE INDEX IF NOT EXISTS segments_tags_idx
-		ON segments USING gin((data#>'{link,meta,tags}'))
+		CREATE INDEX segments_tags_idx
+		ON segments USING gin(tags)
 	`,
 }
 
 var sqlDrop = []string{
-	"DROP TABLE IF EXISTS segments",
-	"DROP INDEX IF EXISTS segments_priority_created_at_idx",
-	"DROP INDEX IF EXISTS segments_map_id_idx",
-	"DROP INDEX IF EXISTS segments_map_id_priority_created_at_idx",
-	"DROP INDEX IF EXISTS segments_prev_link_hash_priority_created_at_idx",
-	"DROP INDEX IF EXISTS segments_tags_idx",
+	"DROP TABLE segments",
 }
 
 type stmts struct {
