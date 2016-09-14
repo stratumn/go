@@ -78,12 +78,26 @@ func (a *Store) GetInfo() (interface{}, error) {
 
 // SaveSegment implements github.com/stratumn/go/store.Adapter.SaveSegment.
 func (a *Store) SaveSegment(segment *cs.Segment) error {
+	var (
+		err          error
+		linkHash     = segment.GetLinkHash()
+		priority     = segment.Link.GetPriority()
+		mapID        = segment.Link.GetMapID()
+		prevLinkHash = segment.Link.GetPrevLinkHash()
+		tags         = segment.Link.GetTags()
+	)
+
 	data, err := json.Marshal(segment)
 	if err != nil {
 		return err
 	}
 
-	_, err = a.stmts.SaveSegment.Exec(string(data))
+	if prevLinkHash == nil {
+		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, nil, pq.Array(tags), string(data))
+	} else {
+		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data))
+	}
+
 	return err
 }
 
@@ -91,7 +105,7 @@ func (a *Store) SaveSegment(segment *cs.Segment) error {
 func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	var data string
 
-	if err := a.stmts.GetSegment.QueryRow(linkHash.String()).Scan(&data); err != nil {
+	if err := a.stmts.GetSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
 		if err.Error() == notFoundError {
 			return nil, nil
 		}
@@ -113,7 +127,7 @@ func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 		segment cs.Segment
 	)
 
-	if err := a.stmts.DeleteSegment.QueryRow(linkHash.String()).Scan(&data); err != nil {
+	if err := a.stmts.DeleteSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
 		if err.Error() == notFoundError {
 			return nil, nil
 		}
@@ -138,7 +152,7 @@ func (a *Store) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
 	)
 
 	if filter.PrevLinkHash != nil {
-		prevLinkHash := filter.PrevLinkHash.String()
+		prevLinkHash := filter.PrevLinkHash[:]
 		if len(filter.Tags) > 0 {
 			tags := pq.Array(filter.Tags)
 			rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndTags.Query(prevLinkHash, tags, offset, limit)
