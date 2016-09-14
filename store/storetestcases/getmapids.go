@@ -16,6 +16,9 @@ package storetestcases
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stratumn/go/cs/cstesting"
@@ -107,4 +110,103 @@ func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
 	if got, want := len(slice), 0; want != got {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
+}
+
+// BenchmarkGetMapIDs benchmarks getting map IDs.
+func (f Factory) BenchmarkGetMapIDs(b *testing.B, numSegments int, segmentFunc SegmentFunc, paginationFunc PaginationFunc) {
+	a, err := f.New()
+	if err != nil {
+		b.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		b.Fatal("a = nil want store.Adapter")
+	}
+	defer f.free(a)
+
+	for i := 0; i < numSegments; i++ {
+		a.SaveSegment(segmentFunc(b, numSegments, i))
+	}
+
+	paginations := make([]*store.Pagination, b.N)
+	for i := 0; i < b.N; i++ {
+		paginations[i] = paginationFunc(b, numSegments, i)
+	}
+
+	b.ResetTimer()
+	log.SetOutput(ioutil.Discard)
+
+	for i := 0; i < b.N; i++ {
+		if s, err := a.GetMapIDs(paginations[i]); err != nil {
+			b.Fatal(err)
+		} else if s == nil {
+			b.Error("s = nil want []string")
+		}
+	}
+}
+
+// BenchmarkGetMapIDs100 benchmarks getting map IDs within 100 segments.
+func (f Factory) BenchmarkGetMapIDs100(b *testing.B) {
+	f.BenchmarkGetMapIDs(b, 100, RandomSegment, RandomPaginationOffset)
+}
+
+// BenchmarkGetMapIDs1000 benchmarks getting map IDs within 1000 segments.
+func (f Factory) BenchmarkGetMapIDs1000(b *testing.B) {
+	f.BenchmarkGetMapIDs(b, 1000, RandomSegment, RandomPaginationOffset)
+}
+
+// BenchmarkGetMapIDs10000 benchmarks getting map IDs within 10000 segments.
+func (f Factory) BenchmarkGetMapIDs10000(b *testing.B) {
+	f.BenchmarkGetMapIDs(b, 10000, RandomSegment, RandomPaginationOffset)
+}
+
+// BenchmarkGetMapIDsParallel benchmarks getting map IDs in parallel.
+func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numSegments int, segmentFunc SegmentFunc, paginationFunc PaginationFunc) {
+	a, err := f.New()
+	if err != nil {
+		b.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		b.Fatal("a = nil want store.Adapter")
+	}
+	defer f.free(a)
+
+	for i := 0; i < numSegments; i++ {
+		a.SaveSegment(segmentFunc(b, numSegments, i))
+	}
+
+	paginations := make([]*store.Pagination, b.N)
+	for i := 0; i < b.N; i++ {
+		paginations[i] = paginationFunc(b, numSegments, i)
+	}
+
+	var counter uint64
+
+	b.ResetTimer()
+	log.SetOutput(ioutil.Discard)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			i := int(atomic.AddUint64(&counter, 1) - 1)
+			if s, err := a.GetMapIDs(paginations[i]); err != nil {
+				b.Error(err)
+			} else if s == nil {
+				b.Error("s = nil want []string")
+			}
+		}
+	})
+}
+
+// BenchmarkGetMapIDs100Parallel benchmarks getting map IDs within 100 segments in parallel.
+func (f Factory) BenchmarkGetMapIDs100Parallel(b *testing.B) {
+	f.BenchmarkGetMapIDsParallel(b, 100, RandomSegment, RandomPaginationOffset)
+}
+
+// BenchmarkGetMapIDs1000Parallel benchmarks getting map IDs within 1000 segments in parallel.
+func (f Factory) BenchmarkGetMapIDs1000Parallel(b *testing.B) {
+	f.BenchmarkGetMapIDsParallel(b, 1000, RandomSegment, RandomPaginationOffset)
+}
+
+// BenchmarkGetMapIDs10000Parallel benchmarks getting map IDs within 10000 segments in parallel.
+func (f Factory) BenchmarkGetMapIDs10000Parallel(b *testing.B) {
+	f.BenchmarkGetMapIDsParallel(b, 10000, RandomSegment, RandomPaginationOffset)
 }
