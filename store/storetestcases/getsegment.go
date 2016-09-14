@@ -39,14 +39,10 @@ func (f Factory) TestGetSegment(t *testing.T) {
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
-	linkHash, err := types.NewBytes32FromString(s1.Meta["linkHash"].(string))
-	if err != nil {
-		t.Fatalf("types.NewBytes32FromString(): err: %s", err)
-	}
 
 	a.SaveSegment(s1)
 
-	s2, err := a.GetSegment(linkHash)
+	s2, err := a.GetSegment(s1.GetLinkHash())
 	if err != nil {
 		t.Fatalf("a.GetSegment(): err: %s", err)
 	}
@@ -73,16 +69,11 @@ func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
-	linkHash, err := types.NewBytes32FromString(s1.Meta["linkHash"].(string))
-	if err != nil {
-		t.Fatalf("types.NewBytes32FromString(): err: %s", err)
-	}
-
 	a.SaveSegment(s1)
 	s1 = cstesting.ChangeSegmentState(s1)
 	a.SaveSegment(s1)
 
-	s2, err := a.GetSegment(linkHash)
+	s2, err := a.GetSegment(s1.GetLinkHash())
 	if err != nil {
 		t.Fatalf("a.GetSegment(): err: %s", err)
 	}
@@ -109,16 +100,11 @@ func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
-	linkHash, err := types.NewBytes32FromString(s1.Meta["linkHash"].(string))
-	if err != nil {
-		t.Fatalf("types.NewBytes32FromString(): err: %s", err)
-	}
-
 	a.SaveSegment(s1)
 	s1 = cstesting.ChangeSegmentMapID(s1)
 	a.SaveSegment(s1)
 
-	s2, err := a.GetSegment(linkHash)
+	s2, err := a.GetSegment(s1.GetLinkHash())
 	if err != nil {
 		t.Fatalf("a.GetSegment(): err: %s", err)
 	}
@@ -170,11 +156,7 @@ func (f Factory) BenchmarkGetSegment(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s := cstesting.RandomSegment()
 		a.SaveSegment(s)
-		linkHash, err := types.NewBytes32FromString(s.Meta["linkHash"].(string))
-		if err != nil {
-			b.Fatalf("types.NewBytes32FromString(): err: %s", err)
-		}
-		linkHashes[i] = linkHash
+		linkHashes[i] = s.GetLinkHash()
 	}
 
 	b.ResetTimer()
@@ -204,11 +186,7 @@ func (f Factory) BenchmarkGetSegmentParallel(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		s := cstesting.RandomSegment()
 		a.SaveSegment(s)
-		linkHash, err := types.NewBytes32FromString(s.Meta["linkHash"].(string))
-		if err != nil {
-			b.Fatalf("types.NewBytes32FromString(): err: %s", err)
-		}
-		linkHashes[i] = linkHash
+		linkHashes[i] = s.GetLinkHash()
 	}
 
 	var counter uint64
