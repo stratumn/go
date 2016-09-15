@@ -1,0 +1,11 @@
+{
+  "name": "{{input `name`}}",
+  "version": "0.1.0",
+  "description": "{{input `description`}}",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "{{input `author`}}",
+  "license": "{{input `license`}}"
+}
