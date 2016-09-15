@@ -76,7 +76,7 @@ func main() {
 		}
 		if err = a.Prepare(); err != nil {
 			if e, ok := err.(*pq.Error); ok && e.Code == noTableCode {
-				if err := a.Create(); err != nil {
+				if err = a.Create(); err != nil {
 					log.Fatalf("Fatal: %s", err)
 				}
 				log.Print("Created tables and indexes")
