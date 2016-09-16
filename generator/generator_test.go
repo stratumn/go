@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -78,49 +76,4 @@ func TestGeneratorExec(t *testing.T) {
 	}
 
 	cmpWalk(t, "testdata/nodejs_expected", dst, "testdata/nodejs_expected")
-}
-
-func cmpWalk(t *testing.T, src, dst, dir string) {
-	files, err := filepath.Glob(filepath.Join(dir, "*"))
-	if err != nil {
-		t.Fatalf("err: filepath.Glob(): %s", err)
-	}
-	for _, file := range files {
-		info, err := os.Stat(file)
-		if err != nil {
-			t.Fatalf("err: os.Stat(): %s", err)
-		}
-		if info.IsDir() {
-			cmpWalk(t, src, dst, file)
-			continue
-		}
-		rel, err := filepath.Rel(src, file)
-		if err != nil {
-			t.Fatalf("err: filepath.Rel(): %s", err)
-		}
-		srcPath := filepath.Join(src, rel)
-		srcInfo, err := os.Stat(srcPath)
-		if err != nil {
-			t.Fatalf("err: os.Stat(): %s", err)
-		}
-		dstPath := filepath.Join(dst, rel)
-		dstInfo, err := os.Stat(dstPath)
-		if err != nil {
-			t.Fatalf("err: os.Stat(): %s", err)
-		}
-		if got, want := srcInfo.Mode(), dstInfo.Mode(); got != want {
-			t.Errorf("err: srcInfo.Mode() = %d want %d", got, want)
-		}
-		got, err := ioutil.ReadFile(srcPath)
-		if err != nil {
-			t.Fatalf("err: ioutil.ReadFile(): %s", err)
-		}
-		want, err := ioutil.ReadFile(dstPath)
-		if err != nil {
-			t.Fatalf("err: ioutil.ReadFile(): %s", err)
-		}
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("err: content =\n%q\nwant\n%q", got, want)
-		}
-	}
 }

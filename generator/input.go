@@ -30,6 +30,8 @@ const (
 	StringSelectID = "select:string"
 )
 
+const noValue = "<no value>"
+
 // Input must be implemented by all input types.
 type Input interface {
 	// Set must set the value of the input or return an error.
@@ -97,7 +99,7 @@ func (in *StringInput) Set(val interface{}) error {
 	if !ok {
 		return errors.New("value must be a string")
 	}
-	if str == "" {
+	if str == "" && in.Default != noValue {
 		str = in.Default
 	}
 	if in.Format != "" {
@@ -115,7 +117,7 @@ func (in *StringInput) Set(val interface{}) error {
 
 // Get implements github.com/stratumn/go/generator.Input.
 func (in *StringInput) Get() interface{} {
-	if in.value == "" && in.Default != "<no value>" {
+	if in.value == "" && in.Default != noValue {
 		return in.Default
 	}
 	return in.value
@@ -123,7 +125,7 @@ func (in *StringInput) Get() interface{} {
 
 // Msg implements github.com/stratumn/go/generator.Prompt.
 func (in *StringInput) Msg() string {
-	if in.Default != "" && in.Default != "<no value>" {
+	if in.Default != "" && in.Default != noValue {
 		return in.Prompt + " (default " + in.Default + ")" + "\n"
 	}
 	return in.Prompt + "\n"
@@ -143,7 +145,7 @@ func (in *StringSelect) Set(val interface{}) error {
 	if !ok {
 		return fmt.Errorf("value must be a string, got %q", val)
 	}
-	if str == "" {
+	if str == "" && in.Default != noValue {
 		for _, opt := range in.Options {
 			if opt.Value == in.Default {
 				in.value = opt.Value
@@ -162,7 +164,7 @@ func (in *StringSelect) Set(val interface{}) error {
 
 // Get implements github.com/stratumn/go/generator.Input.
 func (in *StringSelect) Get() interface{} {
-	if in.value == "" && in.Default != "<no value>" {
+	if in.value == "" && in.Default != noValue {
 		return in.Default
 	}
 	return in.value
@@ -172,7 +174,7 @@ func (in *StringSelect) Get() interface{} {
 func (in *StringSelect) Msg() string {
 	p := in.Prompt + "\n"
 	for _, v := range in.Options {
-		if in.Default == v.Value && in.Default != "<no value>" {
+		if in.Default == v.Value && in.Default != noValue {
 			p += v.Input + ": " + v.Text + " (default)\n"
 		} else {
 			p += v.Input + ": " + v.Text + "\n"
