@@ -443,6 +443,26 @@ func TestFindSegments_invalidOffset(t *testing.T) {
 	}
 }
 
+func TestFindSegments_invalidPrevLinkHash(t *testing.T) {
+	s, a := createServer()
+
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?prevLinkHash=3", nil, &body)
+	if err != nil {
+		t.Fatalf("testutil.RequestJSON(): err: %s", err)
+	}
+
+	if got, want := w.Code, newErrPrevLinkHash("").Status(); got != want {
+		t.Errorf("w.Code = %d want %d", got, want)
+	}
+	if got, want := body["error"].(string), newErrPrevLinkHash("").Error(); got != want {
+		t.Errorf(`body["error"] = %q want %q`, got, want)
+	}
+	if got, want := a.MockFindSegments.CalledCount, 0; got != want {
+		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
+	}
+}
+
 func TestGetMapIDs(t *testing.T) {
 	s, a := createServer()
 	s1 := []string{"one", "two", "three"}

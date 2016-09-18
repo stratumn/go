@@ -200,7 +200,7 @@ func parseFilter(r *http.Request) (*store.Filter, error) {
 	if prevLinkHashStr != "" {
 		prevLinkHash, err = types.NewBytes32FromString(prevLinkHashStr)
 		if err != nil {
-			return nil, err
+			return nil, newErrPrevLinkHash("")
 		}
 	}
 
