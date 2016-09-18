@@ -91,7 +91,7 @@ func (f Factory) TestFindSegmentsPagination(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := len(slice), limit; want != got {
+	if got, want := len(slice), limit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 
@@ -127,7 +127,7 @@ func (f Factory) TestFindSegmentEmpty(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := len(slice), 0; want != got {
+	if got, want := len(slice), 0; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -158,9 +158,14 @@ func (f Factory) TestFindSegmentsSingleTag(t *testing.T) {
 		a.SaveSegment(s)
 	}
 
+	for i := 0; i < store.DefaultLimit; i++ {
+		s := cstesting.RandomSegment()
+		a.SaveSegment(s)
+	}
+
 	slice, err := a.FindSegments(&store.Filter{
 		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 2,
+			Limit: store.DefaultLimit * 3,
 		},
 		Tags: []string{tag1},
 	})
@@ -168,7 +173,7 @@ func (f Factory) TestFindSegmentsSingleTag(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := len(slice), store.DefaultLimit*2; want != got {
+	if got, want := len(slice), store.DefaultLimit*2; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -199,9 +204,14 @@ func (f Factory) TestFindSegmentsMultipleTags(t *testing.T) {
 		a.SaveSegment(s)
 	}
 
+	for i := 0; i < store.DefaultLimit; i++ {
+		s := cstesting.RandomSegment()
+		a.SaveSegment(s)
+	}
+
 	slice, err := a.FindSegments(&store.Filter{
 		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 2,
+			Limit: store.DefaultLimit * 3,
 		},
 		Tags: []string{tag2, tag1},
 	})
@@ -209,7 +219,7 @@ func (f Factory) TestFindSegmentsMultipleTags(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -246,7 +256,7 @@ func (f Factory) TestFindSegmentsMapID(t *testing.T) {
 	if got := slice; got == nil {
 		t.Fatal("slice = nit want cs.SegmentSlice")
 	}
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -299,7 +309,7 @@ func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
 	if got := slice; got == nil {
 		t.Fatal("slice = nit want cs.SegmentSlice")
 	}
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -325,7 +335,7 @@ func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := len(slice), 0; want != got {
+	if got, want := len(slice), 0; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -361,7 +371,7 @@ func (f Factory) TestFindSegmentsPrevLinkHash(t *testing.T) {
 	if got := slice; got == nil {
 		t.Fatal("slice = nit want cs.SegmentSlice")
 	}
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -413,7 +423,7 @@ func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
 	if got := slice; got == nil {
 		t.Fatal("slice = nit want cs.SegmentSlice")
 	}
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -456,7 +466,7 @@ func (f Factory) TestFindSegmentsPrevLinkHashMapID(t *testing.T) {
 	if got := slice; got == nil {
 		t.Fatal("slice = nit want cs.SegmentSlice")
 	}
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -482,7 +492,7 @@ func (f Factory) TestFindSegmentsPrevLinkHashNotFound(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := len(slice), 0; want != got {
+	if got, want := len(slice), 0; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }

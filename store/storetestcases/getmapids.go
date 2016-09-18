@@ -50,7 +50,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 		t.Fatalf("a.GetMapIDs(): err: %s", err)
 	}
 
-	if got, want := len(slice), store.DefaultLimit; want != got {
+	if got, want := len(slice), store.DefaultLimit; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 
@@ -86,7 +86,7 @@ func (f Factory) TestGetMapIDsPagination(t *testing.T) {
 		t.Fatalf("a.GetMapIDs(): err: %s", err)
 	}
 
-	if got, want := len(slice), 5; want != got {
+	if got, want := len(slice), 5; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }
@@ -107,7 +107,7 @@ func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
 		t.Fatalf("a.GetMapIDs(): err: %s", err)
 	}
 
-	if got, want := len(slice), 0; want != got {
+	if got, want := len(slice), 0; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }

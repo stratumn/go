@@ -42,7 +42,7 @@ func TestRoot(t *testing.T) {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
 
-	if got, want := w.Code, http.StatusOK; want != got {
+	if got, want := w.Code, http.StatusOK; got != want {
 		t.Errorf("w.StatusCode = %d want %d", got, want)
 	}
 	if got, want := body["adapter"].(string), "test"; got != want {
@@ -63,7 +63,7 @@ func TestRoot_err(t *testing.T) {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
 
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); want != got {
+	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
 	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
@@ -544,7 +544,7 @@ func TestNotFound(t *testing.T) {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
 
-	if got, want := w.Code, jsonhttp.NewErrNotFound("").Status(); want != got {
+	if got, want := w.Code, jsonhttp.NewErrNotFound("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
 	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {

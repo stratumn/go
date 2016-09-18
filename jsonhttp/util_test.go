@@ -17,13 +17,13 @@ package jsonhttp
 import "testing"
 
 func testErrStatus(t *testing.T, err ErrHTTP, want int) {
-	if got := err.Status(); want != got {
+	if got := err.Status(); got != want {
 		t.Errorf("err.Status() = %d want %d", got, want)
 	}
 }
 
 func testErrError(t *testing.T, err ErrHTTP, want string) {
-	if got := err.Error(); want != got {
+	if got := err.Error(); got != want {
 		t.Errorf("err.Error() = %q want %q", got, want)
 	}
 }
