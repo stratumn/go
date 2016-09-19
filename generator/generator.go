@@ -145,12 +145,14 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 
 // DefaultTmplFuncs return the default function map used when parsing a template
 // It adds the following functions:
+// - ask(json): create an input on-the-fly and return its value
 // - input(id): returns the value of an input
 // - now(format): returns a formatted representation of the current date
 // - nowUTC(format): returns a formatted representation of the current UTC date
 // - partial(path, vars): executes the partial with given name and variables (path relative to partials folder)
 func (gen *Generator) DefaultTmplFuncs() template.FuncMap {
 	return template.FuncMap{
+		"ask":     gen.ask,
 		"input":   gen.input,
 		"now":     now,
 		"nowUTC":  nowUTC,
@@ -313,25 +315,40 @@ func (gen *Generator) input(id string) (interface{}, error) {
 	}
 	for k, in := range gen.def.Inputs {
 		if k == id {
-			fmt.Print(in.Msg())
-			for {
-				fmt.Print("? ")
-				str, err := gen.reader.ReadString('\n')
-				if err != nil {
-					return nil, err
-				}
-				str = strings.TrimSpace(str)
-				if err := in.Set(str); err != nil {
-					fmt.Println(err)
-					continue
-				}
-				val = in.Get()
-				gen.values[id] = val
-				return val, nil
+			val, err := gen.read(in)
+			if err != nil {
+				return nil, err
 			}
+			gen.values[id] = val
+			return val, nil
 		}
 	}
 	return nil, fmt.Errorf("undefined input %q", id)
+}
+
+func (gen *Generator) ask(input string) (interface{}, error) {
+	in, err := UnmarshalJSONInput([]byte(input))
+	if err != nil {
+		return nil, err
+	}
+	return gen.read(in)
+}
+
+func (gen *Generator) read(in Input) (interface{}, error) {
+	fmt.Print(in.Msg())
+	for {
+		fmt.Print("? ")
+		str, err := gen.reader.ReadString('\n')
+		if err != nil {
+			return nil, err
+		}
+		str = strings.TrimSpace(str)
+		if err := in.Set(str); err != nil {
+			fmt.Println(err)
+			continue
+		}
+		return in.Get(), nil
+	}
 }
 
 func walkTmpl(base, dir string, tmpl *template.Template) error {

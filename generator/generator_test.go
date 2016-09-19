@@ -77,3 +77,25 @@ func TestGeneratorExec(t *testing.T) {
 
 	cmpWalk(t, "testdata/nodejs_expected", dst, "testdata/nodejs_expected")
 }
+
+func TestGeneratorAsk(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	fmt.Println(dst)
+	defer os.RemoveAll(dst)
+
+	r := strings.NewReader("\n\nTest Project\n")
+
+	gen, err := NewFromDir("testdata/ask", &Options{Reader: r})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err != nil {
+		t.Fatalf("err: gen.Exec(): %s", err)
+	}
+
+	cmpWalk(t, "testdata/ask_expected", dst, "testdata/ask_expected")
+}
