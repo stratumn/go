@@ -53,30 +53,40 @@ func (im *InputMap) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
-	var s map[string]InputShared
-	if err := json.Unmarshal(data, &s); err != nil {
-		return err
-	}
-	*im = InputMap{}
-	for k, v := range s {
-		switch v.Type {
-		case StringInputID:
-			var in StringInput
-			if err := json.Unmarshal(raw[k], &in); err != nil {
-				return err
-			}
-			(*im)[k] = &in
-		case StringSelectID:
-			var in StringSelect
-			if err := json.Unmarshal(raw[k], &in); err != nil {
-				return err
-			}
-			(*im)[k] = &in
-		default:
-			return fmt.Errorf("invalid type %q for input %q", v.Type, k)
+	inputs := InputMap{}
+	for k, v := range raw {
+		in, err := UnmarshalJSONInput(v)
+		if err != nil {
+			return err
 		}
+		inputs[k] = in
 	}
+	*im = inputs
 	return nil
+}
+
+// UnmarshalJSONInput creates an input from JSON.
+func UnmarshalJSONInput(data []byte) (Input, error) {
+	var shared InputShared
+	if err := json.Unmarshal(data, &shared); err != nil {
+		return nil, err
+	}
+	switch shared.Type {
+	case StringInputID:
+		var in StringInput
+		if err := json.Unmarshal(data, &in); err != nil {
+			return nil, err
+		}
+		return &in, nil
+	case StringSelectID:
+		var in StringSelect
+		if err := json.Unmarshal(data, &in); err != nil {
+			return nil, err
+		}
+		return &in, nil
+	default:
+		return nil, fmt.Errorf("invalid input type %q", shared.Type)
+	}
 }
 
 // InputShared contains properties shared by all input types.
