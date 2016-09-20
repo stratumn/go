@@ -1,5 +1,8 @@
 ## Change log
 
+### 0.13.1-alpha
+ * Fix home dir when cross-compiling.
+
 ### 0.13.0-alpha
  * CLI tool.
 
