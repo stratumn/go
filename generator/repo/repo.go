@@ -142,6 +142,9 @@ func (r *Repo) GetDescOrCreate() (*Desc, error) {
 // List lists the generators of the repository.
 func (r *Repo) List() ([]*generator.Definition, error) {
 	desc, err := r.GetDescOrCreate()
+	if err != nil {
+		return nil, err
+	}
 
 	matches, err := filepath.Glob(filepath.Join(r.path, TagsDir, desc.Tag, "*", "generator.json"))
 	if err != nil {

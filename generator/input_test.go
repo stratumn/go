@@ -33,7 +33,7 @@ func TestInputSliceUnmarshalJSON(t *testing.T) {
 	if got, want := gen.Name, "nodejs"; got != want {
 		t.Errorf("err: gen.Name: got %q want %q", got, want)
 	}
-	if got, want := gen.Inputs["name"].Msg(), "Project name: (default {{.dir}})\n"; got != want {
+	if got, want := gen.Inputs["name"].Msg(), "Project name: (default \"{{.dir}}\")\n"; got != want {
 		t.Errorf(`err: gen.Inputs["name"].Msg(): got %q want %q`, got, want)
 	}
 }
@@ -147,7 +147,7 @@ func TestStringInputMsg(t *testing.T) {
 
 func TestStringInputMsg_default(t *testing.T) {
 	in := StringInput{InputShared: InputShared{Prompt: "what:"}, Default: "nothing"}
-	if got, want := in.Msg(), "what: (default nothing)\n"; got != want {
+	if got, want := in.Msg(), "what: (default \"nothing\")\n"; got != want {
 		t.Errorf("err: in.Msg(): got %q want %q", got, want)
 	}
 }

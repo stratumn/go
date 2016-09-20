@@ -33,6 +33,7 @@ func main() {
 	subcommands.Register(subcommands.HelpCommand(), "help")
 	subcommands.Register(subcommands.FlagsCommand(), "help")
 	subcommands.Register(subcommands.CommandsCommand(), "help")
+	subcommands.Register(&cli.Generators{}, "projects")
 	subcommands.Register(&cli.Generate{}, "projects")
 	subcommands.Register(&cli.Serve{}, "projects")
 	subcommands.Register(&cli.Update{}, "cli")

@@ -16,14 +16,14 @@
 package cli
 
 const (
+	// DefaultGeneratorsOwner is the  default owner of the generators' Github repository.
+	DefaultGeneratorsOwner = "stratumn"
+
+	// DefaultGeneratorsRepo is the default name of the generators' Github repository.
+	DefaultGeneratorsRepo = "generators"
+
 	// StratumnDir is the name of the Stratumn directory within the home folder.
 	StratumnDir = ".stratumn"
-
-	// GeneratorsOwner is the owner of the generators' Github repository.
-	GeneratorsOwner = "stratumn"
-
-	// GeneratorsRepo is the name of the generators' Github repository.
-	GeneratorsRepo = "generators"
 
 	// GeneratorsDir is the name of the generators directory within StratumnDir.
 	GeneratorsDir = "generators"

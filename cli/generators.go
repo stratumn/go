@@ -17,49 +17,51 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
+	"text/tabwriter"
 
 	"github.com/google/subcommands"
 	"github.com/stratumn/go/generator/repo"
 	"golang.org/x/net/context"
 )
 
-// Update is a command to update the CLI.
-type Update struct {
+// Generators is a command to list generators.
+type Generators struct {
 	owner string
 	repo  string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Update) Name() string {
-	return "update"
+func (*Generators) Name() string {
+	return "generators"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Update) Synopsis() string {
-	return "update the CLI"
+func (*Generators) Synopsis() string {
+	return "list generators"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Update) Usage() string {
-	return `update:
-  Update the CLI.
+func (*Generators) Usage() string {
+	return `generators:
+  List generators.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (cmd *Update) SetFlags(f *flag.FlagSet) {
+func (cmd *Generators) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&cmd.owner, "owner", "", "Github owner")
 	f.StringVar(&cmd.repo, "repo", "", "Github repository")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if len(f.Args()) > 0 {
+func (cmd *Generators) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	args := f.Args()
+
+	if len(args) > 0 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
-
-	fmt.Println("Updating generators...")
 
 	if cmd.owner == "" {
 		cmd.owner = DefaultGeneratorsOwner
@@ -79,16 +81,30 @@ func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitFailure
 	}
 
-	_, updated, err := repo.Update()
+	list, err := repo.List()
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
 
-	if updated {
-		fmt.Println("Generators updated successfully.")
-	} else {
-		fmt.Println("Generators are already up-to-date.")
+	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+
+	if _, err := fmt.Fprintln(tw, "NAME\tDESCRIPTION\tAUTHOR\tVERSION\tLICENSE"); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	for _, desc := range list {
+		if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
+			desc.Name, desc.Description, desc.Author, desc.Version, desc.License); err != nil {
+			fmt.Println(err)
+			return subcommands.ExitFailure
+		}
+	}
+
+	if err := tw.Flush(); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
 	}
 
 	return subcommands.ExitSuccess

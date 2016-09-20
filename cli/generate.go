@@ -31,7 +31,9 @@ import (
 
 // Generate is a command to generate projects.
 type Generate struct {
+	repo      string
 	generator string
+	owner     string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -53,6 +55,8 @@ func (*Generate) Usage() string {
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
 func (cmd *Generate) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&cmd.owner, "owner", "", "Github owner")
+	f.StringVar(&cmd.repo, "repo", "", "Github repository")
 	f.StringVar(&cmd.generator, "generator", "", "generator name")
 }
 
@@ -67,42 +71,49 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 
 	out := args[0]
 
-	path, err := generatorPath(GeneratorsOwner, GeneratorsRepo)
+	if cmd.owner == "" {
+		cmd.owner = DefaultGeneratorsOwner
+	}
+	if cmd.repo == "" {
+		cmd.repo = DefaultGeneratorsRepo
+	}
+
+	path, err := generatorPath(cmd.owner, cmd.repo)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
-
-	repo := repo.New(path, GeneratorsOwner, GeneratorsRepo)
+	repo := repo.New(path, cmd.owner, cmd.repo)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
-	}
-
-	list, err := repo.List()
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	in := generator.StringSelect{
-		InputShared: generator.InputShared{
-			Prompt: "What would you like to generate?",
-		},
-		Options: []generator.StringSelectOption{},
-	}
-	for i, desc := range list {
-		in.Options = append(in.Options, generator.StringSelectOption{
-			Input: strconv.Itoa(i + 1),
-			Value: desc.Name,
-			Text:  desc.Description,
-		})
 	}
 
 	name := cmd.generator
 	if name == "" {
+		list, err := repo.List()
+		if err != nil {
+			fmt.Println(err)
+			return subcommands.ExitFailure
+		}
+
+		in := generator.StringSelect{
+			InputShared: generator.InputShared{
+				Prompt: "What would you like to generate?",
+			},
+			Options: []generator.StringSelectOption{},
+		}
+		for i, desc := range list {
+			in.Options = append(in.Options, generator.StringSelectOption{
+				Input: strconv.Itoa(i + 1),
+				Value: desc.Name,
+				Text:  desc.Description,
+			})
+		}
+
 		fmt.Print(in.Msg())
 		reader := bufio.NewReader(os.Stdin)
+
 		for {
 			fmt.Print("? ")
 			str, err := reader.ReadString('\n')
@@ -153,6 +164,8 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
+
+	fmt.Println("Done!")
 
 	return subcommands.ExitSuccess
 }

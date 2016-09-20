@@ -137,7 +137,7 @@ func (in *StringInput) Get() interface{} {
 // Msg implements github.com/stratumn/go/generator.Prompt.
 func (in *StringInput) Msg() string {
 	if in.Default != "" && in.Default != noValue {
-		return in.Prompt + " (default " + in.Default + ")" + "\n"
+		return fmt.Sprintf("%s (default %q)\n", in.Prompt, in.Default)
 	}
 	return in.Prompt + "\n"
 }
