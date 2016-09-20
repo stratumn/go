@@ -34,6 +34,7 @@ func main() {
 	subcommands.Register(subcommands.FlagsCommand(), "")
 	subcommands.Register(subcommands.CommandsCommand(), "")
 	subcommands.Register(&cli.Generate{}, "")
+	subcommands.Register(&cli.Serve{}, "")
 	subcommands.Register(&cli.Update{}, "")
 	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "")
 
