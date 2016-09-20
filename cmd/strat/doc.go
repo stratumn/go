@@ -12,9 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// The command generate sets up projects templates from generators.
+// The command start contains various subcommands related to Stratumn.
 //
 // Usage
 //
-// generate src dst
+//      $ strat
+//      Usage: strat <flags> <subcommand> <subcommand args>
+//
+//      Subcommands:
+//      	commands         list all command names
+//      	flags            describe all known top-level flags
+//      	generate         generate a project
+//      	help             describe subcommands and their syntax
 package main

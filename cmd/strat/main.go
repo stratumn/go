@@ -15,11 +15,13 @@
 package main
 
 import (
-	"log"
+	"flag"
 	"os"
-	"runtime"
 
-	"github.com/stratumn/go/generator"
+	"golang.org/x/net/context"
+
+	"github.com/google/subcommands"
+	"github.com/stratumn/go/cli"
 )
 
 var (
@@ -28,24 +30,14 @@ var (
 )
 
 func main() {
-	log.SetFlags(0)
-	log.Printf("%s v%s@%s", "Stratumn Generate", version, commit[:7])
-	log.Print("Copyright (c) 2016 Stratumn SAS")
-	log.Print("Apache License 2.0")
-	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	subcommands.Register(subcommands.HelpCommand(), "")
+	subcommands.Register(subcommands.FlagsCommand(), "")
+	subcommands.Register(subcommands.CommandsCommand(), "")
+	subcommands.Register(&cli.Generate{}, "")
+	subcommands.Register(&cli.Update{}, "")
+	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "")
 
-	args := os.Args[1:]
-	if len(args) != 2 {
-		log.Fatalf("usage: %s src dst", os.Args[0])
-	}
-	src, dst := args[0], args[1]
-	gen, err := generator.NewFromDir(src, &generator.Options{})
-	if err != nil {
-		log.Fatalf("err: %s", err)
-	}
-	if err := gen.Exec(dst); err != nil {
-		log.Fatalf("err: %s", err)
-	}
-
-	log.Printf("Done")
+	flag.Parse()
+	ctx := context.Background()
+	os.Exit(int(subcommands.Execute(ctx)))
 }
