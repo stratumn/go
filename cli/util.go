@@ -15,22 +15,23 @@
 package cli
 
 import (
-	"os/user"
 	"path/filepath"
+
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 func generatorPath(owner, repo string) (string, error) {
-	usr, err := user.Current()
+	homeDir, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr.HomeDir, StratumnDir, GeneratorsDir, owner, repo), nil
+	return filepath.Join(homeDir, StratumnDir, GeneratorsDir, owner, repo), nil
 }
 
 func varsPath() (string, error) {
-	usr, err := user.Current()
+	homeDir, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr.HomeDir, StratumnDir, VarsFile), nil
+	return filepath.Join(homeDir, StratumnDir, VarsFile), nil
 }
