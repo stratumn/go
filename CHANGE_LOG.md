@@ -1,5 +1,8 @@
 ## Change log
 
+### 0.13.0-alpha
+ * CLI tool.
+
 ### 0.12.0-alpha
  * Store queries with pagination now have a default limit set to 20 and a maximum limit set to 200.
 
