@@ -19,12 +19,12 @@ import (
 	"path/filepath"
 )
 
-func generatorPath() (string, error) {
+func generatorPath(owner, repo string) (string, error) {
 	usr, err := user.Current()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr.HomeDir, StratumnDir, GeneratorsDir), nil
+	return filepath.Join(usr.HomeDir, StratumnDir, GeneratorsDir, owner, repo), nil
 }
 
 func varsPath() (string, error) {

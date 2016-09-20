@@ -31,6 +31,7 @@ import (
 
 // Generate is a command to generate projects.
 type Generate struct {
+	generator string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -45,30 +46,28 @@ func (*Generate) Synopsis() string {
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Generate) Usage() string {
-	return `generate [out]:
+	return `generate [flags] [out]:
   Generate a project.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Generate) SetFlags(f *flag.FlagSet) {
+func (cmd *Generate) SetFlags(f *flag.FlagSet) {
+	f.StringVar(&cmd.generator, "generator", "", "generator name")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	args := f.Args()
 
-	if len(args) > 1 {
+	if len(args) != 1 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
 
-	out := ""
-	if len(args) > 0 {
-		out = args[0]
-	}
+	out := args[0]
 
-	path, err := generatorPath()
+	path, err := generatorPath(GeneratorsOwner, GeneratorsRepo)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
@@ -99,23 +98,26 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 			Text:  desc.Description,
 		})
 	}
-	fmt.Print(in.Msg())
-	reader := bufio.NewReader(os.Stdin)
-	name := ""
-	for {
-		fmt.Print("? ")
-		str, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println(err)
-			return subcommands.ExitFailure
+
+	name := cmd.generator
+	if name == "" {
+		fmt.Print(in.Msg())
+		reader := bufio.NewReader(os.Stdin)
+		for {
+			fmt.Print("? ")
+			str, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Println(err)
+				return subcommands.ExitFailure
+			}
+			str = strings.TrimSpace(str)
+			if err := in.Set(str); err != nil {
+				fmt.Println(err)
+				continue
+			}
+			name = in.Get().(string)
+			break
 		}
-		str = strings.TrimSpace(str)
-		if err := in.Set(str); err != nil {
-			fmt.Println(err)
-			continue
-		}
-		name = in.Get().(string)
-		break
 	}
 
 	varsPath, err := varsPath()

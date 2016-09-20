@@ -55,7 +55,7 @@ func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 		return subcommands.ExitUsageError
 	}
 
-	path, err := generatorPath()
+	path, err := generatorPath(GeneratorsOwner, GeneratorsRepo)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure

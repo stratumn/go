@@ -30,13 +30,13 @@ var (
 )
 
 func main() {
-	subcommands.Register(subcommands.HelpCommand(), "")
-	subcommands.Register(subcommands.FlagsCommand(), "")
-	subcommands.Register(subcommands.CommandsCommand(), "")
-	subcommands.Register(&cli.Generate{}, "")
-	subcommands.Register(&cli.Serve{}, "")
-	subcommands.Register(&cli.Update{}, "")
-	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "")
+	subcommands.Register(subcommands.HelpCommand(), "help")
+	subcommands.Register(subcommands.FlagsCommand(), "help")
+	subcommands.Register(subcommands.CommandsCommand(), "help")
+	subcommands.Register(&cli.Generate{}, "projects")
+	subcommands.Register(&cli.Serve{}, "projects")
+	subcommands.Register(&cli.Update{}, "cli")
+	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "cli")
 
 	flag.Parse()
 	ctx := context.Background()
