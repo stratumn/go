@@ -3,11 +3,34 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "aQJUtbGbMIuNW00rW8d2Or1xcRM=",
+			"path": "github.com/google/go-github/github",
+			"revision": "94a3cd9f531888fe4a03487276c0adb887428e77",
+			"revisionTime": "2016-09-07T21:10:27Z"
+		},
+		{
+			"checksumSHA1": "yyAzHoiVLu+xywYI2BDyRq6sOqE=",
+			"path": "github.com/google/go-querystring/query",
+			"revision": "9235644dd9e52eeae6fa48efd539fdc351a0af53",
+			"revisionTime": "2016-03-11T01:20:12Z"
+		},
+		{
+			"checksumSHA1": "a7OfuXCU8P3aQsmTpgZhtQX6OVc=",
+			"path": "github.com/google/subcommands",
+			"revision": "1c7173745a6001f67d8d96ab4e178284c77f7759",
+			"revisionTime": "2016-03-09T19:00:48Z"
+		},
+		{
 			"checksumSHA1": "Drsz3oT4NmM2tVQCRk+occxVvPA=",
-			"origin": "github.com/stratumn/go/vendor/github.com/julienschmidt/httprouter",
 			"path": "github.com/julienschmidt/httprouter",
 			"revision": "d8ff598a019f2c7bad0980917a588193cf26666e",
 			"revisionTime": "2016-08-10T19:53:38Z"
+		},
+		{
+			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
+			"path": "golang.org/x/net/context",
+			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
+			"revisionTime": "2016-09-12T21:59:12Z"
 		}
 	],
 	"rootPath": "github.com/stratumn/go"
