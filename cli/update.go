@@ -34,7 +34,7 @@ func (*Update) Name() string {
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
 func (*Update) Synopsis() string {
-	return "Update the CLI"
+	return "update the CLI"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
