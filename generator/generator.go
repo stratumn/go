@@ -125,7 +125,8 @@ type Generator struct {
 // NewFromDir create a new generator from a directory.
 func NewFromDir(src string, opts *Options) (*Generator, error) {
 	defFile := filepath.Join(src, DefinitionFile)
-	def, err := NewDefinitionFromFile(defFile, opts.DefVars, opts.DefFuncs)
+	funcs := extendFuncs(DefaultDefinitionFuncs(), opts.DefFuncs)
+	def, err := NewDefinitionFromFile(defFile, opts.DefVars, funcs)
 	if err != nil {
 		return nil, err
 	}
@@ -184,11 +185,7 @@ func (gen *Generator) parsePartials() error {
 		}
 		return err
 	}
-	if gen.opts.TmplFuncs == nil {
-		gen.partials.Funcs(gen.DefaultTmplFuncs())
-	} else {
-		gen.partials.Funcs(gen.opts.TmplFuncs)
-	}
+	gen.partials.Funcs(extendFuncs(gen.DefaultTmplFuncs(), gen.opts.TmplFuncs))
 	if err := walkTmpl(dir, dir, gen.partials); err != nil {
 		return err
 	}
@@ -204,11 +201,7 @@ func (gen *Generator) parseFiles() error {
 		}
 		return err
 	}
-	if gen.opts.TmplFuncs == nil {
-		gen.files.Funcs(gen.DefaultTmplFuncs())
-	} else {
-		gen.files.Funcs(gen.opts.TmplFuncs)
-	}
+	gen.files.Funcs(extendFuncs(gen.DefaultTmplFuncs(), gen.opts.TmplFuncs))
 	if err := walkTmpl(dir, dir, gen.files); err != nil {
 		return err
 	}
@@ -282,9 +275,6 @@ func (gen *Generator) generate(dst string) error {
 	for _, desc := range descs {
 		tmpl := desc.tmpl
 		name := tmpl.Name()
-		if name == "files" {
-			continue
-		}
 		in := filepath.Join(gen.src, FilesDir, name)
 		info, err := os.Stat(in)
 		if err != nil {
@@ -398,4 +388,16 @@ func now(format string) string {
 
 func nowUTC(format string) string {
 	return time.Now().UTC().Format(format)
+}
+
+func extendFuncs(maps ...template.FuncMap) template.FuncMap {
+	funcs := template.FuncMap{}
+	for _, m := range maps {
+		if m != nil {
+			for k, v := range m {
+				funcs[k] = v
+			}
+		}
+	}
+	return funcs
 }

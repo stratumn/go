@@ -1,0 +1,1 @@
+{{partial (printf "licenses/%s.md" (input "license")) . -}}

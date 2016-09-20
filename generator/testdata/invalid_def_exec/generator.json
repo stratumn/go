@@ -1,0 +1,10 @@
+{
+  "name": "invalid_def_exec",
+  "version": "0.1.0",
+  "description": "Invalid def exec test",
+  "author": "Stratumn",
+  "license": "MIT",
+  "variables": {
+    "year": "{{now `2006` `test`}}"
+  }
+}

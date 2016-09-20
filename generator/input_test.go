@@ -38,9 +38,37 @@ func TestInputSliceUnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestInputSliceUnmarshalJSON_invalid(t *testing.T) {
+	var gen Definition
+	if err := json.Unmarshal([]byte(`{"inputs": [1, 2, 3]}`), &gen); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestInputSliceUnmarshalJSON_invalidInput(t *testing.T) {
+	var gen Definition
+	if err := json.Unmarshal([]byte(`{"inputs": {"test": 1}}`), &gen); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
 func TestInputSliceUnmarshalJSON_invalidType(t *testing.T) {
 	var gen Definition
 	if err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "nope"}}}`), &gen); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestInputSliceUnmarshalJSON_invalidString(t *testing.T) {
+	var gen Definition
+	if err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "string", "default": 1}}}`), &gen); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestInputSliceUnmarshalJSON_invalidSelect(t *testing.T) {
+	var gen Definition
+	if err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "select:string", "options": [1]}}}`), &gen); err == nil {
 		t.Error("err: err = nil want Error")
 	}
 }

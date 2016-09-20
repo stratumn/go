@@ -1,0 +1,59 @@
+{
+  "name": "invalid_partial",
+  "version": "0.1.0",
+  "description": "Invalid partial test",
+  "author": "Stratumn",
+  "license": "MIT",
+  "variables": {
+    "os": "{{.os}}"
+  },
+  "inputs": {
+    "name": {
+      "type": "string",
+      "prompt": "Project name:",
+      "default": "{{.dir}}",
+      "format": ".+"
+    },
+    "description": {
+      "type": "string",
+      "prompt": "Project description:",
+      "default": "{{.description}}"
+    },
+    "author": {
+      "type": "string",
+      "prompt": "Your name:",
+      "default": "{{.author}}",
+      "format": ".+"
+    },
+    "company": {
+      "type": "string",
+      "prompt": "Company:",
+      "default": "{{.company}}",
+      "format": ".+"
+    },
+    "year": {
+      "type": "string",
+      "prompt": "Year:",
+      "default": "{{now `2006`}}",
+      "format": ".+"
+    },
+    "license": {
+      "type": "select:string",
+      "prompt": "License:",
+      "options": [{
+        "input": "1",
+        "value": "mit",
+        "text": "MIT"
+      }, {
+        "input": "2",
+        "value": "bsd",
+        "text": "BSD"
+      }],
+      "default": "mit"
+    }
+  },
+  "priorities": [
+    "README.md",
+    "LICENSE"
+  ]
+}

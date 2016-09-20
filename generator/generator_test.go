@@ -15,7 +15,6 @@
 package generator
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -40,12 +39,6 @@ func TestNewGeneratorFromFile(t *testing.T) {
 	}
 }
 
-func TestDefaultGeneratorFuncs(t *testing.T) {
-	if got := DefaultDefinitionFuncs(); got == nil {
-		t.Errorf("err: DefaultDefinitionFuncs() = %q want FuncMap", got)
-	}
-}
-
 func TestNewFromDir(t *testing.T) {
 	gen, err := NewFromDir("testdata/nodejs", &Options{})
 	if err != nil {
@@ -56,12 +49,39 @@ func TestNewFromDir(t *testing.T) {
 	}
 }
 
+func TestNewFromDir_notExist(t *testing.T) {
+	_, err := NewFromDir("testdata/404", &Options{})
+	if err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestNewFromDir_invalidDef(t *testing.T) {
+	_, err := NewFromDir("testdata/invalid_def", &Options{})
+	if err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestNewFromDir_invalidDefExec(t *testing.T) {
+	_, err := NewFromDir("testdata/invalid_def_exec", &Options{})
+	if err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestNewFromDir_invalidDefTpml(t *testing.T) {
+	_, err := NewFromDir("testdata/custom_funcs", &Options{})
+	if err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
 func TestGeneratorExec(t *testing.T) {
 	dst, err := ioutil.TempDir("", "generator")
 	if err != nil {
 		t.Fatalf("err: ioutil.TempDir(): %s", err)
 	}
-	fmt.Println(dst)
 	defer os.RemoveAll(dst)
 
 	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\n")
@@ -78,12 +98,11 @@ func TestGeneratorExec(t *testing.T) {
 	cmpWalk(t, "testdata/nodejs_expected", dst, "testdata/nodejs_expected")
 }
 
-func TestGeneratorAsk(t *testing.T) {
+func TestGeneratorExec_ask(t *testing.T) {
 	dst, err := ioutil.TempDir("", "generator")
 	if err != nil {
 		t.Fatalf("err: ioutil.TempDir(): %s", err)
 	}
-	fmt.Println(dst)
 	defer os.RemoveAll(dst)
 
 	r := strings.NewReader("\n\nTest Project\n")
@@ -98,4 +117,195 @@ func TestGeneratorAsk(t *testing.T) {
 	}
 
 	cmpWalk(t, "testdata/ask_expected", dst, "testdata/ask_expected")
+}
+
+func TestGeneratorExec_tmplVars(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	opts := Options{
+		TmplVars: map[string]interface{}{"test": "hello"},
+	}
+
+	gen, err := NewFromDir("testdata/vars", &opts)
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err != nil {
+		t.Fatalf("err: gen.Exec(): %s", err)
+	}
+
+	cmpWalk(t, "testdata/vars_expected", dst, "testdata/vars_expected")
+}
+
+func TestGeneratorExec_customFuncs(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	opts := Options{
+		DefFuncs: map[string]interface{}{
+			"custom": func() string { return "hello generator" },
+		},
+		TmplFuncs: map[string]interface{}{
+			"custom": func() string { return "hello template" },
+		},
+	}
+
+	gen, err := NewFromDir("testdata/custom_funcs", &opts)
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err != nil {
+		t.Fatalf("err: gen.Exec(): %s", err)
+	}
+
+	cmpWalk(t, "testdata/custom_funcs_expected", dst, "testdata/custom_funcs_expected")
+}
+
+func TestGeneratorExec_inputError(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	gen, err := NewFromDir("testdata/nodejs", &Options{})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_askError(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	gen, err := NewFromDir("testdata/ask", &Options{})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_askInvalid(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	gen, err := NewFromDir("testdata/ask_invalid", &Options{})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_invalidTpml(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	gen, err := NewFromDir("testdata/invalid_tmpl", &Options{})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_invalidPartial(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\n")
+
+	gen, err := NewFromDir("testdata/invalid_partial", &Options{Reader: r})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_invalidPartialExec(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\n")
+
+	gen, err := NewFromDir("testdata/invalid_partial_exec", &Options{Reader: r})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_undefinedInput(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	gen, err := NewFromDir("testdata/undefined_input", &Options{})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_invalidPartialArgs(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	gen, err := NewFromDir("testdata/invalid_partial_args", &Options{})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Error("err: err = nil want Error")
+	}
 }

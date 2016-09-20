@@ -1,0 +1,11 @@
+{
+  "name": "custom_funcs",
+  "version": "0.1.0",
+  "description": "Custom funcs test",
+  "author": "Stratumn",
+  "license": "MIT",
+  "variables": {
+          "custom": "{{custom}}",
+          "year": "{{nowUTC `2006`}}"
+  }
+}
