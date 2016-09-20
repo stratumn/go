@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -149,7 +150,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 // - input(id): returns the value of an input
 // - now(format): returns a formatted representation of the current date
 // - nowUTC(format): returns a formatted representation of the current UTC date
-// - partial(path, vars): executes the partial with given name and variables (path relative to partials folder)
+// - partial(path, [vars]): executes the partial with given name and variables (path relative to partials folder)
 func (gen *Generator) DefaultTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
@@ -214,7 +215,15 @@ func (gen *Generator) parseFiles() error {
 	return nil
 }
 
-func (gen *Generator) execPartial(name string, vars interface{}) (string, error) {
+func (gen *Generator) execPartial(name string, opts ...interface{}) (string, error) {
+	l := len(opts)
+	if l > 1 {
+		return "", errors.New("too many arguments")
+	}
+	var vars interface{}
+	if l == 1 {
+		vars = opts[0]
+	}
 	var buf bytes.Buffer
 	if err := gen.partials.ExecuteTemplate(&buf, name, vars); err != nil {
 		return "", err
