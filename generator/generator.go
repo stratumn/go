@@ -284,12 +284,7 @@ func (gen *Generator) generate(dst string) error {
 		if err := os.MkdirAll(filepath.Dir(out), 0755); err != nil {
 			return err
 		}
-		if err := os.Remove(out); err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			}
-		}
-		f, err := os.OpenFile(out, os.O_CREATE|os.O_EXCL|os.O_WRONLY, info.Mode())
+		f, err := os.OpenFile(out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
 		if err != nil {
 			return err
 		}
