@@ -145,7 +145,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 
 // DefaultTmplFuncs return the default function map used when parsing a template
 // It adds the following functions:
-// - ask(json): create an input on-the-fly and return its value
+// - ask(json): creates an input on-the-fly and returns its value
 // - input(id): returns the value of an input
 // - now(format): returns a formatted representation of the current date
 // - nowUTC(format): returns a formatted representation of the current UTC date
