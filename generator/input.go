@@ -35,6 +35,7 @@ const noValue = "<no value>"
 // Input must be implemented by all input types.
 type Input interface {
 	// Set must set the value of the input or return an error.
+	// It should be able to at least set the value from a string.
 	Set(interface{}) error
 
 	// Get must return the value of the input.
