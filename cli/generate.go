@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -153,7 +154,7 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		}
 	}
 
-	vars["dir"] = out
+	vars["dir"] = filepath.Base(out)
 
 	opts := generator.Options{
 		DefVars:  vars,
