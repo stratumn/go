@@ -25,7 +25,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Generators is a command to list generators.
+// Generators is a command that lists generators.
 type Generators struct {
 	owner string
 	repo  string
@@ -56,9 +56,7 @@ func (cmd *Generators) SetFlags(f *flag.FlagSet) {
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Generators) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	args := f.Args()
-
-	if len(args) > 0 {
+	if len(f.Args()) > 0 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}

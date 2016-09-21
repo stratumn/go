@@ -17,7 +17,6 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"runtime"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
@@ -58,7 +57,6 @@ func (cmd *Version) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	fmt.Printf("%s v%s@%s\n", "Stratumn CLI", cmd.Version, cmd.Commit[:7])
-	fmt.Printf("Runtime %s %s %s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	return subcommands.ExitSuccess
 }

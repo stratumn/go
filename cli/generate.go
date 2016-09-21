@@ -30,7 +30,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Generate is a command to generate projects.
+// Generate is a command that generates a project.
 type Generate struct {
 	repo      string
 	generator string
@@ -49,7 +49,7 @@ func (*Generate) Synopsis() string {
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Generate) Usage() string {
-	return `generate [flags] [out]:
+	return `generate [flags] out:
   Generate a project.
 `
 }

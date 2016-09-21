@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reupd.
+// Copyright 2016 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,42 +17,50 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"runtime"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
 )
 
-// Up is a command that starts the services.
-type Up struct {
+// Info is a command that prints info about the program.
+type Info struct {
+	Version string
+	Commit  string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Up) Name() string {
-	return "up"
+func (*Info) Name() string {
+	return "info"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Up) Synopsis() string {
-	return "start services"
+func (*Info) Synopsis() string {
+	return "print program info"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Up) Usage() string {
-	return `up:
-  Start services.
+func (*Info) Usage() string {
+	return `info:
+  Print program info.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Up) SetFlags(f *flag.FlagSet) {
+func (*Info) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (cmd *Info) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) > 0 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(UpScript)
+	fmt.Printf("%s v%s@%s\n", "Stratumn CLI", cmd.Version, cmd.Commit[:7])
+	fmt.Print("Copyright (c) 2016 Stratumn SAS")
+	fmt.Print("Apache License 2.0")
+	fmt.Printf("Runtime %s %s %s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+
+	return subcommands.ExitSuccess
 }

@@ -17,9 +17,15 @@ package cli
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"strings"
+	"syscall"
 
+	"github.com/google/subcommands"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -92,4 +98,43 @@ func varsPath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(homeDir, StratumnDir, VarsFile), nil
+}
+
+func runScript(name string) subcommands.ExitStatus {
+	prj, err := NewProjectFromFile(ProjectFile)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	script := prj.GetScript(name)
+	if script == "" {
+		fmt.Printf("Project doesn't have a %q script.\n", name)
+		return subcommands.ExitFailure
+	}
+
+	parts := strings.Split(script, " ")
+	c := exec.Command(parts[0], parts[1:]...)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	c.Stdin = os.Stdin
+
+	if err := c.Start(); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	go func() {
+		sigc := make(chan os.Signal)
+		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+		for range sigc {
+		}
+	}()
+
+	if err := c.Wait(); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	return subcommands.ExitSuccess
 }

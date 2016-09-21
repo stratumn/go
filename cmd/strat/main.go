@@ -37,7 +37,9 @@ func main() {
 	subcommands.Register(&cli.Generate{}, "projects")
 	subcommands.Register(&cli.Up{}, "projects")
 	subcommands.Register(&cli.Test{}, "projects")
+	subcommands.Register(&cli.Run{}, "projects")
 	subcommands.Register(&cli.Update{}, "cli")
+	subcommands.Register(&cli.Info{Version: version, Commit: commit}, "cli")
 	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "cli")
 
 	flag.Parse()

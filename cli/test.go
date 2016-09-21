@@ -17,15 +17,12 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
 )
 
-// Test is a command that starts the services.
+// Test is a command that runs tests.
 type Test struct {
 }
 
@@ -57,25 +54,5 @@ func (cmd *Test) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitUsageError
 	}
 
-	prj, err := NewProjectFromFile(ProjectFile)
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	script := prj.GetScript(TestScript)
-	if script == "" {
-		fmt.Println("Project doesn't have a test script")
-		return subcommands.ExitFailure
-	}
-
-	parts := strings.Split(script, " ")
-	c := exec.Command(parts[0], parts[1:]...)
-	c.Stdout = os.Stdout
-	if err := c.Run(); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	return subcommands.ExitSuccess
+	return runScript(TestScript)
 }

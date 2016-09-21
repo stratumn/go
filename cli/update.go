@@ -23,7 +23,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Update is a command to update the CLI.
+// Update is a command that updates the CLI.
 type Update struct {
 	owner string
 	repo  string

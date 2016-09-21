@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reupd.
+// Copyright 2016 Stratumn SAS. All rights rerund.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,37 +22,39 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Up is a command that starts the services.
-type Up struct {
+// Run is a command that runs a project script.
+type Run struct {
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Up) Name() string {
-	return "up"
+func (*Run) Name() string {
+	return "run"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Up) Synopsis() string {
-	return "start services"
+func (*Run) Synopsis() string {
+	return "run a project script"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Up) Usage() string {
-	return `up:
-  Start services.
+func (*Run) Usage() string {
+	return `run script:
+  Run a project script.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Up) SetFlags(f *flag.FlagSet) {
+func (*Run) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if len(f.Args()) > 0 {
+func (cmd *Run) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	args := f.Args()
+
+	if len(args) != 1 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(UpScript)
+	return runScript(args[0])
 }
