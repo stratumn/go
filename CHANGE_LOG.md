@@ -1,5 +1,9 @@
 ## Change log
 
+### 0.14.0-alpha
+ * Rename `strat server` to `strat up`.
+ * Add `strat test`.
+
 ### 0.13.1-alpha
  * Fix home dir when cross-compiling.
 

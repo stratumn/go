@@ -17,11 +17,20 @@
 // Usage
 //
 //      $ strat
-//      Usage: strat <flags> <subcommand> <subcommand args>
+//              Usage: strat <flags> <subcommand> <subcommand args>
 //
-//      Subcommands:
-//      	commands         list all command names
-//      	flags            describe all known top-level flags
-//      	generate         generate a project
-//      	help             describe subcommands and their syntax
+//              Subcommands for cli:
+//              	update           update the CLI
+//              	version          print version info
+//
+//              Subcommands for help:
+//              	commands         list all command names
+//              	flags            describe all known top-level flags
+//              	help             describe subcommands and their syntax
+//
+//              Subcommands for projects:
+//              	generate         generate a project
+//              	generators       list generators
+//              	test             run tests
+//              	up               start services
 package main
