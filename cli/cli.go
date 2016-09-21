@@ -15,6 +15,14 @@
 // Package cli implements command line commands.
 package cli
 
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+
+	homedir "github.com/mitchellh/go-homedir"
+)
+
 const (
 	// DefaultGeneratorsOwner is the  default owner of the generators' Github repository.
 	DefaultGeneratorsOwner = "stratumn"
@@ -28,6 +36,60 @@ const (
 	// GeneratorsDir is the name of the generators directory within StratumnDir.
 	GeneratorsDir = "generators"
 
-	// VarsFile is the name of the variable files within StratumnDir.
+	// VarsFile is the name of the variable file within StratumnDir.
 	VarsFile = "variables.json"
+
+	// ProjectFile is the name of the project file within the project directory.
+	ProjectFile = "stratumn.json"
+
+	// UpScript is the name of the project serve script.
+	UpScript = "up"
+
+	// TestScript is the name of the project test script.
+	TestScript = "test"
 )
+
+// Project describes a project.
+type Project struct {
+	Scripts map[string]string `json:"scripts"`
+}
+
+// NewProjectFromFile instantiates a project from a project file.
+func NewProjectFromFile(path string) (*Project, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	dec := json.NewDecoder(f)
+	var prj Project
+	if err := dec.Decode(&prj); err != nil {
+		return nil, err
+	}
+	return &prj, nil
+}
+
+// GetScript returns a script by name.
+// If the script is undefined, it returns an empty string.
+func (prj *Project) GetScript(name string) string {
+	v, ok := prj.Scripts[name]
+	if ok {
+		return v
+	}
+	return ""
+}
+
+func generatorPath(owner, repo string) (string, error) {
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, StratumnDir, GeneratorsDir, owner, repo), nil
+}
+
+func varsPath() (string, error) {
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, StratumnDir, VarsFile), nil
+}

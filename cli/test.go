@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2016 Stratumn SAS. All rights retestd.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,44 +19,58 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
 )
 
-// Serve is a command that starts the services.
-type Serve struct {
+// Test is a command that starts the services.
+type Test struct {
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Serve) Name() string {
-	return "serve"
+func (*Test) Name() string {
+	return "test"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Serve) Synopsis() string {
-	return "start services"
+func (*Test) Synopsis() string {
+	return "run tests"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Serve) Usage() string {
-	return `Serve:
-  Start services.
+func (*Test) Usage() string {
+	return `Test:
+  Run tests.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Serve) SetFlags(f *flag.FlagSet) {
+func (*Test) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Serve) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (cmd *Test) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) > 0 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
 
-	c := exec.Command("docker-compose", "up")
+	prj, err := NewProjectFromFile(ProjectFile)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	script := prj.GetScript(TestScript)
+	if script == "" {
+		fmt.Println("Project doesn't have a test script")
+		return subcommands.ExitFailure
+	}
+
+	parts := strings.Split(script, " ")
+	c := exec.Command(parts[0], parts[1:]...)
 	c.Stdout = os.Stdout
 	if err := c.Run(); err != nil {
 		fmt.Println(err)
