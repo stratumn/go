@@ -33,7 +33,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Update is a command that updates the CLI.
+// Update is a command that updates the generators and CLI.
 type Update struct {
 	Version    string
 	generators bool
@@ -48,13 +48,13 @@ func (*Update) Name() string {
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
 func (*Update) Synopsis() string {
-	return "update the CLI"
+	return "update the generators and CLI"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Update) Usage() string {
 	return `update:
-  Update the CLI.
+  Update the generators and CLI.
 `
 }
 

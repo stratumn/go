@@ -59,7 +59,7 @@ To launch tests, run within the project folder:
 $ strat test
 ```
 
-To update the generators, run: 
+To update the generators and the CLI, run: 
 
 ```bash
 $ strat update
