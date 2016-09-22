@@ -129,9 +129,9 @@ func (r *Repo) Update(ref string) (*State, bool, error) {
 // Ref can be branch, a tag, or a commit SHA1.
 // If the repository does not exist, it returns nil.
 func (r *Repo) GetState(ref string) (*State, error) {
-	name := filepath.Join(r.path, StatesDir, ref, StateFile)
+	path := filepath.Join(r.path, StatesDir, ref, StateFile)
 	var state *State
-	f, err := os.Open(name)
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
