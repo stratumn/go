@@ -42,6 +42,9 @@ const (
 	// CLIAssetBinary is the file name of the binary within the CLI asset.
 	CLIAssetBinary = "strat/strat"
 
+	// CLIAssetBinaryWin is the file name of the binary within the CLI asset on Windows.
+	CLIAssetBinaryWin = "strat/strat.exe"
+
 	// DefaultGeneratorsOwner is the default owner of the generators' Github repository.
 	DefaultGeneratorsOwner = "stratumn"
 

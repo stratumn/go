@@ -33,6 +33,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+const win = "windows"
+
 // Update is a command that updates the generators and CLI.
 type Update struct {
 	Version    string
@@ -234,8 +236,13 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 
 	fmt.Printf("Extracting %q...\n", *asset.Name)
 
+	want := CLIAssetBinary
+	if runtime.GOOS == win {
+		want = CLIAssetBinaryWin
+	}
+
 	for _, f := range zr.File {
-		if f.Name == CLIAssetBinary {
+		if f.Name == want {
 			info, err := os.Stat(execPath)
 			if err != nil {
 				fmt.Println(err)
