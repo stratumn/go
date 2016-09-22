@@ -36,6 +36,9 @@ const (
 	// DefaultGeneratorsRepo is the default name of the generators' Github repository.
 	DefaultGeneratorsRepo = "generators"
 
+	// DefaultGeneratorsRef is the default reference of the generators' Github repository.
+	DefaultGeneratorsRef = "master"
+
 	// StratumnDir is the name of the Stratumn directory within the home folder.
 	StratumnDir = ".stratumn"
 
@@ -82,6 +85,14 @@ func (prj *Project) GetScript(name string) string {
 		return v
 	}
 	return ""
+}
+
+func generatorsPath() (string, error) {
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(homeDir, StratumnDir, GeneratorsDir), nil
 }
 
 func generatorPath(owner, repo string) (string, error) {

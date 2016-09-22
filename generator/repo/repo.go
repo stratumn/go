@@ -32,21 +32,31 @@ import (
 )
 
 const (
-	// TagsDir is the name of the directory where tags are stored.
-	TagsDir = "tags"
+	// StatesDir is the name of the states directory.
+	StatesDir = "states"
 
-	// DescPerm if the file mode the a repo description.
-	DescPerm = 0644
+	// StateFile is the name of the state file.
+	StateFile = "repo.json"
 
-	// TagPerm is the file mode for a tag directory.
-	TagPerm = 0755
+	// StateDirPerm is the file mode for a state directory.
+	StateDirPerm = 0755
+
+	// StateFilePerm is the file mode for a state file.
+	StateFilePerm = 0644
+
+	// SrcDir is the name of the directory where sources are stored.
+	SrcDir = "src"
+
+	// SrcPerm is the file mode for a state directory.
+	SrcPerm = 0755
 )
 
-// Desc descibes a repository.
-type Desc struct {
+// State stateibes a repository.
+type State struct {
 	Owner string `json:"owner"`
 	Repo  string `json:"repo"`
-	Tag   string `json:"tag"`
+	Ref   string `json:"ref"`
+	SHA1  string `json:"sha1"`
 }
 
 // Repo manages a Github repository.
@@ -68,46 +78,59 @@ func New(path, owner, repo string) *Repo {
 }
 
 // Update download the latest release if needed.
-func (r *Repo) Update() (*Desc, bool, error) {
-	desc, err := r.GetDesc()
+// Ref can be branch, a tag, or a commit SHA1.
+func (r *Repo) Update(ref string) (*State, bool, error) {
+	state, err := r.GetState(ref)
 	if err != nil {
 		return nil, false, err
 	}
 
-	rel, res, err := r.client.Repositories.GetLatestRelease(r.owner, r.repo)
+	sha1 := ""
+	if state != nil {
+		sha1 = state.SHA1
+	}
+
+	sha1, res, err := r.client.Repositories.GetCommitSHA1(r.owner, r.repo, ref, sha1)
+	if res != nil {
+		defer res.Body.Close()
+		if res.StatusCode == http.StatusNotModified {
+			// No update is available.
+			return state, false, nil
+		}
+	}
 	if err != nil {
 		return nil, false, err
 	}
-	defer res.Body.Close()
 
-	if desc != nil && desc.Tag == *rel.TagName {
-		return desc, false, nil
-	}
-
-	desc, err = r.Download(rel)
+	state, err = r.download(ref, sha1)
 	if err != nil {
 		return nil, false, err
 	}
 
-	name := filepath.Join(r.path, "repo.json")
-	f, err := os.OpenFile(name, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, DescPerm)
+	path := filepath.Join(r.path, StatesDir, ref, StateFile)
+	if err := os.MkdirAll(filepath.Dir(path), StateDirPerm); err != nil {
+		return nil, false, err
+	}
+
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, StateFilePerm)
 	if err != nil {
 		return nil, false, err
 	}
 
 	enc := json.NewEncoder(f)
-	if err := enc.Encode(desc); err != nil {
+	if err := enc.Encode(state); err != nil {
 		return nil, false, err
 	}
 
-	return desc, true, nil
+	return state, true, nil
 }
 
-// GetDesc returns the description of the repository.
+// GetState returns the state of the repository.
+// Ref can be branch, a tag, or a commit SHA1.
 // If the repository does not exist, it returns nil.
-func (r *Repo) GetDesc() (*Desc, error) {
-	name := filepath.Join(r.path, "repo.json")
-	var desc *Desc
+func (r *Repo) GetState(ref string) (*State, error) {
+	name := filepath.Join(r.path, StatesDir, ref, StateFile)
+	var state *State
 	f, err := os.Open(name)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -116,37 +139,39 @@ func (r *Repo) GetDesc() (*Desc, error) {
 		return nil, err
 	}
 	defer f.Close()
-	desc = &Desc{}
+	state = &State{}
 	dec := json.NewDecoder(f)
-	if err := dec.Decode(&desc); err != nil {
+	if err := dec.Decode(&state); err != nil {
 		return nil, err
 	}
-	return desc, err
+	return state, err
 }
 
-// GetDescOrCreate returns the description of the repository.
+// GetStateOrCreate returns the state of the repository.
 // If the repository does not exist, it returns creates it by calling Update().
-func (r *Repo) GetDescOrCreate() (*Desc, error) {
-	desc, err := r.GetDesc()
+// Ref can be branch, a tag, or a commit SHA1.
+func (r *Repo) GetStateOrCreate(ref string) (*State, error) {
+	state, err := r.GetState(ref)
 	if err != nil {
 		return nil, err
 	}
-	if desc == nil {
-		if desc, _, err = r.Update(); err != nil {
+	if state == nil {
+		if state, _, err = r.Update(ref); err != nil {
 			return nil, err
 		}
 	}
-	return desc, nil
+	return state, nil
 }
 
 // List lists the generators of the repository.
-func (r *Repo) List() ([]*generator.Definition, error) {
-	desc, err := r.GetDescOrCreate()
+// Ref can be branch, a tag, or a commit SHA1.
+func (r *Repo) List(ref string) ([]*generator.Definition, error) {
+	_, err := r.GetStateOrCreate(ref)
 	if err != nil {
 		return nil, err
 	}
 
-	matches, err := filepath.Glob(filepath.Join(r.path, TagsDir, desc.Tag, "*", "generator.json"))
+	matches, err := filepath.Glob(filepath.Join(r.path, SrcDir, ref, "*", generator.DefinitionFile))
 	if err != nil {
 		return nil, err
 	}
@@ -172,10 +197,14 @@ func (r *Repo) List() ([]*generator.Definition, error) {
 }
 
 // Generate executes a generator by name.
-func (r *Repo) Generate(name, dst string, opts *generator.Options) error {
-	desc, err := r.GetDescOrCreate()
+// Ref can be branch, a tag, or a commit SHA1.
+func (r *Repo) Generate(name, dst string, opts *generator.Options, ref string) error {
+	_, err := r.GetStateOrCreate(ref)
+	if err != nil {
+		return err
+	}
 
-	matches, err := filepath.Glob(filepath.Join(r.path, TagsDir, desc.Tag, "*", "generator.json"))
+	matches, err := filepath.Glob(filepath.Join(r.path, SrcDir, ref, "*", generator.DefinitionFile))
 	if err != nil {
 		return err
 	}
@@ -206,9 +235,15 @@ func (r *Repo) Generate(name, dst string, opts *generator.Options) error {
 	return fmt.Errorf("could not find generator %q", name)
 }
 
-// Download downloads a release.
-func (r *Repo) Download(release *github.RepositoryRelease) (*Desc, error) {
-	res, err := http.Get(*release.TarballURL)
+func (r *Repo) download(ref, sha1 string) (*State, error) {
+	opts := github.RepositoryContentGetOptions{Ref: sha1}
+	url, ghres, err := r.client.Repositories.GetArchiveLink(r.owner, r.repo, github.Tarball, &opts)
+	if err != nil {
+		return nil, err
+	}
+	defer ghres.Body.Close()
+
+	res, err := http.Get(url.String())
 	if err != nil {
 		return nil, err
 	}
@@ -216,6 +251,10 @@ func (r *Repo) Download(release *github.RepositoryRelease) (*Desc, error) {
 
 	gr, err := gzip.NewReader(res.Body)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := os.RemoveAll(filepath.Join(r.path, SrcDir, ref)); err != nil {
 		return nil, err
 	}
 
@@ -232,9 +271,9 @@ func (r *Repo) Download(release *github.RepositoryRelease) (*Desc, error) {
 
 		if hdr.Typeflag == tar.TypeReg {
 			parts := strings.Split(hdr.Name, string(filepath.Separator))
-			parts[0] = *release.TagName
-			dst := filepath.Join(r.path, TagsDir, filepath.Join(parts...))
-			err = os.MkdirAll(filepath.Dir(dst), TagPerm)
+			parts = parts[1:]
+			dst := filepath.Join(r.path, SrcDir, ref, filepath.Join(parts...))
+			err = os.MkdirAll(filepath.Dir(dst), SrcPerm)
 			if err != nil {
 				return nil, err
 			}
@@ -250,9 +289,10 @@ func (r *Repo) Download(release *github.RepositoryRelease) (*Desc, error) {
 		}
 	}
 
-	return &Desc{
+	return &State{
 		Owner: r.owner,
 		Repo:  r.repo,
-		Tag:   *release.TagName,
+		Ref:   ref,
+		SHA1:  sha1,
 	}, nil
 }

@@ -30,7 +30,7 @@ func TestUpdate(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	r := New(dir, "stratumn", "generators")
-	desc, updated, err := r.Update()
+	desc, updated, err := r.Update("master")
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -43,7 +43,7 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
 	}
 
-	desc, updated, err = r.Update()
+	desc, updated, err = r.Update("master")
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -65,13 +65,13 @@ func TestUpdate_notFound(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	r := New(dir, "stratumn", "404")
-	_, _, err = r.Update()
+	_, _, err = r.Update("master")
 	if err == nil {
 		t.Error("err: r.Update(): err = nil want Error")
 	}
 }
 
-func TestGetDesc(t *testing.T) {
+func TestGetState(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
 	if err != nil {
 		t.Fatalf("err: ioutil.TempDir(): %s", err)
@@ -80,30 +80,30 @@ func TestGetDesc(t *testing.T) {
 
 	r := New(dir, "stratumn", "generators")
 
-	desc, err := r.GetDesc()
+	desc, err := r.GetState("master")
 	if err != nil {
-		t.Fatalf("err: r.GetDesc(): %s", err)
+		t.Fatalf("err: r.GetState(): %s", err)
 	}
 	if desc != nil {
-		t.Fatalf("err: r.GetDesc(): desc = %#v want nil", desc)
+		t.Fatalf("err: r.GetState(): desc = %#v want nil", desc)
 	}
 
-	_, _, err = r.Update()
+	_, _, err = r.Update("master")
 	if err != nil {
-		t.Fatalf("err: r.GetDesc(): %s", err)
+		t.Fatalf("err: r.Update(): %s", err)
 	}
 
-	desc, err = r.GetDesc()
+	desc, err = r.GetState("master")
 	if err != nil {
-		t.Fatalf("err: r.GetDesc(): %s", err)
+		t.Fatalf("err: r.GetState(): %s", err)
 	}
 
 	if got, want := desc.Owner, "stratumn"; got != want {
-		t.Errorf("err: r.GetDesc(): owner = %q want %q", got, want)
+		t.Errorf("err: r.GetState(): owner = %q want %q", got, want)
 	}
 }
 
-func TestGetDescOrCreate(t *testing.T) {
+func TestGetStateOrCreate(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
 	if err != nil {
 		t.Fatalf("err: ioutil.TempDir(): %s", err)
@@ -112,13 +112,13 @@ func TestGetDescOrCreate(t *testing.T) {
 
 	r := New(dir, "stratumn", "generators")
 
-	desc, err := r.GetDescOrCreate()
+	desc, err := r.GetStateOrCreate("master")
 	if err != nil {
-		t.Fatalf("err: r.GetDescOrCreate(): %s", err)
+		t.Fatalf("err: r.GetStateOrCreate(): %s", err)
 	}
 
 	if got, want := desc.Owner, "stratumn"; got != want {
-		t.Errorf("err: r.GetDescOrCreate(): owner = %q want %q", got, want)
+		t.Errorf("err: r.GetStateOrCreate(): owner = %q want %q", got, want)
 	}
 }
 
@@ -131,7 +131,7 @@ func TestList(t *testing.T) {
 
 	r := New(dir, "stratumn", "generators")
 
-	list, err := r.List()
+	list, err := r.List("master")
 	if err != nil {
 		t.Fatalf("err: r.List(): %s", err)
 	}
@@ -159,7 +159,7 @@ func TestGenerate(t *testing.T) {
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n"),
 	}
 
-	err = r.Generate("agent-basic-js", dst, &opts)
+	err = r.Generate("agent-basic-js", dst, &opts, "master")
 	if err != nil {
 		t.Fatalf("err: r.Generate(): %s", err)
 	}
@@ -183,7 +183,7 @@ func TestGenerate_notFound(t *testing.T) {
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n"),
 	}
 
-	err = r.Generate("404", dst, &opts)
+	err = r.Generate("404", dst, &opts, "master")
 	if err == nil {
 		t.Error("err: r.Generate(): err = nil want Error")
 	}

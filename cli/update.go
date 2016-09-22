@@ -17,6 +17,8 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/google/subcommands"
 	"github.com/stratumn/go/generator/repo"
@@ -25,8 +27,7 @@ import (
 
 // Update is a command that updates the CLI.
 type Update struct {
-	owner string
-	repo  string
+	prerelease bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -48,8 +49,7 @@ func (*Update) Usage() string {
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
 func (cmd *Update) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&cmd.owner, "owner", "", "Github owner")
-	f.StringVar(&cmd.repo, "repo", "", "Github repository")
+	f.BoolVar(&cmd.prerelease, "prerelease", false, "update to prerelease if available")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -61,35 +61,51 @@ func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	fmt.Println("Updating generators...")
 
-	if cmd.owner == "" {
-		cmd.owner = DefaultGeneratorsOwner
-	}
-	if cmd.repo == "" {
-		cmd.repo = DefaultGeneratorsRepo
-	}
-
-	path, err := generatorPath(cmd.owner, cmd.repo)
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-	repo := repo.New(path, cmd.owner, cmd.repo)
+	path, err := generatorsPath()
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
 
-	_, updated, err := repo.Update()
+	matches, err := filepath.Glob(filepath.Join(path, "*", "*", repo.StatesDir, "*"))
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
 
-	if updated {
-		fmt.Println("Generators updated successfully.")
-	} else {
-		fmt.Println("Generators are already up-to-date.")
+	for _, path = range matches {
+		var (
+			parts = strings.Split(path, string(filepath.Separator))
+			l     = len(parts)
+			owner = parts[l-4]
+			rep   = parts[l-3]
+			ref   = parts[l-1]
+			name  = fmt.Sprintf("%s/%s@%s", owner, rep, ref)
+			p     = filepath.Join(parts[:l-2]...)
+		)
+
+		fmt.Printf("Updating generators %q...\n", name)
+
+		r := repo.New(p, owner, rep)
+		if err != nil {
+			fmt.Println(err)
+			return subcommands.ExitFailure
+		}
+
+		_, updated, err := r.Update(ref)
+		if err != nil {
+			fmt.Println(err)
+			return subcommands.ExitFailure
+		}
+
+		if updated {
+			fmt.Printf("Generators %q updated successfully.\n", name)
+		} else {
+			fmt.Printf("Generators %q already up-to-date.\n", name)
+		}
 	}
+
+	fmt.Println("Generators updated successfully.")
 
 	return subcommands.ExitSuccess
 }

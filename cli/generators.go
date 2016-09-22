@@ -29,6 +29,7 @@ import (
 type Generators struct {
 	owner string
 	repo  string
+	ref   string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -50,8 +51,9 @@ func (*Generators) Usage() string {
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
 func (cmd *Generators) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&cmd.owner, "owner", "", "Github owner")
-	f.StringVar(&cmd.repo, "repo", "", "Github repository")
+	f.StringVar(&cmd.owner, "owner", DefaultGeneratorsOwner, "Github owner")
+	f.StringVar(&cmd.repo, "repo", DefaultGeneratorsRepo, "Github repository")
+	f.StringVar(&cmd.ref, "ref", DefaultGeneratorsRef, "Github branch, tag, or commit SHA1")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -59,13 +61,6 @@ func (cmd *Generators) Execute(_ context.Context, f *flag.FlagSet, _ ...interfac
 	if len(f.Args()) > 0 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
-	}
-
-	if cmd.owner == "" {
-		cmd.owner = DefaultGeneratorsOwner
-	}
-	if cmd.repo == "" {
-		cmd.repo = DefaultGeneratorsRepo
 	}
 
 	path, err := generatorPath(cmd.owner, cmd.repo)
@@ -79,7 +74,7 @@ func (cmd *Generators) Execute(_ context.Context, f *flag.FlagSet, _ ...interfac
 		return subcommands.ExitFailure
 	}
 
-	list, err := repo.List()
+	list, err := repo.List(cmd.ref)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure

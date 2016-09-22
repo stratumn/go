@@ -32,9 +32,10 @@ import (
 
 // Generate is a command that generates a project.
 type Generate struct {
-	repo      string
-	generator string
-	owner     string
+	repo  string
+	owner string
+	ref   string
+	name  string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -56,9 +57,10 @@ func (*Generate) Usage() string {
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
 func (cmd *Generate) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&cmd.owner, "owner", "", "Github owner")
-	f.StringVar(&cmd.repo, "repo", "", "Github repository")
-	f.StringVar(&cmd.generator, "generator", "", "generator name")
+	f.StringVar(&cmd.owner, "owner", DefaultGeneratorsOwner, "Github owner")
+	f.StringVar(&cmd.repo, "repo", DefaultGeneratorsRepo, "Github repository")
+	f.StringVar(&cmd.ref, "ref", DefaultGeneratorsRef, "Github branch, tag, or commit SHA1")
+	f.StringVar(&cmd.name, "name", "", "generator name")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -90,9 +92,9 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 
-	name := cmd.generator
+	name := cmd.name
 	if name == "" {
-		list, err := repo.List()
+		list, err := repo.List(cmd.ref)
 		if err != nil {
 			fmt.Println(err)
 			return subcommands.ExitFailure
@@ -161,7 +163,7 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		TmplVars: vars,
 	}
 
-	if err := repo.Generate(name, out, &opts); err != nil {
+	if err := repo.Generate(name, out, &opts, cmd.ref); err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
