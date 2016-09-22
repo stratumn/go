@@ -1,5 +1,9 @@
 ## Change log
 
+### 0.15.1-alpha
+ * Fixed a problem when updating generators that would result in the
+   generators not being saved to the correct directory.
+
 ### 0.15.0-alpha
  * Command `strat update` will now update the CLI. It will update to the
    latest published release by default, or the latest prerelease if
