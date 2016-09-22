@@ -110,7 +110,7 @@ func (cmd *Update) updateGenerators() subcommands.ExitStatus {
 			rep   = parts[l-3]
 			ref   = parts[l-1]
 			name  = fmt.Sprintf("%s/%s@%s", owner, rep, ref)
-			p     = string(filepath.Separator) + filepath.Join(parts[:l-2]...)
+			p     = filepath.Join(path, owner, rep)
 		)
 
 		fmt.Printf("Updating generators %q...\n", name)
