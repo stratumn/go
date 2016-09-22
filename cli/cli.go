@@ -30,7 +30,19 @@ import (
 )
 
 const (
-	// DefaultGeneratorsOwner is the  default owner of the generators' Github repository.
+	// CLIOwner is the owner of the CLI's Github repository.
+	CLIOwner = "stratumn"
+
+	// CLIRepo is the name of the CLI's Github repository.
+	CLIRepo = "go"
+
+	// CLIAssetFormat is the format of the CLI GIthub asset.
+	CLIAssetFormat = "strat-%s-%s.zip"
+
+	// CLIAssetBinary is the file name of the binary within the CLI asset.
+	CLIAssetBinary = "strat/strat"
+
+	// DefaultGeneratorsOwner is the default owner of the generators' Github repository.
 	DefaultGeneratorsOwner = "stratumn"
 
 	// DefaultGeneratorsRepo is the default name of the generators' Github repository.
