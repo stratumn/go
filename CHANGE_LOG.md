@@ -1,7 +1,22 @@
 ## Change log
 
+### 0.15.6-alpha
+ * Changed the way the CLI updates itself in order to make it
+   work on Windows (hopefully). The old binary will be renamed
+   instead of attempting to override it. If an old binary is
+   found during launch, it will attempt to remove it (it will
+   fail if it doesn't have the right permissions, but it will
+   not stop execution of the command).
+ * CLI and generators must now be updated separately using
+   `strat update` and `strat update -generators` respectively.
+   This is because the two operations might require different user
+   permissions depending on the environment.
+ * Added a `-force` flag to `strat` to force an update. This is
+   mostly designed to test the update mechanism easily.
+
 ### 0.15.5-alpha
- * Added a secret function to generators to generate random strings.
+ * Added a function called `secret` to generator templates to create
+   random strings.
 
 ### 0.15.4-alpha
  * Fixed an issue when updating generators.
