@@ -318,4 +318,19 @@ func TestSecret(t *testing.T) {
 	if got, want := len(s), 16; got != want {
 		t.Errorf("err: len(s) = %d want %d", got, want)
 	}
+OUTER_LOOP:
+	for _, c := range s {
+		for _, r := range letters {
+			if c == r {
+				continue OUTER_LOOP
+			}
+		}
+		t.Errorf("err: unexpected rune '%c'", c)
+	}
+}
+
+func TestSecret_invalidSize(t *testing.T) {
+	if _, err := secret(-1); err == nil {
+		t.Error("err: err = nil want Error")
+	}
 }

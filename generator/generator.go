@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/big"
 	"os"
 	"path/filepath"
 	"sort"
@@ -405,15 +406,17 @@ func extendFuncs(maps ...template.FuncMap) template.FuncMap {
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&()[]*+-,./:;<=>?^_{}~")
 
 func secret(n int) (string, error) {
-	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+	if n < 0 {
+		return "", errors.New("size must not be negative")
 	}
 	r := make([]rune, n)
-	l := len(letters)
-	for i := range b {
-		j := int(b[i]) % l
-		r[i] = letters[j]
+	max := big.NewInt(int64(len(letters)))
+	for i := range r {
+		j, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			return "", err
+		}
+		r[i] = letters[int(j.Int64())]
 	}
 	return string(r), nil
 }
