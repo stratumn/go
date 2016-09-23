@@ -18,6 +18,7 @@ package generator
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -86,10 +87,12 @@ func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs templ
 // It adds the following functions:
 // - now(format): returns a formatted representation of the current date
 // - nowUTC(format): returns a formatted representation of the current UTC date
+// - secret(length): returns a random secret string
 func DefaultDefinitionFuncs() template.FuncMap {
 	return template.FuncMap{
 		"now":    now,
 		"nowUTC": nowUTC,
+		"secret": secret,
 	}
 }
 
@@ -152,6 +155,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 // - now(format): returns a formatted representation of the current date
 // - nowUTC(format): returns a formatted representation of the current UTC date
 // - partial(path, [vars]): executes the partial with given name and variables (path relative to partials folder)
+// - secret(length): returns a random secret string
 func (gen *Generator) DefaultTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
@@ -159,6 +163,7 @@ func (gen *Generator) DefaultTmplFuncs() template.FuncMap {
 		"now":     now,
 		"nowUTC":  nowUTC,
 		"partial": gen.execPartial,
+		"secret":  secret,
 	}
 }
 
@@ -395,4 +400,20 @@ func extendFuncs(maps ...template.FuncMap) template.FuncMap {
 		}
 	}
 	return funcs
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&()[]*+-,./:;<=>?^_{}~")
+
+func secret(n int) (string, error) {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	r := make([]rune, n)
+	l := len(letters)
+	for i := range b {
+		j := int(b[i]) % l
+		r[i] = letters[j]
+	}
+	return string(r), nil
 }
