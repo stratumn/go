@@ -8,7 +8,7 @@
    `&&`.
 *  Scripts executed by `strat` are now passed a working directory
    and can optionally return a success status if the script
-   doesn\'t exist.
+   doesn't exist.
 *  Project files `stratumn.json` can now specify an `init` script
    that will be executed after `strat generate` generates the
    project files.
