@@ -22,7 +22,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strings"
+	"runtime"
 	"syscall"
 
 	"github.com/google/subcommands"
@@ -69,11 +69,21 @@ const (
 	// ProjectFile is the name of the project file within the project directory.
 	ProjectFile = "stratumn.json"
 
-	// UpScript is the name of the project serve script.
+	// InitScript is the name of the project init script.
+	InitScript = "init"
+
+	// UpScript is the name of the project up script.
 	UpScript = "up"
 
 	// TestScript is the name of the project test script.
 	TestScript = "test"
+)
+
+const win = "windows"
+
+var (
+	nixShell = []string{"sh", "-i", "-c"}
+	winShell = []string{"cmd", "/C"}
 )
 
 // Project describes a project.
@@ -129,8 +139,8 @@ func varsPath() (string, error) {
 	return filepath.Join(homeDir, StratumnDir, VarsFile), nil
 }
 
-func runScript(name string) subcommands.ExitStatus {
-	prj, err := NewProjectFromFile(ProjectFile)
+func runScript(name, wd string, ignoreNotExist bool) subcommands.ExitStatus {
+	prj, err := NewProjectFromFile(filepath.Join(wd, ProjectFile))
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
@@ -138,15 +148,28 @@ func runScript(name string) subcommands.ExitStatus {
 
 	script := prj.GetScript(name)
 	if script == "" {
+		if ignoreNotExist {
+			return subcommands.ExitSuccess
+		}
 		fmt.Printf("Project doesn't have a %q script.\n", name)
 		return subcommands.ExitFailure
 	}
 
-	parts := strings.Split(script, " ")
+	var shell []string
+	if runtime.GOOS == win {
+		shell = winShell
+	} else {
+		shell = nixShell
+	}
+
+	parts := append(shell, script)
 	c := exec.Command(parts[0], parts[1:]...)
+	c.Dir = wd
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	c.Stdin = os.Stdin
+
+	fmt.Printf("Running %q...\n", script)
 
 	if err := c.Start(); err != nil {
 		fmt.Println(err)

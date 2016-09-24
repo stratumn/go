@@ -1,5 +1,18 @@
 ## Change log
 
+### 0.16.0-alpha
+ * Scripts executed by `strat` are now passed to a shell instead
+   of being executed directly. On *nix, the shell is `sh`. On
+   Windows it is `cmd` (needs to be tested). This is to allow
+   executing multiple commands in a script, for instance using
+   `&&`.
+*  Scripts executed by `strat` are now passed a working directory
+   and can optionally return a success status if the script
+   doesn\'t exist.
+*  Project files `stratumn.json` can now specify an `init` script
+   that will be executed after `strat generate` generates the
+   project files.
+
 ### 0.15.6-alpha
  * Changed the way the CLI updates itself in order to make it
    work on Windows (hopefully). The old binary will be renamed

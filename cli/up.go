@@ -54,5 +54,5 @@ func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) sub
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(UpScript)
+	return runScript(UpScript, "", false)
 }

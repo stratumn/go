@@ -56,5 +56,5 @@ func (cmd *Run) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) su
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(args[0])
+	return runScript(args[0], "", false)
 }

@@ -156,7 +156,7 @@ func TestGenerate(t *testing.T) {
 
 	r := New(dir, "stratumn", "generators")
 	opts := generator.Options{
-		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n"),
+		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
 	}
 
 	err = r.Generate("agent-basic-js", dst, &opts, "master")
@@ -180,7 +180,7 @@ func TestGenerate_notFound(t *testing.T) {
 
 	r := New(dir, "stratumn", "generators")
 	opts := generator.Options{
-		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n"),
+		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
 	}
 
 	err = r.Generate("404", dst, &opts, "master")

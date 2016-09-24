@@ -33,8 +33,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-const win = "windows"
-
 // Update is a command that updates the CLI or generators.
 type Update struct {
 	Version    string
