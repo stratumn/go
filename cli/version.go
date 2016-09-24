@@ -22,7 +22,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Version is a command that prints the version.
+// Version is a CLI command that prints the version.
 type Version struct {
 	Version string
 	Commit  string

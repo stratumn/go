@@ -22,7 +22,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Run is a command that runs a project script.
+// Run is a project command that runs script by name.
 type Run struct {
 }
 
@@ -33,13 +33,13 @@ func (*Run) Name() string {
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
 func (*Run) Synopsis() string {
-	return "run a project script"
+	return "run script by name"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Run) Usage() string {
 	return `run script:
-  Run a project script.
+  Run script by name.
 `
 }
 

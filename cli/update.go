@@ -33,7 +33,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Update is a command that updates the CLI or generators.
+// Update is a CLI command that updates the CLI or generators.
 type Update struct {
 	Version    string
 	generators bool

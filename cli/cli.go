@@ -72,6 +72,9 @@ const (
 	// InitScript is the name of the project init script.
 	InitScript = "init"
 
+	// BuildScript is the name of the project build script.
+	BuildScript = "build"
+
 	// UpScript is the name of the project up script.
 	UpScript = "up"
 
@@ -146,7 +149,17 @@ func runScript(name, wd string, ignoreNotExist bool) subcommands.ExitStatus {
 		return subcommands.ExitFailure
 	}
 
-	script := prj.GetScript(name)
+	// Look for OS/Arch specific scripts first.
+	script := prj.GetScript(name + ":" + runtime.GOOS + ":" + runtime.GOARCH)
+	if script == "" {
+		script = prj.GetScript(name + ":" + runtime.GOOS)
+	}
+	if script == "" {
+		script = prj.GetScript(name + ":" + runtime.GOARCH)
+	}
+	if script == "" {
+		script = prj.GetScript(name)
+	}
 	if script == "" {
 		if ignoreNotExist {
 			return subcommands.ExitSuccess

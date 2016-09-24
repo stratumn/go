@@ -22,7 +22,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Up is a command that starts the services.
+// Up is a project command that starts the services.
 type Up struct {
 }
 

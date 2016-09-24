@@ -30,7 +30,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Generate is a command that generates a project.
+// Generate is a generator command that generates a project.
 type Generate struct {
 	repo  string
 	owner string

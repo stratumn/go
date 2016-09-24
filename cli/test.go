@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights retestd.
+// Copyright 2016 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Test is a command that runs tests.
+// Test is a project command that runs tests.
 type Test struct {
 }
 
@@ -38,7 +38,7 @@ func (*Test) Synopsis() string {
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Test) Usage() string {
-	return `Test:
+	return `test:
   Run tests.
 `
 }

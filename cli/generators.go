@@ -25,7 +25,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Generators is a command that lists generators.
+// Generators is a generator command that lists generators.
 type Generators struct {
 	owner string
 	repo  string

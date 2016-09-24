@@ -1,5 +1,13 @@
 ## Change log
 
+### 0.17.0-alpha
+ * Scripts executed by `strat` can now be OS and architecture
+   specific. It will look fist for a script named
+   `{name}:{os}:{arch}`, then `{name}:{os}`, then `{name}:{arch}`,
+   and finally `{name}`.
+ * Added the `strat build` command that executes the `build`
+   script of a project.
+
 ### 0.16.0-alpha
  * Scripts executed by `strat` are now passed to a shell instead
    of being executed directly. On *nix, the shell is `sh`. On

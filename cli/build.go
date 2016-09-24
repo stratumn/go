@@ -17,50 +17,42 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"runtime"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
 )
 
-// Info is a CLI command that prints info about the program.
-type Info struct {
-	Version string
-	Commit  string
+// Build is a project command that runs the build script.
+type Build struct {
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Info) Name() string {
-	return "info"
+func (*Build) Name() string {
+	return "build"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Info) Synopsis() string {
-	return "print program info"
+func (*Build) Synopsis() string {
+	return "run build script"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Info) Usage() string {
-	return `info:
-  Print program info.
+func (*Build) Usage() string {
+	return `build:
+  Run build script.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Info) SetFlags(f *flag.FlagSet) {
+func (*Build) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Info) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (cmd *Build) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	if len(f.Args()) > 0 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
 
-	fmt.Printf("%s v%s@%s\n", "Stratumn CLI", cmd.Version, cmd.Commit[:7])
-	fmt.Println("Copyright (c) 2016 Stratumn SAS")
-	fmt.Println("Apache License 2.0")
-	fmt.Printf("Runtime %s %s %s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
-
-	return subcommands.ExitSuccess
+	return runScript(BuildScript, "", false)
 }
