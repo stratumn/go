@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package generator deals with creating projects from template files.
 package generator
 
 import (
@@ -56,20 +55,16 @@ type Definition struct {
 	Priorities  []string               `json:"priorities"`
 }
 
-// NewDefinitionFromFile loads a generator from a file.
+// NewDefinitionFromFile loads a generator definition from a file.
 // The file is treated as a template and is fed the given variables and functions.
-// If no functions are given, DefaultDefinitionFuncs is used.
+// Extra variables and functions given will be added to the template context.
 func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs template.FuncMap) (*Definition, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 	tmpl := template.New("generator")
-	if funcs == nil {
-		tmpl.Funcs(DefaultDefinitionFuncs())
-	} else {
-		tmpl.Funcs(funcs)
-	}
+	tmpl.Funcs(extendFuncs(StdDefinitionFuncs(), funcs))
 	if _, err := tmpl.Parse(string(b)); err != nil {
 		return nil, err
 	}
@@ -84,12 +79,12 @@ func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs templ
 	return &gen, nil
 }
 
-// DefaultDefinitionFuncs return the default function map used when parsing a generator definition.
+// StdDefinitionFuncs return the standard function map used when parsing a generator definition.
 // It adds the following functions:
 // - now(format): returns a formatted representation of the current date
 // - nowUTC(format): returns a formatted representation of the current UTC date
 // - secret(length): returns a random secret string
-func DefaultDefinitionFuncs() template.FuncMap {
+func StdDefinitionFuncs() template.FuncMap {
 	return template.FuncMap{
 		"now":    now,
 		"nowUTC": nowUTC,
@@ -115,7 +110,7 @@ type Options struct {
 	Reader io.Reader
 }
 
-// Generator deals with parsing templates, handling user input, and outputing processed templates.
+// Generator deals with parsing templates, handling user input, and outputting processed templates.
 type Generator struct {
 	opts     *Options
 	src      string
@@ -129,8 +124,7 @@ type Generator struct {
 // NewFromDir create a new generator from a directory.
 func NewFromDir(src string, opts *Options) (*Generator, error) {
 	defFile := filepath.Join(src, DefinitionFile)
-	funcs := extendFuncs(DefaultDefinitionFuncs(), opts.DefFuncs)
-	def, err := NewDefinitionFromFile(defFile, opts.DefVars, funcs)
+	def, err := NewDefinitionFromFile(defFile, opts.DefVars, opts.DefFuncs)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +143,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 	}, nil
 }
 
-// DefaultTmplFuncs return the default function map used when parsing a template
+// StdTmplFuncs return the standard function map used when parsing a template
 // It adds the following functions:
 // - ask(json): creates an input on-the-fly and returns its value
 // - input(id): returns the value of an input
@@ -157,7 +151,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 // - nowUTC(format): returns a formatted representation of the current UTC date
 // - partial(path, [vars]): executes the partial with given name and variables (path relative to partials folder)
 // - secret(length): returns a random secret string
-func (gen *Generator) DefaultTmplFuncs() template.FuncMap {
+func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
 		"input":   gen.input,
@@ -191,7 +185,7 @@ func (gen *Generator) parsePartials() error {
 		}
 		return err
 	}
-	gen.partials.Funcs(extendFuncs(gen.DefaultTmplFuncs(), gen.opts.TmplFuncs))
+	gen.partials.Funcs(extendFuncs(gen.StdTmplFuncs(), gen.opts.TmplFuncs))
 	if err := walkTmpl(dir, dir, gen.partials); err != nil {
 		return err
 	}
@@ -207,7 +201,7 @@ func (gen *Generator) parseFiles() error {
 		}
 		return err
 	}
-	gen.files.Funcs(extendFuncs(gen.DefaultTmplFuncs(), gen.opts.TmplFuncs))
+	gen.files.Funcs(extendFuncs(gen.StdTmplFuncs(), gen.opts.TmplFuncs))
 	if err := walkTmpl(dir, dir, gen.files); err != nil {
 		return err
 	}
