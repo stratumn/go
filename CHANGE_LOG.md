@@ -1,5 +1,14 @@
 ## Change log
 
+### 0.18.0-alpha
+ * Added support for `strat` `down:test` script. This addition makes
+   `strat test` execute a `down:test` script if present after the tests.
+   It will handle the exit code properly.
+ * Added ability for `strat` scripts to accept extra arguments.
+   This change makes it possible to pass arguments (both flags and
+   parameters) to a script when executing it.
+ * Improved code documentation.
+
 ### 0.17.0-alpha
  * Scripts executed by `strat` can now be OS and architecture
    specific. It will look fist for a script named
@@ -20,8 +29,6 @@
 *  Project files `stratumn.json` can now specify an `init` script
    that will be executed after `strat generate` generates the
    project files.
-
-### 0.15.6-alpha
  * Changed the way the CLI updates itself in order to make it
    work on Windows (hopefully). The old binary will be renamed
    instead of attempting to override it. If an old binary is
@@ -34,21 +41,11 @@
    permissions depending on the environment.
  * Added a `-force` flag to `strat` to force an update. This is
    mostly designed to test the update mechanism easily.
-
-### 0.15.5-alpha
  * Added a function called `secret` to generator templates to create
    random strings.
-
-### 0.15.4-alpha
  * Fixed an issue when updating generators.
-
-### 0.15.3-alpha
  * Fixed an issue when downloading generators on Windows.
-
-### 0.15.2-alpha
  * Fixed some Windows compatibility issues.
-
-### 0.15.1-alpha
  * Fixed a problem when updating generators that would result in the
    generators not being saved to the correct directory.
 
