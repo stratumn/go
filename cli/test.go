@@ -54,5 +54,12 @@ func (cmd *Test) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(TestScript, "", false)
+	testRes := runScript(TestScript, "", false)
+	downRes := runScript(DownTestScript, "", true)
+
+	if testRes != subcommands.ExitSuccess {
+		return testRes
+	}
+
+	return downRes
 }
