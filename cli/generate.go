@@ -168,7 +168,7 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 
-	if err := runScript(InitScript, out, true); err != subcommands.ExitSuccess {
+	if err := runScript(InitScript, out, nil, true); err != subcommands.ExitSuccess {
 		fmt.Println(err)
 		return err
 	}

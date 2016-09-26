@@ -16,7 +16,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
@@ -38,7 +37,7 @@ func (*Up) Synopsis() string {
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Up) Usage() string {
-	return `up:
+	return `up [args...]:
   Start services.
 `
 }
@@ -49,10 +48,5 @@ func (*Up) SetFlags(f *flag.FlagSet) {
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if len(f.Args()) > 0 {
-		fmt.Println(cmd.Usage())
-		return subcommands.ExitUsageError
-	}
-
-	return runScript(UpScript, "", false)
+	return runScript(UpScript, "", f.Args(), false)
 }

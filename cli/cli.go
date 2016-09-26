@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/google/subcommands"
@@ -145,7 +146,7 @@ func varsPath() (string, error) {
 	return filepath.Join(homeDir, StratumnDir, VarsFile), nil
 }
 
-func runScript(name, wd string, ignoreNotExist bool) subcommands.ExitStatus {
+func runScript(name, wd string, args []string, ignoreNotExist bool) subcommands.ExitStatus {
 	prj, err := NewProjectFromFile(filepath.Join(wd, ProjectFile))
 	if err != nil {
 		fmt.Println(err)
@@ -169,6 +170,10 @@ func runScript(name, wd string, ignoreNotExist bool) subcommands.ExitStatus {
 		}
 		fmt.Printf("Project doesn't have a %q script.\n", name)
 		return subcommands.ExitFailure
+	}
+
+	if len(args) > 0 {
+		script += " " + strings.Join(args, " ")
 	}
 
 	var shell []string

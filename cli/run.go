@@ -38,7 +38,7 @@ func (*Run) Synopsis() string {
 
 // Usage implements github.com/google/subcommands.Command.Usage().
 func (*Run) Usage() string {
-	return `run script:
+	return `run script [args...]:
   Run script by name.
 `
 }
@@ -51,10 +51,10 @@ func (*Run) SetFlags(f *flag.FlagSet) {
 func (cmd *Run) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 	args := f.Args()
 
-	if len(args) != 1 {
+	if len(args) < 1 {
 		fmt.Println(cmd.Usage())
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(args[0], "", false)
+	return runScript(args[0], "", args[1:], false)
 }
