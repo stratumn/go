@@ -39,6 +39,7 @@ type Update struct {
 	generators bool
 	prerelease bool
 	force      bool
+	ghToken    string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -62,7 +63,8 @@ func (*Update) Usage() string {
 func (cmd *Update) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&cmd.generators, "generators", false, "update generators")
 	f.BoolVar(&cmd.prerelease, "prerelease", false, "update to prerelease")
-	f.BoolVar(&cmd.force, "force", false, "download latest binary even if a new version isn't available")
+	f.BoolVar(&cmd.force, "force", false, "download latest version even if a new version isn't available")
+	f.StringVar(&cmd.ghToken, "ghtoken", "", "Github token for private repos")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -86,6 +88,10 @@ func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 }
 
 func (cmd *Update) updateGenerators() subcommands.ExitStatus {
+	if cmd.ghToken == "" {
+		cmd.ghToken = os.Getenv("GITHUB_TOKEN")
+	}
+
 	path, err := generatorsPath()
 	if err != nil {
 		fmt.Println(err)
@@ -112,13 +118,13 @@ func (cmd *Update) updateGenerators() subcommands.ExitStatus {
 
 		fmt.Printf("Updating generators %q...\n", name)
 
-		r := repo.New(p, owner, rep)
+		r := repo.New(p, owner, rep, cmd.ghToken)
 		if err != nil {
 			fmt.Println(err)
 			return subcommands.ExitFailure
 		}
 
-		_, updated, err := r.Update(ref)
+		_, updated, err := r.Update(ref, cmd.force)
 		if err != nil {
 			fmt.Println(err)
 			return subcommands.ExitFailure

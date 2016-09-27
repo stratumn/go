@@ -32,10 +32,11 @@ import (
 
 // Generate is a generator command that generates a project.
 type Generate struct {
-	repo  string
-	owner string
-	ref   string
-	name  string
+	repo    string
+	owner   string
+	ref     string
+	name    string
+	ghToken string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -61,6 +62,7 @@ func (cmd *Generate) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&cmd.repo, "repo", DefaultGeneratorsRepo, "Github repository")
 	f.StringVar(&cmd.ref, "ref", DefaultGeneratorsRef, "Github branch, tag, or commit SHA1")
 	f.StringVar(&cmd.name, "name", "", "generator name")
+	f.StringVar(&cmd.ghToken, "ghtoken", "", "Github token for private repos")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -80,13 +82,16 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	if cmd.repo == "" {
 		cmd.repo = DefaultGeneratorsRepo
 	}
+	if cmd.ghToken == "" {
+		cmd.ghToken = os.Getenv("GITHUB_TOKEN")
+	}
 
 	path, err := generatorPath(cmd.owner, cmd.repo)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
-	repo := repo.New(path, cmd.owner, cmd.repo)
+	repo := repo.New(path, cmd.owner, cmd.repo, cmd.ghToken)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure

@@ -27,9 +27,10 @@ import (
 
 // Generators is a generator command that lists generators.
 type Generators struct {
-	owner string
-	repo  string
-	ref   string
+	owner   string
+	repo    string
+	ref     string
+	ghToken string
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -54,6 +55,7 @@ func (cmd *Generators) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&cmd.owner, "owner", DefaultGeneratorsOwner, "Github owner")
 	f.StringVar(&cmd.repo, "repo", DefaultGeneratorsRepo, "Github repository")
 	f.StringVar(&cmd.ref, "ref", DefaultGeneratorsRef, "Github branch, tag, or commit SHA1")
+	f.StringVar(&cmd.ghToken, "ghtoken", "", "Github token for private repos")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -63,12 +65,16 @@ func (cmd *Generators) Execute(_ context.Context, f *flag.FlagSet, _ ...interfac
 		return subcommands.ExitUsageError
 	}
 
+	if cmd.ghToken == "" {
+		cmd.ghToken = os.Getenv("GITHUB_TOKEN")
+	}
+
 	path, err := generatorPath(cmd.owner, cmd.repo)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
-	repo := repo.New(path, cmd.owner, cmd.repo)
+	repo := repo.New(path, cmd.owner, cmd.repo, cmd.ghToken)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure

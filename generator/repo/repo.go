@@ -33,6 +33,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/oauth2"
+
 	"github.com/google/go-github/github"
 	"github.com/stratumn/go/generator"
 )
@@ -82,25 +84,32 @@ type Repo struct {
 }
 
 // New instantiates a repository.
-func New(path, owner, repo string) *Repo {
+func New(path, owner, repo, ghToken string) *Repo {
+	var tc *http.Client
+	if ghToken != "" {
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: ghToken},
+		)
+		tc = oauth2.NewClient(oauth2.NoContext, ts)
+	}
 	return &Repo{
 		path:   path,
 		owner:  owner,
 		repo:   repo,
-		client: github.NewClient(nil),
+		client: github.NewClient(tc),
 	}
 }
 
-// Update downloads the latest release if needed.
+// Update downloads the latest release if needed (or if force is true).
 // Ref can be a branch, a tag, or a commit SHA1.
-func (r *Repo) Update(ref string) (*State, bool, error) {
+func (r *Repo) Update(ref string, force bool) (*State, bool, error) {
 	state, err := r.GetState(ref)
 	if err != nil {
 		return nil, false, err
 	}
 
 	sha1 := ""
-	if state != nil {
+	if !force && state != nil {
 		sha1 = state.SHA1
 	}
 
@@ -170,7 +179,7 @@ func (r *Repo) GetStateOrCreate(ref string) (*State, error) {
 		return nil, err
 	}
 	if state == nil {
-		if state, _, err = r.Update(ref); err != nil {
+		if state, _, err = r.Update(ref, false); err != nil {
 			return nil, err
 		}
 	}

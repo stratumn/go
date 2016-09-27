@@ -36,4 +36,8 @@
 //              	run              run script by name
 //              	test             run tests
 //              	up               start services
+//
+// Env
+//
+//      GITHUB_TOKEN="xxxx" # A Github token that can be used to access private repos
 package main

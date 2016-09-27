@@ -29,8 +29,8 @@ func TestUpdate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators")
-	desc, updated, err := r.Update("master")
+	r := New(dir, "stratumn", "generators", "")
+	desc, updated, err := r.Update("master", false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -43,12 +43,25 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
 	}
 
-	desc, updated, err = r.Update("master")
+	desc, updated, err = r.Update("master", false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
 
 	if got, want := updated, false; got != want {
+		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
+	}
+
+	if got, want := desc.Owner, "stratumn"; got != want {
+		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
+	}
+
+	desc, updated, err = r.Update("master", true)
+	if err != nil {
+		t.Fatalf("err: r.Update(): %s", err)
+	}
+
+	if got, want := updated, true; got != want {
 		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
 	}
 
@@ -64,8 +77,8 @@ func TestUpdate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "404")
-	_, _, err = r.Update("master")
+	r := New(dir, "stratumn", "404", "")
+	_, _, err = r.Update("master", false)
 	if err == nil {
 		t.Error("err: r.Update(): err = nil want Error")
 	}
@@ -78,7 +91,7 @@ func TestGetState(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators")
+	r := New(dir, "stratumn", "generators", "")
 
 	desc, err := r.GetState("master")
 	if err != nil {
@@ -88,7 +101,7 @@ func TestGetState(t *testing.T) {
 		t.Fatalf("err: r.GetState(): desc = %#v want nil", desc)
 	}
 
-	_, _, err = r.Update("master")
+	_, _, err = r.Update("master", false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -110,7 +123,7 @@ func TestGetStateOrCreate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators")
+	r := New(dir, "stratumn", "generators", "")
 
 	desc, err := r.GetStateOrCreate("master")
 	if err != nil {
@@ -129,7 +142,7 @@ func TestList(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators")
+	r := New(dir, "stratumn", "generators", "")
 
 	list, err := r.List("master")
 	if err != nil {
@@ -154,7 +167,7 @@ func TestGenerate(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators")
+	r := New(dir, "stratumn", "generators", "")
 	opts := generator.Options{
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
 	}
@@ -178,7 +191,7 @@ func TestGenerate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators")
+	r := New(dir, "stratumn", "generators", "")
 	opts := generator.Options{
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
 	}
