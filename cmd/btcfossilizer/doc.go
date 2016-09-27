@@ -40,6 +40,11 @@
 //	    	wallet import format key
 //	  -workers int
 //	    	number of result workers (default 8)
+//
+// Env
+//
+//      BTCFOSSILIZER_WIF="xxx" // wallet import format key
+//
 // Docker
 //
 // A Docker image is available. To create a container, run:

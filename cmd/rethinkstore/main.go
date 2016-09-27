@@ -23,12 +23,21 @@ const (
 	connectTimeout  = 10 * time.Second
 )
 
+func orStrings(strs ...string) string {
+	for _, s := range strs {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
 var (
 	create   = flag.Bool("create", false, "create tables and indexes then exit")
 	drop     = flag.Bool("drop", false, "drop tables and indexes then exit")
 	port     = flag.String("port", storehttp.DefaultPort, "server port")
-	url      = flag.String("url", rethinkstore.DefaultURL, "URL of the RethinkDB database")
-	db       = flag.String("db", rethinkstore.DefaultDB, "name of the RethinkDB database")
+	url      = flag.String("url", orStrings(os.Getenv("RETHINKSTORE_URL"), rethinkstore.DefaultURL), "URL of the RethinkDB database")
+	db       = flag.String("db", orStrings(os.Getenv("RETHINKSTORE_DB"), rethinkstore.DefaultDB), "name of the RethinkDB database")
 	hard     = flag.Bool("hard", rethinkstore.DefaultHard, "whether to use hard durability")
 	certFile = flag.String("tlscert", "", "TLS certificate file")
 	keyFile  = flag.String("tlskey", "", "TLS private key file")
