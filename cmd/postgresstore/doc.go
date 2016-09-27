@@ -24,6 +24,10 @@
 //    -verbose
 //      	verbose output
 //
+// Env
+//
+//      POSTGRESSTORE_URL="xxx" // URL of the PostgreSQL database
+//
 // Docker
 //
 // A Docker image is available. To create a container, run:

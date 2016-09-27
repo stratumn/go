@@ -38,7 +38,7 @@ var (
 	archive          = flag.Bool("archive", batchfossilizer.DefaultArchive, "whether to archive completed batches (requires path)")
 	exitBatch        = flag.Bool("exitbatch", batchfossilizer.DefaultStopBatch, "whether to do a batch on exit")
 	fsync            = flag.Bool("fsync", batchfossilizer.DefaultFSync, "whether to fsync after saving a pending hash (requires path)")
-	key              = flag.String("wif", "", "wallet import format key")
+	key              = flag.String("wif", os.Getenv("BTCFOSSILIZER_WIF"), "wallet import format key")
 	fee              = flag.Int64("fee", btctimestamper.DefaultFee, "transaction fee (satoshis)")
 	bcyAPIKey        = flag.String("bcyapikey", "", "BlockCypher API key")
 	limiterInterval  = flag.Duration("limiterinterval", blockcypher.DefaultLimiterInterval, "BlockCypher API limiter interval")
