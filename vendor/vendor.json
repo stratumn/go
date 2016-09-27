@@ -43,6 +43,18 @@
 			"path": "golang.org/x/net/context",
 			"revision": "71a035914f99bb58fe82eac0f1289f10963d876c",
 			"revisionTime": "2016-09-12T21:59:12Z"
+		},
+		{
+			"checksumSHA1": "XH7CgbL5Z8COUc+MKrYqS3FFosY=",
+			"path": "golang.org/x/oauth2",
+			"revision": "3c3a985cb79f52a3190fbc056984415ca6763d01",
+			"revisionTime": "2016-08-26T23:14:08Z"
+		},
+		{
+			"checksumSHA1": "D3v/aqfB9swlaZcSksCoF+lbOqo=",
+			"path": "golang.org/x/oauth2/internal",
+			"revision": "3c3a985cb79f52a3190fbc056984415ca6763d01",
+			"revisionTime": "2016-08-26T23:14:08Z"
 		}
 	],
 	"rootPath": "github.com/stratumn/go"
