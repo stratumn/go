@@ -28,6 +28,11 @@
 //        -verbose
 //          	verbose output
 //
+// Env
+//
+//      RETHINKSTORE_URL="xxx" // URL of the RethinkDB database
+//      RETHINKSTORE_DB="xxx"  // name of the RethinkDB database
+//
 // Docker
 //
 // A Docker image is available. To create a container, run:

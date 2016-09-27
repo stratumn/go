@@ -25,11 +25,20 @@ const (
 	noTableCode     = pq.ErrorCode("42P01")
 )
 
+func orStrings(strs ...string) string {
+	for _, s := range strs {
+		if s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
 var (
 	create   = flag.Bool("create", false, "create tables and indexes then exit")
 	drop     = flag.Bool("drop", false, "drop tables and indexes then exit")
 	port     = flag.String("port", storehttp.DefaultPort, "server port")
-	url      = flag.String("url", postgresstore.DefaultURL, "URL of the PostgreSQL database")
+	url      = flag.String("url", orStrings(os.Getenv("POSTGRESSTORE_URL"), postgresstore.DefaultURL), "URL of the PostgreSQL database")
 	certFile = flag.String("tlscert", "", "TLS certificate file")
 	keyFile  = flag.String("tlskey", "", "TLS private key file")
 	verbose  = flag.Bool("verbose", storehttp.DefaultVerbose, "verbose output")
