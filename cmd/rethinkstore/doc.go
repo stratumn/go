@@ -17,16 +17,14 @@
 //          	drop tables and indexes then exit
 //        -hard
 //          	whether to use hard durability (default true)
-//        -port string
-//          	server port (default ":5000")
+//        -http string
+//          	HTTP address (default ":5000")
 //        -tlscert string
 //          	TLS certificate file
 //        -tlskey string
 //          	TLS private key file
 //        -url string
 //          	URL of the RethinkDB database (default "rethinkdb:28015")
-//        -verbose
-//          	verbose output
 //
 // Env
 //
