@@ -6,17 +6,18 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+
 	"github.com/stratumn/go/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go/jsonhttp"
+
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/bcbatchfossilizer"
 	"github.com/stratumn/goprivate/blockchain/btc"
@@ -26,12 +27,11 @@ import (
 )
 
 var (
-	port             = flag.String("port", fossilizerhttp.DefaultPort, "server port")
+	http             = flag.String("http", fossilizerhttp.DefaultAddress, "HTTP address")
 	certFile         = flag.String("tlscert", "", "TLS certificate file")
 	keyFile          = flag.String("tlskey", "", "TLS private key file")
 	numResultWorkers = flag.Int("workers", fossilizerhttp.DefaultNumResultWorkers, "number of result workers")
 	callbackTimeout  = flag.Duration("callbacktimeout", fossilizerhttp.DefaultCallbackTimeout, "callback requests timeout")
-	verbose          = flag.Bool("verbose", fossilizerhttp.DefaultVerbose, "verbose output")
 	interval         = flag.Duration("interval", batchfossilizer.DefaultInterval, "batch interval")
 	maxLeaves        = flag.Int("maxleaves", batchfossilizer.DefaultMaxLeaves, "maximum number of leaves in a Merkle tree")
 	path             = flag.String("path", "", "an optional path to store files")
@@ -52,12 +52,12 @@ func main() {
 	flag.Parse()
 
 	if *key == "" {
-		log.Fatal("Fatal: a WIF encoded private key is required")
+		log.Fatal("A WIF encoded private key is required")
 	}
 
 	WIF, err := btcutil.DecodeWIF(*key)
 	if err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Failed to decode WIF encoded private key")
 	}
 
 	var network btc.Network
@@ -66,15 +66,13 @@ func main() {
 	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
 		network = btc.NetworkMain
 	} else {
-		log.Fatal("Fatal: unknown Bitcoin network")
+		log.Fatal("WIF encoded private key uses nknown Bitcoin network")
 	}
 
-	log.SetPrefix(fmt.Sprintf("btcfossilizer:%s ", network))
-
-	log.Printf("%s v%s@%s", bcbatchfossilizer.Description, version, commit[:7])
-	log.Print("Copyright (c) 2016 Stratumn SAS")
-	log.Print("All Rights Reserved")
-	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	log.Infof("%s v%s@%s", bcbatchfossilizer.Description, version, commit[:7])
+	log.Info("Copyright (c) 2016 Stratumn SAS")
+	log.Info("All Rights Reserved")
+	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	bcy := blockcypher.New(&blockcypher.Config{
 		Network:         network,
@@ -89,7 +87,7 @@ func main() {
 		Fee:           *fee,
 	})
 	if err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Failed to create Bitcoin timestamper")
 	}
 
 	a, err := bcbatchfossilizer.New(&bcbatchfossilizer.Config{
@@ -105,12 +103,12 @@ func main() {
 		FSync:     *fsync,
 	})
 	if err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Failed to create blockchain batch fossilizer")
 	}
 
 	go func() {
 		if err := a.Start(); err != nil {
-			log.Fatalf("Fatal: %s", err)
+			log.WithField("error", err).Fatal("Failed to start blockchain batch fossilizer")
 		}
 	}()
 
@@ -120,11 +118,11 @@ func main() {
 		sigc := make(chan os.Signal)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigc
-		log.Printf("Got signal %q", sig)
-		log.Print("Cleaning up")
+		log.WithField("signal", sig).Info("Got exit signal")
+		log.Info("Cleaning up")
 		a.Stop()
 		bcy.Stop()
-		log.Print("Stopped")
+		log.Info("Stopped")
 		os.Exit(0)
 	}()
 
@@ -135,15 +133,14 @@ func main() {
 		MaxDataLen:       merkle.HashByteSize * 2,
 	}
 	httpConfig := &jsonhttp.Config{
-		Port:     *port,
+		Address:  *http,
 		CertFile: *certFile,
 		KeyFile:  *keyFile,
-		Verbose:  *verbose,
 	}
 	h := fossilizerhttp.New(a, config, httpConfig)
 
-	log.Printf("Listening on %q", *port)
+	log.WithField("http", *http).Info("Listening")
 	if err := h.ListenAndServe(); err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Server stopped")
 	}
 }
