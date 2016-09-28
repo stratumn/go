@@ -1,5 +1,10 @@
 ## Change log
 
+### 0.19.0-alpha
+ * Fixed `strat` `down:test` not working.
+ * Made `strat` support private Github repositories on repository
+   commands via a flag or environment variable.
+
 ### 0.18.0-alpha
  * Added support for `strat` `down:test` script. This addition makes
    `strat test` execute a `down:test` script if present after the tests.
