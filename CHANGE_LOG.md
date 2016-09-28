@@ -1,5 +1,8 @@
 ## Change log
 
+### 0.20.0-alpha
+ * Use `logrus` as the logger.
+
 ### 0.19.0-alpha
  * Fixed `strat` `down:test` not working.
  * Made `strat` support private Github repositories on repository
