@@ -7,10 +7,12 @@ package bcbatchfossilizer
 
 import (
 	"fmt"
-	"log"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/stratumn/go/fossilizer"
 	"github.com/stratumn/go/types"
+
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/blockchain"
 )
@@ -105,7 +107,10 @@ func (a *Fossilizer) transform(evidence *batchfossilizer.Evidence, data, meta []
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("Broadcasted transaction %q for Merkle root %q", txid, root)
+		log.WithFields(log.Fields{
+			"txid": txid,
+			"root": root,
+		}).Info("Broadcasted transaction")
 
 		a.lastRoot = root
 		a.lastTransactionID = txid
