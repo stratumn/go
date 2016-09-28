@@ -8,7 +8,7 @@ package bcbatchfossilizer
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/stratumn/go/fossilizer"
 	"github.com/stratumn/go/types"
