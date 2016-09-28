@@ -10,14 +10,16 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/stratumn/go/fossilizer"
 	"github.com/stratumn/go/types"
+
 	"github.com/stratumn/goprivate/merkle"
 )
 
@@ -221,9 +223,9 @@ func (a *Fossilizer) Start() error {
 			timer.Reset(interval)
 			if len(a.pending.data) > 0 {
 				a.sendBatch()
-				log.Printf("Requested new batch because the %s interval was reached", interval)
+				log.WithField("interval", interval).Info("Requested new batch because the %s interval was reached")
 			} else {
-				log.Printf("No batch is needed after the %s interval because there are no pending hashes", interval)
+				log.WithField("interval", interval).Info("No batch is needed after the %s interval because there are no pending hashes")
 			}
 		case err := <-a.stopChan:
 			e := a.stop(err)
@@ -270,9 +272,12 @@ func (a *Fossilizer) fossilize(f *fossil) error {
 
 	a.pending.append(f)
 
-	if maxLeaves := a.config.GetMaxLeaves(); len(a.pending.data) >= maxLeaves {
+	if numLeaves, maxLeaves := len(a.pending.data), a.config.GetMaxLeaves(); numLeaves >= maxLeaves {
 		a.sendBatch()
-		log.Printf("Requested new batch because the maximum number of leaves (%d) was reached", maxLeaves)
+		log.WithFields(log.Fields{
+			"leaves": numLeaves,
+			"max":    maxLeaves,
+		}).Info("Requested new batch because the maximum number of leaves was reached")
 	}
 
 	return nil
@@ -285,6 +290,8 @@ func (a *Fossilizer) sendBatch() {
 }
 
 func (a *Fossilizer) batch(b *batch) {
+	log.Info("Starting batch...")
+
 	a.waitGroup.Add(1)
 
 	go func() {
@@ -302,33 +309,45 @@ func (a *Fossilizer) batch(b *batch) {
 		}
 
 		root := tree.Root()
-		log.Printf("Created tree with Merkle root %q", root)
+		log.WithField("root", root).Info("Created tree with Merkle root")
 
 		a.sendEvidence(tree, b.meta)
-		log.Printf("Sent evidence for batch with Merkle root %q", root)
+		log.WithField("root", root).Info("Sent evidence for batch with Merkle root")
 
 		if b.file != nil {
 			path := b.file.Name()
 
 			if err := b.close(); err != nil {
-				log.Printf("Error: %s", err)
+				log.WithField("error", err).Warn("Failed to close batch file")
 			}
 
 			if a.config.Archive {
 				archivePath := filepath.Join(a.config.Path, root.String())
-				if err := os.Rename(path, archivePath); err != nil {
-					log.Printf("Error: %s", err)
+				if err := os.Rename(path, archivePath); err == nil {
+					log.WithFields(log.Fields{
+						"old": filepath.Base(path),
+						"new": filepath.Base(archivePath),
+					}).Info("Renamed batch file")
+				} else {
+					log.WithFields(log.Fields{
+						"old":   filepath.Base(path),
+						"new":   filepath.Base(archivePath),
+						"error": err,
+					}).Warn("Failed to rename batch file")
 				}
-				log.Printf("Renamed pending hashes file %q to %q", filepath.Base(path), filepath.Base(archivePath))
 			} else {
-				if err := os.Remove(path); err != nil {
-					log.Printf("Error: %s", err)
+				if err := os.Remove(path); err == nil {
+					log.WithField("file", filepath.Base(path)).Info("Removed pending hashes file")
+				} else {
+					log.WithFields(log.Fields{
+						"file":  filepath.Base(path),
+						"error": err,
+					}).Warn("Failed to remove batch file")
 				}
-				log.Printf("Removed pending hashes file %q", filepath.Base(path))
 			}
 		}
 
-		log.Printf("Finished batch with Merkle root %q", root)
+		log.WithField("root", root).Info("Finished batch")
 	}()
 }
 
@@ -367,7 +386,7 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 				c <- r
 			}
 		} else {
-			log.Printf("Error: %s", err)
+			log.WithField("error", err).Error("Failed to transform evidence")
 		}
 	}
 }
@@ -376,9 +395,9 @@ func (a *Fossilizer) stop(err error) error {
 	if a.config.StopBatch {
 		if len(a.pending.data) > 0 {
 			a.batch(a.pending)
-			log.Print("Requested final batch for pending hashes")
+			log.Info("Requested final batch for pending hashes")
 		} else {
-			log.Print("No final batch is needed because there are no pending hashes")
+			log.Info("No final batch is needed because there are no pending hashes")
 		}
 	}
 
@@ -390,7 +409,7 @@ func (a *Fossilizer) stop(err error) error {
 			if err == nil {
 				err = e
 			} else {
-				log.Printf("Error: %s", e)
+				log.WithField("error", err).Error("Failed to close pending batch file")
 			}
 		}
 	}
@@ -436,7 +455,7 @@ func (a *Fossilizer) recover() error {
 			return err
 		}
 
-		log.Printf("Recovered pending hashes file %q", filepath.Base(path))
+		log.WithField("file", filepath.Base(path)).Info("Recovered pending hashes file")
 	}
 
 	return nil
