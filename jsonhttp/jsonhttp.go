@@ -19,35 +19,27 @@ package jsonhttp
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
 )
 
 const (
-	// DefaultPort is the default port of the server.
-	DefaultPort = ":5000"
-
-	// DefaultVerbose is whether verbose output should be enabled by default.
-	DefaultVerbose = false
+	// DefaultAddress is the default address of the server.
+	DefaultAddress = ":5000"
 )
 
 // Config contains configuration options for the server.
 type Config struct {
-	// The port of the server.
-	Port string
+	// The address of the server.
+	Address string
 
 	// Optionally, the path to a TLS certificate.
 	CertFile string
 
 	// Optionally, the path to a TLS private key.
 	KeyFile string
-
-	// Whether to enable verbose output.
-	// If enabled, all errors are logged.
-	// If disabled, only internal server errors are logged.
-	Verbose bool
 }
 
 // Server is the type that implements net/http.Handler.
@@ -108,16 +100,16 @@ func (s *Server) Options(path string, handle Handle) {
 
 // ListenAndServe starts the server.
 func (s *Server) ListenAndServe() error {
-	p := s.config.Port
-	if p == "" {
-		p = DefaultPort
+	addr := s.config.Address
+	if addr == "" {
+		addr = DefaultAddress
 	}
 
 	if s.config.CertFile != "" && s.config.KeyFile != "" {
-		return http.ListenAndServeTLS(p, s.config.CertFile, s.config.KeyFile, s)
+		return http.ListenAndServeTLS(addr, s.config.CertFile, s.config.KeyFile, s)
 	}
 
-	return http.ListenAndServe(p, s)
+	return http.ListenAndServe(addr, s)
 }
 
 type handler struct {
@@ -146,11 +138,23 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.
 
 func renderErr(w http.ResponseWriter, r *http.Request, err error, c *Config) {
 	e, ok := err.(ErrHTTP)
-	if !ok {
-		log.Printf("Error: %q %q %q 500 %q", r.RemoteAddr, r.Method, r.RequestURI, err)
+	if ok {
+		log.WithFields(log.Fields{
+			"status": e.Status(),
+			"method": r.Method,
+			"url":    r.RequestURI,
+			"origin": r.RemoteAddr,
+			"error":  err,
+		}).Warn("Failed to handle request")
+	} else {
+		log.WithFields(log.Fields{
+			"status": 500,
+			"method": r.Method,
+			"url":    r.RequestURI,
+			"origin": r.RemoteAddr,
+			"error":  err,
+		}).Error("Failed to handle request")
 		e = NewErrInternalServer("")
-	} else if c.Verbose {
-		log.Printf("Error: %q %q %q %d %q", r.RemoteAddr, r.Method, r.RequestURI, e.Status(), err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

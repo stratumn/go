@@ -32,7 +32,7 @@ func Example() {
 	// Create a dummy adapter.
 	a := dummystore.New(&dummystore.Config{Version: "0.1.0", Commit: "abc"})
 	c := &jsonhttp.Config{
-		Port: "5555",
+		Address: "5555",
 	}
 
 	// Create a server.

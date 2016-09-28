@@ -28,10 +28,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/stratumn/go/fossilizer"
@@ -39,8 +39,8 @@ import (
 )
 
 const (
-	// DefaultPort is the default port of the server.
-	DefaultPort = ":6000"
+	// DefaultAddress is the default address of the server.
+	DefaultAddress = ":6000"
 
 	// DefaultNumResultWorkers is the default number of goroutines that will be used to handle fossilizer results.
 	DefaultNumResultWorkers = 8
@@ -50,9 +50,6 @@ const (
 
 	// DefaultMaxDataLen is the default maximum fossilize data length.
 	DefaultMaxDataLen = 64
-
-	// DefaultVerbose is whether verbose output should be enabled by default.
-	DefaultVerbose = false
 
 	// DefaultCallbackTimeout is the default timeout of requests to the callback URLs.
 	DefaultCallbackTimeout = 10 * time.Second
@@ -145,26 +142,39 @@ func handleResults(resultChan chan *fossilizer.Result, client *http.Client) {
 	for r := range resultChan {
 		body, err := json.Marshal(r.Evidence)
 		if err != nil {
-			log.Printf("Error: %s", err)
+			log.WithField("error", err).Error("Failed to marshal evidence")
 			continue
 		}
 
 		url := string(r.Meta)
 		req, err := http.NewRequest("POST", string(r.Meta), bytes.NewReader(body))
 		if err != nil {
-			log.Printf("Error: %s", err)
-			return
+			log.WithFields(log.Fields{
+				"url":   url,
+				"error": err,
+			}).Error("Failed to create callback request")
+			continue
 		}
 		req.Header.Set("Content-Type", "application/json")
 		res, err := client.Do(req)
 		if err != nil {
-			log.Printf("Error: %s", err)
+			log.WithFields(log.Fields{
+				"url":   url,
+				"error": err,
+			}).Error("Failed to execute callback request")
 			continue
 		} else if res.StatusCode >= 300 {
-			log.Printf("Error: %s %d\n", url, res.StatusCode)
+			log.WithFields(log.Fields{
+				"url":    url,
+				"status": res.StatusCode,
+				"error":  err,
+			}).Error("Invalid callback status code")
 		}
 		if err := res.Body.Close(); err != nil {
-			log.Printf("Error: %s", err)
+			log.WithFields(log.Fields{
+				"url":   url,
+				"error": err,
+			}).Error("Failed to close callback request")
 		}
 	}
 }

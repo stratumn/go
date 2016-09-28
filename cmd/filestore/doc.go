@@ -20,16 +20,14 @@
 //
 //	$ filestore -h
 //	Usage of filestore:
-//	  -path string
-//	    	path to directory where files are stored (default "/var/filestore")
-//	  -port string
-//	    	server port (default ":5000")
-//	  -tlscert string
-//	    	TLS certificate file
-//	  -tlskey string
-//	    	TLS private key file
-//	  -verbose
-//	    	verbose output
+//  -http string
+//    	server http (default ":5000")
+//  -path string
+//    	path to directory where files are stored (default "/var/filestore")
+//  -tlscert string
+//    	TLS certificate file
+//  -tlskey string
+//    	TLS private key file
 //
 // Docker
 //

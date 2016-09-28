@@ -16,11 +16,12 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/stratumn/go/filestore"
 	"github.com/stratumn/go/jsonhttp"
@@ -28,26 +29,21 @@ import (
 )
 
 var (
-	port     = flag.String("port", storehttp.DefaultPort, "server port")
+	http     = flag.String("http", storehttp.DefaultAddress, "server http")
 	path     = flag.String("path", filestore.DefaultPath, "path to directory where files are stored")
 	certFile = flag.String("tlscert", "", "TLS certificate file")
 	keyFile  = flag.String("tlskey", "", "TLS private key file")
-	verbose  = flag.Bool("verbose", storehttp.DefaultVerbose, "verbose output")
 	version  = "0.1.0"
 	commit   = "00000000000000000000000000000000"
 )
 
-func init() {
-	log.SetPrefix("filestore ")
-}
-
 func main() {
 	flag.Parse()
 
-	log.Printf("%s v%s@%s", filestore.Description, version, commit[:7])
-	log.Print("Copyright (c) 2016 Stratumn SAS")
-	log.Print("Apache License 2.0")
-	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	log.Infof("%s v%s@%s", filestore.Description, version, commit[:7])
+	log.Info("Copyright (c) 2016 Stratumn SAS")
+	log.Info("Apache License 2.0")
+	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	a := filestore.New(&filestore.Config{Path: *path, Version: version, Commit: commit})
 
@@ -55,21 +51,20 @@ func main() {
 		sigc := make(chan os.Signal)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigc
-		log.Printf("Got signal %q", sig)
-		log.Print("Stopped")
+		log.WithField("signal", sig).Info("Got exit signal")
+		log.Info("Stopped")
 		os.Exit(0)
 	}()
 
 	c := &jsonhttp.Config{
-		Port:     *port,
+		Address:  *http,
 		CertFile: *certFile,
 		KeyFile:  *keyFile,
-		Verbose:  *verbose,
 	}
 	h := storehttp.New(a, c)
 
-	log.Printf("Listening on %q", *port)
+	log.WithField("http", *http).Info("Listening")
 	if err := h.ListenAndServe(); err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Server stopped")
 	}
 }

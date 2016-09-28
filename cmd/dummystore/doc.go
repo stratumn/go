@@ -20,14 +20,12 @@
 //
 //	$ dummystore -h
 //	Usage of dummystore:
-//	  -port string
-//	  	server port (default ":5000")
-//	  -tlscert string
-//	  	TLS certificate file
-//	  -tlskey string
-//	  	TLS private key file
-//	  -verbose
-//	    	verbose output
+//        -http string
+//          	http address (default ":5000")
+//        -tlscert string
+//          	TLS certificate file
+//        -tlskey string
+//          	TLS private key file
 //
 // Docker
 //

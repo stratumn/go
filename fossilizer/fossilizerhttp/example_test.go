@@ -35,7 +35,7 @@ func Example() {
 		MaxDataLen: 64,
 	}
 	httpConfig := &jsonhttp.Config{
-		Port: ":6000",
+		Address: ":6000",
 	}
 
 	// Create a server.

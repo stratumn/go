@@ -50,11 +50,8 @@ import (
 )
 
 const (
-	// DefaultPort is the default port of the server.
-	DefaultPort = ":5000"
-
-	// DefaultVerbose is whether verbose output should be enabled by default.
-	DefaultVerbose = false
+	// DefaultAddress is the default address of the server.
+	DefaultAddress = ":5000"
 )
 
 type context struct {

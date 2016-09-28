@@ -30,7 +30,7 @@ import (
 // It also tests the route using net/http/httptest.
 func ExampleServer() {
 	// Create the server.
-	s := jsonhttp.New(&jsonhttp.Config{Port: ":3333"})
+	s := jsonhttp.New(&jsonhttp.Config{Address: ":3333"})
 
 	// Add a route with a named param.
 	s.Get("/items/:id", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *jsonhttp.Config) (interface{}, error) {
