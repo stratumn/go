@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/lib/pq"
 
 	"github.com/stratumn/go/jsonhttp"
