@@ -6,14 +6,16 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/lib/pq"
+
 	"github.com/stratumn/go/jsonhttp"
 	"github.com/stratumn/go/store/storehttp"
 	"github.com/stratumn/goprivate/postgresstore"
@@ -37,45 +39,40 @@ func orStrings(strs ...string) string {
 var (
 	create   = flag.Bool("create", false, "create tables and indexes then exit")
 	drop     = flag.Bool("drop", false, "drop tables and indexes then exit")
-	port     = flag.String("port", storehttp.DefaultPort, "server port")
+	http     = flag.String("http", storehttp.DefaultAddress, "HTTP address")
 	url      = flag.String("url", orStrings(os.Getenv("POSTGRESSTORE_URL"), postgresstore.DefaultURL), "URL of the PostgreSQL database")
 	certFile = flag.String("tlscert", "", "TLS certificate file")
 	keyFile  = flag.String("tlskey", "", "TLS private key file")
-	verbose  = flag.Bool("verbose", storehttp.DefaultVerbose, "verbose output")
 	version  = "0.1.0"
 	commit   = "00000000000000000000000000000000"
 )
 
-func init() {
-	log.SetPrefix("postgresstore ")
-}
-
 func main() {
 	flag.Parse()
 
-	log.Printf("%s v%s@%s", postgresstore.Description, version, commit[:7])
-	log.Print("Copyright (c) 2016 Stratumn SAS")
-	log.Print("All Rights Reserved")
-	log.Printf("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	log.Infof("%s v%s@%s", postgresstore.Description, version, commit[:7])
+	log.Info("Copyright (c) 2016 Stratumn SAS")
+	log.Info("All Rights Reserved")
+	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	a, err := postgresstore.New(&postgresstore.Config{URL: *url, Version: version, Commit: commit})
 	if err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Failed to create PostgreSQL store")
 	}
 
 	if *create {
 		if err := a.Create(); err != nil {
-			log.Fatalf("Fatal: %s", err)
+			log.WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes")
 		}
-		log.Print("Created tables and indexes")
+		log.Info("Created tables and indexes")
 		os.Exit(0)
 	}
 
 	if *drop {
 		if err := a.Drop(); err != nil {
-			log.Fatalf("Fatal: %s", err)
+			log.WithField("error", err).Fatal("Failed to drop PostgreSQL tables and indexes")
 		}
-		log.Print("Dropped tables and indexes")
+		log.Info("Dropped tables and indexes")
 		os.Exit(0)
 	}
 
@@ -86,39 +83,41 @@ func main() {
 		if err = a.Prepare(); err != nil {
 			if e, ok := err.(*pq.Error); ok && e.Code == noTableCode {
 				if err = a.Create(); err != nil {
-					log.Fatalf("Fatal: %s", err)
+					log.WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes")
 				}
-				log.Print("Created tables and indexes")
+				log.Info("Created tables and indexes")
 			} else {
-				log.Printf("Unable to connect to %q after %d of %d attempts, retrying in %v", *url, i, connectAttempts, connectTimeout)
+				log.WithFields(log.Fields{
+					"attempt": i,
+					"max":     connectAttempts,
+				}).Warn(fmt.Sprintf("Unable to connect to PostgreSQL, retrying in %v", connectTimeout))
 			}
 		} else {
 			break
 		}
 	}
 	if err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("max", connectAttempts).Fatal("Unable to connect to PostgreSQL")
 	}
 
 	go func() {
 		sigc := make(chan os.Signal)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigc
-		log.Printf("Got signal %q", sig)
-		log.Print("Stopped")
+		log.WithField("signal", sig).Info("Got exit signal")
+		log.Info("Stopped")
 		os.Exit(0)
 	}()
 
 	c := &jsonhttp.Config{
-		Port:     *port,
+		Address:  *http,
 		CertFile: *certFile,
 		KeyFile:  *keyFile,
-		Verbose:  *verbose,
 	}
 	h := storehttp.New(a, c)
 
-	log.Printf("Listening on %q", *port)
+	log.WithField("http", *http).Info("Listening")
 	if err := h.ListenAndServe(); err != nil {
-		log.Fatalf("Fatal: %s", err)
+		log.WithField("error", err).Fatal("Server stopped")
 	}
 }
