@@ -73,14 +73,23 @@ const (
 	// InitScript is the name of the project init script.
 	InitScript = "init"
 
-	// BuildScript is the name of the project build script.
-	BuildScript = "build"
-
 	// UpScript is the name of the project up script.
 	UpScript = "up"
 
+	// DownScript is the name of the project down script.
+	DownScript = "down"
+
+	// BuildScript is the name of the project build script.
+	BuildScript = "build"
+
 	// TestScript is the name of the project test script.
 	TestScript = "test"
+
+	// PullScript is the name of the project pull script.
+	PullScript = "pull"
+
+	// PushScript is the name of the project push script.
+	PushScript = "push"
 
 	// DownTestScript is the name of the project down script for test.
 	DownTestScript = "down:test"

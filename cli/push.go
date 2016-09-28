@@ -21,32 +21,32 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Up is a project command that starts the services.
-type Up struct {
+// Push is a project command that pushes updates.
+type Push struct {
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Up) Name() string {
-	return "up"
+func (*Push) Name() string {
+	return "push"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Up) Synopsis() string {
-	return "start services"
+func (*Push) Synopsis() string {
+	return "push updates"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Up) Usage() string {
-	return `up [args...]:
-  Start services.
+func (*Push) Usage() string {
+	return `push [args...]:
+  Push updates.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Up) SetFlags(f *flag.FlagSet) {
+func (*Push) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(UpScript, "", f.Args(), false)
+func (cmd *Push) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	return runScript(PushScript, "", f.Args(), false)
 }

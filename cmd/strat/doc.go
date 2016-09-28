@@ -33,6 +33,9 @@
 //
 //              Subcommands for project:
 //              	build            run build script
+//              	down             stop services
+//              	pull             pull updates
+//              	push             push updates
 //              	run              run script by name
 //              	test             run tests
 //              	up               start services

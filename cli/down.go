@@ -21,32 +21,32 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Up is a project command that starts the services.
-type Up struct {
+// Down is a project command that stops the services.
+type Down struct {
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Up) Name() string {
-	return "up"
+func (*Down) Name() string {
+	return "down"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Up) Synopsis() string {
-	return "start services"
+func (*Down) Synopsis() string {
+	return "stop services"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Up) Usage() string {
-	return `up [args...]:
-  Start services.
+func (*Down) Usage() string {
+	return `down [args...]:
+  Stop services.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Up) SetFlags(f *flag.FlagSet) {
+func (*Down) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(UpScript, "", f.Args(), false)
+func (cmd *Down) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	return runScript(DownScript, "", f.Args(), false)
 }
