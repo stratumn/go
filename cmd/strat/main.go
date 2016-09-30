@@ -16,13 +16,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"golang.org/x/net/context"
 
 	"github.com/google/subcommands"
-	"github.com/kardianos/osext"
 	"github.com/stratumn/go/cli"
 )
 
@@ -32,18 +30,6 @@ var (
 )
 
 func main() {
-	// Remove old binary if found.
-	if execPath, err := osext.Executable(); err == nil {
-		path := execPath + cli.CLIOldExt
-		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-			fmt.Printf("Warning: failed to remove old executable %q.\n", path)
-			fmt.Println("You can remove it manualy.")
-			fmt.Printf("The error was: %q.\n", err)
-		}
-	} else {
-		fmt.Printf("Warning: %s.\n", err)
-	}
-
 	subcommands.Register(subcommands.HelpCommand(), "help")
 	subcommands.Register(subcommands.FlagsCommand(), "help")
 	subcommands.Register(subcommands.CommandsCommand(), "help")

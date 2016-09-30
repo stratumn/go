@@ -49,6 +49,12 @@ const (
 	// CLIOldExt is the extension of the old binary after an update.
 	CLIOldExt = ".old"
 
+	// CLINewExt is the extension of the new binary during an update.
+	CLINewExt = ".new"
+
+	// CLISigExt the extension of the signature of the binary.
+	CLISigExt = ".sig"
+
 	// DefaultGeneratorsOwner is the default owner of the generators' Github repository.
 	DefaultGeneratorsOwner = "stratumn"
 

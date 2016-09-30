@@ -16,6 +16,7 @@ package cli
 
 import (
 	"archive/zip"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -30,6 +31,7 @@ import (
 	"github.com/google/subcommands"
 	"github.com/kardianos/osext"
 	"github.com/stratumn/go/generator/repo"
+	"golang.org/x/crypto/openpgp"
 	"golang.org/x/net/context"
 )
 
@@ -235,69 +237,148 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	fmt.Printf("Extracting %q...\n", *asset.Name)
 
 	// This is the name of the binary we want within the archive.
-	want := CLIAssetBinary
+	wantBin := CLIAssetBinary
 	if runtime.GOOS == win {
-		want = CLIAssetBinaryWin
+		wantBin = CLIAssetBinaryWin
 	}
 
-	// Find the binary in the archive.
+	// This is the name of the signature we want within the archive.
+	wantSig := wantBin + CLISigExt
+
+	// Find the binary and signature in the archive.
+	var binZF, sigZF *zip.File
 	for _, f := range zr.File {
-		if f.Name == want {
-			// Get the current binary path.
-			execPath, err := osext.Executable()
-			if err != nil {
-				fmt.Println(err)
-				return subcommands.ExitFailure
-			}
-
-			// Get the current file info.
-			info, err := os.Stat(execPath)
-			if err != nil {
-				fmt.Println(err)
-				return subcommands.ExitFailure
-			}
-
-			// Rename old binary.
-			if err := os.Rename(execPath, execPath+CLIOldExt); err != nil {
-				fmt.Println(err)
-				return subcommands.ExitFailure
-			}
-
-			// If anything fails, restore old binary.
-			restore := func() {
-				os.Rename(execPath+CLIOldExt, execPath)
-			}
-
-			// Read the new binary.
-			rc, err := f.Open()
-			if err != nil {
-				restore()
-				fmt.Println(err)
-				return subcommands.ExitFailure
-			}
-			defer rc.Close()
-
-			// Create and open a file for the new binary with the same permissions as the old one.
-			dst, err := os.OpenFile(execPath, os.O_CREATE|os.O_WRONLY, info.Mode())
-			if err != nil {
-				restore()
-				fmt.Println(err)
-				return subcommands.ExitFailure
-			}
-			defer dst.Close()
-
-			// Copy the new binary.
-			if _, err := io.Copy(dst, rc); err != nil {
-				restore()
-				fmt.Println(err)
-				return subcommands.ExitFailure
-			}
-
-			fmt.Println("CLI updated successfully.")
-			return subcommands.ExitSuccess
+		switch f.Name {
+		case wantBin:
+			binZF = f
+		case wantSig:
+			sigZF = f
 		}
 	}
 
-	fmt.Printf("Could not find %s in %s.\n", CLIAssetBinary, *asset.Name)
-	return subcommands.ExitFailure
+	if binZF == nil {
+		fmt.Printf("Could not find binary %q in %q.\n", wantBin, *asset.Name)
+		return subcommands.ExitFailure
+	}
+	if sigZF == nil {
+		fmt.Printf("Could not find signature %q in %q.\n", wantSig, *asset.Name)
+		return subcommands.ExitFailure
+	}
+
+	// Get the current binary path.
+	execPath, err := osext.Executable()
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Read the new binary.
+	binRC, err := sigZF.Open()
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+	defer binRC.Close()
+
+	// Create and open a file for the new binary.
+	newBinPath := filepath.Join(tempDir, filepath.Base(execPath)+CLINewExt)
+	newBin, err := os.OpenFile(newBinPath, os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+	defer newBin.Close()
+
+	// Copy the new binary.
+	if _, err := io.Copy(newBin, binRC); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Read the signature.
+	sigRC, err := sigZF.Open()
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+	defer sigRC.Close()
+
+	// Create and open a file for the signature.
+	sigPath := filepath.Join(tempDir, filepath.Base(execPath)+CLISigExt)
+	sig, err := os.OpenFile(sigPath, os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+	defer sig.Close()
+
+	// Copy the signature.
+	if _, err := io.Copy(sig, sigRC); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Check the signature.
+	fmt.Println("Verifying cryptographic signature...")
+	if err := checkSig(newBinPath, sigPath); err != nil {
+		fmt.Printf("Failed to verify signature: %s.\n", err)
+		return subcommands.ExitFailure
+	}
+
+	// Get the current file info.
+	info, err := os.Stat(execPath)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Make current binary non executable.
+	if err := os.Chmod(execPath, 0600); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Rename old binary.
+	oldBinPath := filepath.Join(tempDir, filepath.Base(execPath)+CLIOldExt)
+	if err := os.Rename(execPath, oldBinPath); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Move new binary to final destination.
+	if err := os.Rename(newBinPath, execPath); err != nil {
+		os.Rename(oldBinPath, execPath)
+		if err := os.Chmod(execPath, info.Mode()); err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Set new binary file mode.
+	if err := os.Chmod(execPath, info.Mode()); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	fmt.Println("CLI updated successfully.")
+	return subcommands.ExitSuccess
+}
+
+func checkSig(targetPath, sigPath string) error {
+	target, err := os.Open(targetPath)
+	if err != nil {
+		return err
+	}
+	sig, err := os.Open(sigPath)
+	if err != nil {
+		return err
+	}
+	r := bytes.NewReader([]byte(pubKey))
+	keyring, err := openpgp.ReadArmoredKeyRing(r)
+	if err != nil {
+		return err
+	}
+	_, err = openpgp.CheckArmoredDetachedSignature(keyring, target, sig)
+	return err
 }

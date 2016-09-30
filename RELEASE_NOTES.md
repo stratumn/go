@@ -89,9 +89,22 @@ This key is linked to the CTO of Stratumn on Keybase:
 
 https://keybase.io/stephan83
 
-If you have Keybase installed, you can verify the binary using
-(replace `BINARY` with the name of the binary):
+With keybase (replace `BINARY` with the name of the binary):
 
 ```
-$ keybase verify -d BINARY.sig -i BINARY
+$ keybase follow stephan83
+$ keybase pgp verify -d BINARY.sig -i BINARY
+```
+
+With OpenGPG (replace `BINARY` with the name of the binary):
+
+```
+$ wget https://keybase.io/stephan83/key.asc
+$ gpg2 --import key.asc
+$ gpg --edit-key "Stephan FLorquin <stephan@stratumn.com>"
+        > trust
+        > 5
+        > y
+        > quite
+$ gpg2 --verify BINARY.sig BINARY
 ```
