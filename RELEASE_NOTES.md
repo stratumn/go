@@ -105,6 +105,6 @@ $ gpg --edit-key "Stephan FLorquin <stephan@stratumn.com>"
         > trust
         > 5
         > y
-        > quite
+        > quit
 $ gpg2 --verify BINARY.sig BINARY
 ```

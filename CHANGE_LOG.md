@@ -1,6 +1,10 @@
 ## Change log
 
-### 0.14.0-alpha
+### 0.23.0-alpha
+* `strat update` will now check the cryptographic signature of
+  downloaded binaries.
+
+### 0.22.0-alpha
 * All releases binaries are now signed.
 
 ### 0.21.0-alpha
