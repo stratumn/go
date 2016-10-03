@@ -1,8 +1,9 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
-// Package bcbatchfossilizer implements a fossilizer that fossilize batches of hashes on a blockchain.
+// Package bcbatchfossilizer implements a fossilizer that fossilize batches of
+// hashes on a blockchain.
 package bcbatchfossilizer
 
 import (
@@ -45,7 +46,8 @@ type Evidence struct {
 	TransactionID blockchain.TransactionID `json:"txid"`
 }
 
-// Fossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
+// Fossilizer is the type that
+// implements github.com/stratumn/go/fossilizer.Adapter.
 type Fossilizer struct {
 	*batchfossilizer.Fossilizer
 	config            *Config
