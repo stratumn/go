@@ -11,7 +11,7 @@ import (
 	"github.com/stratumn/go/store/storetestcases"
 )
 
-func TestStore(t *testing.T) {
+func BenchmarkStoreSoft(b *testing.B) {
 	storetestcases.Factory{
 		New: func() (store.Adapter, error) {
 			a, err := New(&Config{URL: "localhost:28015", DB: "test"})
@@ -25,30 +25,26 @@ func TestStore(t *testing.T) {
 				panic(err)
 			}
 		},
-	}.RunTests(t)
+	}.RunBenchmarks(b)
 }
 
-func TestExists(t *testing.T) {
-	a, err := New(&Config{URL: "localhost:28015", DB: "test"})
-	if err != nil {
-		t.Errorf("err: New(): %s", err)
-	}
-	got, err := a.Exists()
-	if err != nil {
-		t.Errorf("err: a.Exists(): %s", err)
-	}
-	if got {
-		t.Errorf("err: a.Exists(): exists = true want false")
-	}
-	if err := a.Create(); err != nil {
-		t.Errorf("err: a.Create(): %s", err)
-	}
-	defer a.Drop()
-	got, err = a.Exists()
-	if err != nil {
-		t.Errorf("err: a.Exists(): %s", err)
-	}
-	if !got {
-		t.Errorf("err: a.Exists(): exists = false want true")
-	}
+func BenchmarkStoreHard(b *testing.B) {
+	storetestcases.Factory{
+		New: func() (store.Adapter, error) {
+			a, err := New(&Config{
+				URL:  "localhost:28015",
+				DB:   "test",
+				Hard: true,
+			})
+			if err := a.Create(); err != nil {
+				return nil, err
+			}
+			return a, err
+		},
+		Free: func(a store.Adapter) {
+			if err := a.(*Store).Drop(); err != nil {
+				panic(err)
+			}
+		},
+	}.RunBenchmarks(b)
 }
