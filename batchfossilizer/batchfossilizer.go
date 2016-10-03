@@ -1,9 +1,10 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by the license
-// that can be found in the LICENSE file.
+// Use of this source code is governed by the license that can be found in the
+// LICENSE file.
 
-// Package batchfossilizer implements a fossilizer that fossilize batches of data using a Merkle tree.
-// The evidence will contain the Merkle root, the Merkle path, and a timestamp.
+// Package batchfossilizer implements a fossilizer that fossilize batches of
+// data using a Merkle tree. The evidence will contain the Merkle root, the
+// Merkle path, and a timestamp.
 package batchfossilizer
 
 import (
@@ -33,10 +34,12 @@ const (
 	// DefaultInterval is the default interval between batches.
 	DefaultInterval = 10 * time.Minute
 
-	// DefaultMaxLeaves if the default maximum number of leaves of a Merkle tree.
+	// DefaultMaxLeaves if the default maximum number of leaves of a Merkle
+	// tree.
 	DefaultMaxLeaves = 32 * 1024
 
-	// DefaultMaxSimBatches is the default maximum number of simultaneous batches.
+	// DefaultMaxSimBatches is the default maximum number of simultaneous
+	// batches.
 	DefaultMaxSimBatches = 1
 
 	// DefaultArchive is whether to archive completed batches by default.
@@ -45,7 +48,8 @@ const (
 	// DefaultStopBatch is whether to do a batch on stop by default.
 	DefaultStopBatch = true
 
-	// DefaultFSync is whether to fsync after saving a hash to disk by default.
+	// DefaultFSync is whether to fsync after saving a hash to disk by
+	// default.
 	DefaultFSync = false
 
 	// PendingExt is the pending hashes filename extension.
@@ -76,7 +80,8 @@ type Config struct {
 	MaxSimBatches int
 
 	// Where to store pending hashes.
-	// If empty, pending hashes are not saved and will be lost if stopped abruptly.
+	// If empty, pending hashes are not saved and will be lost if stopped
+	// abruptly.
 	Path string
 
 	// Whether to archive completed batches.
@@ -97,7 +102,8 @@ func (c *Config) GetInterval() time.Duration {
 	return DefaultInterval
 }
 
-// GetMaxLeaves returns the configuration's maximum number of leaves of a Merkle tree or the default value.
+// GetMaxLeaves returns the configuration's maximum number of leaves of a Merkle
+// tree or the default value.
 func (c *Config) GetMaxLeaves() int {
 	if c.MaxLeaves > 0 {
 		return c.MaxLeaves
@@ -105,7 +111,8 @@ func (c *Config) GetMaxLeaves() int {
 	return DefaultMaxLeaves
 }
 
-// GetMaxSimBatches returns the configuration's maximum number of simultaneous batches or the default value.
+// GetMaxSimBatches returns the configuration's maximum number of simultaneous
+// batches or the default value.
 func (c *Config) GetMaxSimBatches() int {
 	if c.MaxSimBatches > 0 {
 		return c.MaxSimBatches
@@ -133,7 +140,8 @@ type EvidenceWrapper struct {
 	Evidence *Evidence `json:"batch"`
 }
 
-// Fossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
+// Fossilizer is the type that
+// implements github.com/stratumn/go/fossilizer.Adapter.
 type Fossilizer struct {
 	config      *Config
 	startedChan chan chan struct{}
@@ -186,7 +194,8 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
+// AddResultChan implements
+// github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
 func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 	a.resultChans = append(a.resultChans, resultChan)
 }
