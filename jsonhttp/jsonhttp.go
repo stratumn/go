@@ -14,7 +14,8 @@
 
 // Package jsonhttp defines a simple HTTP server that renders JSON.
 //
-// Routes can be added by passing a handle that should return JSON serializable data or an error.
+// Routes can be added by passing a handle that should return JSON serializable
+// data or an error.
 package jsonhttp
 
 import (

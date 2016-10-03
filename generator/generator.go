@@ -33,7 +33,8 @@ import (
 )
 
 const (
-	// DefinitionFile is the file containing the generator definition within a generator.
+	// DefinitionFile is the file containing the generator definition within
+	// a generator.
 	DefinitionFile = "generator.json"
 
 	// PartialsDir is the directory containing partials within a generator.
@@ -46,7 +47,8 @@ const (
 // Definition contains properties for a template generator definition.
 type Definition struct {
 	// Name is the name of the generator.
-	// It should be short, lowercase, and contain only letters, numbers, and dashes.
+	// It should be short, lowercase, and contain only letters, numbers, and
+	// dashes.
 	Name string `json:"name"`
 
 	// Version is the version string of the generator.
@@ -59,7 +61,8 @@ type Definition struct {
 	Author string `json:"author"`
 
 	// License is the license of the generator (not of the generated code).
-	// If the generated project has a license, it should be defined within the templates.
+	// If the generated project has a license, it should be defined within
+	// the templates.
 	License string `json:"license"`
 
 	// Variables is a map of variables for the templates and partials.
@@ -74,7 +77,8 @@ type Definition struct {
 }
 
 // NewDefinitionFromFile loads a generator definition from a file.
-// The file is treated as a template and is fed the given variables and functions.
+// The file is treated as a template and is fed the given variables and
+// functions.
 // Extra variables and functions given will be added to the template context.
 func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs template.FuncMap) (*Definition, error) {
 	b, err := ioutil.ReadFile(path)
@@ -97,7 +101,8 @@ func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs templ
 	return &gen, nil
 }
 
-// StdDefinitionFuncs returns the standard function map used when parsing a generator definition.
+// StdDefinitionFuncs returns the standard function map used when parsing a
+// generator definition.
 // It adds the following functions:
 //
 // 	- now(format string) string: returns a formatted representation of the current date
@@ -129,7 +134,8 @@ type Options struct {
 	Reader io.Reader
 }
 
-// Generator deals with parsing templates, handling user input, and outputting processed templates.
+// Generator deals with parsing templates, handling user input, and outputting
+// processed templates.
 type Generator struct {
 	opts     *Options
 	src      string
@@ -165,11 +171,15 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 // StdTmplFuncs returns the standard function map used when parsing a template
 // It adds the following functions:
 //
-// 	- ask(json string) (interface{}, error): creates an input on-the-fly and returns its value
+// 	- ask(json string) (interface{}, error): creates an input on-the-fly and
+//	  returns its value
 // 	- input(id string) (interface{}, error): returns the value of an input
-// 	- now(format string) string: returns a formatted representation of the current date
-// 	- nowUTC(format string) string: returns a formatted representation of the current UTC date
-// 	- partial(path, vars []interface{}...) (string, error): executes the partial with given name
+// 	- now(format string) string: returns a formatted representation of the
+//	  current date
+// 	- nowUTC(format string) string: returns a formatted representation of
+//	  the current UTC date
+// 	- partial(path, vars []interface{}...) (string, error): executes the
+//	  partial with given name
 //	  and variables (path relative to `partials` directory)
 // 	- secret(length int) (string, error): returns a random secret string
 func (gen *Generator) StdTmplFuncs() template.FuncMap {
@@ -183,7 +193,8 @@ func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	}
 }
 
-// Exec parses templates, handles user input, and outputs processed templates to given dir.
+// Exec parses templates, handles user input, and outputs processed templates to
+// given dir.
 func (gen *Generator) Exec(dst string) error {
 	if err := gen.parsePartials(); err != nil {
 		return err

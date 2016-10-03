@@ -41,7 +41,8 @@ func (f Factory) TestSaveSegment(t *testing.T) {
 	}
 }
 
-// TestSaveSegmentUpdatedState tests what happens when you update the state of a segment.
+// TestSaveSegmentUpdatedState tests what happens when you update the state of a
+// segment.
 func (f Factory) TestSaveSegmentUpdatedState(t *testing.T) {
 	a, err := f.New()
 	if err != nil {
@@ -63,7 +64,8 @@ func (f Factory) TestSaveSegmentUpdatedState(t *testing.T) {
 	}
 }
 
-// TestSaveSegmentUpdatedMapID tests what happens when you update the map ID of a segment.
+// TestSaveSegmentUpdatedMapID tests what happens when you update the map ID of
+// a segment.
 func (f Factory) TestSaveSegmentUpdatedMapID(t *testing.T) {
 	a, err := f.New()
 	if err != nil {
@@ -85,7 +87,8 @@ func (f Factory) TestSaveSegmentUpdatedMapID(t *testing.T) {
 	}
 }
 
-// TestSaveSegmentBranch tests what happens when you save a segment with a previous link hash.
+// TestSaveSegmentBranch tests what happens when you save a segment with a
+// previous link hash.
 func (f Factory) TestSaveSegmentBranch(t *testing.T) {
 	a, err := f.New()
 	if err != nil {
@@ -192,7 +195,8 @@ func (f Factory) BenchmarkSaveSegmentUpdatedState(b *testing.B) {
 	}
 }
 
-// BenchmarkSaveSegmentUpdatedStateParallel benchmarks updating segments states in parallel.
+// BenchmarkSaveSegmentUpdatedStateParallel benchmarks updating segments states
+// in parallel.
 func (f Factory) BenchmarkSaveSegmentUpdatedStateParallel(b *testing.B) {
 	a, err := f.New()
 	if err != nil {
@@ -252,7 +256,8 @@ func (f Factory) BenchmarkSaveSegmentUpdatedMapID(b *testing.B) {
 	}
 }
 
-// BenchmarkSaveSegmentUpdatedMapIDParallel benchmarks updating segment map IDs in parallel.
+// BenchmarkSaveSegmentUpdatedMapIDParallel benchmarks updating segment map IDs
+// in parallel.
 func (f Factory) BenchmarkSaveSegmentUpdatedMapIDParallel(b *testing.B) {
 	a, err := f.New()
 	if err != nil {

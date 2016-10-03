@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package filestore implements a store that saves all the segments to the file system.
+// Package filestore implements a store that saves all the segments to the file
+// system.
 //
 // The segments are stored as JSON files named after the link hashes.
 // It's a convenient store to use during the development of an agent.
-// However, because it doesn't use an index, it's very slow, and shouldn't be used for production.
+// However, because it doesn't use an index, it's very slow, and shouldn't be
+// used for production.
 package filestore
 
 import (

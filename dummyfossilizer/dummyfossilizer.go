@@ -48,7 +48,8 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// DummyFossilizer is the type that implements github.com/stratumn/go/fossilizer.Adapter.
+// DummyFossilizer is the type that implements
+// github.com/stratumn/go/fossilizer.Adapter.
 type DummyFossilizer struct {
 	config      *Config
 	resultChans []chan *fossilizer.Result
@@ -69,7 +70,8 @@ func (a *DummyFossilizer) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
+// AddResultChan implements
+// github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
 func (a *DummyFossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 	a.resultChans = append(a.resultChans, resultChan)
 }

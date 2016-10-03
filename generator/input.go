@@ -41,7 +41,8 @@ type Input interface {
 	// Get must return the value of the input.
 	Get() interface{}
 
-	// Msg must return a message that will be displayed when prompting the value.
+	// Msg must return a message that will be displayed when prompting the
+	// value.
 	Msg() string
 }
 
@@ -95,7 +96,8 @@ type InputShared struct {
 	// Type is the type of the input.
 	Type string `json:"type"`
 
-	// Prompt is the string that will be displayed to the user when asking the value.
+	// Prompt is the string that will be displayed to the user when asking
+	// the value.
 	Prompt string `json:"prompt"`
 }
 

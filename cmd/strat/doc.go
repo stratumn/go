@@ -42,5 +42,5 @@
 //
 // Env
 //
-//      GITHUB_TOKEN="xxxx" # A Github token that can be used to access private repos
+//      GITHUB_TOKEN="xxxx" # Github token to access private repos
 package main

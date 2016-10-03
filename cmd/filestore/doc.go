@@ -33,5 +33,6 @@
 //
 // A Docker image is available. To create a container, run:
 //
-//	$ docker run -p 5000:5000 -v /path/to/save/files:/var/filestore stratumn/filestore
+//	$ docker run -p 5000:5000 -v /path/to/save/files:/var/filestore \
+//              stratumn/filestore
 package main

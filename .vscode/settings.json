@@ -3,6 +3,9 @@
     // The number of spaces a tab is equal to. This setting is overriden based on the file contents when `editor.detectIndentation` is on.
     "editor.tabSize": 8,
 
+    // Columns at which to show vertical rulers
+    "editor.rulers": [80],
+
     // Configure glob patterns for excluding files and folders.
     "files.exclude": {
         "**/.git": true,

@@ -26,8 +26,8 @@ import (
 	"github.com/stratumn/go/types"
 )
 
-// Factory wraps functions to allocate and free an adapter,
-// and is used to run the tests on an adapter.
+// Factory wraps functions to allocate and free an adapter, and is used to run
+// the tests on an adapter.
 type Factory struct {
 	// New creates an adapter.
 	New func() (store.Adapter, error)
@@ -144,7 +144,8 @@ func RandomSegmentMapID(b *testing.B, numSegments, i int) *cs.Segment {
 	return s
 }
 
-// RandomSegmentPrevLinkHash is a SegmentFunc that create a random segment with previous link hash.
+// RandomSegmentPrevLinkHash is a SegmentFunc that create a random segment with
+// previous link hash.
 // The previous link hash will be one of ten possible values.
 func RandomSegmentPrevLinkHash(b *testing.B, numSegments, i int) *cs.Segment {
 	s := cstesting.RandomSegment()
@@ -160,7 +161,8 @@ func RandomSegmentTags(b *testing.B, numSegments, i int) *cs.Segment {
 	return s
 }
 
-// RandomSegmentMapIDTags is a SegmentFunc that create a random segment with map ID and tags.
+// RandomSegmentMapIDTags is a SegmentFunc that create a random segment with map
+// ID and tags.
 // The map ID will be one of ten possible values.
 // The tags will contain one of ten possible values.
 func RandomSegmentMapIDTags(b *testing.B, numSegments, i int) *cs.Segment {
@@ -170,7 +172,8 @@ func RandomSegmentMapIDTags(b *testing.B, numSegments, i int) *cs.Segment {
 	return s
 }
 
-// RandomSegmentPrevLinkHashTags is a SegmentFunc that create a random segment with previous link hash and tags.
+// RandomSegmentPrevLinkHashTags is a SegmentFunc that create a random segment
+// with previous link hash and tags.
 // The previous link hash will be one of ten possible values.
 // The tags will contain one of ten possible values.
 func RandomSegmentPrevLinkHashTags(b *testing.B, numSegments, i int) *cs.Segment {
@@ -180,7 +183,8 @@ func RandomSegmentPrevLinkHashTags(b *testing.B, numSegments, i int) *cs.Segment
 	return s
 }
 
-// PaginationFunc is a type for a function that creates a pagination for benchmarks.
+// PaginationFunc is a type for a function that creates a pagination for
+// benchmarks.
 type PaginationFunc func(b *testing.B, numSegments, i int) *store.Pagination
 
 // RandomPaginationOffset is a a PaginationFunc that create a pagination with a random offset.
@@ -194,7 +198,8 @@ func RandomPaginationOffset(b *testing.B, numSegments, i int) *store.Pagination 
 // FilterFunc is a type for a function that creates a filter for benchmarks.
 type FilterFunc func(b *testing.B, numSegments, i int) *store.Filter
 
-// RandomFilterOffset is a a FilterFunc that create a filter with a random offset.
+// RandomFilterOffset is a a FilterFunc that create a filter with a random
+// offset.
 func RandomFilterOffset(b *testing.B, numSegments, i int) *store.Filter {
 	return &store.Filter{
 		Pagination: store.Pagination{
@@ -204,7 +209,8 @@ func RandomFilterOffset(b *testing.B, numSegments, i int) *store.Filter {
 	}
 }
 
-// RandomFilterOffsetMapID is a a FilterFunc that create a filter with a random offset and map ID.
+// RandomFilterOffsetMapID is a a FilterFunc that create a filter with a random
+// offset and map ID.
 // The map ID will be one of ten possible values.
 func RandomFilterOffsetMapID(b *testing.B, numSegments, i int) *store.Filter {
 	return &store.Filter{
@@ -216,7 +222,8 @@ func RandomFilterOffsetMapID(b *testing.B, numSegments, i int) *store.Filter {
 	}
 }
 
-// RandomFilterOffsetPrevLinkHash is a a FilterFunc that create a filter with a random offset and previous link hash.
+// RandomFilterOffsetPrevLinkHash is a a FilterFunc that create a filter with a
+// random offset and previous link hash.
 // The previous link hash will be one of ten possible values.
 func RandomFilterOffsetPrevLinkHash(b *testing.B, numSegments, i int) *store.Filter {
 	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("00000000000000000000000000000000000000000000000000000000000000%2d", i%10))
@@ -229,7 +236,8 @@ func RandomFilterOffsetPrevLinkHash(b *testing.B, numSegments, i int) *store.Fil
 	}
 }
 
-// RandomFilterOffsetTags is a a FilterFunc that create a filter with a random offset and map ID.
+// RandomFilterOffsetTags is a a FilterFunc that create a filter with a random
+// offset and map ID.
 // The tags will be one of fifty possible combinations.
 func RandomFilterOffsetTags(b *testing.B, numSegments, i int) *store.Filter {
 	return &store.Filter{
@@ -241,7 +249,8 @@ func RandomFilterOffsetTags(b *testing.B, numSegments, i int) *store.Filter {
 	}
 }
 
-// RandomFilterOffsetMapIDTags is a a FilterFunc that create a filter with a random offset and map ID and tags.
+// RandomFilterOffsetMapIDTags is a a FilterFunc that create a filter with a
+// random offset and map ID and tags.
 // The map ID will be one of ten possible values.
 // The tags will be one of fifty possible combinations.
 func RandomFilterOffsetMapIDTags(b *testing.B, numSegments, i int) *store.Filter {
@@ -255,7 +264,8 @@ func RandomFilterOffsetMapIDTags(b *testing.B, numSegments, i int) *store.Filter
 	}
 }
 
-// RandomFilterOffsetPrevLinkHashTags is a a FilterFunc that create a filter with a random offset and previous link hash and tags.
+// RandomFilterOffsetPrevLinkHashTags is a a FilterFunc that create a filter
+// with a random offset and previous link hash and tags.
 // The previous link hash will be one of ten possible values.
 // The tags will be one of fifty possible combinations.
 func RandomFilterOffsetPrevLinkHashTags(b *testing.B, numSegments, i int) *store.Filter {

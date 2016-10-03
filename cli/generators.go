@@ -94,8 +94,15 @@ func (cmd *Generators) Execute(_ context.Context, f *flag.FlagSet, _ ...interfac
 	}
 
 	for _, desc := range list {
-		if _, err := fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n",
-			desc.Name, desc.Description, desc.Author, desc.Version, desc.License); err != nil {
+		if _, err := fmt.Fprintf(
+			tw,
+			"%s\t%s\t%s\t%s\t%s\n",
+			desc.Name,
+			desc.Description,
+			desc.Author,
+			desc.Version,
+			desc.License,
+		); err != nil {
 			fmt.Println(err)
 			return subcommands.ExitFailure
 		}

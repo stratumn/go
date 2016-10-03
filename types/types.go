@@ -82,7 +82,8 @@ func (b *Bytes20) Reverse(rb *ReversedBytes20) {
 // While the bytes are reversed, the hex encoded strings are not.
 type ReversedBytes20 [Bytes20Size]byte
 
-// NewReversedBytes20FromString creates a ReversedBytes20 from a hex encoded string.
+// NewReversedBytes20FromString creates a ReversedBytes20 from a hex encoded
+// string.
 func NewReversedBytes20FromString(src string) (*ReversedBytes20, error) {
 	b, err := NewBytes20FromString(src)
 	if err != nil {
@@ -196,7 +197,8 @@ func (b *Bytes32) Reverse(rb *ReversedBytes32) {
 // While the bytes are reversed, the hex encoded strings are not.
 type ReversedBytes32 [Bytes32Size]byte
 
-// NewReversedBytes32FromString creates a ReversedBytes32 from a hex encoded string.
+// NewReversedBytes32FromString creates a ReversedBytes32 from a hex encoded
+// string.
 func NewReversedBytes32FromString(src string) (*ReversedBytes32, error) {
 	b, err := NewBytes32FromString(src)
 	if err != nil {

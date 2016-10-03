@@ -31,7 +31,8 @@ func NewErrHTTP(msg string, status int) ErrHTTP {
 	return ErrHTTP{msg, status}
 }
 
-// NewErrInternalServer creates an error with an internal server error HTTP status code.
+// NewErrInternalServer creates an error with an internal server error HTTP
+// status code.
 // If the message is empty, the default is "internal server error".
 func NewErrInternalServer(msg string) ErrHTTP {
 	if msg == "" {

@@ -57,7 +57,8 @@ func (f Factory) TestGetSegment(t *testing.T) {
 	}
 }
 
-// TestGetSegmentUpdatedState tests what happens when you get a segment whose state was updated.
+// TestGetSegmentUpdatedState tests what happens when you get a segment whose
+// state was updated.
 func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 	a, err := f.New()
 	if err != nil {
@@ -88,7 +89,8 @@ func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 	}
 }
 
-// TestGetSegmentUpdatedMapID tests what happens when you get a segment whose map ID was updated.
+// TestGetSegmentUpdatedMapID tests what happens when you get a segment whose
+// map ID was updated.
 func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 	a, err := f.New()
 	if err != nil {

@@ -43,7 +43,8 @@ const (
 	// CLIAssetBinary is the file name of the binary within the CLI asset.
 	CLIAssetBinary = "strat/strat"
 
-	// CLIAssetBinaryWin is the file name of the binary within the CLI asset on Windows.
+	// CLIAssetBinaryWin is the file name of the binary within the CLI asset
+	// on Windows.
 	CLIAssetBinaryWin = "strat/strat.exe"
 
 	// CLIOldExt is the extension of the old binary after an update.
@@ -55,25 +56,31 @@ const (
 	// CLISigExt the extension of the signature of the binary.
 	CLISigExt = ".sig"
 
-	// DefaultGeneratorsOwner is the default owner of the generators' Github repository.
+	// DefaultGeneratorsOwner is the default owner of the generators' Github
+	// repository.
 	DefaultGeneratorsOwner = "stratumn"
 
-	// DefaultGeneratorsRepo is the default name of the generators' Github repository.
+	// DefaultGeneratorsRepo is the default name of the generators' Github
+	// repository.
 	DefaultGeneratorsRepo = "generators"
 
-	// DefaultGeneratorsRef is the default reference of the generators' Github repository.
+	// DefaultGeneratorsRef is the default reference of the generators'
+	// Github repository.
 	DefaultGeneratorsRef = "master"
 
-	// StratumnDir is the name of the Stratumn directory within the home folder.
+	// StratumnDir is the name of the Stratumn directory within the home
+	// folder.
 	StratumnDir = ".stratumn"
 
-	// GeneratorsDir is the name of the generators directory within StratumnDir.
+	// GeneratorsDir is the name of the generators directory within
+	// StratumnDir.
 	GeneratorsDir = "generators"
 
 	// VarsFile is the name of the variable file within StratumnDir.
 	VarsFile = "variables.json"
 
-	// ProjectFile is the name of the project file within the project directory.
+	// ProjectFile is the name of the project file within the project
+	// directory.
 	ProjectFile = "stratumn.json"
 
 	// InitScript is the name of the project init script.

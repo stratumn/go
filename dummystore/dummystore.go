@@ -14,7 +14,8 @@
 
 // Package dummystore implements a store that saves all the segments in memory.
 //
-// It can be used for testing, but it's unoptimized and not designed for production.
+// It can be used for testing, but it's unoptimized and not designed for
+// production.
 package dummystore
 
 import (

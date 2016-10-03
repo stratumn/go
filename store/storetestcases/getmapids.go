@@ -26,7 +26,8 @@ import (
 	"github.com/stratumn/go/testutil"
 )
 
-// TestGetMapIDs tests what happens when you get map IDs with default pagination.
+// TestGetMapIDs tests what happens when you get map IDs with default
+// pagination.
 func (f Factory) TestGetMapIDs(t *testing.T) {
 	a, err := f.New()
 	if err != nil {
@@ -62,7 +63,8 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	}
 }
 
-// TestGetMapIDsPagination tests what happens when you get map IDs with pagination.
+// TestGetMapIDsPagination tests what happens when you get map IDs with
+// pagination.
 func (f Factory) TestGetMapIDsPagination(t *testing.T) {
 	a, err := f.New()
 	if err != nil {
@@ -196,17 +198,20 @@ func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numSegments int, segme
 	})
 }
 
-// BenchmarkGetMapIDs100Parallel benchmarks getting map IDs within 100 segments in parallel.
+// BenchmarkGetMapIDs100Parallel benchmarks getting map IDs within 100 segments
+// in parallel.
 func (f Factory) BenchmarkGetMapIDs100Parallel(b *testing.B) {
 	f.BenchmarkGetMapIDsParallel(b, 100, RandomSegment, RandomPaginationOffset)
 }
 
-// BenchmarkGetMapIDs1000Parallel benchmarks getting map IDs within 1000 segments in parallel.
+// BenchmarkGetMapIDs1000Parallel benchmarks getting map IDs within 1000
+// segments in parallel.
 func (f Factory) BenchmarkGetMapIDs1000Parallel(b *testing.B) {
 	f.BenchmarkGetMapIDsParallel(b, 1000, RandomSegment, RandomPaginationOffset)
 }
 
-// BenchmarkGetMapIDs10000Parallel benchmarks getting map IDs within 10000 segments in parallel.
+// BenchmarkGetMapIDs10000Parallel benchmarks getting map IDs within 10000
+// segments in parallel.
 func (f Factory) BenchmarkGetMapIDs10000Parallel(b *testing.B) {
 	f.BenchmarkGetMapIDsParallel(b, 10000, RandomSegment, RandomPaginationOffset)
 }

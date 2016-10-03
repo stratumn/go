@@ -88,7 +88,8 @@ func (a *MockAdapter) GetInfo() (interface{}, error) {
 	return nil, nil
 }
 
-// AddResultChan implements github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
+// AddResultChan implements
+// github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
 func (a *MockAdapter) AddResultChan(resultChan chan *fossilizer.Result) {
 	a.MockAddResultChan.CalledCount++
 	a.MockAddResultChan.CalledWith = append(a.MockAddResultChan.CalledWith, resultChan)

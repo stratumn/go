@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package fossilizerhttp is used to create an HTTP server from a fossilizer adapter.
+// Package fossilizerhttp is used to create an HTTP server from a fossilizer
+// adapter.
 //
 // It serves the following routes:
 //	GET /
@@ -21,7 +22,8 @@
 //	POST /fossils
 //		Requests data to be fossilized.
 //		Form.data should be a hex encoded buffer.
-//		Form.callbackUrl should be a URL to be called when the evidence is ready.
+//		Form.callbackUrl should be a URL to be called when the evidence
+//		is ready.
 package fossilizerhttp
 
 import (
@@ -42,7 +44,8 @@ const (
 	// DefaultAddress is the default address of the server.
 	DefaultAddress = ":6000"
 
-	// DefaultNumResultWorkers is the default number of goroutines that will be used to handle fossilizer results.
+	// DefaultNumResultWorkers is the default number of goroutines that will
+	// be used to handle fossilizer results.
 	DefaultNumResultWorkers = 8
 
 	// DefaultMinDataLen is the default minimum fossilize data length.
@@ -51,13 +54,15 @@ const (
 	// DefaultMaxDataLen is the default maximum fossilize data length.
 	DefaultMaxDataLen = 64
 
-	// DefaultCallbackTimeout is the default timeout of requests to the callback URLs.
+	// DefaultCallbackTimeout is the default timeout of requests to the
+	// callback URLs.
 	DefaultCallbackTimeout = 10 * time.Second
 )
 
 // Config contains configuration options for the server.
 type Config struct {
-	// The default number of goroutines that will be used to handle fossilizer results.
+	// The default number of goroutines that will be used to handle
+	// fossilizer results.
 	NumResultWorkers int
 
 	// The minimum fossilize data length.
