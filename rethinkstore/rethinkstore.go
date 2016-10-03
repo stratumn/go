@@ -1,8 +1,9 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by the license
-// that can be found in the LICENSE file.
+// Use of this source code is governed by the license that can be found in the
+// LICENSE file.
 
-// Package rethinkstore implements a store that saves all the segments in a RethinkDB database.
+// Package rethinkstore implements a store that saves all the segments in a
+// RethinkDB database.
 package rethinkstore
 
 import (
@@ -45,8 +46,8 @@ type Config struct {
 	// A git commit hash that will be set in the store's information.
 	Commit string
 
-	// The URL of the PostgreSQL database, such as
-	// "localhost:28015" or "localhost:28015,localhost:28016,localhost:28017".
+	// The URL of the PostgreSQL database, such as "localhost:28015" order
+	// "localhost:28015,localhost:28016,localhost:28017".
 	URL string
 
 	// The database name
