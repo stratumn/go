@@ -1,9 +1,10 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by the license
-// that can be found in the LICENSE file.
+// Use of this source code is governed by the license that can be found in the
+// LICENSE file.
 
-// Package postgresstore implements a store that saves all the segments in a PostgreSQL database.
-// It requires PostgreSQL >= 9.5 for "ON CONFLICT DO UPDATE" support.
+// Package postgresstore implements a store that saves all the segments in a
+// PostgreSQL database. It requires PostgreSQL >= 9.5 for
+// "ON CONFLICT DO UPDATE" support.
 package postgresstore
 
 import (
