@@ -1,6 +1,6 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
 // The command rethinkstore starts an HTTP server with a rethinkstore.
 //
@@ -35,5 +35,6 @@
 //
 // A Docker image is available. To create a container, run:
 //
-//	$ docker run -p 5000:5000 stratumn/progresstore rethinkstore -url 'localhost:28015' -db test
+//	$ docker run -p 5000:5000 stratumn/progresstore rethinkstore \
+//              -url 'localhost:28015' -db test
 package main
