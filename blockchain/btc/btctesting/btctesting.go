@@ -1,6 +1,6 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
 // Package btctesting defines helpers to test Bitcoin.
 package btctesting
@@ -57,7 +57,8 @@ type MockBroadcast struct {
 	Fn func([]byte) error
 }
 
-// FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
+// FindUnspent implements
+// github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
 func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	a.MockFindUnspent.CalledCount++
 	a.MockFindUnspent.CalledWithAddress = append(a.MockFindUnspent.CalledWithAddress, address)
@@ -72,7 +73,8 @@ func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.
 	return nil, 0, nil
 }
 
-// Broadcast implements github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
+// Broadcast implements
+// github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
 func (a *Mock) Broadcast(raw []byte) error {
 	a.MockBroadcast.CalledCount++
 	a.MockBroadcast.CalledWith = append(a.MockBroadcast.CalledWith, raw)

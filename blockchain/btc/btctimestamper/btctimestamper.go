@@ -1,8 +1,9 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
-// Package btctimestamper implements a fake Bitcoin timestamper which can be used for testing.
+// Package btctimestamper implements a fake Bitcoin timestamper which can be
+// used for testing.
 package btctimestamper
 
 import (
@@ -41,7 +42,8 @@ type Config struct {
 	Fee int64
 }
 
-// Timestamper is the type that implements github.com/stratumn/goprivate/blockchain.Timestamper.
+// Timestamper is the type that implements
+// github.com/stratumn/goprivate/blockchain.Timestamper.
 type Timestamper struct {
 	config    *Config
 	net       btc.Network
@@ -90,7 +92,8 @@ func (ts *Timestamper) Network() blockchain.Network {
 	return ts.net
 }
 
-// TimestampHash implements github.com/stratumn/goprivate/blockchain.HashTimestamper.
+// TimestampHash implements
+// github.com/stratumn/goprivate/blockchain.HashTimestamper.
 func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.TransactionID, error) {
 	var prevPKScripts [][]byte
 
@@ -198,6 +201,6 @@ func (ts *Timestamper) validateTx(tx *wire.MsgTx, prevPKScripts [][]byte) error 
 }
 
 func (ts *Timestamper) lookupKey(btcutil.Address) (*btcec.PrivateKey, bool, error) {
-	// Second values means uncompressed.
+	// Second value means uncompressed.
 	return ts.privKey, false, nil
 }

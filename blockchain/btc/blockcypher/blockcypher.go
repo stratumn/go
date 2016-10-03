@@ -1,6 +1,6 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
 // Package blockcypher defines primitives to work with the BlockCypher API.
 package blockcypher
@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	// DefaultLimiterInterval is the default BlockCypher API limiter interval.
+	// DefaultLimiterInterval is the default BlockCypher API limiter
+	// interval.
 	DefaultLimiterInterval = time.Minute
 
 	// DefaultLimiterSize is the default BlockCypher API limiter size.
@@ -52,7 +53,8 @@ type Client struct {
 	waitGroup sync.WaitGroup
 }
 
-// New creates a client for a Bitcoin network, using an optional BlockCypher API key.
+// New creates a client for a Bitcoin network, using an optional BlockCypher API
+// key.
 func New(c *Config) *Client {
 	parts := strings.Split(c.Network.String(), ":")
 	size := c.LimiterSize
@@ -69,7 +71,8 @@ func New(c *Config) *Client {
 	}
 }
 
-// FindUnspent implements github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
+// FindUnspent implements
+// github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	for _ = range c.limiter {
 		break
@@ -119,7 +122,8 @@ TX_LOOP:
 	return outputs, total, nil
 }
 
-// Broadcast implements github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
+// Broadcast implements
+// github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(raw []byte) error {
 	for _ = range c.limiter {
 		break
