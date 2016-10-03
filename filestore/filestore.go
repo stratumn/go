@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"sync"
 
 	"github.com/stratumn/go/cs"
 	"github.com/stratumn/go/store"
@@ -50,6 +51,7 @@ const (
 // FileStore is the type that implements github.com/stratumn/go/store.Adapter.
 type FileStore struct {
 	config *Config
+	mutex  sync.RWMutex // simple global mutex
 }
 
 // Config contains configuration options for the store.
@@ -74,7 +76,7 @@ type Info struct {
 
 // New creates an instance of a FileStore.
 func New(config *Config) *FileStore {
-	return &FileStore{config}
+	return &FileStore{config, sync.RWMutex{}}
 }
 
 // GetInfo implements github.com/stratumn/go/store.Adapter.GetInfo.
@@ -89,6 +91,9 @@ func (a *FileStore) GetInfo() (interface{}, error) {
 
 // SaveSegment implements github.com/stratumn/go/store.Adapter.SaveSegment.
 func (a *FileStore) SaveSegment(segment *cs.Segment) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
 	js, err := json.MarshalIndent(segment, "", "  ")
 	if err != nil {
 		return err
@@ -106,27 +111,18 @@ func (a *FileStore) SaveSegment(segment *cs.Segment) error {
 
 // GetSegment implements github.com/stratumn/go/store.Adapter.GetSegment.
 func (a *FileStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	file, err := os.Open(path.Join(a.config.Path, linkHash.String()+".json"))
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 
-	defer file.Close()
-
-	var segment cs.Segment
-	if err = json.NewDecoder(file).Decode(&segment); err != nil {
-		return nil, err
-	}
-
-	return &segment, nil
+	return a.getSegment(linkHash)
 }
 
 // DeleteSegment implements github.com/stratumn/go/store.Adapter.DeleteSegment.
 func (a *FileStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	segment, err := a.GetSegment(linkHash)
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	segment, err := a.getSegment(linkHash)
 	if segment == nil {
 		return segment, err
 	}
@@ -140,6 +136,9 @@ func (a *FileStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) 
 
 // FindSegments implements github.com/stratumn/go/store.Adapter.FindSegments.
 func (a *FileStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
 	var segments cs.SegmentSlice
 
 	a.forEach(func(segment *cs.Segment) error {
@@ -177,6 +176,9 @@ func (a *FileStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) 
 
 // GetMapIDs implements github.com/stratumn/go/store.Adapter.GetMapIDs.
 func (a *FileStore) GetMapIDs(pagination *store.Pagination) ([]string, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
 	set := map[string]struct{}{}
 	a.forEach(func(segment *cs.Segment) error {
 		set[segment.Link.GetMapID()] = struct{}{}
@@ -190,6 +192,25 @@ func (a *FileStore) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 
 	sort.Strings(mapIDs)
 	return paginateStrings(mapIDs, pagination), nil
+}
+
+func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	file, err := os.Open(path.Join(a.config.Path, linkHash.String()+".json"))
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	var segment cs.Segment
+	if err = json.NewDecoder(file).Decode(&segment); err != nil {
+		return nil, err
+	}
+
+	return &segment, nil
 }
 
 var segmentFileRegepx = regexp.MustCompile("(.*)\\.json$")
@@ -212,7 +233,7 @@ func (a *FileStore) forEach(fn func(*cs.Segment) error) error {
 				return err
 			}
 
-			segment, err := a.GetSegment(linkHash)
+			segment, err := a.getSegment(linkHash)
 			if err != nil {
 				return err
 			}

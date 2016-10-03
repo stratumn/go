@@ -57,7 +57,7 @@ type DummyStore struct {
 	config   *Config
 	segments segmentMap   // maps link hashes to segments
 	maps     hashSetMap   // maps chains IDs to sets of link hashes
-	mutex    sync.RWMutex // simple global mutex, just in case
+	mutex    sync.RWMutex // simple global mutex
 }
 
 type segmentMap map[string]*cs.Segment
