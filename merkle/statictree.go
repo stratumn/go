@@ -1,6 +1,6 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by the license
-// that can be found in the LICENSE file.
+// Use of this source code is governed by the license that can be found in the
+// LICENSE file.
 
 package merkle
 
@@ -91,7 +91,8 @@ func (t *StaticTree) Path(index int) Path {
 	return path[:depth]
 }
 
-// Allocates memory for the buffer and creates the row slices that map to the buffer.
+// Allocates memory for the buffer and creates the row slices that map to the
+// buffer.
 func alloc(numLeaves int) *StaticTree {
 	var (
 		bufl    = staticTreeBufferLen(numLeaves)
@@ -117,7 +118,8 @@ func (t *StaticTree) copyLeaves(leaves []types.Bytes32) {
 	copy(t.rows[len(t.rows)-1], leaves)
 }
 
-// Computes all the hashes. Assumes that the leaves have been copied to the buffer.
+// Computes all the hashes. Assumes that the leaves have been copied to the
+// buffer.
 func (t *StaticTree) compute() {
 	hash := sha256.New()
 	for row := len(t.rows) - 2; row >= 0; row-- {

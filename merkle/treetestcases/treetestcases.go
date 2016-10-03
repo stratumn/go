@@ -1,6 +1,6 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by the license
-// that can be found in the LICENSE file.
+// Use of this source code is governed by the license that can be found in the
+// LICENSE file.
 
 // Package treetestcases contains test cases to test Merkle tree implementation.
 package treetestcases
@@ -47,7 +47,8 @@ func loadPath(filename string, path *merkle.Path) {
 	}
 }
 
-// LoadFixtures loads test fixtures and should be called before running the tests.
+// LoadFixtures loads test fixtures and should be called before running the
+// tests.
 func LoadFixtures(testdatapath string) {
 	// Load fixtures.
 	loadPath(testdatapath+"/path-a-0.json", &pathA0)
@@ -67,8 +68,8 @@ func LoadFixtures(testdatapath string) {
 	loadPath(testdatapath+"/path-abcde-4.json", &pathABCDE4)
 }
 
-// Factory wraps functions to allocate and free a Merkle tree,
-// and is used to run the tests on a Merkle tree implementation.
+// Factory wraps functions to allocate and free a Merkle tree, and is used to
+// run the tests on a Merkle tree implementation.
 type Factory struct {
 	// New create a Merkle tree from leaves.
 	New func(leaves []types.Bytes32) (merkle.Tree, error)
@@ -98,7 +99,8 @@ func (f Factory) free(tree merkle.Tree) {
 	}
 }
 
-// TestNumLeaves tests that the implementation returns the correct number of leaves.
+// TestNumLeaves tests that the implementation returns the correct number of
+// leaves.
 func (f Factory) TestNumLeaves(t *testing.T) {
 	tree, err := f.New([]types.Bytes32{*testutil.RandomHash(), *testutil.RandomHash(), *testutil.RandomHash()})
 	if err != nil {
@@ -222,7 +224,8 @@ func (f Factory) TestPath(t *testing.T) {
 	}
 }
 
-// TestPathRandom tests that the implementation correctly computes paths given random trees.
+// TestPathRandom tests that the implementation correctly computes paths given
+// random trees.
 func (f Factory) TestPathRandom(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		tests := make([]types.Bytes32, 2+rand.Intn(10000))
