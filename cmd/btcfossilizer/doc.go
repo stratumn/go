@@ -1,8 +1,9 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
-// The command btcfossilizer starts an HTTP server with a batch fossilizer on a Bitcoin blockchain.
+// The command btcfossilizer starts an HTTP server with a batch fossilizer on a
+// Bitcoin blockchain.
 //
 // Usage
 //
@@ -51,5 +52,6 @@
 //
 // A Docker image is available. To create a container, run:
 //
-//	$ docker run -p 6000:6000 stratumn/btcfossilizer btcfossilizer -wif "your WIF key"
+//	$ docker run -p 6000:6000 stratumn/btcfossilizer btcfossilizer \
+//              -wif "your WIF key"
 package main
