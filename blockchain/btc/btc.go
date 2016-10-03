@@ -1,6 +1,6 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
 // Use of this source code is governed by an Apache License 2.0
-// that can be found in the LICENSE file.
+// LICENSE file.
 
 // Package btc defines primitives to work with Bitcoin.
 package btc
@@ -45,8 +45,9 @@ type Output struct {
 
 // UnspentFinder is find unspent outputs.
 type UnspentFinder interface {
-	// FindUnspent find unspent outputs for the given address and the required amount.
-	// It returns the outputs and the total amount of the outputs.
+	// FindUnspent find unspent outputs for the given address and the
+	// required amount. It returns the outputs and the total amount of the
+	// outputs.
 	FindUnspent(address *types.ReversedBytes20, amount int64) (outputs []Output, total int64, err error)
 }
 
