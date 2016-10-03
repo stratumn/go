@@ -1,8 +1,9 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by the license
-// that can be found in the LICENSE file.
+// Use of this source code is governed by the license that can be found in the
+// LICENSE file.
 
-// Package merkle contains types and functions to create and work with Merkle trees.
+// Package merkle contains types and functions to create and work with Merkle
+// trees.
 package merkle
 
 import (
