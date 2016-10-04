@@ -1,5 +1,10 @@
 ## Change log
 
+### 0.25.0-alpha
+* Added the `strat deploy` command. It expects an environment name as the first
+  argument, and will try to execute the `deploy:{env}` script of the project.
+* Minor fixes and improvements.
+
 ### 0.24.1-alpha
 * The command `strat update` should now work properly even if temporary files
   are on a different file system.
