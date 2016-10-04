@@ -90,6 +90,8 @@ func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 }
 
 func (cmd *Update) updateGenerators() subcommands.ExitStatus {
+	fmt.Println("Updating generators...")
+
 	if cmd.ghToken == "" {
 		cmd.ghToken = os.Getenv("GITHUB_TOKEN")
 	}
@@ -118,7 +120,7 @@ func (cmd *Update) updateGenerators() subcommands.ExitStatus {
 			p     = filepath.Join(path, owner, rep)
 		)
 
-		fmt.Printf("Updating generators %q...\n", name)
+		fmt.Printf("  * Updating %q...\n", name)
 
 		r := repo.New(p, owner, rep, cmd.ghToken)
 		if err != nil {
@@ -133,36 +135,149 @@ func (cmd *Update) updateGenerators() subcommands.ExitStatus {
 		}
 
 		if updated {
-			fmt.Printf("Generators %q updated successfully.\n", name)
+			fmt.Printf("  * %q updated successfully.\n", name)
 		} else {
-			fmt.Printf("Generators %q already up-to-date.\n", name)
+			fmt.Printf("  * %q already up-to-date.\n", name)
 		}
 	}
+
+	fmt.Println("Generators updated successfully.")
 
 	return subcommands.ExitSuccess
 }
 
 func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	fmt.Println("Updating CLI...")
-
-	// Get the releases from Github.
 	client := github.NewClient(nil)
-	rels, res, err := client.Repositories.ListReleases(CLIOwner, CLIRepo, nil)
+
+	// Find latest release.
+	asset, tag, err := cmd.findRelease(client)
 	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
+	if asset == nil {
+		fmt.Println("CLI already up-to-date.")
+		return subcommands.ExitSuccess
+	}
+
+	fmt.Printf("  * Downloading %q@%q...\n", *asset.Name, *tag)
+
+	// Create temporary directory.
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+	defer os.RemoveAll(tempDir)
+
+	// Download release.
+	tempZipFile := filepath.Join(tempDir, "temp.zip")
+	if err := dlRelease(client, tempZipFile, asset); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	fmt.Printf("  * Extracting %q...\n", *asset.Name)
+
+	// Find binary and signature.
+	zrc, binZF, sigZF, err := findReleaseFiles(tempZipFile)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+	defer zrc.Close()
+	if binZF == nil {
+		fmt.Printf("Could not find binary in %q.\n", *asset.Name)
+		return subcommands.ExitFailure
+	}
+	if sigZF == nil {
+		fmt.Printf("Could not find signature in %q.\n", *asset.Name)
+		return subcommands.ExitFailure
+	}
+
+	// Get the current binary path.
+	execPath, err := osext.Executable()
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Get the current binary file info.
+	info, err := os.Stat(execPath)
+	if err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Copy the new binary to the temporary directory.
+	binPath := filepath.Join(tempDir, filepath.Base(execPath))
+	if err := copyZF(binPath, binZF, 0644); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Copy the signature the the temporary directory.
+	sigPath := filepath.Join(tempDir, filepath.Base(execPath)+CLISigExt)
+	if err := copyZF(sigPath, sigZF, 0644); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Check the signature.
+	fmt.Println("  * Verifying cryptographic signature...")
+	if err := checkSig(binPath, sigPath); err != nil {
+		fmt.Printf("Failed to verify signature: %s.\n", err)
+		return subcommands.ExitFailure
+	}
+
+	fmt.Println("  * Updating binary...")
+
+	// Remove previous old binary if present.
+	oldPath := filepath.Join(filepath.Dir(execPath), CLIOldBinary)
+	if err := os.Remove(oldPath); !os.IsNotExist(err) {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Rename current binary.
+	if err := os.Rename(execPath, oldPath); err != nil {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
+
+	// Copy new binary to final destination.
+	if err := copyF(execPath, binPath, info.Mode()); err != nil {
+		fmt.Println(err)
+		// Try to recover old binary.
+		if err := os.Remove(execPath); !os.IsNotExist(err) {
+			fmt.Println(err)
+		}
+		if err := os.Rename(oldPath, execPath); err != nil {
+			fmt.Println(err)
+		}
+		return subcommands.ExitFailure
+	}
+
+	fmt.Println("CLI updated successfully.")
+	return subcommands.ExitSuccess
+}
+
+func (cmd *Update) findRelease(client *github.Client) (*github.ReleaseAsset, *string, error) {
+	rels, res, err := client.Repositories.ListReleases(CLIOwner, CLIRepo, nil)
+	if err != nil {
+		return nil, nil, err
+	}
 	defer res.Body.Close()
 
-	// Find the latest one.
 	var (
+		name  = fmt.Sprintf(CLIAssetFormat, runtime.GOOS, runtime.GOARCH)
 		asset *github.ReleaseAsset
 		tag   *string
 	)
 	for _, r := range rels {
 		if *r.Prerelease == cmd.prerelease {
 			if cmd.force || *r.TagName != "v"+cmd.Version {
-				name := fmt.Sprintf(CLIAssetFormat, runtime.GOOS, runtime.GOARCH)
 				for _, a := range r.Assets {
 					if *a.Name == name {
 						asset = &a
@@ -175,19 +290,13 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 		}
 	}
 
-	if asset == nil {
-		fmt.Println("CLI already up-to-date.")
-		return subcommands.ExitSuccess
-	}
+	return asset, tag, nil
+}
 
-	fmt.Printf("Found new version %q.\n", *tag)
-	fmt.Printf("Downloading %q...\n", *asset.Name)
-
-	// Read the archive.
+func dlRelease(client *github.Client, dst string, asset *github.ReleaseAsset) error {
 	rc, url, err := client.Repositories.DownloadReleaseAsset(CLIOwner, CLIRepo, *asset.ID)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	var r io.ReadCloser
@@ -197,57 +306,36 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	} else if url != "" {
 		res, err := http.Get(url)
 		if err != nil {
-			fmt.Println(err)
-			return subcommands.ExitFailure
+			return err
 		}
 		r = res.Body
 	}
 	defer r.Close()
 
-	// Create a temporary directory.
-	tempDir, err := ioutil.TempDir("", "")
+	f, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Create a temporary file.
-	tempZipFile := filepath.Join(tempDir, "temp.zip")
-	f, err := os.OpenFile(tempZipFile, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 	defer f.Close()
 
-	// Copy the archive to the temporary file.
-	if _, err := io.Copy(f, r); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
+	_, err = io.Copy(f, r)
+	return err
+}
 
-	// Read the archive.
-	zr, err := zip.OpenReader(tempZipFile)
+func findReleaseFiles(src string) (*zip.ReadCloser, *zip.File, *zip.File, error) {
+	rc, err := zip.OpenReader(src)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return nil, nil, nil, err
 	}
 
-	fmt.Printf("Extracting %q...\n", *asset.Name)
-
-	// This is the name of the binary we want within the archive.
 	wantBin := CLIAssetBinary
 	if runtime.GOOS == win {
 		wantBin = CLIAssetBinaryWin
 	}
-
-	// This is the name of the signature we want within the archive.
 	wantSig := wantBin + CLISigExt
 
-	// Find the binary and signature in the archive.
 	var binZF, sigZF *zip.File
-	for _, f := range zr.File {
+	for _, f := range rc.File {
 		switch f.Name {
 		case wantBin:
 			binZF = f
@@ -256,137 +344,35 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 		}
 	}
 
-	if binZF == nil {
-		fmt.Printf("Could not find binary %q in %q.\n", wantBin, *asset.Name)
-		return subcommands.ExitFailure
-	}
-	if sigZF == nil {
-		fmt.Printf("Could not find signature %q in %q.\n", wantSig, *asset.Name)
-		return subcommands.ExitFailure
-	}
+	return rc, binZF, sigZF, nil
+}
 
-	// Get the current binary path.
-	execPath, err := osext.Executable()
+func copy(dst string, r io.Reader, mode os.FileMode) error {
+	f, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, mode)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
+	defer f.Close()
+	_, err = io.Copy(f, r)
+	return err
+}
 
-	// Read the new binary.
-	binRC, err := binZF.Open()
+func copyZF(dst string, zf *zip.File, mode os.FileMode) error {
+	rc, err := zf.Open()
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
+	defer rc.Close()
+	return copy(dst, rc, mode)
+}
 
-	// Get the current file info.
-	info, err := os.Stat(execPath)
+func copyF(dst, src string, mode os.FileMode) error {
+	f, err := os.Open(src)
 	if err != nil {
-		binRC.Close()
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
-
-	// Create and open a file for the new binary.
-	newBinPath := filepath.Join(tempDir, filepath.Base(execPath))
-	newBin, err := os.OpenFile(newBinPath, os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		binRC.Close()
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	// Copy the new binary.
-	_, err = io.Copy(newBin, binRC)
-	binRC.Close()
-	newBin.Close()
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	// Read the signature.
-	sigRC, err := sigZF.Open()
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	// Create and open a file for the signature.
-	sigPath := filepath.Join(tempDir, filepath.Base(execPath)+CLISigExt)
-	sig, err := os.OpenFile(sigPath, os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		sigRC.Close()
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	// Copy the signature.
-	_, err = io.Copy(sig, sigRC)
-	sigRC.Close()
-	sig.Close()
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	// Check the signature.
-	fmt.Println("Verifying cryptographic signature...")
-	if err := checkSig(newBinPath, sigPath); err != nil {
-		fmt.Printf("Failed to verify signature: %s.\n", err)
-		return subcommands.ExitFailure
-	}
-
-	// Rename old binary.
-	// Remove previous old binary if present.
-	oldBinPath := filepath.Join(filepath.Dir(execPath), CLIOldBinary)
-	if err := os.Remove(oldBinPath); !os.IsNotExist(err) {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-	if err := os.Rename(execPath, oldBinPath); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
-	// Define a function that will try to recover the old binary if anything
-	// goes wrong.
-	recover := func() {
-		if err := os.Remove(execPath); !os.IsNotExist(err) {
-			fmt.Println(err)
-		}
-		if err := os.Rename(oldBinPath, execPath); err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	// Copy new binary to final destination.
-	dst, err := os.OpenFile(execPath, os.O_CREATE|os.O_WRONLY, info.Mode())
-	if err != nil {
-		fmt.Println(err)
-		recover()
-		return subcommands.ExitFailure
-	}
-
-	newBin, err = os.Open(newBinPath)
-	if err != nil {
-		fmt.Println(err)
-		dst.Close()
-		recover()
-		return subcommands.ExitFailure
-	}
-
-	_, err = io.Copy(dst, newBin)
-	dst.Close()
-	newBin.Close()
-	if err != nil {
-		fmt.Println(err)
-		recover()
-		return subcommands.ExitFailure
-	}
-
-	fmt.Println("CLI updated successfully.")
-	return subcommands.ExitSuccess
+	defer f.Close()
+	return copy(dst, f, mode)
 }
 
 func checkSig(targetPath, sigPath string) error {
