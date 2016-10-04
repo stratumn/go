@@ -1,5 +1,9 @@
 ## Change log
 
+### 0.24.1
+* The command `strat update` should now work properly even if temporary files
+  are on a different file system.
+
 ### 0.24.0
 * The update mechanism for `strat update` should now work properly on all
   supported platforms.
