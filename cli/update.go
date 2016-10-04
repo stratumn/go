@@ -210,6 +210,7 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
+	defer os.RemoveAll(tempDir)
 
 	// Create a temporary file.
 	tempZipFile := filepath.Join(tempDir, "temp.zip")
@@ -287,8 +288,8 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	}
 
 	// Create and open a file for the new binary.
-	newBinPath := filepath.Join(tempDir, filepath.Base(execPath)+CLINewExt)
-	newBin, err := os.OpenFile(newBinPath, os.O_CREATE|os.O_WRONLY, info.Mode())
+	newBinPath := filepath.Join(tempDir, filepath.Base(execPath))
+	newBin, err := os.OpenFile(newBinPath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		binRC.Close()
 		fmt.Println(err)
@@ -296,14 +297,13 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	}
 
 	// Copy the new binary.
-	if _, err := io.Copy(newBin, binRC); err != nil {
-		binRC.Close()
-		newBin.Close()
+	_, err = io.Copy(newBin, binRC)
+	binRC.Close()
+	newBin.Close()
+	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
-	binRC.Close()
-	newBin.Close()
 
 	// Read the signature.
 	sigRC, err := sigZF.Open()
@@ -322,14 +322,13 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	}
 
 	// Copy the signature.
-	if _, err := io.Copy(sig, sigRC); err != nil {
-		sigRC.Close()
-		sig.Close()
+	_, err = io.Copy(sig, sigRC)
+	sigRC.Close()
+	sig.Close()
+	if err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
-	sigRC.Close()
-	sig.Close()
 
 	// Check the signature.
 	fmt.Println("Verifying cryptographic signature...")
@@ -339,15 +338,50 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	}
 
 	// Rename old binary.
-	oldBinPath := filepath.Join(tempDir, filepath.Base(execPath)+CLIOldExt)
+	// Remove previous old binary if present.
+	oldBinPath := filepath.Join(filepath.Dir(execPath), CLIOldBinary)
+	if err := os.Remove(oldBinPath); !os.IsNotExist(err) {
+		fmt.Println(err)
+		return subcommands.ExitFailure
+	}
 	if err := os.Rename(execPath, oldBinPath); err != nil {
 		fmt.Println(err)
 		return subcommands.ExitFailure
 	}
 
-	// Move new binary to final destination.
-	if err := os.Rename(newBinPath, execPath); err != nil {
+	// Define a function that will try to recover the old binary if anything
+	// goes wrong.
+	recover := func() {
+		if err := os.Remove(execPath); !os.IsNotExist(err) {
+			fmt.Println(err)
+		}
+		if err := os.Rename(oldBinPath, execPath); err != nil {
+			fmt.Println(err)
+		}
+	}
+
+	// Copy new binary to final destination.
+	dst, err := os.OpenFile(execPath, os.O_CREATE|os.O_WRONLY, info.Mode())
+	if err != nil {
 		fmt.Println(err)
+		recover()
+		return subcommands.ExitFailure
+	}
+
+	newBin, err = os.Open(newBinPath)
+	if err != nil {
+		fmt.Println(err)
+		dst.Close()
+		recover()
+		return subcommands.ExitFailure
+	}
+
+	_, err = io.Copy(dst, newBin)
+	dst.Close()
+	newBin.Close()
+	if err != nil {
+		fmt.Println(err)
+		recover()
 		return subcommands.ExitFailure
 	}
 

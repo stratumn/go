@@ -47,11 +47,8 @@ const (
 	// on Windows.
 	CLIAssetBinaryWin = "strat/strat.exe"
 
-	// CLIOldExt is the extension of the old binary after an update.
-	CLIOldExt = ".old"
-
-	// CLINewExt is the extension of the new binary during an update.
-	CLINewExt = ".new"
+	// CLIOldBinary is the name of the old binary after an update.
+	CLIOldBinary = ".strat.old"
 
 	// CLISigExt the extension of the signature of the binary.
 	CLISigExt = ".sig"
