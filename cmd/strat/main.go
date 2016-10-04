@@ -42,6 +42,7 @@ func main() {
 	subcommands.Register(&cli.Push{}, "project")
 	subcommands.Register(&cli.Pull{}, "project")
 	subcommands.Register(&cli.Run{}, "project")
+	subcommands.Register(&cli.Deploy{}, "project")
 	subcommands.Register(&cli.Update{Version: version}, "CLI")
 	subcommands.Register(&cli.Info{Version: version, Commit: commit}, "CLI")
 	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "CLI")

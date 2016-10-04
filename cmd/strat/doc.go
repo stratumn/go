@@ -32,7 +32,8 @@
 //		help             describe subcommands and their syntax
 //
 //	Subcommands for project:
-//		build            run build script
+//		build            build project
+//		deploy           deploy project to an environment
 //		down             stop services
 //		pull             pull updates
 //		push             push updates

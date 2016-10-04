@@ -16,37 +16,47 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/google/subcommands"
 	"golang.org/x/net/context"
 )
 
-// Build is a project command that builds the project.
-type Build struct {
+// Deploy is a project command that deploys a project to an environment.
+type Deploy struct {
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
-func (*Build) Name() string {
-	return "build"
+func (*Deploy) Name() string {
+	return "deploy"
 }
 
 // Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Build) Synopsis() string {
-	return "build project"
+func (*Deploy) Synopsis() string {
+	return "deploy project to an environment"
 }
 
 // Usage implements github.com/google/subcommands.Command.Usage().
-func (*Build) Usage() string {
-	return `build [args...]:
-  Build project.
+func (*Deploy) Usage() string {
+	return `deploy environment [args...]:
+  Deploy project to given environment.
 `
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Build) SetFlags(f *flag.FlagSet) {
+func (*Deploy) SetFlags(f *flag.FlagSet) {
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Build) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(BuildScript, "", f.Args(), false)
+func (cmd *Deploy) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+	args := f.Args()
+
+	if len(args) < 1 {
+		fmt.Println(cmd.Usage())
+		return subcommands.ExitUsageError
+	}
+
+	script := fmt.Sprintf(DeployScriptFmt, args[0])
+
+	return runScript(script, "", args[1:], false)
 }
