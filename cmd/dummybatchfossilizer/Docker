@@ -1,0 +1,11 @@
+USER root
+
+RUN mkdir -p /var/stratumn/dummybatchfossilizer
+RUN chown stratumn:stratumn /var/stratumn/dummybatchfossilizer
+
+USER stratumn
+
+VOLUME /var/stratumn/dummybatchfossilizer
+EXPOSE 6000
+
+CMD ["dummybatchfossilizer", "-path", "/var/stratumn/dummybatchfossilizer"]
