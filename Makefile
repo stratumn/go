@@ -190,9 +190,16 @@ github_publish:
 # == docker_files =============================================================
 docker_files: $(DOCKER_FILES)
 
+DOCKER_EXTRA=./$(COMMAND_DIR)/$*/Docker
+
 $(DIST_DIR)/%.Dockerfile: $(DOCKER_FILE_TEMPLATE)
 	mkdir -p $(DIST_DIR)
 	sed 's/{{CMD}}/$*/g' $(DOCKER_FILE_TEMPLATE) > $@
+	echo $(DOCKER_EXTRA)
+	@if [[ -f $(DOCKER_EXTRA) ]]; then \
+		echo cat $(DOCKER_EXTRA) \>\> $@; \
+		cat $(DOCKER_EXTRA) >> $@; \
+	fi
 
 # == docker_images ============================================================
 docker_images: $(DOCKER_IMAGE_LIST)

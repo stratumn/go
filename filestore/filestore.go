@@ -45,7 +45,7 @@ const (
 	Description = "Stratumn File Store"
 
 	// DefaultPath is the path where segments will be saved by default.
-	DefaultPath = "/var/filestore"
+	DefaultPath = "/var/stratumn/filestore"
 )
 
 // FileStore is the type that implements github.com/stratumn/go/store.Adapter.
