@@ -1,0 +1,11 @@
+USER root
+
+RUN mkdir -p /var/stratumn/btcfossilizer
+RUN chown stratumn:stratumn /var/stratumn/btcfossilizer
+
+USER stratumn
+
+VOLUME /var/stratumn/btcfossilizer
+EXPOSE 6000
+
+CMD ["btcfossilizer", "-path", "/var/stratumn/btcfossilizer"]
