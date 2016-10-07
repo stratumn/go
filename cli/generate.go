@@ -173,9 +173,13 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 		return subcommands.ExitFailure
 	}
 
-	if err := runScript(InitScript, out, nil, true); err != subcommands.ExitSuccess {
+	if _, err := os.Stat(filepath.Join(out, ProjectFile)); err == nil {
+		if code := runScript(InitScript, out, nil, true); code != subcommands.ExitSuccess {
+			return code
+		}
+	} else if !os.IsNotExist(err) {
 		fmt.Println(err)
-		return err
+		return subcommands.ExitFailure
 	}
 
 	fmt.Println("Done!")
