@@ -65,15 +65,19 @@ const (
 	// Github repository.
 	DefaultGeneratorsRef = "master"
 
-	// StratumnDir is the name of the Stratumn directory within the home
-	// folder.
-	StratumnDir = ".stratumn"
+	// StratumnConfigEnv is the name of the environment variable to override
+	// the default configuration path.
+	StratumnConfigEnv = "STRATUMN_CONFIG"
 
-	// GeneratorsDir is the name of the generators directory within
-	// StratumnDir.
+	// DefaultStratumnDir is the name of the Stratumn directory within the
+	// home folder.
+	DefaultStratumnDir = ".stratumn"
+
+	// GeneratorsDir is the name of the generators directory within the
+	// configuration directory.
 	GeneratorsDir = "generators"
 
-	// VarsFile is the name of the variable file within StratumnDir.
+	// VarsFile is the name of the variable file within the configuration directory.
 	VarsFile = "variables.json"
 
 	// ProjectFile is the name of the project file within the project
@@ -145,28 +149,40 @@ func (prj *Project) GetScript(name string) string {
 	return ""
 }
 
-func generatorsPath() (string, error) {
+func configPath() (string, error) {
+	path := os.Getenv(StratumnConfigEnv)
+	if path != "" {
+		return path, nil
+	}
 	homeDir, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(homeDir, StratumnDir, GeneratorsDir), nil
+	return filepath.Join(homeDir, DefaultStratumnDir), nil
+}
+
+func generatorsPath() (string, error) {
+	config, err := configPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(config, GeneratorsDir), nil
 }
 
 func generatorPath(owner, repo string) (string, error) {
-	homeDir, err := homedir.Dir()
+	config, err := configPath()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(homeDir, StratumnDir, GeneratorsDir, owner, repo), nil
+	return filepath.Join(config, GeneratorsDir, owner, repo), nil
 }
 
 func varsPath() (string, error) {
-	homeDir, err := homedir.Dir()
+	config, err := configPath()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(homeDir, StratumnDir, VarsFile), nil
+	return filepath.Join(config, VarsFile), nil
 }
 
 func runScript(name, wd string, args []string, ignoreNotExist bool) subcommands.ExitStatus {
