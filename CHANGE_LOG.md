@@ -1,5 +1,14 @@
 ## Change log
 
+### 0.0.2-dev
+* Reduced size of Docker images.
+* Improved Docker images security.
+* Locked Docker base images to specific versions.
+* Added a `STRATUMN_CONFIG` environment variable to override the default
+  Stratumn configuration path.
+* Fixed `strat generate` trying to call `init` script if there is no project
+  file.
+
 ### 0.0.1-dev
 * Reset version to `0.0.1-dev`.
 * Added the `strat deploy` command. It expects an environment name as the first
