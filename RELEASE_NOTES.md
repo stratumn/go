@@ -81,7 +81,25 @@ To update the generators, run:
 $ strat update -generators
 ```
 
-## PGP signatures
+### Configuration
+
+You can generate a configuration directory using:
+
+```bash
+$ strat generate /path/to/home/.stratumn
+```
+
+Choose `A Stratumn configuration` as the option.
+
+This will set several configuration options, as well as default values for the
+generators such as your name and company.
+
+By default, the Stratumn tools look for configuration options in the `.stratumn`
+directory within your home directory. You can change this directory by setting
+a `STRATUMN_CONFIG` environment variable containing the path to the
+configuration directory. This also allows you to manage multiple configurations.
+
+### PGP signatures
 
 Each zip file contains a cryptographic signature of the binary.
 
