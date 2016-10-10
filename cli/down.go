@@ -23,6 +23,7 @@ import (
 
 // Down is a project command that stops the services.
 type Down struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -43,10 +44,11 @@ func (*Down) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Down) SetFlags(f *flag.FlagSet) {
+func (cmd *Down) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Down) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(DownScript, "", f.Args(), false)
+	return runScript(DownScript, "", f.Args(), false, cmd.stdin)
 }

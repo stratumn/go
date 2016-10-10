@@ -24,6 +24,7 @@ import (
 
 // Deploy is a project command that deploys a project to an environment.
 type Deploy struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -44,7 +45,8 @@ func (*Deploy) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Deploy) SetFlags(f *flag.FlagSet) {
+func (cmd *Deploy) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -58,5 +60,5 @@ func (cmd *Deploy) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{})
 
 	script := fmt.Sprintf(DeployScriptFmt, args[0])
 
-	return runScript(script, "", args[1:], false)
+	return runScript(script, "", args[1:], false, cmd.stdin)
 }

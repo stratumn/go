@@ -23,6 +23,7 @@ import (
 
 // Build is a project command that builds the project.
 type Build struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -43,10 +44,11 @@ func (*Build) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Build) SetFlags(f *flag.FlagSet) {
+func (cmd *Build) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Build) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(BuildScript, "", f.Args(), false)
+	return runScript(BuildScript, "", f.Args(), false, cmd.stdin)
 }

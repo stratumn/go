@@ -23,6 +23,7 @@ import (
 
 // Push is a project command that pushes updates.
 type Push struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -43,10 +44,11 @@ func (*Push) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Push) SetFlags(f *flag.FlagSet) {
+func (cmd *Push) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Push) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(PushScript, "", f.Args(), false)
+	return runScript(PushScript, "", f.Args(), false, cmd.stdin)
 }

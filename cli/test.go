@@ -23,6 +23,7 @@ import (
 
 // Test is a project command that runs tests.
 type Test struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -43,13 +44,14 @@ func (*Test) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Test) SetFlags(f *flag.FlagSet) {
+func (cmd *Test) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Test) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	testRes := runScript(TestScript, "", f.Args(), false)
-	downRes := runScript(DownTestScript, "", nil, true)
+	testRes := runScript(TestScript, "", f.Args(), false, cmd.stdin)
+	downRes := runScript(DownTestScript, "", nil, true, cmd.stdin)
 
 	if testRes != subcommands.ExitSuccess {
 		return testRes

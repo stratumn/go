@@ -24,6 +24,7 @@ import (
 
 // Run is a project command that runs script by name.
 type Run struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -44,7 +45,8 @@ func (*Run) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Run) SetFlags(f *flag.FlagSet) {
+func (cmd *Run) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -56,5 +58,5 @@ func (cmd *Run) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) su
 		return subcommands.ExitUsageError
 	}
 
-	return runScript(args[0], "", args[1:], false)
+	return runScript(args[0], "", args[1:], false, cmd.stdin)
 }

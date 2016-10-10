@@ -37,6 +37,7 @@ type Generate struct {
 	ref     string
 	name    string
 	ghToken string
+	stdin   bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -63,6 +64,7 @@ func (cmd *Generate) SetFlags(f *flag.FlagSet) {
 	f.StringVar(&cmd.ref, "ref", DefaultGeneratorsRef, "Github branch, tag, or commit SHA1")
 	f.StringVar(&cmd.name, "name", "", "generator name")
 	f.StringVar(&cmd.ghToken, "ghtoken", "", "Github token for private repos")
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
@@ -174,7 +176,7 @@ func (cmd *Generate) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{
 	}
 
 	if _, err := os.Stat(filepath.Join(out, ProjectFile)); err == nil {
-		if code := runScript(InitScript, out, nil, true); code != subcommands.ExitSuccess {
+		if code := runScript(InitScript, out, nil, true, cmd.stdin); code != subcommands.ExitSuccess {
 			return code
 		}
 	} else if !os.IsNotExist(err) {

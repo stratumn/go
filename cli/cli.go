@@ -189,7 +189,7 @@ func varsPath() (string, error) {
 	return filepath.Join(config, VarsFile), nil
 }
 
-func runScript(name, wd string, args []string, ignoreNotExist bool) subcommands.ExitStatus {
+func runScript(name, wd string, args []string, ignoreNotExist, stdin bool) subcommands.ExitStatus {
 	prj, err := NewProjectFromFile(filepath.Join(wd, ProjectFile))
 	if err != nil {
 		fmt.Println(err)
@@ -231,7 +231,10 @@ func runScript(name, wd string, args []string, ignoreNotExist bool) subcommands.
 	c.Dir = wd
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
-	c.Stdin = os.Stdin
+
+	if stdin {
+		c.Stdin = os.Stdin
+	}
 
 	fmt.Printf("Running %q...\n", script)
 

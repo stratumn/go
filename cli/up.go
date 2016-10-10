@@ -23,6 +23,7 @@ import (
 
 // Up is a project command that starts the services.
 type Up struct {
+	stdin bool
 }
 
 // Name implements github.com/google/subcommands.Command.Name().
@@ -43,10 +44,11 @@ func (*Up) Usage() string {
 }
 
 // SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (*Up) SetFlags(f *flag.FlagSet) {
+func (cmd *Up) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&cmd.stdin, "stdin", false, "attach stdin to command")
 }
 
 // Execute implements github.com/google/subcommands.Command.Execute().
 func (cmd *Up) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	return runScript(UpScript, "", f.Args(), false)
+	return runScript(UpScript, "", f.Args(), false, cmd.stdin)
 }
