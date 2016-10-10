@@ -1,5 +1,11 @@
 ## Change log
 
+### 0.0.3-dev
+* Added a -stdin flag to all `strat` commands that execute scripts. It is set to
+  false by default. If true, the standard input will be attached to the process
+  executing the shell command. Hopefully this will fix `strat test` not working
+  on Windows.
+
 ### 0.0.2-dev
 * Reduced size of Docker images.
 * Improved Docker images security.
