@@ -14,15 +14,7 @@
 
 package main
 
-import (
-	"flag"
-	"os"
-
-	"golang.org/x/net/context"
-
-	"github.com/google/subcommands"
-	"github.com/stratumn/go/cli"
-)
+import "github.com/stratumn/go/strat/cmd"
 
 var (
 	version = "0.1.0"
@@ -30,24 +22,5 @@ var (
 )
 
 func main() {
-	subcommands.Register(subcommands.HelpCommand(), "help")
-	subcommands.Register(subcommands.FlagsCommand(), "help")
-	subcommands.Register(subcommands.CommandsCommand(), "help")
-	subcommands.Register(&cli.Generators{}, "generator")
-	subcommands.Register(&cli.Generate{}, "generator")
-	subcommands.Register(&cli.Up{}, "project")
-	subcommands.Register(&cli.Down{}, "project")
-	subcommands.Register(&cli.Build{}, "project")
-	subcommands.Register(&cli.Test{}, "project")
-	subcommands.Register(&cli.Push{}, "project")
-	subcommands.Register(&cli.Pull{}, "project")
-	subcommands.Register(&cli.Run{}, "project")
-	subcommands.Register(&cli.Deploy{}, "project")
-	subcommands.Register(&cli.Update{Version: version}, "CLI")
-	subcommands.Register(&cli.Info{Version: version, Commit: commit}, "CLI")
-	subcommands.Register(&cli.Version{Version: version, Commit: commit}, "CLI")
-
-	flag.Parse()
-	ctx := context.Background()
-	os.Exit(int(subcommands.Execute(ctx)))
+	cmd.Execute(version, commit)
 }
