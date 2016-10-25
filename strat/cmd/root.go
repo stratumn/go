@@ -17,7 +17,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -28,7 +30,11 @@ var (
 )
 
 var (
-	cfgPath string
+	cfgPath         string
+	ghToken         string
+	generatorsOwner string
+	generatorsRepo  string
+	generatorsRef   string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -52,14 +58,49 @@ func Execute(ver, com string) {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		panic(err)
+	}
 
-	RootCmd.PersistentFlags().StringVar(&cfgPath, "config", "", "config path (default is $HOME/.stratumn)")
+	RootCmd.PersistentFlags().StringVar(
+		&cfgPath,
+		"config",
+		filepath.Join(homeDir, DefaultStratumnDir),
+		"Location of Stratumn configuration files",
+	)
+
+	RootCmd.PersistentFlags().StringVar(
+		&ghToken,
+		"gh-token",
+		"",
+		"Github API token",
+	)
+
+	RootCmd.PersistentFlags().StringVar(
+		&generatorsOwner,
+		"generators-owner",
+		DefaultGeneratorsOwner,
+		"Github owner of generators repository",
+	)
+
+	RootCmd.PersistentFlags().StringVar(
+		&generatorsRepo,
+		"generators-repo",
+		DefaultGeneratorsRepo,
+		"Name of generators Git repository",
+	)
+
+	RootCmd.PersistentFlags().StringVar(
+		&generatorsRef,
+		"generators-branch",
+		DefaultGeneratorsRef,
+		"Git branch, tag, or commit of generators repository",
+	)
+
 }
 
-// initConfig reads in config file and ENV variables if set.
+// initConfig reads ENV variables if set.
 func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 }

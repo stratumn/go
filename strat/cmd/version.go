@@ -24,8 +24,8 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "display version info",
-	Long: `This command displays the version info of Stratumn CLI.
+	Short: "Display version info",
+	Long: `Display the version info of Stratumn CLI.
 
 It outputs the semver string, and the first seven characters of the Git hash.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
