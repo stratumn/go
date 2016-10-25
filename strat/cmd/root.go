@@ -35,6 +35,7 @@ var (
 	generatorsOwner string
 	generatorsRepo  string
 	generatorsRef   string
+	useStdin        bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -93,11 +94,17 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(
 		&generatorsRef,
-		"generators-branch",
+		"generators-ref",
 		DefaultGeneratorsRef,
 		"Git branch, tag, or commit of generators repository",
 	)
 
+	RootCmd.PersistentFlags().BoolVar(
+		&useStdin,
+		"stdin",
+		true,
+		"Attach stdin to process when executing project commands",
+	)
 }
 
 // initConfig reads ENV variables if set.
