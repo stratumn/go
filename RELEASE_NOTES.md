@@ -72,13 +72,13 @@ $ strat update
 To update the CLI to the latest prerelease, run: 
 
 ```bash
-$ strat update -prerelease
+$ strat update --prerelease
 ```
 
 To update the generators, run: 
 
 ```bash
-$ strat update -generators
+$ strat update --generators
 ```
 
 ### Configuration
