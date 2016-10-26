@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright © 2016 NAME HERE <EMAIL ADDRESS>
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cli
+package cmd
 
 import (
 	"archive/zip"
 	"bytes"
-	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,86 +27,79 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/google/go-github/github"
-	"github.com/google/subcommands"
-	"github.com/kardianos/osext"
-	"github.com/stratumn/go/generator/repo"
 	"golang.org/x/crypto/openpgp"
-	"golang.org/x/net/context"
+
+	"github.com/google/go-github/github"
+	"github.com/kardianos/osext"
+	"github.com/spf13/cobra"
+	"github.com/stratumn/go/generator/repo"
 )
 
-// Update is a CLI command that updates the CLI or generators.
-type Update struct {
-	Version    string
-	generators bool
-	prerelease bool
+var (
 	force      bool
-	ghToken    string
-}
+	prerelease bool
+	generators bool
+)
 
-// Name implements github.com/google/subcommands.Command.Name().
-func (*Update) Name() string {
-	return "update"
-}
+// updateCmd represents the update command
+var updateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update Stratumn CLI or generators",
+	Long: `Update Stratumn CLI or update generators to latest version.
 
-// Synopsis implements github.com/google/subcommands.Command.Synopsis().
-func (*Update) Synopsis() string {
-	return "update the CLI or generators"
-}
+It can download the latest version of the Stratumn CLI. It checks that the binary is cryptographically signed before installing. 
 
-// Usage implements github.com/google/subcommands.Command.Usage().
-func (*Update) Usage() string {
-	return `update:
-  Update the CLI or generators.
-`
-}
-
-// SetFlags implements github.com/google/subcommands.Command.SetFlags().
-func (cmd *Update) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&cmd.generators, "generators", false, "update generators")
-	f.BoolVar(&cmd.prerelease, "prerelease", false, "update to prerelease")
-	f.BoolVar(&cmd.force, "force", false, "download latest version even if a new version isn't available")
-	f.StringVar(&cmd.ghToken, "ghtoken", "", "Github token for private repos")
-}
-
-// Execute implements github.com/google/subcommands.Command.Execute().
-func (cmd *Update) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
-	if len(f.Args()) > 0 {
-		fmt.Println(cmd.Usage())
-		return subcommands.ExitUsageError
-	}
-
-	if cmd.generators {
-		if code := cmd.updateGenerators(); code != subcommands.ExitSuccess {
-			return code
+It can also update generators using the --generators flag.	
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return errors.New("unexpected arguments")
 		}
-	} else {
-		if code := cmd.updateCLI(); code != subcommands.ExitSuccess {
-			return code
-		}
-	}
 
-	return subcommands.ExitSuccess
+		if generators {
+			return updateGenerators()
+		}
+
+		return updateCLI()
+	},
 }
 
-func (cmd *Update) updateGenerators() subcommands.ExitStatus {
+func init() {
+	RootCmd.AddCommand(updateCmd)
+
+	updateCmd.PersistentFlags().BoolVarP(
+		&force,
+		"force",
+		"f",
+		false,
+		"Download latest version even if not more recent",
+	)
+
+	updateCmd.PersistentFlags().BoolVarP(
+		&prerelease,
+		"prerelease",
+		"P",
+		false,
+		"Download prerelease version",
+	)
+
+	updateCmd.PersistentFlags().BoolVarP(
+		&generators,
+		"generators",
+		"g",
+		false,
+		"Update generators",
+	)
+}
+
+func updateGenerators() error {
 	fmt.Println("Updating generators...")
 
-	if cmd.ghToken == "" {
-		cmd.ghToken = os.Getenv(GithubTokenEnv)
-	}
-
-	path, err := generatorsPath()
-	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
-	}
-
 	// Find all installed repos.
+	path := generatorsPath
 	matches, err := filepath.Glob(filepath.Join(path, "*", "*", repo.StatesDir, "*"))
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	for _, match := range matches {
@@ -122,16 +115,14 @@ func (cmd *Update) updateGenerators() subcommands.ExitStatus {
 
 		fmt.Printf("  * Updating %q...\n", name)
 
-		r := repo.New(p, owner, rep, cmd.ghToken)
+		r := repo.New(p, owner, rep, ghToken)
 		if err != nil {
-			fmt.Println(err)
-			return subcommands.ExitFailure
+			return err
 		}
 
-		_, updated, err := r.Update(ref, cmd.force)
+		_, updated, err := r.Update(ref, force)
 		if err != nil {
-			fmt.Println(err)
-			return subcommands.ExitFailure
+			return err
 		}
 
 		if updated {
@@ -143,22 +134,21 @@ func (cmd *Update) updateGenerators() subcommands.ExitStatus {
 
 	fmt.Println("Generators updated successfully.")
 
-	return subcommands.ExitSuccess
+	return nil
 }
 
-func (cmd *Update) updateCLI() subcommands.ExitStatus {
+func updateCLI() error {
 	fmt.Println("Updating CLI...")
 	client := github.NewClient(nil)
 
 	// Find latest release.
-	asset, tag, err := cmd.findRelease(client)
+	asset, tag, err := findRelease(client)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 	if asset == nil {
 		fmt.Println("CLI already up-to-date.")
-		return subcommands.ExitSuccess
+		return nil
 	}
 
 	fmt.Printf("  * Downloading %q@%q...\n", *asset.Name, *tag)
@@ -166,16 +156,14 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	// Create temporary directory.
 	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 	defer os.RemoveAll(tempDir)
 
 	// Download release.
 	tempZipFile := filepath.Join(tempDir, "temp.zip")
-	if err := dlRelease(client, tempZipFile, asset); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+	if err = dlRelease(client, tempZipFile, asset); err != nil {
+		return err
 	}
 
 	fmt.Printf("  * Extracting %q...\n", *asset.Name)
@@ -183,67 +171,57 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 	// Find binary and signature.
 	zrc, binZF, sigZF, err := findReleaseFiles(tempZipFile)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 	defer zrc.Close()
 	if binZF == nil {
-		fmt.Printf("Could not find binary in %q.\n", *asset.Name)
-		return subcommands.ExitFailure
+		return fmt.Errorf("Could not find binary in %q.\n", *asset.Name)
 	}
 	if sigZF == nil {
-		fmt.Printf("Could not find signature in %q.\n", *asset.Name)
-		return subcommands.ExitFailure
+		return fmt.Errorf("Could not find signature in %q.\n", *asset.Name)
 	}
 
 	// Get the current binary path.
 	execPath, err := osext.Executable()
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Get the current binary file info.
 	info, err := os.Stat(execPath)
 	if err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Copy the new binary to the temporary directory.
 	binPath := filepath.Join(tempDir, filepath.Base(execPath))
 	if err := copyZF(binPath, binZF, 0644); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Copy the signature the the temporary directory.
-	sigPath := filepath.Join(tempDir, filepath.Base(execPath)+CLISigExt)
+	sigPath := filepath.Join(tempDir, filepath.Base(execPath)+SigExt)
 	if err := copyZF(sigPath, sigZF, 0644); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Check the signature.
 	fmt.Println("  * Verifying cryptographic signature...")
 	if err := checkSig(binPath, sigPath); err != nil {
-		fmt.Printf("Failed to verify signature: %s.\n", err)
-		return subcommands.ExitFailure
+		return fmt.Errorf("Failed to verify signature: %s.\n", err)
 	}
 
 	fmt.Println("  * Updating binary...")
 
 	// Remove previous old binary if present.
-	oldPath := filepath.Join(filepath.Dir(execPath), CLIOldBinary)
+	oldPath := filepath.Join(filepath.Dir(execPath), OldBinary)
 	if err := os.Remove(oldPath); err != nil && !os.IsNotExist(err) {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Rename current binary.
 	if err := os.Rename(execPath, oldPath); err != nil {
-		fmt.Println(err)
-		return subcommands.ExitFailure
+		return err
 	}
 
 	// Copy new binary to final destination.
@@ -256,28 +234,29 @@ func (cmd *Update) updateCLI() subcommands.ExitStatus {
 		if err := os.Rename(oldPath, execPath); err != nil {
 			fmt.Println(err)
 		}
-		return subcommands.ExitFailure
+		return errors.New("failed to update binary")
 	}
 
 	fmt.Println("CLI updated successfully.")
-	return subcommands.ExitSuccess
+
+	return nil
 }
 
-func (cmd *Update) findRelease(client *github.Client) (*github.ReleaseAsset, *string, error) {
-	rels, res, err := client.Repositories.ListReleases(CLIOwner, CLIRepo, nil)
+func findRelease(client *github.Client) (*github.ReleaseAsset, *string, error) {
+	rels, res, err := client.Repositories.ListReleases(Owner, Repo, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer res.Body.Close()
 
 	var (
-		name  = fmt.Sprintf(CLIAssetFormat, runtime.GOOS, runtime.GOARCH)
+		name  = fmt.Sprintf(AssetFormat, runtime.GOOS, runtime.GOARCH)
 		asset *github.ReleaseAsset
 		tag   *string
 	)
 	for _, r := range rels {
-		if *r.Prerelease == cmd.prerelease {
-			if cmd.force || *r.TagName != "v"+cmd.Version {
+		if *r.Prerelease == prerelease {
+			if force || *r.TagName != "v"+version {
 				for _, a := range r.Assets {
 					if *a.Name == name {
 						asset = &a
@@ -294,7 +273,7 @@ func (cmd *Update) findRelease(client *github.Client) (*github.ReleaseAsset, *st
 }
 
 func dlRelease(client *github.Client, dst string, asset *github.ReleaseAsset) error {
-	rc, url, err := client.Repositories.DownloadReleaseAsset(CLIOwner, CLIRepo, *asset.ID)
+	rc, url, err := client.Repositories.DownloadReleaseAsset(Owner, Repo, *asset.ID)
 	if err != nil {
 		return err
 	}
@@ -304,9 +283,9 @@ func dlRelease(client *github.Client, dst string, asset *github.ReleaseAsset) er
 	if rc != nil {
 		r = rc
 	} else if url != "" {
-		res, err := http.Get(url)
-		if err != nil {
-			return err
+		res, err2 := http.Get(url)
+		if err2 != nil {
+			return err2
 		}
 		r = res.Body
 	}
@@ -328,11 +307,11 @@ func findReleaseFiles(src string) (*zip.ReadCloser, *zip.File, *zip.File, error)
 		return nil, nil, nil, err
 	}
 
-	wantBin := CLIAssetBinary
+	wantBin := AssetBinary
 	if runtime.GOOS == win {
-		wantBin = CLIAssetBinaryWin
+		wantBin = AssetBinaryWin
 	}
-	wantSig := wantBin + CLISigExt
+	wantSig := wantBin + SigExt
 
 	var binZF, sigZF *zip.File
 	for _, f := range rc.File {
