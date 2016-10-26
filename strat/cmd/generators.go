@@ -36,7 +36,7 @@ It outputs the name, description, author, version, and license of each generator
 			return errors.New("unexpected arguments")
 		}
 
-		path := generatorPath(generatorsOwner, generatorsRepo)
+		path := generatorPath()
 		repo := repo.New(path, generatorsOwner, generatorsRepo, ghToken)
 
 		list, err := repo.List(generatorsRef)

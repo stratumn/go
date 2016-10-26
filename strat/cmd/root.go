@@ -68,9 +68,10 @@ func init() {
 	defCfgPath := filepath.Join(homeDir, DefaultStratumnDir)
 	defGeneratorsPath := filepath.Join(defCfgPath, GeneratorsDir)
 
-	RootCmd.PersistentFlags().StringVar(
+	RootCmd.PersistentFlags().StringVarP(
 		&cfgPath,
 		"config",
+		"c",
 		defCfgPath,
 		"Location of Stratumn configuration files",
 	)
@@ -82,9 +83,10 @@ func init() {
 		"Github API token",
 	)
 
-	RootCmd.PersistentFlags().StringVar(
+	RootCmd.PersistentFlags().StringVarP(
 		&generatorsPath,
 		"generators-path",
+		"p",
 		defGeneratorsPath,
 		"Location where generators are stored locally",
 	)
@@ -120,5 +122,6 @@ func init() {
 
 // initConfig reads ENV variables if set.
 func initConfig() {
+	viper.SetEnvPrefix(EnvPrefix)
 	viper.AutomaticEnv() // read in environment variables that match
 }

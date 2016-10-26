@@ -28,27 +28,30 @@ import (
 )
 
 const (
-	// CLIOwner is the owner of the CLI's Github repository.
-	CLIOwner = "stratumn"
+	// EnvPrefix is the prefix of environment variables to set flag values.
+	EnvPrefix = "stratumn"
 
-	// CLIRepo is the name of the CLI's Github repository.
-	CLIRepo = "go"
+	// Owner is the owner of the CLI's Github repository.
+	Owner = "stratumn"
 
-	// CLIAssetFormat is the format of the CLI GIthub asset.
-	CLIAssetFormat = "strat-%s-%s.zip"
+	// Repo is the name of the CLI's Github repository.
+	Repo = "go"
 
-	// CLIAssetBinary is the file name of the binary within the CLI asset.
-	CLIAssetBinary = "strat/strat"
+	// AssetFormat is the format of the CLI GIthub asset.
+	AssetFormat = "strat-%s-%s.zip"
 
-	// CLIAssetBinaryWin is the file name of the binary within the CLI asset
+	// AssetBinary is the file name of the binary within the CLI asset.
+	AssetBinary = "strat/strat"
+
+	// AssetBinaryWin is the file name of the binary within the CLI asset
 	// on Windows.
-	CLIAssetBinaryWin = "strat/strat.exe"
+	AssetBinaryWin = "strat/strat.exe"
 
-	// CLIOldBinary is the name of the old binary after an update.
-	CLIOldBinary = ".strat.old"
+	// OldBinary is the name of the old binary after an update.
+	OldBinary = ".strat.old"
 
-	// CLISigExt the extension of the signature of the binary.
-	CLISigExt = ".sig"
+	// SigExt the extension of the signature of the binary.
+	SigExt = ".sig"
 
 	// DefaultGeneratorsOwner is the default owner of the generators' Github
 	// repository.
@@ -147,8 +150,8 @@ func (prj *Project) GetScript(name string) string {
 	return ""
 }
 
-func generatorPath(owner, repo string) string {
-	return filepath.Join(generatorsPath, owner, repo)
+func generatorPath() string {
+	return filepath.Join(generatorsPath, generatorsOwner, generatorsRepo)
 }
 
 func varsPath() string {
