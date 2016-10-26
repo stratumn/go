@@ -78,9 +78,9 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(
 		&ghToken,
-		"gh-token",
+		"github-api-token",
 		"",
-		"Github API token",
+		"Github API token for private repositories",
 	)
 
 	RootCmd.PersistentFlags().StringVarP(
