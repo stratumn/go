@@ -1,5 +1,11 @@
 ## Change log
 
+### 0.0.4-dev
+* The `strat` command will now use standard flags, using the `cobra` library.
+* Added a `--generators-path` flag to `strat` to specify the location of the
+  generators on the local file system. This makes it easier to develop
+  generators.
+
 ### 0.0.3-dev
 * Added a -stdin flag to all `strat` commands that execute scripts. It is set to
   false by default. If true, the standard input will be attached to the process
