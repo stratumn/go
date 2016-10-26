@@ -40,7 +40,7 @@ var generateCmd = &cobra.Command{
 	Short:   "Generate a project",
 	Long: `Generate a project using a generator.
 
-It asks which generator to use, the uses that generator to generate a project in the given path.`,
+It asks which generator to use, then uses that generator to generate a project in the given path.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("expected path")
