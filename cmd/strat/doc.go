@@ -16,32 +16,34 @@
 //
 // Usage
 //
-//	$ strat
-//	Subcommands for CLI:
-//		info             print program info
-//		update           update the CLI or generators
-//		version          print version info
+// 	The Stratumn CLI provides various commands to generate and work with Stratumn's technology.
 //
-//	Subcommands for generator:
-//		generate         generate a project
-//		generators       list generators
+// 	Usage:
+// 	  strat [command]
 //
-//	Subcommands for help:
-//		commands         list all command names
-//		flags            describe all known top-level flags
-//		help             describe subcommands and their syntax
+// 	Available Commands:
+// 	  build       Build project
+// 	  deploy      Deploy project
+// 	  down        Stop project services
+// 	  generate    Generate a project
+// 	  generators  List available generators
+// 	  info        Display Stratumn CLI info
+// 	  pull        Pull project Docker images
+// 	  push        Push project Docker images
+// 	  run         Run project command
+// 	  test        Run project test suite
+// 	  up          Start project services
+// 	  update      Update Stratumn CLI or generators
+// 	  version     Display version info
 //
-//	Subcommands for project:
-//		build            build project
-//		deploy           deploy project to an environment
-//		down             stop services
-//		pull             pull updates
-//		push             push updates
-//		run              run script by name
-//		test             run tests
-//		up               start services
+// 	Flags:
+// 	  -c, --config string             Location of Stratumn configuration files (default "/Users/stephan/.stratumn")
+// 	      --generators-owner string   Github owner of generators repository (default "stratumn")
+// 	  -p, --generators-path string    Location where generators are stored locally (default "/Users/stephan/.stratumn/generators")
+// 	      --generators-ref string     Git branch, tag, or commit of generators repository (default "master")
+// 	      --generators-repo string    Name of generators Git repository (default "generators")
+// 	      --gh-token string           Github API token
+// 	      --stdin                     Attach stdin to process when executing project commands (default true)
 //
-// Env
-//
-//      GITHUB_TOKEN="xxxx" # Github token to access private repos
+// 	Use "strat [command] --help" for more information about a command.
 package main
