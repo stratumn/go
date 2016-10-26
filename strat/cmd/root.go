@@ -32,6 +32,7 @@ var (
 var (
 	cfgPath         string
 	ghToken         string
+	generatorsPath  string
 	generatorsOwner string
 	generatorsRepo  string
 	generatorsRef   string
@@ -64,10 +65,13 @@ func init() {
 		panic(err)
 	}
 
+	defCfgPath := filepath.Join(homeDir, DefaultStratumnDir)
+	defGeneratorsPath := filepath.Join(defCfgPath, GeneratorsDir)
+
 	RootCmd.PersistentFlags().StringVar(
 		&cfgPath,
 		"config",
-		filepath.Join(homeDir, DefaultStratumnDir),
+		defCfgPath,
 		"Location of Stratumn configuration files",
 	)
 
@@ -76,6 +80,13 @@ func init() {
 		"gh-token",
 		"",
 		"Github API token",
+	)
+
+	RootCmd.PersistentFlags().StringVar(
+		&generatorsPath,
+		"generators-path",
+		defGeneratorsPath,
+		"Location where generators are stored locally",
 	)
 
 	RootCmd.PersistentFlags().StringVar(

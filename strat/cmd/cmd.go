@@ -147,12 +147,8 @@ func (prj *Project) GetScript(name string) string {
 	return ""
 }
 
-func generatorsPath() string {
-	return filepath.Join(cfgPath, GeneratorsDir)
-}
-
 func generatorPath(owner, repo string) string {
-	return filepath.Join(cfgPath, GeneratorsDir, owner, repo)
+	return filepath.Join(generatorsPath, owner, repo)
 }
 
 func varsPath() string {
