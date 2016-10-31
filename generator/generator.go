@@ -42,6 +42,9 @@ const (
 
 	// FilesDir is the directory containing files within a generator.
 	FilesDir = "files"
+
+	// DirPerm is tDe files permissions for the generated directory.
+	DirPerm = 0700
 )
 
 // Definition contains properties for a template generator definition.
@@ -210,36 +213,26 @@ func (gen *Generator) Exec(dst string) error {
 	return nil
 }
 
-func (gen *Generator) parsePartials() error {
-	gen.partials = template.New("partials")
-	dir := filepath.Join(gen.src, PartialsDir)
+// parse parsers templates in given directory into the given template object.
+func (gen *Generator) parse(tmpl *template.Template, dir string) error {
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
-	gen.partials.Funcs(extendFuncs(gen.StdTmplFuncs(), gen.opts.TmplFuncs))
-	if err := walkTmpl(dir, dir, gen.partials); err != nil {
-		return err
-	}
-	return nil
+	tmpl.Funcs(extendFuncs(gen.StdTmplFuncs(), gen.opts.TmplFuncs))
+	return walkTmpl(dir, dir, tmpl)
+}
+
+func (gen *Generator) parsePartials() error {
+	gen.partials = template.New("partials")
+	return gen.parse(gen.partials, filepath.Join(gen.src, PartialsDir))
 }
 
 func (gen *Generator) parseFiles() error {
 	gen.files = template.New("files")
-	dir := filepath.Join(gen.src, FilesDir)
-	if _, err := os.Stat(dir); err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	gen.files.Funcs(extendFuncs(gen.StdTmplFuncs(), gen.opts.TmplFuncs))
-	if err := walkTmpl(dir, dir, gen.files); err != nil {
-		return err
-	}
-	return nil
+	return gen.parse(gen.files, filepath.Join(gen.src, FilesDir))
 }
 
 func (gen *Generator) partial(name string, opts ...interface{}) (string, error) {
@@ -315,7 +308,7 @@ func (gen *Generator) generate(dst string) error {
 			return err
 		}
 		out := filepath.Join(dst, name)
-		if err := os.MkdirAll(filepath.Dir(out), 0755); err != nil {
+		if err = os.MkdirAll(filepath.Dir(out), DirPerm); err != nil {
 			return err
 		}
 		f, err := os.OpenFile(out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
@@ -390,7 +383,7 @@ func walkTmpl(base, dir string, tmpl *template.Template) error {
 			return err
 		}
 		if info.IsDir() {
-			if err := walkTmpl(base, file, tmpl); err != nil {
+			if err = walkTmpl(base, file, tmpl); err != nil {
 				return err
 			}
 			continue
