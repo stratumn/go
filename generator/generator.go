@@ -108,6 +108,8 @@ func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs templ
 // generator definition.
 // It adds the following functions:
 //
+//	- getenv(name string) string: returns the value of an environment
+//	  variable
 // 	- now(format string) string: returns a formatted representation of the
 //	  current date
 // 	- nowUTC(format string) string: returns a formatted representation of
@@ -115,6 +117,7 @@ func NewDefinitionFromFile(path string, vars map[string]interface{}, funcs templ
 // 	- secret(length int) (string, error): returns a random secret string
 func StdDefinitionFuncs() template.FuncMap {
 	return template.FuncMap{
+		"getenv": os.Getenv,
 		"now":    now,
 		"nowUTC": nowUTC,
 		"secret": secret,
@@ -178,6 +181,8 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 //
 // 	- ask(json string) (interface{}, error): creates an input on-the-fly and
 //	  returns its value
+//	- getenv(name string) string: returns the value of an environment
+//	  variable
 // 	- input(id string) (interface{}, error): returns the value of an input
 // 	- now(format string) string: returns a formatted representation of the
 //	  current date
@@ -190,6 +195,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
+		"getenv":  os.Getenv,
 		"input":   gen.input,
 		"now":     now,
 		"nowUTC":  nowUTC,
