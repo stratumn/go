@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stratumn/go/fossilizer"
 )
 
 func TestGetInfo(t *testing.T) {
@@ -201,4 +203,36 @@ func TestNew_recover(t *testing.T) {
 		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
 	}
 	testFossilizeMultiple(t, a, tests, true, false)
+}
+
+func TestSetTransformer(t *testing.T) {
+	a, err := New(&Config{Interval: interval})
+	if err != nil {
+		t.Fatalf("New(): err: %s", err)
+	}
+	transformerCalled := false
+	transformer := func(evidence *Evidence, data, meta []byte) (*fossilizer.Result, error) {
+		transformerCalled = true
+		return &fossilizer.Result{
+			Evidence: &EvidenceWrapper{
+				evidence,
+			},
+			Data: data,
+			Meta: meta,
+		}, nil
+	}
+	a.SetTransformer(transformer)
+
+	tests := []fossilizeTest{
+		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
+		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
+		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
+		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
+		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
+	}
+	testFossilizeMultiple(t, a, tests, true, true)
+
+	if !transformerCalled {
+		t.Errorf("a.transform() was not called")
+	}
 }
