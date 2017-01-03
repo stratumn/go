@@ -154,6 +154,7 @@ type Fossilizer struct {
 	waitGroup   sync.WaitGroup
 	transformer Transformer
 	pending     *batch
+	stopping    bool
 }
 
 // Transformer is the type of a function to transform results.
@@ -170,6 +171,7 @@ func New(config *Config) (*Fossilizer, error) {
 		stopChan:    make(chan error, 1),
 		semChan:     make(chan struct{}, config.GetMaxSimBatches()),
 		pending:     newBatch(config.GetMaxLeaves()),
+		stopping:    false,
 	}
 
 	a.SetTransformer(nil)
@@ -327,7 +329,9 @@ func (a *Fossilizer) batch(b *batch) {
 
 		tree, err := merkle.NewStaticTree(b.data)
 		if err != nil {
-			a.stop(err)
+			if !a.stopping {
+				a.stop(err)
+			}
 			return
 		}
 
@@ -403,6 +407,7 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 }
 
 func (a *Fossilizer) stop(err error) error {
+	a.stopping = true
 	if a.config.StopBatch {
 		if len(a.pending.data) > 0 {
 			a.batch(a.pending)
