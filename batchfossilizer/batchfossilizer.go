@@ -172,6 +172,8 @@ func New(config *Config) (*Fossilizer, error) {
 		pending:     newBatch(config.GetMaxLeaves()),
 	}
 
+	a.SetTransformer(nil)
+
 	if a.config.Path != "" {
 		if err := a.ensurePath(); err != nil {
 			return nil, err
@@ -259,7 +261,19 @@ func (a *Fossilizer) Started() <-chan struct{} {
 
 // SetTransformer sets a transformer.
 func (a *Fossilizer) SetTransformer(t Transformer) {
-	a.transformer = t
+	if t != nil {
+		a.transformer = t
+	} else {
+		a.transformer = func(evidence *Evidence, data, meta []byte) (*fossilizer.Result, error) {
+			return &fossilizer.Result{
+				Evidence: &EvidenceWrapper{
+					evidence,
+				},
+				Data: data,
+				Meta: meta,
+			}, nil
+		}
+	}
 }
 
 func (a *Fossilizer) fossilize(f *fossil) error {
@@ -378,24 +392,12 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 			Path: tree.Path(i),
 		}
 
-		if a.transformer != nil {
-			r, err = a.transformer(&evidence, d, m)
+		if r, err = a.transformer(&evidence, d, m); err != nil {
+			log.WithField("error", err).Error("Failed to transform evidence")
 		} else {
-			r = &fossilizer.Result{
-				Evidence: &EvidenceWrapper{
-					&evidence,
-				},
-				Data: d,
-				Meta: m,
-			}
-		}
-
-		if err == nil {
 			for _, c := range a.resultChans {
 				c <- r
 			}
-		} else {
-			log.WithField("error", err).Error("Failed to transform evidence")
 		}
 	}
 }
@@ -411,7 +413,7 @@ func (a *Fossilizer) stop(err error) error {
 	}
 
 	a.waitGroup.Wait()
-	a.transformer = nil
+	a.SetTransformer(nil)
 
 	if a.pending.file != nil {
 		if e := a.pending.file.Close(); e != nil {
