@@ -19,6 +19,8 @@ import (
 	"errors"
 	"math"
 
+	"reflect"
+
 	"github.com/stratumn/go/types"
 )
 
@@ -74,6 +76,11 @@ func (s *Segment) Validate() error {
 	}
 
 	return nil
+}
+
+// IsEmpty checks if a segment is empty (nil)
+func (s *Segment) IsEmpty() bool {
+	return reflect.DeepEqual(*s, Segment{})
 }
 
 // Link contains a state and meta data about the state.

@@ -14,7 +14,7 @@
 
 // The command dummystore starts an HTTP server with a dummystore.
 //
-// Usage
+// Usage:
 //
 //	$ dummystore -h
 //	Usage of dummystore:

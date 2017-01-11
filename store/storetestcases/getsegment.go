@@ -50,9 +50,10 @@ func (f Factory) TestGetSegment(t *testing.T) {
 	if got := s2; got == nil {
 		t.Error("s2 = nil want *cs.Segment")
 	}
+	delete(s2.Meta, "evidence")
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(got, "", "  ")
+		wantJS, _ := json.MarshalIndent(want, "", "  ")
 		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
 	}
 }
@@ -82,9 +83,10 @@ func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 	if got := s2; got == nil {
 		t.Error("s2 = nil want *cs.Segment")
 	}
+	delete(s2.Meta, "evidence")
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(got, "", "  ")
+		wantJS, _ := json.MarshalIndent(want, "", "  ")
 		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
 	}
 }
@@ -114,9 +116,10 @@ func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 	if got := s2; got == nil {
 		t.Error("s2 = nil want *cs.Segment")
 	}
+	delete(s2.Meta, "evidence")
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(got, "", "  ")
+		wantJS, _ := json.MarshalIndent(want, "", "  ")
 		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
 	}
 }

@@ -14,7 +14,7 @@
 
 // The command filestore starts an HTTP server with a filestore.
 //
-// Usage
+// Usage:
 //
 //	$ filestore -h
 //	Usage of filestore:

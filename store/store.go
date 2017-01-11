@@ -54,24 +54,24 @@ type Adapter interface {
 // Pagination contains pagination options.
 type Pagination struct {
 	// Index of the first entry.
-	Offset int
+	Offset int `json:"offset"`
 
 	// Maximum number of entries, all if zero.
-	Limit int
+	Limit int `json:"limit"`
 }
 
 // Filter contains filtering options for segments.
 // If PrevLinkHash is not nil, MapID is ignored because a previous link hash
 // implies the map ID of the previous segment.
 type Filter struct {
-	Pagination
+	Pagination `json:"pagination"`
 
 	// A map ID the segments must have.
-	MapID string
+	MapID string `json:"mapId"`
 
 	// A previous link hash the segments must have.
-	PrevLinkHash *types.Bytes32
+	PrevLinkHash *types.Bytes32 `json:"prevLinkHash"`
 
 	// A slice of tags the segments must all contain.
-	Tags []string
+	Tags []string `json:"tags"`
 }

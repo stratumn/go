@@ -1,0 +1,10 @@
+USER root
+
+RUN mkdir -p /var/stratumn/filestore
+RUN chown stratumn:stratumn /var/stratumn/filestore
+
+USER stratumn
+
+VOLUME /var/stratumn/filestore
+
+EXPOSE 46658
