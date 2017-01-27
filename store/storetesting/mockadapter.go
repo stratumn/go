@@ -27,6 +27,9 @@ type MockAdapter struct {
 	// The mock for the GetInfo function.
 	MockGetInfo MockGetInfo
 
+	// The mock for the AddDidSaveChannel function.
+	MockAddDidSaveChannel MockAddDidSaveChannel
+
 	// The mock for the SaveSegment function.
 	MockSaveSegment MockSaveSegment
 
@@ -50,6 +53,21 @@ type MockGetInfo struct {
 
 	// An optional implementation of the function.
 	Fn func() (interface{}, error)
+}
+
+// MockAddDidSaveChannel mocks the SaveSegment function.
+type MockAddDidSaveChannel struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The segment that was passed to each call.
+	CalledWith []chan *cs.Segment
+
+	// The last segment that was passed.
+	LastCalledWith chan *cs.Segment
+
+	// An optional implementation of the function.
+	Fn func(chan *cs.Segment)
 }
 
 // MockSaveSegment mocks the SaveSegment function.
@@ -136,6 +154,18 @@ func (a *MockAdapter) GetInfo() (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+// AddDidSaveChannel implements
+// github.com/stratumn/go/store.Adapter.AddDidSaveChannel.
+func (a *MockAdapter) AddDidSaveChannel(saveChan chan *cs.Segment) {
+	a.MockAddDidSaveChannel.CalledCount++
+	a.MockAddDidSaveChannel.CalledWith = append(a.MockAddDidSaveChannel.CalledWith, saveChan)
+	a.MockAddDidSaveChannel.LastCalledWith = saveChan
+
+	if a.MockAddDidSaveChannel.Fn != nil {
+		a.MockAddDidSaveChannel.Fn(saveChan)
+	}
 }
 
 // SaveSegment implements github.com/stratumn/go/store.Adapter.SaveSegment.

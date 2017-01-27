@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ type Factory struct {
 
 // RunTests runs all the tests.
 func (f Factory) RunTests(t *testing.T) {
+	t.Run("AddDidSaveChannel", f.TestAddDidSaveChannel)
 	t.Run("DeleteSegment", f.TestDeleteSegment)
 	t.Run("DeleteSegmentNotFound", f.TestDeleteSegmentNotFound)
 	t.Run("FindSegments", f.TestFindSegments)

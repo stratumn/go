@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,6 +32,9 @@ const (
 type Adapter interface {
 	// Returns arbitrary information about the adapter.
 	GetInfo() (interface{}, error)
+
+	// Adds a channel that receives segments whenever they are saved.
+	AddDidSaveChannel(chan *cs.Segment)
 
 	// Creates or updates a segment. Segments passed to this method are
 	// assumed to be valid.

@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,10 +54,11 @@ type Info struct {
 
 // DummyStore is the type that implements github.com/stratumn/go/store.Adapter.
 type DummyStore struct {
-	config   *Config
-	segments segmentMap   // maps link hashes to segments
-	maps     hashSetMap   // maps chains IDs to sets of link hashes
-	mutex    sync.RWMutex // simple global mutex
+	config       *Config
+	didSaveChans []chan *cs.Segment
+	segments     segmentMap   // maps link hashes to segments
+	maps         hashSetMap   // maps chains IDs to sets of link hashes
+	mutex        sync.RWMutex // simple global mutex
 }
 
 type segmentMap map[string]*cs.Segment
@@ -66,7 +67,13 @@ type hashSetMap map[string]hashSet
 
 // New creates an instance of a DummyStore.
 func New(config *Config) *DummyStore {
-	return &DummyStore{config, segmentMap{}, hashSetMap{}, sync.RWMutex{}}
+	return &DummyStore{
+		config,
+		nil,
+		segmentMap{},
+		hashSetMap{},
+		sync.RWMutex{},
+	}
 }
 
 // GetInfo implements github.com/stratumn/go/store.Adapter.GetInfo.
@@ -77,6 +84,12 @@ func (a *DummyStore) GetInfo() (interface{}, error) {
 		Version:     a.config.Version,
 		Commit:      a.config.Commit,
 	}, nil
+}
+
+// AddDidSaveChannel implements
+// github.com/stratumn/go/fossilizer.Store.AddDidSaveChannel.
+func (a *DummyStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
+	a.didSaveChans = append(a.didSaveChans, saveChan)
 }
 
 // SaveSegment implements github.com/stratumn/go/store.Adapter.SaveSegment.
@@ -102,6 +115,13 @@ func (a *DummyStore) SaveSegment(segment *cs.Segment) error {
 
 	a.segments[linkHashStr] = segment
 	a.maps[mapID][linkHashStr] = struct{}{}
+
+	// Send saved segment to all the save channels without blocking.
+	go func(chans []chan *cs.Segment) {
+		for _, c := range chans {
+			c <- segment
+		}
+	}(a.didSaveChans)
 
 	return nil
 }

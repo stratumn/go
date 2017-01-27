@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,8 +50,9 @@ const (
 
 // FileStore is the type that implements github.com/stratumn/go/store.Adapter.
 type FileStore struct {
-	config *Config
-	mutex  sync.RWMutex // simple global mutex
+	config       *Config
+	didSaveChans []chan *cs.Segment
+	mutex        sync.RWMutex // simple global mutex
 }
 
 // Config contains configuration options for the store.
@@ -76,7 +77,7 @@ type Info struct {
 
 // New creates an instance of a FileStore.
 func New(config *Config) *FileStore {
-	return &FileStore{config, sync.RWMutex{}}
+	return &FileStore{config, nil, sync.RWMutex{}}
 }
 
 // GetInfo implements github.com/stratumn/go/store.Adapter.GetInfo.
@@ -87,6 +88,12 @@ func (a *FileStore) GetInfo() (interface{}, error) {
 		Version:     a.config.Version,
 		Commit:      a.config.Commit,
 	}, nil
+}
+
+// AddDidSaveChannel implements
+// github.com/stratumn/go/fossilizer.Store.AddDidSaveChannel.
+func (a *FileStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
+	a.didSaveChans = append(a.didSaveChans, saveChan)
 }
 
 // SaveSegment implements github.com/stratumn/go/store.Adapter.SaveSegment.
@@ -106,7 +113,19 @@ func (a *FileStore) SaveSegment(segment *cs.Segment) error {
 	}
 
 	segmentPath := path.Join(a.config.Path, segment.Meta["linkHash"].(string)+".json")
-	return ioutil.WriteFile(segmentPath, js, 0644)
+
+	if err := ioutil.WriteFile(segmentPath, js, 0644); err != nil {
+		return err
+	}
+
+	// Send saved segment to all the save channels without blocking.
+	go func(chans []chan *cs.Segment) {
+		for _, c := range chans {
+			c <- segment
+		}
+	}(a.didSaveChans)
+
+	return nil
 }
 
 // GetSegment implements github.com/stratumn/go/store.Adapter.GetSegment.

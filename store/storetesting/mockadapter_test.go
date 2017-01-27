@@ -47,6 +47,23 @@ func TestMockAdapter_GetInfo(t *testing.T) {
 	}
 }
 
+func TestMockAdapter_AddSaveChan(t *testing.T) {
+	a := &MockAdapter{}
+	c := make(chan *cs.Segment)
+
+	a.AddDidSaveChannel(c)
+
+	if got, want := a.MockAddDidSaveChannel.CalledCount, 1; got != want {
+		t.Errorf(`a.MockAddDidSaveChannel.CalledCount = %d want %d`, got, want)
+	}
+	if got, want := a.MockAddDidSaveChannel.CalledWith, []chan *cs.Segment{c}; !reflect.DeepEqual(got, want) {
+		t.Errorf("a.MockAddDidSaveChannel.CalledWith = %q\n want %q", got, want)
+	}
+	if got, want := a.MockAddDidSaveChannel.LastCalledWith, c; got != want {
+		t.Errorf("a.MockAddDidSaveChannel.LastCalledWith = %q\n want %q", got, want)
+	}
+}
+
 func TestMockAdapter_SaveSegment(t *testing.T) {
 	a := &MockAdapter{}
 	s := cstesting.RandomSegment()

@@ -40,8 +40,9 @@ const (
 
 // TMStore is the type that implements github.com/stratumn/go/store.Adapter.
 type TMStore struct {
-	config   *Config
-	tmClient *TMClient
+	config       *Config
+	didSaveChans []chan *cs.Segment
+	tmClient     *TMClient
 }
 
 // Config contains configuration options for the store.
@@ -69,7 +70,13 @@ type Info struct {
 func New(config *Config) *TMStore {
 	client := NewTMClient(config.Endpoint)
 
-	return &TMStore{config, client}
+	return &TMStore{config, nil, client}
+}
+
+// AddDidSaveChannel implements
+// github.com/stratumn/go/fossilizer.Store.AddDidSaveChannel.
+func (t *TMStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
+	t.didSaveChans = append(t.didSaveChans, saveChan)
 }
 
 // GetInfo implements github.com/stratumn/go/store.Adapter.GetInfo.
@@ -93,8 +100,17 @@ func (t *TMStore) SaveSegment(segment *cs.Segment) error {
 		return err
 	}
 
-	_, err = t.tmClient.BroadcastTxCommit(tx)
-	return err
+	if _, err = t.tmClient.BroadcastTxCommit(tx); err != nil {
+		return err
+	}
+
+	go func(chans []chan *cs.Segment) {
+		for _, c := range chans {
+			c <- segment
+		}
+	}(t.didSaveChans)
+
+	return nil
 }
 
 // GetSegment implements github.com/stratumn/go/store.Adapter.GetSegment.
