@@ -92,7 +92,7 @@ type handler struct {
 	handle  handle
 }
 
-func (h handler) serve(w http.ResponseWriter, r *http.Request, p httprouter.Params, _ *jsonhttp.Config) (interface{}, error) {
+func (h handler) serve(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
 	return h.handle(w, r, p, h.context)
 }
 

@@ -33,7 +33,7 @@ func ExampleServer() {
 	s := jsonhttp.New(&jsonhttp.Config{Address: ":3333"})
 
 	// Add a route with a named param.
-	s.Get("/items/:id", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *jsonhttp.Config) (interface{}, error) {
+	s.Get("/items/:id", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		// Return a map containing the ID.
 		result := map[string]string{
 			"id": p.ByName("id"),

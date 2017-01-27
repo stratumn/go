@@ -25,7 +25,7 @@ import (
 
 func TestGet(t *testing.T) {
 	s := New(&Config{})
-	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return map[string]bool{"test": true}, nil
 	})
 
@@ -41,7 +41,7 @@ func TestGet(t *testing.T) {
 
 func TestPost(t *testing.T) {
 	s := New(&Config{})
-	s.Post("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Post("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return map[string]bool{"test": true}, nil
 	})
 
@@ -57,7 +57,7 @@ func TestPost(t *testing.T) {
 
 func TestPut(t *testing.T) {
 	s := New(&Config{})
-	s.Put("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Put("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return map[string]bool{"test": true}, nil
 	})
 
@@ -73,7 +73,7 @@ func TestPut(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	s := New(&Config{})
-	s.Delete("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Delete("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return map[string]bool{"test": true}, nil
 	})
 
@@ -89,7 +89,7 @@ func TestDelete(t *testing.T) {
 
 func TestPatch(t *testing.T) {
 	s := New(&Config{})
-	s.Patch("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Patch("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return map[string]bool{"test": true}, nil
 	})
 
@@ -105,7 +105,7 @@ func TestPatch(t *testing.T) {
 
 func TestOptions(t *testing.T) {
 	s := New(&Config{})
-	s.Options("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Options("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return map[string]bool{"test": true}, nil
 	})
 
@@ -142,7 +142,7 @@ func TestNotFound(t *testing.T) {
 func TestErrHTTP(t *testing.T) {
 	s := New(&Config{})
 
-	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return nil, NewErrBadRequest("no")
 	})
 
@@ -166,7 +166,7 @@ func TestErrHTTP(t *testing.T) {
 func TestError(t *testing.T) {
 	s := New(&Config{})
 
-	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params, _ *Config) (interface{}, error) {
+	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
 		return nil, errors.New("no")
 	})
 

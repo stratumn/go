@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,10 +50,13 @@ type Server struct {
 }
 
 // Handle is the function type for a route handle.
-type Handle func(http.ResponseWriter, *http.Request, httprouter.Params, *Config) (interface{}, error)
+type Handle func(http.ResponseWriter, *http.Request, httprouter.Params) (interface{}, error)
+
+// RawHandle is the function type for a non-JSON route handle.
+type RawHandle func(http.ResponseWriter, *http.Request, httprouter.Params)
 
 // NotFound is a handle for a route that is not found.
-func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params, _ *Config) (interface{}, error) {
+func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
 	return nil, NewErrNotFound("")
 }
 
@@ -99,6 +102,11 @@ func (s *Server) Options(path string, handle Handle) {
 	s.router.OPTIONS(path, handler{s.config, handle}.ServeHTTP)
 }
 
+// GetRaw adds a GET non-JSON route.
+func (s *Server) GetRaw(path string, handle RawHandle) {
+	s.router.GET(path, rawHandler{s.config, handle}.ServeHTTP)
+}
+
 // ListenAndServe starts the server.
 func (s *Server) ListenAndServe() error {
 	addr := s.config.Address
@@ -113,6 +121,12 @@ func (s *Server) ListenAndServe() error {
 	return http.ListenAndServe(addr, s)
 }
 
+// Shutdown stops the server. It does not do anything yet, but in go 1.8 it will
+// be possible to gracefully shutdown the HTTP server.
+func (s *Server) Shutdown() error {
+	return nil
+}
+
 type handler struct {
 	config *Config
 	serve  Handle
@@ -121,15 +135,15 @@ type handler struct {
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
-	data, err := h.serve(w, r, p, h.config)
+	data, err := h.serve(w, r, p)
 	if err != nil {
-		renderErr(w, r, err, h.config)
+		renderErr(w, r, err)
 		return
 	}
 
 	js, err := json.Marshal(data)
 	if err != nil {
-		renderErr(w, r, err, h.config)
+		renderErr(w, r, err)
 		return
 	}
 
@@ -137,7 +151,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.
 	w.Write(js)
 }
 
-func renderErr(w http.ResponseWriter, r *http.Request, err error, c *Config) {
+type rawHandler struct {
+	config *Config
+	serve  RawHandle
+}
+
+func (h rawHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	h.serve(w, r, p)
+}
+
+func renderErr(w http.ResponseWriter, r *http.Request, err error) {
 	e, ok := err.(ErrHTTP)
 	if ok {
 		log.WithFields(log.Fields{
