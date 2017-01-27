@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,18 +33,24 @@
 //
 //	GET /maps?[offset=offset]&[limit=limit]
 //		Finds and renders map IDs.
+//
+//	GET /websocket
+//		A web socket that broadcasts messages when a segment is saved:
+//			{ "type": "didSave", "data": [segment] }
 package storehttp
 
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
+	"sync"
 
 	"github.com/julienschmidt/httprouter"
 
+	"time"
+
 	"github.com/stratumn/go/cs"
 	"github.com/stratumn/go/jsonhttp"
+	"github.com/stratumn/go/jsonws"
 	"github.com/stratumn/go/store"
 	"github.com/stratumn/go/types"
 )
@@ -52,22 +58,48 @@ import (
 const (
 	// DefaultAddress is the default address of the server.
 	DefaultAddress = ":5000"
+
+	// DefaultWebSocketReadBufferSize is the default size of the web socket
+	// read buffer in bytes.
+	DefaultWebSocketReadBufferSize = 1024
+
+	// DefaultWebSocketWriteBufferSize is the default size of the web socket
+	// write buffer in bytes.
+	DefaultWebSocketWriteBufferSize = 1024
+
+	// DefaultWebSocketWriteChanSize is the default size of a web socket
+	// buffered connection channel.
+	DefaultWebSocketWriteChanSize = 256
+
+	// DefaultWebSocketWriteTimeout is the default timeout of a web socket
+	// write.
+	DefaultWebSocketWriteTimeout = 10 * time.Second
+
+	// DefaultWebSocketPongTimeout is the default timeout of a web socket
+	// expected pong.
+	DefaultWebSocketPongTimeout = time.Minute
+
+	// DefaultWebSocketPingInterval is the default interval between web
+	// socket pings.
+	DefaultWebSocketPingInterval = (DefaultWebSocketPongTimeout * 9) / 10
+
+	// DefaultWebSocketMaxMsgSize is the default maximum size of a web
+	// socke received message in in bytes.
+	DefaultWebSocketMaxMsgSize = 32 * 1024
 )
 
-type context struct {
-	adapter store.Adapter
-	config  *jsonhttp.Config
-}
+// Web socket message types.
+const (
+	// DidSave means a segment was saved.
+	DidSave = "didSave"
+)
 
-type handle func(http.ResponseWriter, *http.Request, httprouter.Params, *context) (interface{}, error)
-
-type handler struct {
-	context *context
-	handle  handle
-}
-
-func (h handler) serve(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	return h.handle(w, r, p, h.context)
+// Server is an HTTP server for stores.
+type Server struct {
+	*jsonhttp.Server
+	adapter  store.Adapter
+	ws       *jsonws.Basic
+	saveChan chan *cs.Segment
 }
 
 // Info is the info returned by the root route.
@@ -75,23 +107,97 @@ type Info struct {
 	Adapter interface{} `json:"adapter"`
 }
 
-// New create an instance of a server.
-func New(a store.Adapter, c *jsonhttp.Config) *jsonhttp.Server {
-	s := jsonhttp.New(c)
-	ctx := &context{a, c}
-
-	s.Get("/", handler{ctx, root}.serve)
-	s.Post("/segments", handler{ctx, saveSegment}.serve)
-	s.Get("/segments/:linkHash", handler{ctx, getSegment}.serve)
-	s.Delete("/segments/:linkHash", handler{ctx, deleteSegment}.serve)
-	s.Get("/segments", handler{ctx, findSegments}.serve)
-	s.Get("/maps", handler{ctx, getMapIDs}.serve)
-
-	return s
+// msg is a web socket message.
+type msg struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
 }
 
-func root(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *context) (interface{}, error) {
-	adapterInfo, err := c.adapter.GetInfo()
+// New create an instance of a server.
+func New(
+	a store.Adapter,
+	httpConfig *jsonhttp.Config,
+	basicConfig *jsonws.BasicConfig,
+	bufConnConfig *jsonws.BufferedConnConfig,
+) *Server {
+	s := Server{
+		Server:   jsonhttp.New(httpConfig),
+		adapter:  a,
+		ws:       jsonws.NewBasic(basicConfig, bufConnConfig),
+		saveChan: make(chan *cs.Segment),
+	}
+
+	s.Get("/", s.root)
+	s.Post("/segments", s.saveSegment)
+	s.Get("/segments/:linkHash", s.getSegment)
+	s.Delete("/segments/:linkHash", s.deleteSegment)
+	s.Get("/segments", s.findSegments)
+	s.Get("/maps", s.getMapIDs)
+	s.GetRaw("/websocket", s.getWebSocket)
+
+	return &s
+}
+
+// ListenAndServe starts the server.
+func (s *Server) ListenAndServe() (err error) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		s.Start()
+		wg.Done()
+	}()
+
+	go func() {
+		err = s.Server.ListenAndServe()
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return err
+}
+
+// Shutdown stops the server.
+func (s *Server) Shutdown() error {
+	s.ws.Stop()
+	close(s.saveChan)
+	return s.Server.Shutdown()
+}
+
+// Start starts the main loops. You do not need to call this if you call
+// ListenAndServe().
+func (s *Server) Start() {
+	s.adapter.AddDidSaveChannel(s.saveChan)
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		s.ws.Start()
+		wg.Done()
+	}()
+
+	go func() {
+		s.loop()
+		wg.Done()
+	}()
+
+	wg.Wait()
+}
+
+// Web socket loop.
+func (s *Server) loop() {
+	for seg := range s.saveChan {
+		s.ws.Broadcast(&msg{
+			Type: DidSave,
+			Data: seg,
+		}, nil)
+	}
+}
+
+func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
+	adapterInfo, err := s.adapter.GetInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -101,64 +207,64 @@ func root(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *contex
 	}, nil
 }
 
-func saveSegment(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *context) (interface{}, error) {
+func (s *Server) saveSegment(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
 	decoder := json.NewDecoder(r.Body)
 
-	var s cs.Segment
-	if err := decoder.Decode(&s); err != nil {
+	var seg cs.Segment
+	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest("")
 	}
-	if err := s.Validate(); err != nil {
+	if err := seg.Validate(); err != nil {
 		return nil, jsonhttp.NewErrHTTP(err.Error(), http.StatusBadRequest)
 	}
-	if err := c.adapter.SaveSegment(&s); err != nil {
+	if err := s.adapter.SaveSegment(&seg); err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return seg, nil
 }
 
-func getSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params, c *context) (interface{}, error) {
+func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
 	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := c.adapter.GetSegment(linkHash)
+	seg, err := s.adapter.GetSegment(linkHash)
 	if err != nil {
 		return nil, err
 	}
-	if s == nil {
+	if seg == nil {
 		return nil, jsonhttp.NewErrNotFound("")
 	}
 
-	return s, nil
+	return seg, nil
 }
 
-func deleteSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params, c *context) (interface{}, error) {
+func (s *Server) deleteSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
 	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := c.adapter.DeleteSegment(linkHash)
+	seg, err := s.adapter.DeleteSegment(linkHash)
 	if err != nil {
 		return nil, err
 	}
-	if s == nil {
+	if seg == nil {
 		return nil, jsonhttp.NewErrNotFound("")
 	}
 
-	return s, nil
+	return seg, nil
 }
 
-func findSegments(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *context) (interface{}, error) {
+func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
 	filter, e := parseFilter(r)
 	if e != nil {
 		return nil, e
 	}
 
-	slice, err := c.adapter.FindSegments(filter)
+	slice, err := s.adapter.FindSegments(filter)
 	if err != nil {
 		return nil, err
 	}
@@ -166,13 +272,13 @@ func findSegments(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c
 	return slice, nil
 }
 
-func getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *context) (interface{}, error) {
+func (s *Server) getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
 	pagination, e := parsePagination(r)
 	if e != nil {
 		return nil, e
 	}
 
-	slice, err := c.adapter.GetMapIDs(pagination)
+	slice, err := s.adapter.GetMapIDs(pagination)
 	if err != nil {
 		return nil, err
 	}
@@ -180,67 +286,6 @@ func getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *c
 	return slice, nil
 }
 
-func parseFilter(r *http.Request) (*store.Filter, error) {
-	pagination, err := parsePagination(r)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		mapID           = r.URL.Query().Get("mapId")
-		prevLinkHashStr = r.URL.Query().Get("prevLinkHash")
-		tagsStr         = r.URL.Query().Get("tags")
-		prevLinkHash    *types.Bytes32
-		tags            []string
-	)
-
-	if prevLinkHashStr != "" {
-		prevLinkHash, err = types.NewBytes32FromString(prevLinkHashStr)
-		if err != nil {
-			return nil, newErrPrevLinkHash("")
-		}
-	}
-
-	if tagsStr != "" {
-		spaceTags := strings.Split(tagsStr, " ")
-		for _, t := range spaceTags {
-			tags = append(tags, strings.Split(t, "+")...)
-		}
-	}
-
-	return &store.Filter{
-		Pagination:   *pagination,
-		MapID:        mapID,
-		PrevLinkHash: prevLinkHash,
-		Tags:         tags,
-	}, nil
-}
-
-func parsePagination(r *http.Request) (*store.Pagination, error) {
-	var err error
-
-	offsetstr := r.URL.Query().Get("offset")
-	offset := 0
-	if offsetstr != "" {
-		if offset, err = strconv.Atoi(offsetstr); err != nil || offset < 0 {
-			return nil, newErrOffset("")
-		}
-	}
-
-	limitstr := r.URL.Query().Get("limit")
-	limit := store.DefaultLimit
-	if limitstr != "" {
-		if limit, err = strconv.Atoi(limitstr); err != nil || limit < 0 {
-			return nil, newErrLimit("")
-		}
-	}
-
-	if limit > store.MaxLimit {
-		return nil, newErrLimit("")
-	}
-
-	return &store.Pagination{
-		Offset: offset,
-		Limit:  limit,
-	}, nil
+func (s *Server) getWebSocket(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	s.ws.Handle(w, r)
 }

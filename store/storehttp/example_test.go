@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"time"
+
 	"github.com/stratumn/go/dummystore"
 	"github.com/stratumn/go/jsonhttp"
+	"github.com/stratumn/go/jsonws"
 	"github.com/stratumn/go/store/storehttp"
 )
 
@@ -31,12 +34,22 @@ import (
 func Example() {
 	// Create a dummy adapter.
 	a := dummystore.New(&dummystore.Config{Version: "0.1.0", Commit: "abc"})
-	c := &jsonhttp.Config{
+	httpConfig := &jsonhttp.Config{
 		Address: "5555",
+	}
+	basicConfig := &jsonws.BasicConfig{}
+	bufConnConfig := &jsonws.BufferedConnConfig{
+		Size:         256,
+		WriteTimeout: 10 * time.Second,
+		PongTimeout:  70 * time.Second,
+		PingInterval: time.Minute,
+		MaxMsgSize:   1024,
 	}
 
 	// Create a server.
-	s := storehttp.New(a, c)
+	s := storehttp.New(a, httpConfig, basicConfig, bufConnConfig)
+	go s.Start()
+	defer s.Shutdown()
 
 	// Create a test server.
 	ts := httptest.NewServer(s)

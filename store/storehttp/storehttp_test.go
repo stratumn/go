@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,13 +19,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stratumn/go/cs"
 	"github.com/stratumn/go/cs/cstesting"
 	"github.com/stratumn/go/jsonhttp"
+	"github.com/stratumn/go/jsonws"
+	"github.com/stratumn/go/jsonws/jsonwstesting"
 	"github.com/stratumn/go/store"
+	"github.com/stratumn/go/store/storetesting"
 	"github.com/stratumn/go/testutil"
 	"github.com/stratumn/go/types"
 )
@@ -569,5 +574,83 @@ func TestNotFound(t *testing.T) {
 	}
 	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
+	}
+}
+
+func TestGetSocket(t *testing.T) {
+	s1 := cstesting.RandomSegment()
+
+	// Chan that will receive the save channel.
+	sendChan := make(chan chan *cs.Segment)
+
+	// Chan used to wait for the connection to be ready.
+	readyChan := make(chan struct{})
+
+	// Chan used to wait for web socket message.
+	doneChan := make(chan struct{})
+
+	conn := jsonwstesting.MockConn{}
+	conn.MockReadJSON.Fn = func(interface{}) error {
+		readyChan <- struct{}{}
+		return nil
+	}
+	conn.MockWriteJSON.Fn = func(interface{}) error {
+		doneChan <- struct{}{}
+		return nil
+	}
+
+	upgradeHandle := func(w http.ResponseWriter, r *http.Request, h http.Header) (jsonws.PingableConn, error) {
+		return &conn, nil
+	}
+
+	// Mock adapter to send the save channel when added.
+	a := &storetesting.MockAdapter{}
+	a.MockAddDidSaveChannel.Fn = func(c chan *cs.Segment) {
+		sendChan <- c
+	}
+
+	s := New(a, &jsonhttp.Config{}, &jsonws.BasicConfig{
+		UpgradeHandle: upgradeHandle,
+	}, &jsonws.BufferedConnConfig{
+		Size:         256,
+		WriteTimeout: 10 * time.Second,
+		PongTimeout:  70 * time.Second,
+		PingInterval: time.Minute,
+		MaxMsgSize:   1024,
+	})
+
+	go s.Start()
+	defer s.Shutdown()
+
+	// Register web socket connection.
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/websocket", nil)
+	go s.getWebSocket(w, r, nil)
+
+	// Wait for channel to be added.
+	select {
+	case c := <-sendChan:
+		// Wait for connection to be ready.
+		select {
+		case <-readyChan:
+		case <-time.After(time.Second):
+			t.Fatalf("connection ready timeout")
+		}
+		c <- s1
+	case <-time.After(time.Second):
+		t.Fatalf("save channel not added")
+	}
+
+	// Wait for message to be broadcasted.
+	select {
+	case <-doneChan:
+		got := conn.MockWriteJSON.LastCalledWith.(*msg).Data
+		if !reflect.DeepEqual(got, s1) {
+			gotjs, _ := json.MarshalIndent(got, "", "  ")
+			wantjs, _ := json.MarshalIndent(s1, "", "  ")
+			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("saved segment not broadcasted")
 	}
 }

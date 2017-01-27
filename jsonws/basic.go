@@ -37,7 +37,6 @@ type Basic struct {
 type BasicConfig struct {
 	ReadBufferSize  int               // Size of the read buffer in bytes
 	WriteBufferSize int               // Size of the write buffer in bytes
-	WriteChanSize   int               // Size of the write channel
 	UpgradeHandle   UpgradeHandle     // Optional custom HTTP request upgrader
 	MsgAllocator    BasicMsgAllocator // Optional custom message allocator
 }

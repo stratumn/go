@@ -1,4 +1,4 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,22 @@
 package storehttp
 
 import (
+	"time"
+
 	"github.com/stratumn/go/jsonhttp"
+	"github.com/stratumn/go/jsonws"
 	"github.com/stratumn/go/store/storetesting"
 )
 
-func createServer() (*jsonhttp.Server, *storetesting.MockAdapter) {
+func createServer() (*Server, *storetesting.MockAdapter) {
 	a := &storetesting.MockAdapter{}
-	s := New(a, &jsonhttp.Config{})
+	s := New(a, &jsonhttp.Config{}, &jsonws.BasicConfig{}, &jsonws.BufferedConnConfig{
+		Size:         256,
+		WriteTimeout: 10 * time.Second,
+		PongTimeout:  70 * time.Second,
+		PingInterval: time.Minute,
+		MaxMsgSize:   1024,
+	})
 
 	return s, a
 }
