@@ -8,14 +8,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/stratumn/go/jsonhttp"
+	"github.com/stratumn/go/jsonws"
 	"github.com/stratumn/go/store/storehttp"
 
 	"github.com/stratumn/goprivate/rethinkstore"
@@ -36,16 +35,23 @@ func orStrings(strs ...string) string {
 }
 
 var (
-	create   = flag.Bool("create", false, "create tables and indexes then exit")
-	drop     = flag.Bool("drop", false, "drop tables and indexes then exit")
-	http     = flag.String("http", storehttp.DefaultAddress, "HTTP address")
-	url      = flag.String("url", orStrings(os.Getenv("RETHINKSTORE_URL"), rethinkstore.DefaultURL), "URL of the RethinkDB database")
-	db       = flag.String("db", orStrings(os.Getenv("RETHINKSTORE_DB"), rethinkstore.DefaultDB), "name of the RethinkDB database")
-	hard     = flag.Bool("hard", rethinkstore.DefaultHard, "whether to use hard durability")
-	certFile = flag.String("tlscert", "", "TLS certificate file")
-	keyFile  = flag.String("tlskey", "", "TLS private key file")
-	version  = "0.1.0"
-	commit   = "00000000000000000000000000000000"
+	create          = flag.Bool("create", false, "create tables and indexes then exit")
+	drop            = flag.Bool("drop", false, "drop tables and indexes then exit")
+	url             = flag.String("url", orStrings(os.Getenv("RETHINKSTORE_URL"), rethinkstore.DefaultURL), "URL of the RethinkDB database")
+	db              = flag.String("db", orStrings(os.Getenv("RETHINKSTORE_DB"), rethinkstore.DefaultDB), "name of the RethinkDB database")
+	hard            = flag.Bool("hard", rethinkstore.DefaultHard, "whether to use hard durability")
+	http            = flag.String("http", storehttp.DefaultAddress, "HTTP address")
+	wsReadBufSize   = flag.Int("wsreadbufsize", storehttp.DefaultWebSocketReadBufferSize, "Web socket read buffer size")
+	wsWriteBufSize  = flag.Int("wswritebufsize", storehttp.DefaultWebSocketWriteBufferSize, "Web socket write buffer size")
+	wsWriteChanSize = flag.Int("wswritechansize", storehttp.DefaultWebSocketWriteChanSize, "Size of a web socket connection write channel")
+	wsWriteTimeout  = flag.Duration("wswritetimeout", storehttp.DefaultWebSocketWriteTimeout, "Timeout for a web socket write")
+	wsPongTimeout   = flag.Duration("wspongtimeout", storehttp.DefaultWebSocketPongTimeout, "Timeout for a web socket expected pong")
+	wsPingInterval  = flag.Duration("wspinginterval", storehttp.DefaultWebSocketPingInterval, "Interval between web socket pings")
+	wsMaxMsgSize    = flag.Int64("maxmsgsize", storehttp.DefaultWebSocketMaxMsgSize, "Maximum size of a received web socket message")
+	certFile        = flag.String("tlscert", "", "TLS certificate file")
+	keyFile         = flag.String("tlskey", "", "TLS private key file")
+	version         = "0.1.0"
+	commit          = "00000000000000000000000000000000"
 )
 
 func main() {
@@ -107,24 +113,21 @@ func main() {
 		log.WithField("max", connectAttempts).Fatal("Unable to connect to RethinkDB")
 	}
 
-	go func() {
-		sigc := make(chan os.Signal)
-		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
-		sig := <-sigc
-		log.WithField("signal", sig).Info("Got exit signal")
-		log.Info("Stopped")
-		os.Exit(0)
-	}()
-
-	c := &jsonhttp.Config{
+	httpConfig := &jsonhttp.Config{
 		Address:  *http,
 		CertFile: *certFile,
 		KeyFile:  *keyFile,
 	}
-	h := storehttp.New(a, c)
-
-	log.WithField("http", *http).Info("Listening")
-	if err := h.ListenAndServe(); err != nil {
-		log.WithField("error", err).Fatal("Server stopped")
+	basicConfig := &jsonws.BasicConfig{
+		ReadBufferSize:  *wsReadBufSize,
+		WriteBufferSize: *wsWriteBufSize,
 	}
+	bufConnConfig := &jsonws.BufferedConnConfig{
+		Size:         *wsWriteChanSize,
+		WriteTimeout: *wsWriteTimeout,
+		PongTimeout:  *wsPongTimeout,
+		PingInterval: *wsPingInterval,
+		MaxMsgSize:   *wsMaxMsgSize,
+	}
+	storehttp.Run(a, httpConfig, basicConfig, bufConnConfig)
 }
