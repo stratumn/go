@@ -53,9 +53,10 @@ type Info struct {
 
 // Store is the type that implements github.com/stratumn/go/store.Adapter.
 type Store struct {
-	config *Config
-	db     *sql.DB
-	stmts  *stmts
+	config       *Config
+	didSaveChans []chan *cs.Segment
+	db           *sql.DB
+	stmts        *stmts
 }
 
 // New creates an instance of a Store.
@@ -65,6 +66,12 @@ func New(config *Config) (*Store, error) {
 		return nil, err
 	}
 	return &Store{config: config, db: db}, nil
+}
+
+// AddDidSaveChannel implements
+// github.com/stratumn/go/fossilizer.Store.AddDidSaveChannel.
+func (a *Store) AddDidSaveChannel(saveChan chan *cs.Segment) {
+	a.didSaveChans = append(a.didSaveChans, saveChan)
 }
 
 // GetInfo implements github.com/stratumn/go/store.Adapter.GetInfo.
@@ -99,7 +106,18 @@ func (a *Store) SaveSegment(segment *cs.Segment) error {
 		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data))
 	}
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Send saved segment to all the save channels without blocking.
+	go func(chans []chan *cs.Segment) {
+		for _, c := range chans {
+			c <- segment
+		}
+	}(a.didSaveChans)
+
+	return nil
 }
 
 // GetSegment implements github.com/stratumn/go/store.Adapter.GetSegment.
