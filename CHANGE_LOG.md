@@ -1,5 +1,16 @@
 ## Change log
 
+### 0.0.5-dev
+* Added support for proof-of-process over a Tendermint blockchain network. Each
+  node can use any of the available store adapters to save its data.
+* Added the `filetmpop` command, which is a Tendermint application that uses a
+  filestore to save segments.
+* Added the `tmstore` command, which starts a store that communicates with a
+  Tendermint network to save segments.
+* Added web sockets to stores.
+* Added a `getenv` function to generators so they can get the value of
+  environment variables.
+
 ### 0.0.4-dev
 * The `strat` command will now use standard flags, using the `cobra` library.
 * Added a `--generators-path` flag to `strat` to specify the location of the
