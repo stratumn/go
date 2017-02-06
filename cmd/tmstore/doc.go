@@ -20,6 +20,8 @@
 //	Usage of tmstore:
 //	  -endpoint string
 //     		endpoint used to communicate with Tendermint Core (default "tcp://127.0.0.1:46657")
+//	  -tmWsRetryInterval duration
+//		interval between tendermint websocket connection tries (default 5s)
 //	  -http string
 //	    	HTTP address (default ":5000")
 //	  -maxmsgsize int

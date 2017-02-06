@@ -27,9 +27,12 @@ func TestTMStore(t *testing.T) {
 			config := &Config{
 				Endpoint: GetConfig().GetString("rpc_laddr"),
 			}
-			return New(config), nil
+			s := New(config)
+			go s.StartWebsocket()
+			return s, nil
 		},
 		Free: func(s store.Adapter) {
+			s.(*TMStore).StopWebsocket()
 			Reset()
 		},
 	}.RunTests(t)

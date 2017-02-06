@@ -21,10 +21,19 @@ import (
 
 	"encoding/json"
 
+	log "github.com/Sirupsen/logrus"
+
+	"fmt"
+
+	"time"
+
 	"github.com/stratumn/go/cs"
 	"github.com/stratumn/go/store"
 	"github.com/stratumn/go/tmpop"
 	"github.com/stratumn/go/types"
+	wire "github.com/tendermint/go-wire"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 const (
@@ -36,6 +45,9 @@ const (
 
 	// DefaultEndpoint is the default Tendermint endpoint
 	DefaultEndpoint = "tcp://127.0.0.1:46657"
+
+	// DefaultWsRetryInterval is the default interval between Tendermint Wbesocket connection tries
+	DefaultWsRetryInterval = 5 * time.Second
 )
 
 // TMStore is the type that implements github.com/stratumn/go/store.Adapter.
@@ -73,6 +85,70 @@ func New(config *Config) *TMStore {
 	return &TMStore{config, nil, client}
 }
 
+// StartWebsocket starts the websocket client and wait for New Block events
+func (t *TMStore) StartWebsocket() error {
+	if err := t.tmClient.StartWebsocket(); err != nil {
+		return err
+	}
+	eventType := tmtypes.EventStringNewBlock()
+	t.tmClient.Subscribe(eventType)
+
+	r, e, q := t.tmClient.GetEventChannels()
+
+	for {
+		select {
+		case msg := <-r:
+			if err := t.notifyDidSaveChans(msg); err != nil {
+				log.Error(err)
+			}
+		case err := <-e:
+			log.Error(err)
+		case <-q:
+			return nil
+		}
+	}
+}
+
+// StopWebsocket stops the websocket client
+func (t *TMStore) StopWebsocket() {
+	t.tmClient.StopWebsocket()
+}
+
+func (t *TMStore) notifyDidSaveChans(msg json.RawMessage) error {
+	result, err := new(ctypes.TMResult), new(error)
+	wire.ReadJSONPtr(result, msg, err)
+	if *err != nil {
+		return *err
+	}
+
+	var event *ctypes.ResultEvent
+	switch (*result).(type) {
+	case *ctypes.ResultEvent:
+		event = (*result).(*ctypes.ResultEvent)
+	default:
+		return nil
+	}
+
+	if event.Name != "NewBlock" {
+		return fmt.Errorf("Unexpected event received: %v", *event)
+	}
+	newBlock, _ := (event.Data).(tmtypes.EventDataNewBlock)
+
+	for _, tx := range newBlock.Block.Data.Txs {
+		segment := &cs.Segment{}
+
+		if err := json.Unmarshal(tx, segment); err != nil {
+			return err
+		}
+
+		for _, c := range t.didSaveChans {
+			c <- segment
+		}
+	}
+
+	return nil
+}
+
 // AddDidSaveChannel implements
 // github.com/stratumn/go/fossilizer.Store.AddDidSaveChannel.
 func (t *TMStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
@@ -103,12 +179,6 @@ func (t *TMStore) SaveSegment(segment *cs.Segment) error {
 	if _, err = t.tmClient.BroadcastTxCommit(tx); err != nil {
 		return err
 	}
-
-	go func(chans []chan *cs.Segment) {
-		for _, c := range chans {
-			c <- segment
-		}
-	}(t.didSaveChans)
 
 	return nil
 }
