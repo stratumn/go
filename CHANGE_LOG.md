@@ -1,5 +1,8 @@
 ## Change log
 
+### 0.0.6-dev
+* Fixed `tmstore` `didSave` channel.
+
 ### 0.0.5-dev
 * Added support for proof-of-process over a Tendermint blockchain network. Each
   node can use any of the available store adapters to save its data.
