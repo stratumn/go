@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go/fossilizer"
-	"github.com/stratumn/go/testutil"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/merkle"
 )

@@ -11,8 +11,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/stratumn/go/fossilizer"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/sdk/types"
 
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/blockchain"
@@ -47,7 +47,7 @@ type Evidence struct {
 }
 
 // Fossilizer is the type that
-// implements github.com/stratumn/go/fossilizer.Adapter.
+// implements github.com/stratumn/sdk/fossilizer.Adapter.
 type Fossilizer struct {
 	*batchfossilizer.Fossilizer
 	config            *Config
@@ -76,7 +76,7 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 	return &f, err
 }
 
-// GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/sdk/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo() (interface{}, error) {
 	batchInfo, err := a.Fossilizer.GetInfo()
 	if err != nil {
