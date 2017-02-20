@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stratumn/go/fossilizer"
+	"github.com/stratumn/sdk/fossilizer"
 )
 
 func TestGetInfo(t *testing.T) {

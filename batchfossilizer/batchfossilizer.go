@@ -18,8 +18,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/stratumn/go/fossilizer"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/sdk/types"
 
 	"github.com/stratumn/goprivate/merkle"
 )
@@ -141,7 +141,7 @@ type EvidenceWrapper struct {
 }
 
 // Fossilizer is the type that
-// implements github.com/stratumn/go/fossilizer.Adapter.
+// implements github.com/stratumn/sdk/fossilizer.Adapter.
 type Fossilizer struct {
 	config      *Config
 	startedChan chan chan struct{}
@@ -188,7 +188,7 @@ func New(config *Config) (*Fossilizer, error) {
 	return a, nil
 }
 
-// GetInfo implements github.com/stratumn/go/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/sdk/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo() (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -199,12 +199,12 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 }
 
 // AddResultChan implements
-// github.com/stratumn/go/fossilizer.Adapter.AddResultChan.
+// github.com/stratumn/sdk/fossilizer.Adapter.AddResultChan.
 func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 	a.resultChans = append(a.resultChans, resultChan)
 }
 
-// Fossilize implements github.com/stratumn/go/fossilizer.Adapter.Fossilize.
+// Fossilize implements github.com/stratumn/sdk/fossilizer.Adapter.Fossilize.
 func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 	f := fossil{Meta: meta}
 	copy(f.Data[:], data)
