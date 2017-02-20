@@ -7,8 +7,8 @@ package dummytimestamper
 import (
 	"testing"
 
-	"github.com/stratumn/go/testutil"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
 )
 
 func TestNetworkString(t *testing.T) {

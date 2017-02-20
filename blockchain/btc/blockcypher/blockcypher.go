@@ -15,7 +15,7 @@ import (
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
 )
 

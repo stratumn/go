@@ -17,7 +17,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain"
 	"github.com/stratumn/goprivate/blockchain/btc"
 )
