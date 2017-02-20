@@ -7,8 +7,8 @@ package rethinkstore
 import (
 	"testing"
 
-	"github.com/stratumn/go/store"
-	"github.com/stratumn/go/store/storetestcases"
+	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/store/storetestcases"
 )
 
 func BenchmarkStoreSoft(b *testing.B) {
