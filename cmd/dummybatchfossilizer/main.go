@@ -13,8 +13,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/stratumn/go/fossilizer/fossilizerhttp"
-	"github.com/stratumn/go/jsonhttp"
+	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
+	"github.com/stratumn/sdk/jsonhttp"
 
 	"github.com/stratumn/goprivate/batchfossilizer"
 	"github.com/stratumn/goprivate/bcbatchfossilizer"
