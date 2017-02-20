@@ -7,7 +7,7 @@ package batchfossilizer
 import (
 	"encoding/gob"
 
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 )
 
 type fossil struct {

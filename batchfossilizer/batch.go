@@ -8,7 +8,7 @@ import (
 	"encoding/gob"
 	"os"
 
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 )
 
 type batch struct {
