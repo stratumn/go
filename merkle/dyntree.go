@@ -9,7 +9,7 @@ import (
 	"hash"
 	"sync"
 
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 )
 
 // DynTreeNode is a node within a DynTree.
