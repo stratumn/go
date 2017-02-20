@@ -14,9 +14,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/lib/pq"
 
-	"github.com/stratumn/go/jsonhttp"
-	"github.com/stratumn/go/jsonws"
-	"github.com/stratumn/go/store/storehttp"
+	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/sdk/jsonws"
+	"github.com/stratumn/sdk/store/storehttp"
 	"github.com/stratumn/goprivate/postgresstore"
 )
 
