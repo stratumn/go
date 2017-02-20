@@ -9,8 +9,8 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
-	"github.com/stratumn/go/testutil"
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
 )
 

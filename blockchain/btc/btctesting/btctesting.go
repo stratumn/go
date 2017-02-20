@@ -6,13 +6,13 @@
 package btctesting
 
 import (
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
 )
 
 // Mock is used to mock a UnspentFinder and Broadcaster.
 //
-// It implements github.com/stratumn/go/fossilizer.Adapter.
+// It implements github.com/stratumn/sdk/fossilizer.Adapter.
 type Mock struct {
 	// The mock for the FindUnspent function.
 	MockFindUnspent MockFindUnspent

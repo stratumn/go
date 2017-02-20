@@ -9,7 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain"
 )
 
