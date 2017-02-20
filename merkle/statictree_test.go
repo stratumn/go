@@ -7,7 +7,7 @@ package merkle_test
 import (
 	"testing"
 
-	"github.com/stratumn/go/types"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/merkle"
 	"github.com/stratumn/goprivate/merkle/treetestcases"
 )
