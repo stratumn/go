@@ -1,10 +1,20 @@
 USER root
 
-RUN mkdir -p /var/stratumn/filestore
-RUN chown stratumn:stratumn /var/stratumn/filestore
+ENV DATA_ROOT /data/tendermint
+
+RUN mkdir -p $DATA_ROOT \
+  && chown -R stratumn:stratumn $DATA_ROOT
+
+ENV FILE_STORE /var/stratumn/filestore
+
+RUN mkdir -p $FILE_STORE \
+  && chown stratumn:stratumn $FILE_STORE
 
 USER stratumn
 
-VOLUME /var/stratumn/filestore
+ENV TMROOT $DATA_ROOT
 
-EXPOSE 46658
+VOLUME $FILE_STORE
+VOLUME $DATA_ROOT
+
+EXPOSE 46656 46657 

@@ -13,13 +13,10 @@ import (
 
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/dummystore"
+	"github.com/stratumn/sdk/tendermint"
 	"github.com/stratumn/sdk/tmpop"
 	cfg "github.com/tendermint/go-config"
-	p2p "github.com/tendermint/go-p2p"
 	"github.com/tendermint/tendermint/config/tendermint_test"
-	nm "github.com/tendermint/tendermint/node"
-	"github.com/tendermint/tendermint/proxy"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var (
@@ -50,7 +47,6 @@ func GetClient() *TMClient {
 }
 
 // StartNode starts a test node in a go routine and returns when it is initialized
-// TODO: can one pass an Application in????
 func StartNode() {
 	// start a node
 	ready := make(chan struct{})
@@ -61,21 +57,11 @@ func StartNode() {
 // NewNode creates a new node and sleeps forever
 func NewNode(ready chan struct{}) {
 	adapter := dummystore.New(&dummystore.Config{})
-	config := GetConfig()
-	// Get PrivValidator
-	privValidatorFile := config.GetString("priv_validator_file")
-	privValidator := tmtypes.LoadOrGenPrivValidator(privValidatorFile)
 	dir, _ := ioutil.TempDir("", "db")
 	testTmpop = tmpop.New(adapter, &tmpop.Config{DbDir: dir})
-	node := nm.NewNode(config, privValidator, proxy.NewLocalClientCreator(testTmpop))
 
-	protocol, address := nm.ProtocolAndAddress(config.GetString("node_laddr"))
-	l := p2p.NewDefaultListener(protocol, address, true)
-	node.AddListener(l)
-	node.Start()
+	tendermint.RunNode(GetConfig(), testTmpop)
 
-	// Run the RPC server.
-	node.StartRPC()
 	ready <- struct{}{}
 
 	// Sleep forever
