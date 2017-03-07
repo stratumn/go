@@ -1,5 +1,10 @@
 ## Change log
 
+### 0.0.7-dev
+* Made single binary for Indigo node and Tendermint core.
+* Improved `tmstore` websocket.
+* Change license to MPL-2.0.
+
 ### 0.0.6-dev
 * Fixed `tmstore` `didSave` channel.
 
