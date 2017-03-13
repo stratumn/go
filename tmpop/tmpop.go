@@ -9,17 +9,18 @@ package tmpop
 import (
 	"bytes"
 	"encoding/json"
-
 	"fmt"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
+
 	tmtypes "github.com/tendermint/abci/types"
 	godb "github.com/tendermint/go-db"
 	merkle "github.com/tendermint/go-merkle"
 	wire "github.com/tendermint/go-wire"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // LastBlockInfo stores information about the last block
@@ -54,7 +55,7 @@ type Config struct {
 type TMPop struct {
 	objects     merkle.Tree
 	db          godb.DB
-	newSegments map[*types.Bytes32]*cs.Segment
+	newSegments map[types.Bytes32]*cs.Segment
 	adapter     store.Adapter
 	lastBlock   *LastBlockInfo
 	blockHeader *tmtypes.Header
@@ -82,7 +83,7 @@ func New(a store.Adapter, config *Config) *TMPop {
 		objects:     objects,
 		adapter:     a,
 		db:          db,
-		newSegments: make(map[*types.Bytes32]*cs.Segment),
+		newSegments: make(map[types.Bytes32]*cs.Segment),
 		config:      config,
 	}
 	h.LoadLastBlock()
@@ -102,7 +103,7 @@ func (t *TMPop) DeliverTx(tx []byte) tmtypes.Result {
 		return check
 	}
 
-	t.newSegments[segment.GetLinkHash()] = segment
+	t.newSegments[*segment.GetLinkHash()] = segment
 
 	return tmtypes.OK
 }
@@ -139,7 +140,7 @@ func (t *TMPop) Commit() tmtypes.Result {
 		if err != nil {
 			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
 		}
-		t.objects.Set([]byte(segment.GetLinkHashString()), s)
+		t.objects.Set(segment.GetLinkHash()[:], s)
 		if err := t.adapter.SaveSegment(segment); err != nil {
 			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
 		}
@@ -167,7 +168,7 @@ func (t *TMPop) Query(q []byte) tmtypes.Result {
 	var err error
 
 	switch query.Name {
-	case "GetInfo":
+	case GetInfo:
 		var adapterInfo interface{}
 		adapterInfo, err = t.adapter.GetInfo()
 		result = &Info{
@@ -177,25 +178,25 @@ func (t *TMPop) Query(q []byte) tmtypes.Result {
 			Commit:      t.config.Commit,
 			AdapterInfo: adapterInfo,
 		}
-	case "GetSegment":
+	case GetSegment:
 		linkHash := &types.Bytes32{}
 		if err := linkHash.UnmarshalJSON(query.Args); err != nil {
 			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
 		}
 		result, err = t.adapter.GetSegment(linkHash)
-	case "FindSegments":
+	case FindSegments:
 		filter := &store.Filter{}
 		if err := json.Unmarshal(query.Args, filter); err != nil {
 			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
 		}
 		result, err = t.adapter.FindSegments(filter)
-	case "GetMapIDs":
+	case GetMapIDs:
 		pagination := &store.Pagination{}
 		if err := json.Unmarshal(query.Args, pagination); err != nil {
 			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
 		}
 		result, err = t.adapter.GetMapIDs(pagination)
-	case "DeleteSegment":
+	case DeleteSegment:
 		linkHash := &types.Bytes32{}
 		if err := linkHash.UnmarshalJSON(query.Args); err != nil {
 			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
@@ -240,7 +241,7 @@ func (t *TMPop) BeginBlock(hash []byte, header *tmtypes.Header) {
 	log.WithField("header", header).Debug("Begin Block")
 
 	t.blockHeader = header
-	t.newSegments = make(map[*types.Bytes32]*cs.Segment)
+	t.newSegments = make(map[types.Bytes32]*cs.Segment)
 }
 
 // EndBlock implements github.com/tendermint/abci/types.BlockchainAware.EndBlock

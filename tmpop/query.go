@@ -8,6 +8,15 @@ package tmpop
 
 import "encoding/json"
 
+// Query types.
+const (
+	GetInfo       = "GetInfo"
+	GetSegment    = "GetSegment"
+	FindSegments  = "FindSegments"
+	GetMapIDs     = "GetMapIDs"
+	DeleteSegment = "DeleteSegment"
+)
+
 // Query is the type used to query the tendermint App
 type Query struct {
 	Name string `json:"Name"`

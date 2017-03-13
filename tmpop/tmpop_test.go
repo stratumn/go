@@ -143,7 +143,7 @@ func TestQuery(t *testing.T) {
 		a.MockGetInfo.Fn = func() (interface{}, error) { return &filestore.Info{Name: fakeName}, nil }
 
 		info := &Info{}
-		err := h.makeQuery("GetInfo", nil, info)
+		err := h.makeQuery(GetInfo, nil, info)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -167,7 +167,7 @@ func TestQuery(t *testing.T) {
 		}
 
 		got := &cs.Segment{}
-		err := h.makeQuery("GetSegment", segment.GetLinkHash(), got)
+		err := h.makeQuery(GetSegment, segment.GetLinkHash(), got)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -194,7 +194,7 @@ func TestQuery(t *testing.T) {
 			Tags:         segment.Link.GetTags(),
 		}
 		got := make(cs.SegmentSlice, 0)
-		err := h.makeQuery("FindSegments", args, &got)
+		err := h.makeQuery(FindSegments, args, &got)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -221,7 +221,7 @@ func TestQuery(t *testing.T) {
 		}
 
 		var got []string
-		err := h.makeQuery("GetMapIDs", args, &got)
+		err := h.makeQuery(GetMapIDs, args, &got)
 		if err != nil {
 			t.Fatal(err)
 		}

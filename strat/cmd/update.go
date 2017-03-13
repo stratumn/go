@@ -167,10 +167,10 @@ func updateCLI() error {
 	}
 	defer zrc.Close()
 	if binZF == nil {
-		return fmt.Errorf("Could not find binary in %q.\n", *asset.Name)
+		return fmt.Errorf("could not find binary in %q", *asset.Name)
 	}
 	if sigZF == nil {
-		return fmt.Errorf("Could not find signature in %q.\n", *asset.Name)
+		return fmt.Errorf("could not find signature in %q", *asset.Name)
 	}
 
 	// Get the current binary path.
@@ -200,7 +200,7 @@ func updateCLI() error {
 	// Check the signature.
 	fmt.Println("  * Verifying cryptographic signature...")
 	if err := checkSig(binPath, sigPath); err != nil {
-		return fmt.Errorf("Failed to verify signature: %s.\n", err)
+		return fmt.Errorf("failed to verify signature: %s", err)
 	}
 
 	fmt.Println("  * Updating binary...")

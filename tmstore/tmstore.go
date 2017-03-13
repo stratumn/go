@@ -9,14 +9,9 @@
 package tmstore
 
 import (
-	"errors"
-
 	"encoding/json"
-
-	log "github.com/Sirupsen/logrus"
-
+	"errors"
 	"fmt"
-
 	"time"
 
 	"github.com/stratumn/sdk/cs"
@@ -24,9 +19,12 @@ import (
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/utils"
+
 	wire "github.com/tendermint/go-wire"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -176,7 +174,7 @@ func (t *TMStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
 func (t *TMStore) GetInfo() (interface{}, error) {
 	info := &tmpop.Info{}
-	err := t.sendQuery("GetInfo", nil, info)
+	err := t.sendQuery(tmpop.GetInfo, nil, info)
 
 	return &Info{
 		Name:        Name,
@@ -204,7 +202,7 @@ func (t *TMStore) SaveSegment(segment *cs.Segment) error {
 // GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
 func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
 	segment = &cs.Segment{}
-	err = t.sendQuery("GetSegment", linkHash, segment)
+	err = t.sendQuery(tmpop.GetSegment, linkHash, segment)
 
 	// Return nil when no segment has been found (and not an empty segment)
 	if segment.IsEmpty() {
@@ -216,7 +214,7 @@ func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err 
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (t *TMStore) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
 	segment = &cs.Segment{}
-	err = t.sendQuery("DeleteSegment", linkHash, segment)
+	err = t.sendQuery(tmpop.DeleteSegment, linkHash, segment)
 
 	// Return nil when no segment has been deleted (and not an empty segment)
 	if segment.IsEmpty() {
@@ -228,14 +226,14 @@ func (t *TMStore) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segment, e
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
 func (t *TMStore) FindSegments(filter *store.Filter) (segmentSlice cs.SegmentSlice, err error) {
 	segmentSlice = make(cs.SegmentSlice, 0)
-	err = t.sendQuery("FindSegments", filter, &segmentSlice)
+	err = t.sendQuery(tmpop.FindSegments, filter, &segmentSlice)
 	return
 }
 
 // GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
 func (t *TMStore) GetMapIDs(pagination *store.Pagination) (ids []string, err error) {
 	ids = make([]string, 0)
-	err = t.sendQuery("GetMapIDs", pagination, &ids)
+	err = t.sendQuery(tmpop.GetMapIDs, pagination, &ids)
 	return
 }
 

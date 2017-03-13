@@ -171,7 +171,7 @@ func runScript(name, wd string, args []string, ignoreNotExist, stdin bool) error
 		if ignoreNotExist {
 			return nil
 		}
-		return fmt.Errorf("Project doesn't have a %q script.\n", name)
+		return fmt.Errorf("project doesn't have a %q script", name)
 	}
 
 	if len(args) > 0 {
