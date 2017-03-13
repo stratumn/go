@@ -132,6 +132,18 @@ func (l *Link) GetTags() []string {
 	return nil
 }
 
+// GetTagMap returns the tags as a map of string to empty structs (a set).
+// It assumes the link is valid.
+func (l *Link) GetTagMap() map[string]struct{} {
+	tags := map[string]struct{}{}
+	if t, ok := l.Meta["tags"].([]interface{}); ok {
+		for _, v := range t {
+			tags[v.(string)] = struct{}{}
+		}
+	}
+	return tags
+}
+
 // SegmentSlice is a slice of segment pointers.
 type SegmentSlice []*Segment
 

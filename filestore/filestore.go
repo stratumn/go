@@ -163,15 +163,11 @@ func (a *FileStore) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) 
 		}
 
 		if len(filter.Tags) > 0 {
-			tags := segment.Link.GetTags()
-			if len(tags) > 0 {
-				for _, tag := range filter.Tags {
-					if !containsString(tags, tag) {
-						return nil
-					}
+			tags := segment.Link.GetTagMap()
+			for _, tag := range filter.Tags {
+				if _, ok := tags[tag]; !ok {
+					return nil
 				}
-			} else {
-				return nil
 			}
 		}
 
@@ -258,14 +254,4 @@ func (a *FileStore) forEach(fn func(*cs.Segment) error) error {
 	}
 
 	return nil
-}
-
-func containsString(a []string, s string) bool {
-	for _, v := range a {
-		if v == s {
-			return true
-		}
-	}
-
-	return false
 }

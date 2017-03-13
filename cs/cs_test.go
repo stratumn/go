@@ -283,3 +283,18 @@ func TestLinkGetTags_nil(t *testing.T) {
 		t.Errorf("s.Link.GetTags() = %q want nil", got)
 	}
 }
+
+func TestLinkGetTagMap(t *testing.T) {
+	s := cstesting.RandomSegment()
+	s.Link.Meta["tags"] = []interface{}{"one", "two"}
+	tags := s.Link.GetTagMap()
+	if _, got := tags["one"]; !got {
+		t.Errorf(`tags["one"] = %v want %v`, got, true)
+	}
+	if _, got := tags["two"]; !got {
+		t.Errorf(`tags["two"] = %v want %v`, got, true)
+	}
+	if _, got := tags["three"]; got {
+		t.Errorf(`tags["three"] = %v want %v`, got, false)
+	}
+}

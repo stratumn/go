@@ -199,15 +199,11 @@ HASH_LOOP:
 		}
 
 		if len(filter.Tags) > 0 {
-			tags := segment.Link.GetTags()
-			if len(tags) > 0 {
-				for _, tag := range filter.Tags {
-					if !containsString(tags, tag) {
-						continue HASH_LOOP
-					}
+			tags := segment.Link.GetTagMap()
+			for _, tag := range filter.Tags {
+				if _, ok := tags[tag]; !ok {
+					continue HASH_LOOP
 				}
-			} else {
-				continue HASH_LOOP
 			}
 		}
 
@@ -217,13 +213,4 @@ HASH_LOOP:
 	sort.Sort(segments)
 
 	return filter.Pagination.PaginateSegments(segments), nil
-}
-
-func containsString(a []string, s string) bool {
-	for _, v := range a {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
