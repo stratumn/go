@@ -12,13 +12,7 @@ import (
 
 // TestGetInfo tests what happens when you get information about the adapter.
 func (f Factory) TestGetInfo(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	info, err := a.GetInfo()

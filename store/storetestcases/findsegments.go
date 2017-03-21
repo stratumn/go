@@ -21,13 +21,7 @@ import (
 
 // TestFindSegments tests what happens when you search with default pagination.
 func (f Factory) TestFindSegments(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	for i := 0; i < store.DefaultLimit*2; i++ {
@@ -60,13 +54,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 // TestFindSegmentsPagination tests what happens when you search with
 // pagination.
 func (f Factory) TestFindSegmentsPagination(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	for i := 0; i < 100; i++ {
@@ -100,13 +88,7 @@ func (f Factory) TestFindSegmentsPagination(t *testing.T) {
 
 // TestFindSegmentEmpty tests what happens when there are no matches.
 func (f Factory) TestFindSegmentEmpty(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	for i := 0; i < 100; i++ {
@@ -128,13 +110,7 @@ func (f Factory) TestFindSegmentEmpty(t *testing.T) {
 // TestFindSegmentsSingleTag tests what happens when you search with only one
 // tag.
 func (f Factory) TestFindSegmentsSingleTag(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	tag1 := testutil.RandomString(5)
@@ -175,13 +151,7 @@ func (f Factory) TestFindSegmentsSingleTag(t *testing.T) {
 // TestFindSegmentsMultipleTags tests what happens when you search with more
 // than one tag.
 func (f Factory) TestFindSegmentsMultipleTags(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	tag1 := testutil.RandomString(5)
@@ -222,13 +192,7 @@ func (f Factory) TestFindSegmentsMultipleTags(t *testing.T) {
 // TestFindSegmentsMapID tests whan happens when you search for an existing map
 // ID.
 func (f Factory) TestFindSegmentsMapID(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	for i := 0; i < 2; i++ {
@@ -260,13 +224,7 @@ func (f Factory) TestFindSegmentsMapID(t *testing.T) {
 // TestFindSegmentsMapIDTags tests whan happens when you search for an existing
 // map ID and tags.
 func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	tag1 := testutil.RandomString(5)
@@ -314,13 +272,7 @@ func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
 // TestFindSegmentsMapIDNotFound tests whan happens when you search for a
 // nonexistent map ID.
 func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	slice, err := a.FindSegments(&store.Filter{
@@ -341,13 +293,7 @@ func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
 // TestFindSegmentsPrevLinkHash tests whan happens when you search for an
 // existing previous link hash.
 func (f Factory) TestFindSegmentsPrevLinkHash(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s := cstesting.RandomSegment()
@@ -378,13 +324,7 @@ func (f Factory) TestFindSegmentsPrevLinkHash(t *testing.T) {
 // TestFindSegmentsPrevLinkHashTags tests whan happens when you search for a
 // previous link hash and tags.
 func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -431,13 +371,7 @@ func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
 // TestFindSegmentsPrevLinkHashMapID tests that the map ID is ignored if a
 // previous link hash is given.
 func (f Factory) TestFindSegmentsPrevLinkHashMapID(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -475,13 +409,7 @@ func (f Factory) TestFindSegmentsPrevLinkHashMapID(t *testing.T) {
 // TestFindSegmentsPrevLinkHashNotFound tests whan happens when you search for a
 // nonexistent previous link hash.
 func (f Factory) TestFindSegmentsPrevLinkHashNotFound(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	slice, err := a.FindSegments(&store.Filter{
@@ -501,13 +429,7 @@ func (f Factory) TestFindSegmentsPrevLinkHashNotFound(t *testing.T) {
 
 // BenchmarkFindSegments benchmarks finding segments.
 func (f Factory) BenchmarkFindSegments(b *testing.B, numSegments int, segmentFunc SegmentFunc, filterFunc FilterFunc) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	for i := 0; i < numSegments; i++ {
@@ -638,13 +560,7 @@ func (f Factory) BenchmarkFindSegmentsPrevLinkHashTags10000(b *testing.B) {
 
 // BenchmarkFindSegmentsParallel benchmarks finding segments.
 func (f Factory) BenchmarkFindSegmentsParallel(b *testing.B, numSegments int, segmentFunc SegmentFunc, filterFunc FilterFunc) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	for i := 0; i < numSegments; i++ {

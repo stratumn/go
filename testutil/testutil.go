@@ -72,3 +72,19 @@ func RequestJSON(h http.HandlerFunc, method, target string, payload, dst interfa
 
 	return w, nil
 }
+
+// RandomValue returns a random byte array (with max 1024 bytes)
+func RandomValue() []byte {
+	c := rand.Intn(1024)
+	b := make([]byte, c)
+	rand.Read(b)
+	return b
+}
+
+// RandomKey returns a random byte array (with max 64 bytes)
+func RandomKey() []byte {
+	c := rand.Intn(64)
+	b := make([]byte, c)
+	rand.Read(b)
+	return b
+}

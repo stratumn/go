@@ -15,17 +15,21 @@ import (
 
 func TestTMStore(t *testing.T) {
 	storetestcases.Factory{
-		New: func() (store.Adapter, error) {
-			config := &Config{
-				Endpoint: GetConfig().GetString("rpc_laddr"),
-			}
-			s := New(config)
-			go s.StartWebsocket()
-			return s, nil
-		},
-		Free: func(s store.Adapter) {
-			s.(*TMStore).StopWebsocket()
-			Reset()
-		},
+		New:  newTestTMStore,
+		Free: freeTestTMStore,
 	}.RunTests(t)
+}
+
+func newTestTMStore() (store.Adapter, error) {
+	config := &Config{
+		Endpoint: GetConfig().GetString("rpc_laddr"),
+	}
+	s := New(config)
+	go s.StartWebsocket()
+	return s, nil
+}
+
+func freeTestTMStore(s store.Adapter) {
+	s.(*TMStore).StopWebsocket()
+	Reset()
 }

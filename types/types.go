@@ -8,6 +8,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -176,6 +177,11 @@ func (b *Bytes32) UnmarshalJSON(data []byte) error {
 	}
 
 	return b.Unstring(s)
+}
+
+// Compare compares two Bytes32
+func (b *Bytes32) Compare(b2 *Bytes32) int {
+	return bytes.Compare(b[:], b2[:])
 }
 
 // Reverse reverses the bytes order.

@@ -31,8 +31,18 @@ type Factory struct {
 // RunTests runs all the tests.
 func (f Factory) RunTests(t *testing.T) {
 	t.Run("AddDidSaveChannel", f.TestAddDidSaveChannel)
+	t.Run("BatchDeleteSegment", f.TestBatchDeleteSegment)
+	t.Run("BatchDeleteValue", f.TestBatchDeleteValue)
+	t.Run("BatchSaveSegment", f.TestBatchSaveSegment)
+	t.Run("BatchSaveValue", f.TestBatchSaveValue)
+	t.Run("BatchWriteDeleteValue", f.TestBatchWriteDeleteValue)
+	t.Run("BatchWriteDeleteSegment", f.TestBatchWriteDeleteSegment)
+	t.Run("BatchWriteSaveSegment", f.TestBatchWriteSaveSegment)
+	t.Run("BatchWriteSaveValue", f.TestBatchWriteSaveValue)
 	t.Run("DeleteSegment", f.TestDeleteSegment)
 	t.Run("DeleteSegmentNotFound", f.TestDeleteSegmentNotFound)
+	t.Run("DeleteValue", f.TestDeleteValue)
+	t.Run("DeleteValueNotFound", f.TestDeleteValueNotFound)
 	t.Run("FindSegments", f.TestFindSegments)
 	t.Run("FindSegmentsPagination", f.TestFindSegmentsPagination)
 	t.Run("FindSegmentEmpty", f.TestFindSegmentEmpty)
@@ -53,7 +63,10 @@ func (f Factory) RunTests(t *testing.T) {
 	t.Run("GetSegmentUpdatedState", f.TestGetSegmentUpdatedState)
 	t.Run("GetSegmentUpdatedMapID", f.TestGetSegmentUpdatedMapID)
 	t.Run("GetSegmentNotFound", f.TestGetSegmentNotFound)
+	t.Run("GetValue", f.TestGetValue)
+	t.Run("GetValueNotFound", f.TestGetValueNotFound)
 	t.Run("SaveSegment", f.TestSaveSegment)
+	t.Run("SaveValue", f.TestSaveValue)
 	t.Run("SaveSegmentUpdatedState", f.TestSaveSegmentUpdatedState)
 	t.Run("SaveSegmentUpdatedMapID", f.TestSaveSegmentUpdatedMapID)
 	t.Run("SaveSegmentBranch", f.TestSaveSegmentBranch)
@@ -63,6 +76,8 @@ func (f Factory) RunTests(t *testing.T) {
 func (f Factory) RunBenchmarks(b *testing.B) {
 	b.Run("DeleteSegment", f.BenchmarkDeleteSegment)
 	b.Run("DeleteSegmentParallel", f.BenchmarkDeleteSegmentParallel)
+	b.Run("DeleteValue", f.BenchmarkDeleteValue)
+	b.Run("DeleteValueParallel", f.BenchmarkDeleteValueParallel)
 	b.Run("FindSegments100", f.BenchmarkFindSegments100)
 	b.Run("FindSegments1000", f.BenchmarkFindSegments1000)
 	b.Run("FindSegments10000", f.BenchmarkFindSegments10000)
@@ -107,12 +122,16 @@ func (f Factory) RunBenchmarks(b *testing.B) {
 	b.Run("GetMapIDs10000Parallel", f.BenchmarkGetMapIDs10000Parallel)
 	b.Run("GetSegment", f.BenchmarkGetSegment)
 	b.Run("GetSegmentParallel", f.BenchmarkGetSegmentParallel)
+	b.Run("GetValue", f.BenchmarkGetValue)
+	b.Run("GetValueParallel", f.BenchmarkGetValueParallel)
 	b.Run("SaveSegment", f.BenchmarkSaveSegment)
 	b.Run("SaveSegmentParallel", f.BenchmarkSaveSegmentParallel)
 	b.Run("SaveSegmentUpdatedState", f.BenchmarkSaveSegmentUpdatedState)
 	b.Run("SaveSegmentUpdatedStateParallel", f.BenchmarkSaveSegmentUpdatedStateParallel)
 	b.Run("SaveSegmentUpdatedMapID", f.BenchmarkSaveSegmentUpdatedMapID)
 	b.Run("SaveSegmentUpdatedMapIDParallel", f.BenchmarkSaveSegmentUpdatedMapIDParallel)
+	b.Run("SaveValue", f.BenchmarkSaveValue)
+	b.Run("SaveValueParallel", f.BenchmarkSaveValueParallel)
 }
 
 func (f Factory) free(adapter store.Adapter) {
@@ -271,4 +290,26 @@ func RandomFilterOffsetPrevLinkHashTags(b *testing.B, numSegments, i int) *store
 		PrevLinkHash: prevLinkHash,
 		Tags:         []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
 	}
+}
+
+func (f Factory) initAdapter(t *testing.T) store.Adapter {
+	a, err := f.New()
+	if err != nil {
+		t.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		t.Fatal("a = nil want store.Adapter")
+	}
+	return a
+}
+
+func (f Factory) initAdapterB(b *testing.B) store.Adapter {
+	a, err := f.New()
+	if err != nil {
+		b.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		b.Fatal("a = nil want store.Adapter")
+	}
+	return a
 }

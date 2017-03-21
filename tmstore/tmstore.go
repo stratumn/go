@@ -10,7 +10,6 @@ package tmstore
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/utils"
 
+	abci "github.com/tendermint/abci/types"
 	wire "github.com/tendermint/go-wire"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -34,10 +34,10 @@ const (
 	// Description is the description set in the store's information.
 	Description = "Stratumn TM Store"
 
-	// DefaultEndpoint is the default Tendermint endpoint
+	// DefaultEndpoint is the default Tendermint endpoint.
 	DefaultEndpoint = "tcp://127.0.0.1:46657"
 
-	// DefaultWsRetryInterval is the default interval between Tendermint Wbesocket connection tries
+	// DefaultWsRetryInterval is the default interval between Tendermint Wbesocket connection tries.
 	DefaultWsRetryInterval = 5 * time.Second
 )
 
@@ -70,14 +70,14 @@ type Info struct {
 	Commit      string      `json:"commit"`
 }
 
-// New creates a new instance of a TMStore
+// New creates a new instance of a TMStore.
 func New(config *Config) *TMStore {
 	client := NewTMClient(config.Endpoint)
 
 	return &TMStore{config, nil, client, false}
 }
 
-// StartWebsocket starts the websocket client and wait for New Block events
+// StartWebsocket starts the websocket client and wait for New Block events.
 func (t *TMStore) StartWebsocket() error {
 	t.stoppingWS = false
 	if err := t.tmClient.StartWebsocket(); err != nil {
@@ -107,7 +107,7 @@ func (t *TMStore) StartWebsocket() error {
 	}
 }
 
-// RetryStartWebsocket starts the websocket client and wait for New Block events, it retries on errors
+// RetryStartWebsocket starts the websocket client and wait for New Block events, it retries on errors.
 func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 	return utils.Retry(func(attempt int) (retry bool, err error) {
 		err = t.StartWebsocket()
@@ -119,7 +119,7 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 	}, 0)
 }
 
-// StopWebsocket stops the websocket client
+// StopWebsocket stops the websocket client.
 func (t *TMStore) StopWebsocket() {
 	t.stoppingWS = true
 	t.tmClient.StopWebsocket()
@@ -150,15 +150,15 @@ func (t *TMStore) notifyDidSaveChans(msg json.RawMessage) error {
 	}
 	newBlock, _ := (event.Data).(tmtypes.EventDataNewBlock)
 
-	for _, tx := range newBlock.Block.Data.Txs {
-		segment := &cs.Segment{}
+	for _, txBytes := range newBlock.Block.Data.Txs {
+		tx := &tmpop.Tx{}
 
-		if err := json.Unmarshal(tx, segment); err != nil {
+		if err := json.Unmarshal(txBytes, tx); err != nil {
 			return err
 		}
 
 		for _, c := range t.didSaveChans {
-			c <- segment
+			c <- tx.Segment
 		}
 	}
 
@@ -173,8 +173,16 @@ func (t *TMStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
 
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
 func (t *TMStore) GetInfo() (interface{}, error) {
+	response, err := t.sendQuery(tmpop.GetInfo, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	info := &tmpop.Info{}
-	err := t.sendQuery(tmpop.GetInfo, nil, info)
+	err = json.Unmarshal(response.Value, info)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Info{
 		Name:        Name,
@@ -182,27 +190,34 @@ func (t *TMStore) GetInfo() (interface{}, error) {
 		TMAppInfo:   info,
 		Version:     t.config.Version,
 		Commit:      t.config.Commit,
-	}, err
+	}, nil
 }
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (t *TMStore) SaveSegment(segment *cs.Segment) error {
-	tx, err := json.Marshal(segment)
-	if err != nil {
-		return err
+	tx := &tmpop.Tx{
+		TxType:  tmpop.SaveSegment,
+		Segment: segment,
 	}
-
-	if _, err = t.tmClient.BroadcastTxCommit(tx); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := t.broadcastTx(tx)
+	return err
 }
 
 // GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
 func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
+	response, err := t.sendQuery(tmpop.GetSegment, linkHash)
+	if err != nil {
+		return
+	}
+	if response.Value == nil {
+		return
+	}
+
 	segment = &cs.Segment{}
-	err = t.sendQuery(tmpop.GetSegment, linkHash, segment)
+	err = json.Unmarshal(response.Value, segment)
+	if err != nil {
+		return
+	}
 
 	// Return nil when no segment has been found (and not an empty segment)
 	if segment.IsEmpty() {
@@ -213,45 +228,128 @@ func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err 
 
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (t *TMStore) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
-	segment = &cs.Segment{}
-	err = t.sendQuery(tmpop.DeleteSegment, linkHash, segment)
-
-	// Return nil when no segment has been deleted (and not an empty segment)
-	if segment.IsEmpty() {
-		segment = nil
+	tx := &tmpop.Tx{
+		TxType:   tmpop.DeleteSegment,
+		LinkHash: linkHash,
 	}
+
+	val, err := t.broadcastTx(tx)
+	if err != nil {
+		return nil, err
+	}
+	if val != nil && val.DeliverTx != nil && val.DeliverTx.Data != nil {
+		segment = &cs.Segment{}
+		err = json.Unmarshal(val.DeliverTx.Data, segment)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
 func (t *TMStore) FindSegments(filter *store.Filter) (segmentSlice cs.SegmentSlice, err error) {
-	segmentSlice = make(cs.SegmentSlice, 0)
-	err = t.sendQuery(tmpop.FindSegments, filter, &segmentSlice)
+	response, err := t.sendQuery(tmpop.FindSegments, filter)
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(response.Value, &segmentSlice)
+	if err != nil {
+		return
+	}
+
+	var proofSlice [][]byte
+	err = json.Unmarshal(response.Proof, &proofSlice)
+	if err != nil {
+		return
+	}
+
 	return
 }
 
 // GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
 func (t *TMStore) GetMapIDs(pagination *store.Pagination) (ids []string, err error) {
-	ids = make([]string, 0)
-	err = t.sendQuery(tmpop.GetMapIDs, pagination, &ids)
+	response, err := t.sendQuery(tmpop.GetMapIDs, pagination)
+	err = json.Unmarshal(response.Value, &ids)
+	if err != nil {
+		return
+	}
+
 	return
 }
 
-func (t *TMStore) sendQuery(name string, args interface{}, result interface{}) error {
-	query, err := tmpop.BuildQueryBinary(name, args)
-	if err != nil {
-		return err
-	}
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (t *TMStore) NewBatch() store.Batch {
+	return NewBatch(t)
+}
 
-	res, err := t.tmClient.ABCIQuery(query)
-	if err != nil {
-		return err
+// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
+func (t *TMStore) SaveValue(key, value []byte) error {
+	tx := &tmpop.Tx{
+		TxType: tmpop.SaveValue,
+		Key:    key,
+		Value:  value,
 	}
-	if res.Result.IsErr() {
-		return errors.New(res.Result.Error())
-	}
-
-	err = json.Unmarshal(res.Result.Data, result)
-
+	_, err := t.broadcastTx(tx)
 	return err
+}
+
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+func (t *TMStore) GetValue(key []byte) (value []byte, err error) {
+	response, err := t.sendQuery(tmpop.GetValue, key)
+	if err != nil {
+		return nil, err
+	}
+	return response.Value, nil
+}
+
+// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+func (t *TMStore) DeleteValue(key []byte) (value []byte, err error) {
+	tx := &tmpop.Tx{
+		TxType: tmpop.DeleteValue,
+		Key:    key,
+	}
+
+	val, err := t.broadcastTx(tx)
+	if err != nil {
+		return
+	}
+	if val != nil && val.DeliverTx != nil {
+		value = val.DeliverTx.Data
+	}
+
+	return
+}
+
+func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
+	txBytes, err := json.Marshal(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := t.tmClient.BroadcastTxCommit(txBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (t *TMStore) sendQuery(name string, args interface{}) (res abci.ResponseQuery, err error) {
+	query, err := tmpop.BuildQueryBinary(args)
+	if err != nil {
+		return
+	}
+
+	result, err := t.tmClient.ABCIQuery(name, query, true)
+	if err != nil {
+		return
+	}
+	if !result.Response.Code.IsOK() {
+		return res, fmt.Errorf("NOK Response from TMPop: %v", result.Response)
+	}
+
+	return result.Response, nil
 }

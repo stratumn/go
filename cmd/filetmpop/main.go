@@ -17,22 +17,30 @@ import (
 )
 
 var (
-	path    = flag.String("path", filestore.DefaultPath, "path to directory where files are stored")
-	version = "0.1.0"
-	commit  = "00000000000000000000000000000000"
+	path      = flag.String("path", filestore.DefaultPath, "path to directory where files are stored")
+	cacheSize = flag.Int("cacheSize", tmpop.DefaultCacheSize, "size of the cache of the storage tree")
+	version   = "0.1.0"
+	commit    = "00000000000000000000000000000000"
 )
 
 func main() {
 	flag.Parse()
 
-	a := filestore.New(&filestore.Config{Path: *path, Version: version, Commit: commit})
+	a, err := filestore.New(&filestore.Config{Path: *path, Version: version, Commit: commit})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	adapterInfo, err := a.GetInfo()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, DbDir: *path}
-	tmpop := tmpop.New(a, tmpopConfig)
+	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, CacheSize: *cacheSize}
+	tmpop, err := tmpop.New(a, tmpopConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Infof("TMPop v%s@%s", tmpopConfig.Version, tmpopConfig.Commit[:7])
 	log.Infof("Adapter %v", adapterInfo)

@@ -7,8 +7,6 @@ of tests in various packages.
 **/
 
 import (
-	"io/ioutil"
-
 	logger "github.com/tendermint/go-logger"
 
 	"github.com/stratumn/sdk/cs/cstesting"
@@ -57,8 +55,11 @@ func StartNode() {
 // NewNode creates a new node and sleeps forever
 func NewNode(ready chan struct{}) {
 	adapter := dummystore.New(&dummystore.Config{})
-	dir, _ := ioutil.TempDir("", "db")
-	testTmpop = tmpop.New(adapter, &tmpop.Config{DbDir: dir})
+	var err error
+	testTmpop, err = tmpop.New(adapter, &tmpop.Config{})
+	if err != nil {
+		panic(err)
+	}
 
 	tendermint.RunNode(GetConfig(), testTmpop)
 
@@ -71,5 +72,5 @@ func NewNode(ready chan struct{}) {
 
 func Reset() {
 	a := dummystore.New(&dummystore.Config{})
-	testTmpop.SetAdapter(a)
+	testTmpop.ResetAdapter(a)
 }

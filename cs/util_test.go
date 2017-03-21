@@ -14,10 +14,10 @@ import (
 
 func testSegmentValidateError(t *testing.T, s *cs.Segment, want string) {
 	if err := s.Validate(); err == nil {
-		t.Error("s.Valitate() = nil want Error")
+		t.Error("s.Validate() = nil want Error")
 	} else {
 		if got := err.Error(); got != want {
-			t.Errorf("s.Valitate() = %q want %q", got, want)
+			t.Errorf("s.Validate() = %q want %q", got, want)
 		}
 	}
 }

@@ -25,17 +25,29 @@ type MockAdapter struct {
 	// The mock for the SaveSegment function.
 	MockSaveSegment MockSaveSegment
 
+	// The mock for the SaveValue function.
+	MockSaveValue MockSaveValue
+
 	// The mock for the GetSegment function.
 	MockGetSegment MockGetSegment
 
+	// The mock for the GetValue function.
+	MockGetValue MockGetValue
+
 	// The mock for the DeleteSegment function.
 	MockDeleteSegment MockDeleteSegment
+
+	// The mock for the DeleteValue function.
+	MockDeleteValue MockDeleteValue
 
 	// The mock for the FindSegments function.
 	MockFindSegments MockFindSegments
 
 	// The mock for the GetMapIDs function.
 	MockGetMapIDs MockGetMapIDs
+
+	// The mock for the NewBatch function.
+	MockNewBatch MockNewBatch
 }
 
 // MockGetInfo mocks the GetInfo function.
@@ -77,6 +89,21 @@ type MockSaveSegment struct {
 	Fn func(*cs.Segment) error
 }
 
+// MockSaveValue mocks the SaveValue function.
+type MockSaveValue struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The segment that was passed to each call.
+	CalledWith [][][]byte
+
+	// The last segment that was passed.
+	LastCalledWith [][]byte
+
+	// An optional implementation of the function.
+	Fn func(key, value []byte) error
+}
+
 // MockGetSegment mocks the GetSegment function.
 type MockGetSegment struct {
 	// The number of times the function was called.
@@ -92,6 +119,21 @@ type MockGetSegment struct {
 	Fn func(*types.Bytes32) (*cs.Segment, error)
 }
 
+// MockGetValue mocks the GetValue function.
+type MockGetValue struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The link hash that was passed to each call.
+	CalledWith [][]byte
+
+	// The last link hash that was passed.
+	LastCalledWith []byte
+
+	// An optional implementation of the function.
+	Fn func([]byte) ([]byte, error)
+}
+
 // MockDeleteSegment mocks the DeleteSegment function.
 type MockDeleteSegment struct {
 	// The number of times the function was called.
@@ -105,6 +147,21 @@ type MockDeleteSegment struct {
 
 	// An optional implementation of the function.
 	Fn func(*types.Bytes32) (*cs.Segment, error)
+}
+
+// MockDeleteValue mocks the DeleteValue function.
+type MockDeleteValue struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The key that was passed to each call.
+	CalledWith [][]byte
+
+	// The last link hash that was passed.
+	LastCalledWith []byte
+
+	// An optional implementation of the function.
+	Fn func([]byte) ([]byte, error)
 }
 
 // MockFindSegments mocks the FindSegments function.
@@ -135,6 +192,15 @@ type MockGetMapIDs struct {
 
 	// An optional implementation of the function.
 	Fn func(*store.Pagination) ([]string, error)
+}
+
+// MockNewBatch mocks the NewBatch function.
+type MockNewBatch struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// An optional implementation of the function.
+	Fn func() store.Batch
 }
 
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
@@ -173,6 +239,20 @@ func (a *MockAdapter) SaveSegment(segment *cs.Segment) error {
 	return nil
 }
 
+// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
+func (a *MockAdapter) SaveValue(key, value []byte) error {
+	a.MockSaveValue.CalledCount++
+	calledWith := [][]byte{key, value}
+	a.MockSaveValue.CalledWith = append(a.MockSaveValue.CalledWith, calledWith)
+	a.MockSaveValue.LastCalledWith = calledWith
+
+	if a.MockSaveValue.Fn != nil {
+		return a.MockSaveValue.Fn(key, value)
+	}
+
+	return nil
+}
+
 // GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
 func (a *MockAdapter) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.MockGetSegment.CalledCount++
@@ -186,6 +266,19 @@ func (a *MockAdapter) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	return nil, nil
 }
 
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+func (a *MockAdapter) GetValue(key []byte) ([]byte, error) {
+	a.MockGetValue.CalledCount++
+	a.MockGetValue.CalledWith = append(a.MockGetValue.CalledWith, key)
+	a.MockGetValue.LastCalledWith = key
+
+	if a.MockGetValue.Fn != nil {
+		return a.MockGetValue.Fn(key)
+	}
+
+	return nil, nil
+}
+
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (a *MockAdapter) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.MockDeleteSegment.CalledCount++
@@ -194,6 +287,19 @@ func (a *MockAdapter) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error
 
 	if a.MockDeleteSegment.Fn != nil {
 		return a.MockDeleteSegment.Fn(linkHash)
+	}
+
+	return nil, nil
+}
+
+// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+func (a *MockAdapter) DeleteValue(key []byte) ([]byte, error) {
+	a.MockDeleteValue.CalledCount++
+	a.MockDeleteValue.CalledWith = append(a.MockDeleteValue.CalledWith, key)
+	a.MockDeleteValue.LastCalledWith = key
+
+	if a.MockDeleteValue.Fn != nil {
+		return a.MockDeleteValue.Fn(key)
 	}
 
 	return nil, nil
@@ -223,4 +329,15 @@ func (a *MockAdapter) GetMapIDs(pagination *store.Pagination) ([]string, error) 
 	}
 
 	return nil, nil
+}
+
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (a *MockAdapter) NewBatch() store.Batch {
+	a.MockNewBatch.CalledCount++
+
+	if a.MockGetMapIDs.Fn != nil {
+		return a.MockNewBatch.Fn()
+	}
+
+	return &MockBatch{}
 }

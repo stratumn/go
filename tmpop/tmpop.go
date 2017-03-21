@@ -11,22 +11,23 @@ import (
 	"encoding/json"
 	"fmt"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
-
-	tmtypes "github.com/tendermint/abci/types"
-	godb "github.com/tendermint/go-db"
-	merkle "github.com/tendermint/go-merkle"
-	wire "github.com/tendermint/go-wire"
-
-	log "github.com/Sirupsen/logrus"
+	abci "github.com/tendermint/abci/types"
+	"github.com/tendermint/go-merkle"
+	"github.com/tendermint/go-wire"
 )
 
-// LastBlockInfo stores information about the last block
-type LastBlockInfo struct {
-	Height  uint64
-	AppHash []byte
+// tmpopLastBlockKey is the database key where last block information are saved.
+var tmpopLastBlockKey = []byte("tmpop:lastblock")
+
+// lastBlock saves the information of the last block commited for Core/App Handshake on crash/restart.
+type lastBlock struct {
+	AppHash    []byte
+	Height     uint64
+	LastHeader *abci.Header
 }
 
 // Info is the info returned by GetInfo.
@@ -46,20 +47,21 @@ type Config struct {
 	// A git commit hash that will be set in the store's information.
 	Commit string
 
-	// Where godb will be saved.
-	DbDir string
+	// The DB cache size.
+	CacheSize int
 }
 
 // TMPop is the type of the application that implements github.com/tendermint/abci/types.Application,
-// the tendermint socket protocol (ABCI)
+// the tendermint socket protocol (ABCI).
 type TMPop struct {
-	objects     merkle.Tree
-	db          godb.DB
-	newSegments map[types.Bytes32]*cs.Segment
-	adapter     store.Adapter
-	lastBlock   *LastBlockInfo
-	blockHeader *tmtypes.Header
-	config      *Config
+	abci.BaseApplication
+
+	state                State
+	adapter              store.Adapter
+	lastBlock            *lastBlock
+	config               *Config
+	header               *abci.Header
+	currentBlockSegments []*types.Bytes32
 }
 
 const (
@@ -68,237 +70,381 @@ const (
 
 	// Description of this Tendermint Application
 	Description = "Agent Store in a Blockchain"
+
+	// DefaultCacheSize is the default size of the DB cache
+	DefaultCacheSize = 0
 )
 
-var (
-	lastBlockInfoKeyName = []byte("info")
-)
+// New creates a new instance of a TMPop.
+func New(a store.Adapter, config *Config) (*TMPop, error) {
+	db := NewDBAdapter(a)
 
-// New creates a new instance of a TMPop
-func New(a store.Adapter, config *Config) *TMPop {
-	db := godb.NewDB(Name, godb.GoLevelDBBackendStr, config.DbDir)
-	objects := merkle.NewIAVLTree(0, db)
-
-	h := &TMPop{
-		objects:     objects,
-		adapter:     a,
-		db:          db,
-		newSegments: make(map[types.Bytes32]*cs.Segment),
-		config:      config,
-	}
-	h.LoadLastBlock()
-
-	return h
-}
-
-// DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx
-func (t *TMPop) DeliverTx(tx []byte) tmtypes.Result {
-	segment, res := unmarshallTx(tx)
-	if res.IsErr() {
-		return res
-	}
-
-	check := t.checkSegment(segment)
-	if check.IsErr() {
-		return check
-	}
-
-	t.newSegments[*segment.GetLinkHash()] = segment
-
-	return tmtypes.OK
-}
-
-// CheckTx implements github.com/tendermint/abci/types.Application.CheckTx
-func (t *TMPop) CheckTx(tx []byte) tmtypes.Result {
-	segment, res := unmarshallTx(tx)
-	if res.IsErr() {
-		return res
-	}
-
-	return t.checkSegment(segment)
-}
-
-func (t *TMPop) checkSegment(segment *cs.Segment) tmtypes.Result {
-	err := segment.Validate()
+	initalized, err := a.GetValue(tmpopLastBlockKey)
 	if err != nil {
-		return tmtypes.ErrUnauthorized.SetLog(fmt.Sprintf("Invalid segment %v: %v", segment, err))
+		return nil, err
 	}
 
-	return tmtypes.OK
-}
+	// Load Tree
+	tree := merkle.NewIAVLTree(config.CacheSize, db)
 
-// Commit implements github.com/tendermint/abci/types.Application.Commit
-func (t *TMPop) Commit() tmtypes.Result {
-	for _, segment := range t.newSegments {
-		evidence := make(map[string]interface{})
-		evidence["state"] = "COMPLETE"
-		evidence["transactions"] = map[string]string{fmt.Sprintf("[tmpop]:[%v]", t.blockHeader.ChainId): fmt.Sprintf("%v", t.blockHeader.Height)}
-
-		segment.Meta["evidence"] = evidence
-
-		s, err := json.Marshal(segment)
-		if err != nil {
-			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-		}
-		t.objects.Set(segment.GetLinkHash()[:], s)
-		if err := t.adapter.SaveSegment(segment); err != nil {
-			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-		}
+	if initalized == nil {
+		log.Debug("No existing db, creating new db")
+		saveLastBlock(a, lastBlock{
+			AppHash: tree.Save(),
+			Height:  0,
+		})
+	} else {
+		log.Debug("Loading existing db")
 	}
 
-	hash := t.objects.Save()
-
-	t.lastBlock = &LastBlockInfo{
-		Height:  t.blockHeader.Height,
-		AppHash: hash, // this hash will be in the next block header
-	}
-	t.saveLastBlock()
-
-	return tmtypes.NewResultOK(hash, "")
-}
-
-// Query implements github.com/tendermint/abci/types.Application.Query
-// it unmarshalls the read queries and forward them to the adapter
-func (t *TMPop) Query(q []byte) tmtypes.Result {
-	query := &Query{}
-	if err := json.Unmarshal(q, query); err != nil {
-		return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-	}
-	var result interface{}
-	var err error
-
-	switch query.Name {
-	case GetInfo:
-		var adapterInfo interface{}
-		adapterInfo, err = t.adapter.GetInfo()
-		result = &Info{
-			Name:        Name,
-			Description: Description,
-			Version:     t.config.Version,
-			Commit:      t.config.Commit,
-			AdapterInfo: adapterInfo,
-		}
-	case GetSegment:
-		linkHash := &types.Bytes32{}
-		if err := linkHash.UnmarshalJSON(query.Args); err != nil {
-			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-		}
-		result, err = t.adapter.GetSegment(linkHash)
-	case FindSegments:
-		filter := &store.Filter{}
-		if err := json.Unmarshal(query.Args, filter); err != nil {
-			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-		}
-		result, err = t.adapter.FindSegments(filter)
-	case GetMapIDs:
-		pagination := &store.Pagination{}
-		if err := json.Unmarshal(query.Args, pagination); err != nil {
-			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-		}
-		result, err = t.adapter.GetMapIDs(pagination)
-	case DeleteSegment:
-		linkHash := &types.Bytes32{}
-		if err := linkHash.UnmarshalJSON(query.Args); err != nil {
-			return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-		}
-		result, err = t.adapter.DeleteSegment(linkHash)
-	}
-
+	lastBlock, err := readLastBlock(a)
 	if err != nil {
-		return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
+		return nil, err
 	}
 
-	resBytes, err := json.Marshal(result)
+	// TODO: At this point we might want to clean segments whose evidence is not complete
+	// since we cannot be certain they will be delivered again, for instance if +2/3 nodes crashed
+	// during the commit phase, and the transactions are not in the memory pool of anybody.
+	tree.Load(lastBlock.AppHash)
 
-	if err != nil {
-		return tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
-	}
-
-	return tmtypes.NewResultOK(resBytes, "OK")
+	return &TMPop{
+		state:     NewState(tree, a),
+		adapter:   a,
+		lastBlock: lastBlock,
+		config:    config,
+		header:    lastBlock.LastHeader,
+	}, nil
 }
 
-// Info implements github.com/tendermint/abci/types.Application.Info
-func (t *TMPop) Info() tmtypes.ResponseInfo {
-	return tmtypes.ResponseInfo{
+// Info implements github.com/tendermint/abci/types.Application.Info.
+func (t *TMPop) Info() abci.ResponseInfo {
+	return abci.ResponseInfo{
 		Data:             Name,
 		LastBlockHeight:  t.lastBlock.Height,
 		LastBlockAppHash: t.lastBlock.AppHash,
 	}
 }
 
-// SetOption implements github.com/tendermint/abci/types.Application.SetOption
+// SetOption implements github.com/tendermint/abci/types.Application.SetOption.
 func (t *TMPop) SetOption(key string, value string) (log string) {
-	return ""
+	return "No options are supported yet"
 }
 
-// InitChain implements github.com/tendermint/abci/types.BlockchainAware.InitChain
-func (t *TMPop) InitChain(validators []*tmtypes.Validator) {
-	log.WithField("validators", validators).Debug("Init Chain")
-}
+// BeginBlock implements github.com/tendermint/abci/types.BlockchainAware.BeginBlock.
+func (t *TMPop) BeginBlock(hash []byte, header *abci.Header) {
+	t.header = header
 
-// BeginBlock implements github.com/tendermint/abci/types.BlockchainAware.BeginBlock
-func (t *TMPop) BeginBlock(hash []byte, header *tmtypes.Header) {
-	log.WithField("header", header).Debug("Begin Block")
-
-	t.blockHeader = header
-	t.newSegments = make(map[types.Bytes32]*cs.Segment)
-}
-
-// EndBlock implements github.com/tendermint/abci/types.BlockchainAware.EndBlock
-func (t *TMPop) EndBlock(height uint64) tmtypes.ResponseEndBlock {
-	log.WithField("height", height).Debug("End Block")
-
-	return tmtypes.ResponseEndBlock{}
-}
-
-// LoadLastBlock gets the last block from the db
-func (t *TMPop) LoadLastBlock() (lastBlock LastBlockInfo) {
-	buf := t.db.Get(lastBlockInfoKeyName)
-	if len(buf) != 0 {
-		r, n, err := bytes.NewReader(buf), new(int), new(error)
-		wire.ReadBinaryPtr(&lastBlock, r, 0, n, err)
-		if *err != nil {
-			// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
-			log.Fatalf("Data has been corrupted or its spec has changed: %v\n", *err)
+	// If the AppHash is present in this block, consensus has been formed around
+	// it. Even though the current block might not get Committed in the end, that
+	// would only be du to the transactions it contains. This AppHash will never be
+	// denied in a future Block.
+	if bytes.Compare(t.state.Committed().Hash(), t.header.AppHash) == 0 {
+		for _, lh := range t.currentBlockSegments {
+			err := t.addOriginalEvidence(lh)
+			if err != nil {
+				log.Warnf("Unexpected error while adding evidence to segment %x: %v", lh, err)
+			}
 		}
-		// TODO: ensure that buf is completely read.
-
-		log.WithFields(log.Fields{
-			"Height":  lastBlock.Height,
-			"AppHash": lastBlock.AppHash,
-			"buf":     buf,
-		}).Debug("Loading block")
-	}
-	t.lastBlock = &lastBlock
-	return lastBlock
-}
-
-func (t *TMPop) saveLastBlock() {
-	log.WithFields(log.Fields{
-		"Height":  t.lastBlock.Height,
-		"AppHash": t.lastBlock.AppHash,
-	}).Debug("Saving block")
-
-	buf, n, err := new(bytes.Buffer), new(int), new(error)
-	wire.WriteBinary(*t.lastBlock, buf, n, err)
-	if *err != nil {
-		log.Fatal(*err)
+	} else {
+		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x", t.header.AppHash, t.lastBlock.AppHash)
 	}
 
-	t.db.Set(lastBlockInfoKeyName, buf.Bytes())
+	// We have been waiting for the BeginBlock callback to save the new LastBlockHeight and
+	// LastBlockAppHeight to be absolutely sure that App has not saved a State it has
+	// not communicated to Core. That would prevent the Handshake to succeed.
+	t.lastBlock.Height = header.Height - 1
+	t.lastBlock.AppHash = t.state.Committed().Hash()
+	t.lastBlock.LastHeader = header
+
+	saveLastBlock(t.adapter, *t.lastBlock)
+
+	t.currentBlockSegments = nil
 }
 
-func unmarshallTx(tx []byte) (*cs.Segment, tmtypes.Result) {
-	segment := &cs.Segment{}
+// DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx.
+func (t *TMPop) DeliverTx(tx []byte) abci.Result {
+	snapshot := t.state.Append()
+	return t.doTx(snapshot, tx)
+}
 
-	if err := json.Unmarshal(tx, segment); err != nil {
-		return nil, tmtypes.NewError(tmtypes.CodeType_InternalError, err.Error())
+// CheckTx implements github.com/tendermint/abci/types.Application.CheckTx.
+func (t *TMPop) CheckTx(tx []byte) abci.Result {
+	snapshot := t.state.Check()
+	return t.doTx(snapshot, tx)
+}
+
+// Commit implements github.com/tendermint/abci/types.Application.Commit.
+// It actually commits the current state in the Store.
+func (t *TMPop) Commit() abci.Result {
+	appHash := t.state.Commit()
+
+	if t.state.Committed().Size() == 0 {
+		return abci.NewResultOK(nil, "Empty hash for empty tree")
+	}
+	return abci.NewResultOK(appHash, "")
+}
+
+// Query implements github.com/tendermint/abci/types.Application.Query.
+func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) {
+	commit := t.state.Committed()
+
+	if reqQuery.Height != 0 {
+		resQuery.Code = abci.CodeType_InternalError
+		resQuery.Log = "tmpop only supports queries on latest commit"
+		return
 	}
 
-	return segment, tmtypes.NewResultOK([]byte{}, "ok")
+	resQuery.Height = t.lastBlock.Height
+
+	var err error
+	var result interface{}
+
+	switch reqQuery.Path {
+	case GetInfo:
+		result = &Info{
+			Name:        Name,
+			Description: Description,
+			Version:     t.config.Version,
+			Commit:      t.config.Commit,
+		}
+	case GetSegment:
+		linkHash := &types.Bytes32{}
+		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
+			break
+		}
+		value, proof, _ := commit.GetSegment(linkHash)
+
+		t.addCurrentProof(value, proof)
+
+		var valueByte []byte
+		valueByte, err = json.Marshal(value)
+		if err != nil {
+			break
+		}
+
+		resQuery.Value = valueByte
+		resQuery.Proof = proof
+
+	case FindSegments:
+		filter := &store.Filter{}
+		if err := json.Unmarshal(reqQuery.Data, filter); err != nil {
+			break
+		}
+		var values cs.SegmentSlice
+		var proofs [][]byte
+		values, proofs, err = commit.FindSegments(filter)
+
+		for i, s := range values {
+			t.addCurrentProof(s, proofs[i])
+		}
+
+		var valuesByte []byte
+		valuesByte, err = json.Marshal(values)
+		if err != nil {
+			break
+		}
+		resQuery.Value = valuesByte
+
+		var proofsByte []byte
+		proofsByte, err = json.Marshal(proofs)
+		if err != nil {
+			break
+		}
+
+		resQuery.Proof = proofsByte
+
+	case GetMapIDs:
+		pagination := &store.Pagination{}
+		if err := json.Unmarshal(reqQuery.Data, pagination); err != nil {
+			break
+		}
+		result, err = commit.GetMapIDs(pagination)
+	case GetValue:
+		var key []byte
+		if err := json.Unmarshal(reqQuery.Data, &key); err != nil {
+			break
+		}
+
+		value, proof, _ := commit.Proof(key)
+
+		resQuery.Value = value
+		resQuery.Proof = proof
+	default:
+		resQuery.Code = abci.CodeType_UnknownRequest
+		resQuery.Log = fmt.Sprintf("Unexpected Query path: %v", reqQuery.Path)
+	}
+
+	if err != nil {
+		resQuery.Code = abci.CodeType_InternalError
+		resQuery.Log = err.Error()
+
+		return
+	}
+	if result != nil {
+		resBytes, err := json.Marshal(result)
+
+		if err != nil {
+			resQuery.Code = abci.CodeType_InternalError
+			resQuery.Log = err.Error()
+		}
+
+		resQuery.Value = resBytes
+	}
+
+	return
 }
 
-// SetAdapter sets the adapter
-func (t *TMPop) SetAdapter(a store.Adapter) {
+func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
+	if len(txBytes) == 0 {
+		return abci.ErrEncodingError.SetLog("Tx length cannot be zero")
+	}
+	tx, res := unmarshallTx(txBytes)
+	var err error
+
+	switch tx.TxType {
+	case SaveSegment:
+		if res.IsErr() {
+			return res
+		}
+		if res = t.checkSegment(tx.Segment); res.IsErr() {
+			return res
+		}
+		t.currentBlockSegments = append(t.currentBlockSegments, tx.Segment.GetLinkHash())
+
+		if t.header != nil {
+			tx.Segment.SetEvidence(
+				map[string]interface{}{
+					"state":        cs.PendingEvidence,
+					"transactions": map[string]string{fmt.Sprintf("[%s]:[%s]", Name, t.header.ChainId): fmt.Sprintf("%v", t.header.Height)},
+				})
+		}
+
+		snapshot.SetSegment(tx.Segment)
+	case DeleteSegment:
+		var segment *cs.Segment
+		var found bool
+		segment, found, err = snapshot.DeleteSegment(tx.LinkHash)
+		var valueByte []byte
+		valueByte, err = json.Marshal(segment)
+		if err != nil {
+			break
+		}
+		if found == true {
+			result.Data = valueByte
+		}
+	case SaveValue:
+		snapshot.SaveValue(tx.Key, tx.Value)
+	case DeleteValue:
+		value, found := snapshot.DeleteValue(tx.Key)
+		if found == true {
+			result.Data = value
+		}
+	default:
+		return abci.ErrUnknownRequest.SetLog(fmt.Sprintf("Unexpected Tx type byte %X", tx.TxType))
+	}
+
+	if err != nil {
+		result.Code = abci.CodeType_InternalError
+		result.Log = err.Error()
+		return
+	}
+
+	result.Code = abci.CodeType_OK
+	return
+
+}
+
+func (t *TMPop) checkSegment(segment *cs.Segment) abci.Result {
+	err := segment.Validate()
+	if err != nil {
+		return abci.ErrUnauthorized.SetLog(fmt.Sprintf("Invalid segment %v: %v", segment, err))
+	}
+
+	return abci.OK
+}
+
+func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
+	tx := &Tx{}
+
+	if err := json.Unmarshal(txBytes, tx); err != nil {
+		return nil, abci.NewError(abci.CodeType_InternalError, err.Error())
+	}
+
+	return tx, abci.NewResultOK([]byte{}, "ok")
+}
+
+// ResetAdapter sets the adapter (used in tests).
+func (t *TMPop) ResetAdapter(a store.Adapter) {
 	t.adapter = a
+	t.state.segments = a
+	t.adapter.SaveValue(tmpopLastBlockKey, wire.BinaryBytes(lastBlock{
+		AppHash: []byte{},
+		Height:  0,
+	}))
+	t.lastBlock, _ = readLastBlock(a)
+}
+
+func readLastBlock(a store.Adapter) (*lastBlock, error) {
+	lBytes, err := a.GetValue(tmpopLastBlockKey)
+	if err != nil {
+		return nil, err
+	}
+
+	var l lastBlock
+	if lBytes == nil {
+		return &l, nil
+	}
+	err = wire.ReadBinaryBytes(lBytes, &l)
+	if err != nil {
+		return nil, err
+	}
+
+	return &l, nil
+}
+
+func saveLastBlock(a store.Adapter, l lastBlock) {
+	a.SaveValue(tmpopLastBlockKey, wire.BinaryBytes(l))
+}
+
+// addOriginalEvidence adds the Evidence to the segment.
+// It should only be called when the header with the signed AppHash that includes
+// this segment is available.
+func (t *TMPop) addOriginalEvidence(lh *types.Bytes32) error {
+	s, err := t.adapter.GetSegment(lh)
+	if err != nil {
+		return err
+	}
+	if s == nil {
+		log.Debug("No segment found with linkHash %v", lh)
+		return nil
+	}
+	_, proof, err := t.state.Committed().GetSegment(s.GetLinkHash())
+	if err != nil {
+		return err
+	}
+
+	iavlProof, err := merkle.ReadProof(proof)
+	if err != nil {
+		return err
+	}
+	e := s.GetEvidence()
+
+	e["originalProof"] = iavlProof
+	e["state"] = cs.CompleteEvidence
+	e["originalHeader"] = *t.header
+
+	return t.adapter.SaveSegment(s)
+}
+
+func (t *TMPop) addCurrentProof(s *cs.Segment, proof []byte) error {
+	iavlProof, err := merkle.ReadProof(proof)
+	if err != nil {
+		return err
+	}
+	e := s.GetEvidence()
+
+	e["currentHeader"] = *t.header
+	e["currentProof"] = iavlProof
+
+	return nil
 }

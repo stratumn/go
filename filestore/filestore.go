@@ -27,6 +27,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
+	db "github.com/tendermint/go-db"
 )
 
 const (
@@ -45,6 +46,7 @@ type FileStore struct {
 	config       *Config
 	didSaveChans []chan *cs.Segment
 	mutex        sync.RWMutex // simple global mutex
+	kvDB         db.DB
 }
 
 // Config contains configuration options for the store.
@@ -68,8 +70,13 @@ type Info struct {
 }
 
 // New creates an instance of a FileStore.
-func New(config *Config) *FileStore {
-	return &FileStore{config, nil, sync.RWMutex{}}
+func New(config *Config) (*FileStore, error) {
+	db, err := db.NewGoLevelDB("keyvalue-store", config.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FileStore{config, nil, sync.RWMutex{}, db}, nil
 }
 
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
@@ -93,18 +100,20 @@ func (a *FileStore) SaveSegment(segment *cs.Segment) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
+	return a.saveSegment(segment)
+}
+
+func (a *FileStore) saveSegment(segment *cs.Segment) error {
 	js, err := json.MarshalIndent(segment, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	if err = os.MkdirAll(a.config.Path, 0755); err != nil {
-		if !os.IsExist(err) {
-			return err
-		}
+	if err = a.initDir(); err != nil {
+		return err
 	}
 
-	segmentPath := path.Join(a.config.Path, segment.Meta["linkHash"].(string)+".json")
+	segmentPath := a.getSegmentPath(segment.Meta["linkHash"].(string))
 
 	if err := ioutil.WriteFile(segmentPath, js, 0644); err != nil {
 		return err
@@ -133,12 +142,16 @@ func (a *FileStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) 
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
+	return a.deleteSegment(linkHash)
+}
+
+func (a *FileStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	segment, err := a.getSegment(linkHash)
 	if segment == nil {
 		return segment, err
 	}
 
-	if err = os.Remove(path.Join(a.config.Path, linkHash.String()+".json")); err != nil {
+	if err = os.Remove(a.getSegmentPath(linkHash.String())); err != nil {
 		return nil, err
 	}
 
@@ -201,8 +214,36 @@ func (a *FileStore) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 	return pagination.PaginateStrings(mapIDs), nil
 }
 
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (a *FileStore) NewBatch() store.Batch {
+	return NewBatch(a)
+}
+
+// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
+func (a *FileStore) SaveValue(key []byte, value []byte) error {
+	a.kvDB.Set(key, value)
+
+	return nil
+}
+
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+func (a *FileStore) GetValue(key []byte) ([]byte, error) {
+	return a.kvDB.Get(key), nil
+}
+
+// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+func (a *FileStore) DeleteValue(key []byte) ([]byte, error) {
+	v := a.kvDB.Get(key)
+
+	if v != nil {
+		a.kvDB.Delete(key)
+		return v, nil
+	}
+	return nil, nil
+}
+
 func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	file, err := os.Open(path.Join(a.config.Path, linkHash.String()+".json"))
+	file, err := os.Open(a.getSegmentPath(linkHash.String()))
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -218,6 +259,19 @@ func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	}
 
 	return &segment, nil
+}
+
+func (a *FileStore) initDir() error {
+	if err := os.MkdirAll(a.config.Path, 0755); err != nil {
+		if !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *FileStore) getSegmentPath(linkHash string) string {
+	return path.Join(a.config.Path, linkHash+".json")
 }
 
 var segmentFileRegepx = regexp.MustCompile("(.*)\\.json$")

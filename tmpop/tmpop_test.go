@@ -7,204 +7,197 @@
 package tmpop
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"io/ioutil"
-	"log"
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/filestore"
+	"github.com/stratumn/sdk/dummystore"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetesting"
+	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	tmtypes "github.com/tendermint/abci/types"
+	abci "github.com/tendermint/abci/types"
+	merkle "github.com/tendermint/go-merkle"
 
 	"strings"
-
-	"reflect"
-
-	"fmt"
 
 	"github.com/stratumn/sdk/cs"
 )
 
-func createDefaultStore() store.Adapter {
-	return &storetesting.MockAdapter{}
+const (
+	height = uint64(1)
+
+	chainID = "testChain"
+)
+
+var header = &abci.Header{
+	Height:  height,
+	ChainId: chainID,
 }
 
-func (t *TMPop) readAppHash() []byte {
-	return t.LoadLastBlock().AppHash
-}
+func TestNew(t *testing.T) {
+	a := dummystore.New(&dummystore.Config{})
+	h1 := createDefaultTMPop(a, t)
 
-func (t *TMPop) readHeight() uint64 {
-	return t.LoadLastBlock().Height
-}
+	want := commitMockTx(t, h1)
+	commitMockTx(t, h1)
 
-func createDefaultTMPop(a store.Adapter) *TMPop {
-	if a == nil {
-		a = createDefaultStore()
-	}
-	dir, err := ioutil.TempDir("", "db")
-	if err != nil {
-		log.Fatal("cannot create temp directory")
-	}
+	h2 := createDefaultTMPop(a, t)
 
-	return New(a, &Config{DbDir: dir})
-}
-
-func makeMockTx(t *testing.T) (*cs.Segment, []byte) {
-	s := cstesting.RandomSegment()
-
-	res, err := json.Marshal(s)
+	got := &cs.Segment{}
+	err := h2.makeQuery(GetSegment, want.GetLinkHash(), got)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return s, res
+
+	delete(got.Meta, "evidence")
+	if !reflect.DeepEqual(want, got) {
+		gotJS, _ := json.MarshalIndent(got, "", "  ")
+		wantJS, _ := json.MarshalIndent(want, "", "  ")
+		t.Errorf("New(): expected new TMPop to have access to existing segment %s, got:\n %s", wantJS, gotJS)
+	}
+
+	gotHeight := h2.readHeight(t)
+	if gotHeight != 1 {
+		t.Errorf("a.New(): expected new TMPop to start on the last block height, got %v, expected %v",
+			gotHeight, 1)
+	}
+
 }
 
 func TestInfo(t *testing.T) {
-	h := createDefaultTMPop(nil)
+	h := createDefaultTMPop(nil, t)
 
 	got := h.Info()
 
-	if !strings.Contains(got.Data, "TMPop") {
-		t.Errorf("a.Info(): expected to contain TMPop got %d", got)
+	if !strings.Contains(got.Data, Name) {
+		t.Errorf("a.Info(): expected to contain %s got %d", Name, got)
 	}
 }
 
-func TestCommit_SavesLastBlockInfo(t *testing.T) {
-	h := createDefaultTMPop(nil)
+func TestBeginBlock_SavesLastBlockInfo(t *testing.T) {
+	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
 
-	height := uint64(12)
+	var hash []byte
+	height := uint64(2)
 
-	_, tx := makeMockTx(t)
-	h.BeginBlock(nil, &tmtypes.Header{
-		Height: height,
-	})
-	h.DeliverTx(tx)
-
-	commitResult := h.Commit()
-	if commitResult.IsErr() {
-		t.Errorf("a.Commit(): failed: %v", commitResult.Log)
-	}
-
-	got := h.readHeight()
-	if got != height {
-		t.Errorf("a.Commit(): expected commit to save the last block height, got %v, expected %v",
-			got, height)
-	}
-
-	hashGot := h.readAppHash()
-	if len(hashGot) == 0 {
-		t.Errorf("a.Commit(): expected commit to save the last app hash, got %v", hashGot)
-	}
-}
-
-func TestCommit_AppendsEvidence(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	h := createDefaultTMPop(a)
-	chainID := "MyChain"
-
-	height := uint64(12)
-
-	_, tx := makeMockTx(t)
-	h.BeginBlock(nil, &tmtypes.Header{
+	h.BeginBlock(hash, &abci.Header{
 		Height:  height,
 		ChainId: chainID,
+		AppHash: hash,
 	})
-	h.DeliverTx(tx)
 
-	a.MockSaveSegment.Fn = func(s *cs.Segment) error {
-		evidence := fmt.Sprint(s.Meta["evidence"])
-		if !strings.Contains(evidence, fmt.Sprint(height)) {
-			return fmt.Errorf("Expected evidence to contain %v, got %v", height, evidence)
-		}
-		if !strings.Contains(evidence, chainID) {
-			return fmt.Errorf("Expected evidence to contain %v, got %v", chainID, evidence)
-		}
-		return nil
+	got := h.readHeight(t)
+	if got != (height - 1) {
+		t.Errorf("a.Commit(): expected BeginBlock to save the last block height, got %v, expected %v",
+			got, height-1)
 	}
 
-	commitResult := h.Commit()
-	if commitResult.IsErr() {
-		t.Errorf("a.Commit(): failed: %v", commitResult.Log)
+	hashGot := h.readAppHash(t)
+	if bytes.Compare(hashGot, hash) != 0 {
+		t.Errorf("a.Commit(): expected BeginBlock to save the last app hash, expected %v, got %v", hash, hashGot)
+	}
+}
+
+func TestCheckTx(t *testing.T) {
+	h := createDefaultTMPop(nil, t)
+
+	_, tx := makeSaveSegmentTx(t)
+
+	res := h.CheckTx(tx)
+
+	if !res.IsOK() {
+		t.Errorf("Expected CheckTx to return an OK result, got %v", res)
 	}
 }
 
 func TestQuery(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	h := createDefaultTMPop(a)
-
-	segment, _ := makeMockTx(t)
+	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
 
 	t.Run("GetInfo()", func(t *testing.T) {
-		fakeName := "Fake Name"
-		a.MockGetInfo.Fn = func() (interface{}, error) { return &filestore.Info{Name: fakeName}, nil }
-
 		info := &Info{}
 		err := h.makeQuery(GetInfo, nil, info)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if info.AdapterInfo.(map[string]interface{})["name"] != fakeName {
-			t.Errorf("h.Query(): expected GetInfo to return name %v, got %v", fakeName,
-				info.AdapterInfo.(map[string]interface{}))
-		}
 		if info.Name != Name {
 			t.Errorf("h.Query(): expected GetInfo to return name %v, got %v", info.Name, Name)
 		}
 	})
 
 	t.Run("GetSegment()", func(t *testing.T) {
-		a.MockGetSegment.Fn = func(linkHash *types.Bytes32) (*cs.Segment, error) {
-			if linkHash.String() == segment.GetLinkHash().String() {
-				return segment, nil
-			}
-			t.Errorf("Unexpected link Hash, wanted: %v, got %v", segment.GetLinkHash(), linkHash)
-			return nil, nil
-		}
+		want := commitMockTx(t, h)
 
 		got := &cs.Segment{}
-		err := h.makeQuery(GetSegment, segment.GetLinkHash(), got)
+		err := h.makeQuery(GetSegment, want.GetLinkHash(), got)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(segment, got) {
-			t.Errorf("h.Query(): expected GetSegment to return %v, got %v", segment, got)
+
+		delete(got.Meta, "evidence")
+		if !reflect.DeepEqual(want, got) {
+			gotJS, _ := json.MarshalIndent(got, "", "  ")
+			wantJS, _ := json.MarshalIndent(want, "", "  ")
+			t.Errorf("h.Query(): expected GetSegment to return %s, got:\n %s", wantJS, gotJS)
+		}
+	})
+
+	t.Run("GetValue()", func(t *testing.T) {
+		k, want, tx := makeSaveValueTx(t)
+		commitTx(t, h, tx)
+
+		b, err := BuildQueryBinary(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		q := h.Query(abci.RequestQuery{
+			Path: GetValue,
+			Data: b,
+		})
+
+		if got := q.Value; bytes.Compare(got, want) != 0 {
+			t.Errorf("h.Query(): expected GetValue to return %s, got:\n %s", want, got)
 		}
 	})
 
 	t.Run("FindSegments()", func(t *testing.T) {
-		a.MockFindSegments.Fn = func(filter *store.Filter) (cs.SegmentSlice, error) {
-			res := make(cs.SegmentSlice, 1, 1)
-			if filter.MapID == segment.Link.GetMapID() {
-				res[0] = segment
-			} else {
-				t.Errorf("Unexpected Map ID, wanted: %v, got %v", segment.Link.GetMapID(), filter.MapID)
-			}
-			return res, nil
-		}
+		want := commitMockTx(t, h)
 
 		args := &store.Filter{
-			Pagination:   store.Pagination{},
-			MapID:        segment.Link.GetMapID(),
-			PrevLinkHash: segment.Link.GetPrevLinkHash(),
-			Tags:         segment.Link.GetTags(),
+			Pagination: store.Pagination{
+				Limit: store.DefaultLimit,
+			},
+			MapID:        want.Link.GetMapID(),
+			PrevLinkHash: want.Link.GetPrevLinkHash(),
+			Tags:         want.Link.GetTags(),
 		}
-		got := make(cs.SegmentSlice, 0)
-		err := h.makeQuery(FindSegments, args, &got)
+		gots := cs.SegmentSlice{}
+		err := h.makeQuery(FindSegments, args, &gots)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !reflect.DeepEqual(segment, got[0]) {
-			t.Errorf("h.Query(): expected FindSegments to return %v, got %v", segment, got[0])
+		if len(gots) != 1 {
+			t.Fatalf("h.Query(): unexpected size for FindSegments result, got %v", gots)
 		}
-
+		got := gots[0]
+		delete(got.Meta, "evidence")
+		if !reflect.DeepEqual(want, got) {
+			gotJS, _ := json.MarshalIndent(got, "", "  ")
+			wantJS, _ := json.MarshalIndent(want, "", "  ")
+			t.Errorf("h.Query(): expected FindSegments to return %s, got %s", wantJS, gotJS)
+		}
 	})
 
 	t.Run("GetMapIDs()", func(t *testing.T) {
+		a := &storetesting.MockAdapter{}
+		h := createDefaultTMPop(a, t)
+		segment, _ := makeSaveSegmentTx(t)
 		mapID := segment.Link.GetMapID()
 		limit := 1
 		a.MockGetMapIDs.Fn = func(pagination *store.Pagination) ([]string, error) {
@@ -229,17 +222,334 @@ func TestQuery(t *testing.T) {
 			t.Errorf("h.Query(): expected GetMapIDs to return %v, got %v", mapID, got[0])
 		}
 	})
+
+	t.Run("Unsupported Query", func(t *testing.T) {
+		q := h.Query(abci.RequestQuery{
+			Path: "Unsupported",
+		})
+		if got, want := q.GetCode(), abci.CodeType_UnknownRequest; got != want {
+			t.Errorf("h.Query(): expected unsupported query to return %v, got %v", want, got)
+		}
+
+		q = h.Query(abci.RequestQuery{
+			Path:   FindSegments,
+			Height: 12,
+		})
+		if got, want := q.GetCode(), abci.CodeType_InternalError; got != want {
+			t.Errorf("h.Query(): expected unsupported query to return %v, got %v", want, got)
+		}
+	})
 }
 
-func (t *TMPop) makeQuery(name string, args interface{}, res interface{}) error {
-	bytes, err := BuildQueryBinary(name, args)
+func TestTx(t *testing.T) {
+	s := dummystore.New(&dummystore.Config{})
+	h := createDefaultTMPop(s, t)
+
+	t.Run("WriteSaveSegment()", func(t *testing.T) {
+		want := commitMockTx(t, h)
+
+		got, err := s.GetSegment(want.GetLinkHash())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ev := got.GetEvidence()
+		delete(got.Meta, "evidence")
+		if !reflect.DeepEqual(want, got) {
+			gotJS, _ := json.MarshalIndent(got, "", "  ")
+			wantJS, _ := json.MarshalIndent(want, "", "  ")
+			t.Errorf("h.Commit(): expected to return %s, got %s", wantJS, gotJS)
+		}
+		got.SetEvidence(ev)
+	})
+
+	t.Run("WriteDeleteSegment", func(t *testing.T) {
+		segment := commitMockTx(t, h)
+
+		tx := makeDeleteSegmentTx(t, segment)
+		commitTx(t, h, tx)
+
+		got, err := s.GetSegment(segment.GetLinkHash())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if got != nil {
+			t.Errorf("h.Commit(): expected to return nil, got %s", got)
+		}
+	})
+
+	t.Run("WriteSaveValue()", func(t *testing.T) {
+		k, want, tx := makeSaveValueTx(t)
+
+		commitTx(t, h, tx)
+
+		got, err := s.GetValue(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if bytes.Compare(want, got) != 0 {
+			t.Errorf("h.Commit(): expected to return %s, got %s", want, got)
+		}
+	})
+
+	t.Run("WriteDeleteValue", func(t *testing.T) {
+		k, _, txSave := makeSaveValueTx(t)
+		commitTx(t, h, txSave)
+
+		tx := makeDeleteValueTx(t, k)
+		commitTx(t, h, tx)
+
+		got, err := s.GetValue(k)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != nil {
+			t.Errorf("h.Commit(): expected to return nil, got %s", got)
+		}
+	})
+}
+
+func TestEvidence(t *testing.T) {
+	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
+	s1 := commitMockTx(t, h)
+
+	got := &cs.Segment{}
+	err := h.makeQuery(GetSegment, s1.GetLinkHash(), got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	evidence := got.GetEvidence()
+
+	txs := evidence["transactions"].(map[string]interface{})
+
+	if len(txs) != 1 {
+		t.Fatalf("h.Query(): expected to have one transaction in evidence")
+	}
+	if !strings.Contains(fmt.Sprint(txs), fmt.Sprint(height)) {
+		t.Errorf("Expected transaction to contain %v, got %v", height, txs)
+	}
+
+	gotState, wantState := evidence["state"].(string), "PENDING"
+	if strings.Compare(gotState, wantState) != 0 {
+		t.Errorf("Expected state to be %s since the next block has not been commited, got %s", wantState, gotState)
+	}
+
+	// Create a new Block that confirms the AppHash
+	commitMockTx(t, h)
+
+	err = h.makeQuery(GetSegment, s1.GetLinkHash(), got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	evidence = got.GetEvidence()
+
+	gotState, wantState = evidence["state"].(string), "COMPLETE"
+	if strings.Compare(gotState, wantState) != 0 {
+		t.Errorf("Expected state to be %s since the next block has been commited, got %s", wantState, gotState)
+	}
+
+	verifyProof(t, evidence["currentProof"], evidence["currentHeader"], s1.GetLinkHash())
+
+	verifyProof(t, evidence["originalProof"], evidence["originalHeader"], s1.GetLinkHash())
+}
+
+func (tmpop *TMPop) makeQuery(name string, args interface{}, res interface{}) error {
+	bytes, err := BuildQueryBinary(args)
 	if err != nil {
 		return err
 	}
 
-	q := t.Query(bytes)
-	if q.IsErr() {
-		return errors.New(q.Error())
+	q := tmpop.Query(abci.RequestQuery{
+		Data: bytes,
+		Path: name,
+	})
+
+	return json.Unmarshal(q.Value, &res)
+}
+
+func readIAVLProof(raw map[string]interface{}) (*merkle.IAVLProof, error) {
+	var nodes []merkle.IAVLProofInnerNode
+
+	nodesI := raw["InnerNodes"].([]interface{})
+
+	for _, nodeI := range nodesI {
+
+		node := nodeI.(map[string]interface{})
+
+		leftHash, err := base64.StdEncoding.DecodeString(node["Left"].(string))
+		if err != nil {
+			return nil, err
+		}
+
+		rightHash, err := base64.StdEncoding.DecodeString(node["Right"].(string))
+		if err != nil {
+			return nil, err
+		}
+
+		nodes = append(nodes, merkle.IAVLProofInnerNode{
+			Height: int8(node["Height"].(float64)),
+			Size:   int(node["Size"].(float64)),
+			Left:   leftHash,
+			Right:  rightHash,
+		})
 	}
-	return json.Unmarshal(q.Data, &res)
+
+	leafHash, err := base64.StdEncoding.DecodeString(raw["LeafHash"].(string))
+	if err != nil {
+		return nil, err
+	}
+
+	rootHash, err := base64.StdEncoding.DecodeString(raw["RootHash"].(string))
+	if err != nil {
+		return nil, err
+	}
+
+	return &merkle.IAVLProof{
+		LeafHash:   leafHash,
+		InnerNodes: nodes,
+		RootHash:   rootHash,
+	}, nil
+}
+
+func readHeader(raw map[string]interface{}) (*abci.Header, error) {
+	appHash, err := base64.StdEncoding.DecodeString(raw["app_hash"].(string))
+	if err != nil {
+		return nil, err
+	}
+	return &abci.Header{
+		AppHash: appHash,
+	}, nil
+}
+
+func verifyProof(t *testing.T, proofI, headerI interface{}, linkHash *types.Bytes32) {
+	proof, err := readIAVLProof(proofI.(map[string]interface{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	header, err := readHeader(headerI.(map[string]interface{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !proof.Verify(linkHash[:], nil, header.AppHash) {
+		t.Errorf("Expected proof %s to be valid with header %s", proofI, headerI)
+	}
+}
+
+func createDefaultStore() store.Adapter {
+	return &storetesting.MockAdapter{}
+}
+
+func (tmpop *TMPop) readAppHash(t *testing.T) []byte {
+	res, err := readLastBlock(tmpop.adapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res.AppHash
+}
+
+func (tmpop *TMPop) readHeight(t *testing.T) uint64 {
+	res, err := readLastBlock(tmpop.adapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res.Height
+}
+
+func createDefaultTMPop(a store.Adapter, t *testing.T) *TMPop {
+	if a == nil {
+		a = createDefaultStore()
+	}
+
+	tmpop, err := New(a, &Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// reset header
+	header = &abci.Header{
+		Height:  height,
+		ChainId: chainID,
+		AppHash: []byte{},
+	}
+	return tmpop
+}
+
+func makeSaveSegmentTx(t *testing.T) (*cs.Segment, []byte) {
+	s := cstesting.RandomSegment()
+
+	tx := Tx{
+		TxType:  SaveSegment,
+		Segment: s,
+	}
+	res, err := json.Marshal(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s, res
+}
+
+func makeDeleteSegmentTx(t *testing.T, s *cs.Segment) []byte {
+	tx := Tx{
+		TxType:   DeleteSegment,
+		LinkHash: s.GetLinkHash(),
+	}
+	res, err := json.Marshal(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
+}
+
+func makeSaveValueTx(t *testing.T) (key, value, txBytes []byte) {
+	k := testutil.RandomKey()
+	v := testutil.RandomValue()
+
+	tx := Tx{
+		TxType: SaveValue,
+		Key:    k,
+		Value:  v,
+	}
+	txBytes, err := json.Marshal(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return key, value, txBytes
+}
+
+func makeDeleteValueTx(t *testing.T, key []byte) []byte {
+	tx := Tx{
+		TxType: DeleteValue,
+		Key:    key,
+	}
+	res, err := json.Marshal(tx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
+}
+
+func commitMockTx(t *testing.T, h *TMPop) *cs.Segment {
+	s, tx := makeSaveSegmentTx(t)
+
+	commitTx(t, h, tx)
+	return s
+}
+
+func commitTx(t *testing.T, h *TMPop, tx []byte) {
+	h.BeginBlock(header.AppHash, header)
+
+	h.DeliverTx(tx)
+
+	commitResult := h.Commit()
+	if commitResult.IsErr() {
+		t.Errorf("a.Commit(): failed: %v", commitResult.Log)
+	}
+	header.AppHash = commitResult.Data
+	header.Height++
 }

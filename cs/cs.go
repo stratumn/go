@@ -16,6 +16,14 @@ import (
 	"github.com/stratumn/sdk/types"
 )
 
+const (
+	// CompleteEvidence characterizes a Complete Evidence.
+	CompleteEvidence = "COMPLETE"
+
+	// PendingEvidence characterizes a Pending Evidence.
+	PendingEvidence = "PENDING"
+)
+
 // Segment contains a link and meta data about the link.
 type Segment struct {
 	Link Link                   `json:"link"`
@@ -68,6 +76,16 @@ func (s *Segment) Validate() error {
 	}
 
 	return nil
+}
+
+// SetEvidence sets the segment evidence
+func (s *Segment) SetEvidence(evidence map[string]interface{}) {
+	s.Meta["evidence"] = evidence
+}
+
+// GetEvidence returns the segment evidence
+func (s *Segment) GetEvidence() map[string]interface{} {
+	return s.Meta["evidence"].(map[string]interface{})
 }
 
 // IsEmpty checks if a segment is empty (nil)

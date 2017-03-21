@@ -10,34 +10,19 @@ import "encoding/json"
 
 // Query types.
 const (
-	GetInfo       = "GetInfo"
-	GetSegment    = "GetSegment"
-	FindSegments  = "FindSegments"
-	GetMapIDs     = "GetMapIDs"
-	DeleteSegment = "DeleteSegment"
+	GetInfo      = "GetInfo"
+	GetSegment   = "GetSegment"
+	FindSegments = "FindSegments"
+	GetMapIDs    = "GetMapIDs"
+	GetValue     = "GetValue"
 )
 
-// Query is the type used to query the tendermint App
-type Query struct {
-	Name string `json:"Name"`
-	Args []byte `json:"Args"`
-}
-
-// BuildQueryBinary outputs the marshalled Query
-func BuildQueryBinary(name string, args interface{}) ([]byte, error) {
-	var argsBytes []byte
+// BuildQueryBinary outputs the marshalled Query.
+func BuildQueryBinary(args interface{}) (argsBytes []byte, err error) {
 	if args != nil {
-		var err error
 		if argsBytes, err = json.Marshal(args); err != nil {
-			return nil, err
+			return
 		}
 	}
-
-	query := &Query{Name: name, Args: argsBytes}
-	bytes, err := json.Marshal(query)
-
-	if err != nil {
-		return nil, err
-	}
-	return bytes, nil
+	return
 }

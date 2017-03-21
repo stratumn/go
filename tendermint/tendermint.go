@@ -14,7 +14,6 @@ import (
 	"github.com/tendermint/abci/types"
 	tmcommon "github.com/tendermint/go-common"
 	cfg "github.com/tendermint/go-config"
-	p2p "github.com/tendermint/go-p2p"
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/proxy"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -37,7 +36,10 @@ func RunNode(config cfg.Config, app types.Application) *node.Node {
 			if err != nil {
 				log.Fatalf("Couldn't read GenesisDoc file: %v", err)
 			}
-			genDoc := tmtypes.GenesisDocFromJSON(jsonBlob)
+			genDoc, err := tmtypes.GenesisDocFromJSON(jsonBlob)
+			if err != nil {
+				log.Fatalf("Error reading GenesisDoc: %v", err)
+			}
 			if genDoc.ChainID == "" {
 				log.Fatalf("Genesis doc %v must include non-empty chain_id", genDocFile)
 			}
@@ -47,22 +49,12 @@ func RunNode(config cfg.Config, app types.Application) *node.Node {
 
 	// Create & start node
 	n := newNodeDefault(config, app)
-
-	protocol, address := node.ProtocolAndAddress(config.GetString("node_laddr"))
-	l := p2p.NewDefaultListener(protocol, address, config.GetBool("skip_upnp"))
-	n.AddListener(l)
-	err := n.Start()
-	if err != nil {
+	if _, err := n.Start(); err != nil {
 		log.Fatalf("Failed to start node: %v", err)
+	} else {
+		log.Debug("Started node", "nodeInfo", n.Switch().NodeInfo())
 	}
 
-	// Run the RPC server.
-	if config.GetString("rpc_laddr") != "" {
-		_, err := n.StartRPC()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
 	return n
 }
 

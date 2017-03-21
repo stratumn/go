@@ -11,6 +11,7 @@
 package dummystore
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
@@ -49,6 +50,7 @@ type DummyStore struct {
 	config       *Config
 	didSaveChans []chan *cs.Segment
 	segments     segmentMap   // maps link hashes to segments
+	values       valueMap     // maps keys to values
 	maps         hashSetMap   // maps chains IDs to sets of link hashes
 	mutex        sync.RWMutex // simple global mutex
 }
@@ -56,6 +58,7 @@ type DummyStore struct {
 type segmentMap map[string]*cs.Segment
 type hashSet map[string]struct{}
 type hashSetMap map[string]hashSet
+type valueMap map[string][]byte
 
 // New creates an instance of a DummyStore.
 func New(config *Config) *DummyStore {
@@ -63,6 +66,7 @@ func New(config *Config) *DummyStore {
 		config,
 		nil,
 		segmentMap{},
+		valueMap{},
 		hashSetMap{},
 		sync.RWMutex{},
 	}
@@ -89,6 +93,10 @@ func (a *DummyStore) SaveSegment(segment *cs.Segment) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
+	return a.saveSegment(segment)
+}
+
+func (a *DummyStore) saveSegment(segment *cs.Segment) error {
 	linkHashStr := segment.GetLinkHashString()
 	curr := a.segments[linkHashStr]
 	mapID := segment.Link.GetMapID()
@@ -131,6 +139,10 @@ func (a *DummyStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
+	return a.deleteSegment(linkHash)
+}
+
+func (a *DummyStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	linkHashStr := linkHash.String()
 	segment, exists := a.segments[linkHashStr]
 	if !exists {
@@ -184,6 +196,55 @@ func (a *DummyStore) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 	return pagination.PaginateStrings(mapIDs), nil
 }
 
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+func (a *DummyStore) GetValue(key []byte) ([]byte, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return a.values[createKey(key)], nil
+}
+
+// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
+func (a *DummyStore) SaveValue(key, value []byte) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.saveValue(key, value)
+}
+
+func (a *DummyStore) saveValue(key, value []byte) error {
+	k := createKey(key)
+	a.values[k] = value
+
+	return nil
+}
+
+// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+func (a *DummyStore) DeleteValue(key []byte) ([]byte, error) {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.deleteValue(key)
+}
+
+func (a *DummyStore) deleteValue(key []byte) ([]byte, error) {
+	k := createKey(key)
+
+	value, exists := a.values[k]
+	if !exists {
+		return nil, nil
+	}
+
+	delete(a.values, k)
+
+	return value, nil
+}
+
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (a *DummyStore) NewBatch() store.Batch {
+	return NewBatch(a)
+}
+
 func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.Filter) (cs.SegmentSlice, error) {
 	var segments cs.SegmentSlice
 
@@ -213,4 +274,8 @@ HASH_LOOP:
 	sort.Sort(segments)
 
 	return filter.Pagination.PaginateSegments(segments), nil
+}
+
+func createKey(k []byte) string {
+	return fmt.Sprintf("%x", k)
 }

@@ -36,7 +36,10 @@ func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", filestore.Description, version, commit[:7])
 
-	a := filestore.New(&filestore.Config{Path: *path, Version: version, Commit: commit})
+	a, err := filestore.New(&filestore.Config{Path: *path, Version: version, Commit: commit})
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	httpConfig := &jsonhttp.Config{
 		Address:  *http,

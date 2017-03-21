@@ -21,13 +21,7 @@ import (
 
 // TestGetSegment tests what happens when you get an existing segment.
 func (f Factory) TestGetSegment(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -53,13 +47,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 // TestGetSegmentUpdatedState tests what happens when you get a segment whose
 // state was updated.
 func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -86,13 +74,7 @@ func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 // TestGetSegmentUpdatedMapID tests what happens when you get a segment whose
 // map ID was updated.
 func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -118,13 +100,7 @@ func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 
 // TestGetSegmentNotFound tests what happens when you get a nonexistent segment.
 func (f Factory) TestGetSegmentNotFound(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s, err := a.GetSegment(testutil.RandomHash())
@@ -140,13 +116,7 @@ func (f Factory) TestGetSegmentNotFound(t *testing.T) {
 
 // BenchmarkGetSegment benchmarks getting existing segments.
 func (f Factory) BenchmarkGetSegment(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	linkHashes := make([]*types.Bytes32, b.N)
@@ -170,13 +140,7 @@ func (f Factory) BenchmarkGetSegment(b *testing.B) {
 
 // BenchmarkGetSegmentParallel benchmarks getting existing segments in parallel.
 func (f Factory) BenchmarkGetSegmentParallel(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	linkHashes := make([]*types.Bytes32, b.N)

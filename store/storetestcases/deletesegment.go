@@ -21,13 +21,7 @@ import (
 
 // TestDeleteSegment tests what happens when you delete an existing segments.
 func (f Factory) TestDeleteSegment(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -62,13 +56,7 @@ func (f Factory) TestDeleteSegment(t *testing.T) {
 // TestDeleteSegmentNotFound tests what happens when you delete a nonexistent
 // segment.
 func (f Factory) TestDeleteSegmentNotFound(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s, err := a.DeleteSegment(testutil.RandomHash())
@@ -84,13 +72,7 @@ func (f Factory) TestDeleteSegmentNotFound(t *testing.T) {
 
 // BenchmarkDeleteSegment benchmarks deleting existing segments.
 func (f Factory) BenchmarkDeleteSegment(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	linkHashes := make([]*types.Bytes32, b.N)
@@ -115,13 +97,7 @@ func (f Factory) BenchmarkDeleteSegment(b *testing.B) {
 // BenchmarkDeleteSegmentParallel benchmarks deleting existing segments in
 // parallel.
 func (f Factory) BenchmarkDeleteSegmentParallel(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	linkHashes := make([]*types.Bytes32, b.N)

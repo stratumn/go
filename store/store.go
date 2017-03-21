@@ -20,30 +20,59 @@ const (
 	MaxLimit = 200
 )
 
-// Adapter must be implemented by a store.
-type Adapter interface {
-	// Returns arbitrary information about the adapter.
-	GetInfo() (interface{}, error)
-
-	// Adds a channel that receives segments whenever they are saved.
-	AddDidSaveChannel(chan *cs.Segment)
-
+// Writer is the interface that wraps the Write methods of a Store.
+type Writer interface {
 	// Creates or updates a segment. Segments passed to this method are
 	// assumed to be valid.
 	SaveSegment(segment *cs.Segment) error
 
-	// Get a segment by link hash. Returns nil if no match is found.
-	GetSegment(linkHash *types.Bytes32) (*cs.Segment, error)
-
 	// Deletes a segment by link hash. Returns the removed segment or nil
 	// if not found.
 	DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
+
+	// Saves a value at a key.
+	SaveValue(key []byte, value []byte) error
+
+	// Deletes a value at a key.
+	DeleteValue(key []byte) ([]byte, error)
+}
+
+// Reader is the interface that wraps the Read methods of a Store.
+type Reader interface {
+	// Get a segment by link hash. Returns nil if no match is found.
+	GetSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 
 	// Find segments. Returns an empty slice if there are no results.
 	FindSegments(filter *Filter) (cs.SegmentSlice, error)
 
 	// Get all the existing map IDs.
 	GetMapIDs(pagination *Pagination) ([]string, error)
+
+	// Gets a value at a key
+	GetValue(key []byte) ([]byte, error)
+}
+
+// Batch represents a database transaction
+type Batch interface {
+	Writer
+
+	// Write definitely writes the content of the Batch
+	Write() error
+}
+
+// Adapter must be implemented by a store.
+type Adapter interface {
+	Reader
+	Writer
+
+	// Returns arbitrary information about the adapter.
+	GetInfo() (interface{}, error)
+
+	// Adds a channel that receives segments whenever they are saved.
+	AddDidSaveChannel(chan *cs.Segment)
+
+	// Creates a new Batch
+	NewBatch() Batch
 }
 
 // Pagination contains pagination options.

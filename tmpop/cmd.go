@@ -31,7 +31,10 @@ func Run(a store.Adapter, config *Config, addrPtr, abciPtr *string) {
 	log.Info("Mozilla Public License 2.0")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	tmpop := New(a, config)
+	tmpop, err := New(a, config)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	srv, err := server.NewServer(*addrPtr, *abciPtr, tmpop)
 	if err != nil {

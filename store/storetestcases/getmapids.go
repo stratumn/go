@@ -21,13 +21,7 @@ import (
 // TestGetMapIDs tests what happens when you get map IDs with default
 // pagination.
 func (f Factory) TestGetMapIDs(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	for i := 0; i < store.DefaultLimit; i++ {
@@ -58,13 +52,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 // TestGetMapIDsPagination tests what happens when you get map IDs with
 // pagination.
 func (f Factory) TestGetMapIDsPagination(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	for i := 0; i < 10; i++ {
@@ -87,13 +75,7 @@ func (f Factory) TestGetMapIDsPagination(t *testing.T) {
 
 // TestGetMapIDsEmpty tests what happens when you should get no map IDs.
 func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	slice, err := a.GetMapIDs(&store.Pagination{Offset: 100000, Limit: 5})
@@ -108,13 +90,7 @@ func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
 
 // BenchmarkGetMapIDs benchmarks getting map IDs.
 func (f Factory) BenchmarkGetMapIDs(b *testing.B, numSegments int, segmentFunc SegmentFunc, paginationFunc PaginationFunc) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	for i := 0; i < numSegments; i++ {
@@ -155,13 +131,7 @@ func (f Factory) BenchmarkGetMapIDs10000(b *testing.B) {
 
 // BenchmarkGetMapIDsParallel benchmarks getting map IDs in parallel.
 func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numSegments int, segmentFunc SegmentFunc, paginationFunc PaginationFunc) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	for i := 0; i < numSegments; i++ {

@@ -16,5 +16,9 @@ func createAdapter(tb testing.TB) *FileStore {
 	if err != nil {
 		tb.Fatalf("ioutil.TempDir(): err: %s", err)
 	}
-	return New(&Config{Path: path})
+	fs, err := New(&Config{Path: path})
+	if err != nil {
+		tb.Fatalf("New(): err: %s", err)
+	}
+	return fs
 }

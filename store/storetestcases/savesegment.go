@@ -18,13 +18,7 @@ import (
 
 // TestSaveSegment tests what happens when you save a new segment.
 func (f Factory) TestSaveSegment(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s := cstesting.RandomSegment()
@@ -36,13 +30,7 @@ func (f Factory) TestSaveSegment(t *testing.T) {
 // TestSaveSegmentUpdatedState tests what happens when you update the state of a
 // segment.
 func (f Factory) TestSaveSegmentUpdatedState(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s := cstesting.RandomSegment()
@@ -59,13 +47,7 @@ func (f Factory) TestSaveSegmentUpdatedState(t *testing.T) {
 // TestSaveSegmentUpdatedMapID tests what happens when you update the map ID of
 // a segment.
 func (f Factory) TestSaveSegmentUpdatedMapID(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
@@ -82,13 +64,7 @@ func (f Factory) TestSaveSegmentUpdatedMapID(t *testing.T) {
 // TestSaveSegmentBranch tests what happens when you save a segment with a
 // previous link hash.
 func (f Factory) TestSaveSegmentBranch(t *testing.T) {
-	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapter(t)
 	defer f.free(a)
 
 	s := cstesting.RandomSegment()
@@ -104,13 +80,7 @@ func (f Factory) TestSaveSegmentBranch(t *testing.T) {
 
 // BenchmarkSaveSegment benchmarks saving new segments.
 func (f Factory) BenchmarkSaveSegment(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	slice := make([]*cs.Segment, b.N)
@@ -130,13 +100,7 @@ func (f Factory) BenchmarkSaveSegment(b *testing.B) {
 
 // BenchmarkSaveSegmentParallel benchmarks saving new segments in parallel.
 func (f Factory) BenchmarkSaveSegmentParallel(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	slice := make([]*cs.Segment, b.N)
@@ -161,13 +125,7 @@ func (f Factory) BenchmarkSaveSegmentParallel(b *testing.B) {
 
 // BenchmarkSaveSegmentUpdatedState benchmarks updating segments states.
 func (f Factory) BenchmarkSaveSegmentUpdatedState(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	slice := make([]*cs.Segment, b.N)
@@ -190,13 +148,7 @@ func (f Factory) BenchmarkSaveSegmentUpdatedState(b *testing.B) {
 // BenchmarkSaveSegmentUpdatedStateParallel benchmarks updating segments states
 // in parallel.
 func (f Factory) BenchmarkSaveSegmentUpdatedStateParallel(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	slice := make([]*cs.Segment, b.N)
@@ -222,13 +174,7 @@ func (f Factory) BenchmarkSaveSegmentUpdatedStateParallel(b *testing.B) {
 
 // BenchmarkSaveSegmentUpdatedMapID benchmarks updating segment map IDs.
 func (f Factory) BenchmarkSaveSegmentUpdatedMapID(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	slice := make([]*cs.Segment, b.N)
@@ -251,13 +197,7 @@ func (f Factory) BenchmarkSaveSegmentUpdatedMapID(b *testing.B) {
 // BenchmarkSaveSegmentUpdatedMapIDParallel benchmarks updating segment map IDs
 // in parallel.
 func (f Factory) BenchmarkSaveSegmentUpdatedMapIDParallel(b *testing.B) {
-	a, err := f.New()
-	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		b.Fatal("a = nil want store.Adapter")
-	}
+	a := f.initAdapterB(b)
 	defer f.free(a)
 
 	slice := make([]*cs.Segment, b.N)
