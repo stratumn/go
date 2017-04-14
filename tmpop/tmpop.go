@@ -15,6 +15,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-merkle"
 	"github.com/tendermint/go-wire"
@@ -49,6 +50,9 @@ type Config struct {
 
 	// The DB cache size.
 	CacheSize int
+
+	// JSON schema rules definition
+	ValidatorFilename string
 }
 
 // TMPop is the type of the application that implements github.com/tendermint/abci/types.Application,
@@ -314,7 +318,7 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 		if res.IsErr() {
 			return res
 		}
-		if res = t.checkSegment(tx.Segment); res.IsErr() {
+		if res = t.checkSegment(snapshot, tx.Segment); res.IsErr() {
 			return res
 		}
 		t.currentBlockSegments = append(t.currentBlockSegments, tx.Segment.GetLinkHash())
@@ -362,10 +366,19 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 
 }
 
-func (t *TMPop) checkSegment(segment *cs.Segment) abci.Result {
+func (t *TMPop) checkSegment(snapshot *Snapshot, segment *cs.Segment) abci.Result {
 	err := segment.Validate()
 	if err != nil {
 		return abci.ErrUnauthorized.SetLog(fmt.Sprintf("Invalid segment %v: %v", segment, err))
+	}
+
+	// TODO: in production do not reload validation rules each time a new segment is created
+	// Use instead notification mechanisms
+	rootValidator := validator.NewRootValidator(t.config.ValidatorFilename, true)
+	err = rootValidator.Validate(snapshot.segments, segment)
+
+	if err != nil {
+		return abci.ErrUnauthorized.SetLog(fmt.Sprintf("Segment validation failed %v: %v", segment, err))
 	}
 
 	return abci.OK
