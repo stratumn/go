@@ -53,10 +53,13 @@ type Info struct {
 
 // Store is the type that implements github.com/stratumn/sdk/store.Adapter.
 type Store struct {
+	*writer
 	config       *Config
 	didSaveChans []chan *cs.Segment
 	db           *sql.DB
 	stmts        *stmts
+
+	batches map[store.Batch]*sql.Tx
 }
 
 // New creates an instance of a Store.
@@ -65,7 +68,7 @@ func New(config *Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{config: config, db: db}, nil
+	return &Store{config: config, db: db, batches: make(map[store.Batch]*sql.Tx)}, nil
 }
 
 // AddDidSaveChannel implements
@@ -86,29 +89,7 @@ func (a *Store) GetInfo() (interface{}, error) {
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (a *Store) SaveSegment(segment *cs.Segment) error {
-	var (
-		err          error
-		linkHash     = segment.GetLinkHash()
-		priority     = segment.Link.GetPriority()
-		mapID        = segment.Link.GetMapID()
-		prevLinkHash = segment.Link.GetPrevLinkHash()
-		tags         = segment.Link.GetTags()
-	)
-
-	data, err := json.Marshal(segment)
-	if err != nil {
-		return err
-	}
-
-	if prevLinkHash == nil {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, nil, pq.Array(tags), string(data))
-	} else {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data))
-	}
-
-	if err != nil {
-		return err
-	}
+	a.writer.SaveSegment(segment)
 
 	// Send saved segment to all the save channels without blocking.
 	go func(chans []chan *cs.Segment) {
@@ -132,27 +113,6 @@ func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	}
 
 	var segment cs.Segment
-	if err := json.Unmarshal([]byte(data), &segment); err != nil {
-		return nil, err
-	}
-
-	return &segment, nil
-}
-
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	var (
-		data    string
-		segment cs.Segment
-	)
-
-	if err := a.stmts.DeleteSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
-		if err.Error() == notFoundError {
-			return nil, nil
-		}
-		return nil, err
-	}
-
 	if err := json.Unmarshal([]byte(data), &segment); err != nil {
 		return nil, err
 	}
@@ -241,6 +201,42 @@ func (a *Store) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 	return mapIDs, nil
 }
 
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+func (a *Store) GetValue(key []byte) ([]byte, error) {
+	var data []byte
+
+	if err := a.stmts.GetValue.QueryRow(key).Scan(&data); err != nil {
+		if err.Error() == notFoundError {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return data, nil
+}
+
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (a *Store) NewBatch() store.Batch {
+	tx, err := a.db.Begin()
+	if err != nil {
+		panic(err)
+	}
+	b, err := NewBatch(a, tx)
+	if err != nil {
+		panic(err)
+	}
+	a.batches[b] = tx
+
+	return b
+}
+
+func (a *Store) commit(b *Batch) error {
+	tx := a.batches[b]
+	defer delete(a.batches, b)
+
+	return tx.Commit()
+}
+
 // Create creates the database tables and indexes.
 func (a *Store) Create() error {
 	for _, query := range sqlCreate {
@@ -254,13 +250,26 @@ func (a *Store) Create() error {
 // Prepare prepares the database stmts.
 // It should be called once before interacting with segments.
 // It assumes the tables have been created using Create().
-func (a *Store) Prepare() (err error) {
-	a.stmts, err = newStmts(a.db)
-	return
+func (a *Store) Prepare() error {
+	stmts, err := newStmts(a.db)
+	if err != nil {
+		return err
+	}
+	a.stmts = stmts
+	a.writer = &writer{stmts: a.stmts.writeStmts}
+
+	return nil
 }
 
-// Drop drops the database tables and indexes.
+// Drop drops the database tables and indexes. It also rollbacks started batches.
 func (a *Store) Drop() error {
+	for _, tx := range a.batches {
+		err := tx.Rollback()
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, query := range sqlDrop {
 		if _, err := a.db.Exec(query); err != nil {
 			return err
