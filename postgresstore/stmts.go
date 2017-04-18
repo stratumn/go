@@ -70,6 +70,25 @@ const (
 		ORDER BY map_id
 		OFFSET $1 LIMIT $2
 	`
+	sqlSaveValue = `
+		INSERT INTO values (
+			key,
+			value
+		)
+		VALUES ($1, $2)
+		ON CONFLICT (key)
+		DO UPDATE SET
+			value = $2
+	`
+	sqlGetValue = `
+		SELECT value FROM values
+		WHERE key = $1
+	`
+	sqlDeleteValue = `
+		DELETE FROM values
+		WHERE key = $1
+		RETURNING value
+	`
 )
 
 var sqlCreate = []string{
@@ -110,16 +129,36 @@ var sqlCreate = []string{
 		CREATE INDEX segments_tags_idx
 		ON segments USING gin(tags)
 	`,
+	`
+		CREATE TABLE values (
+			id BIGSERIAL PRIMARY KEY,
+			key bytea NOT NULL,
+			value bytea NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`,
+	`
+		CREATE UNIQUE INDEX values_key_idx
+		ON values (key)
+	`,
 }
 
 var sqlDrop = []string{
-	"DROP TABLE segments",
+	"DROP TABLE segments, values",
+}
+
+type writeStmts struct {
+	SaveSegment   *sql.Stmt
+	DeleteSegment *sql.Stmt
+	SaveValue     *sql.Stmt
+	DeleteValue   *sql.Stmt
 }
 
 type stmts struct {
-	SaveSegment                         *sql.Stmt
+	writeStmts
+
 	GetSegment                          *sql.Stmt
-	DeleteSegment                       *sql.Stmt
 	FindSegments                        *sql.Stmt
 	FindSegmentsWithMapID               *sql.Stmt
 	FindSegmentsWithPrevLinkHash        *sql.Stmt
@@ -128,6 +167,11 @@ type stmts struct {
 	FindSegmentsWithMapIDAndTags        *sql.Stmt
 	FindSegmentsWithPrevLinkHashAndTags *sql.Stmt
 	GetMapIDs                           *sql.Stmt
+	GetValue                            *sql.Stmt
+}
+
+type batchStmts struct {
+	writeStmts
 }
 
 func newStmts(db *sql.DB) (*stmts, error) {
@@ -153,6 +197,34 @@ func newStmts(db *sql.DB) (*stmts, error) {
 	s.FindSegmentsWithMapIDAndTags = prepare(sqlFindSegmentsWithMapIDAndTags)
 	s.FindSegmentsWithPrevLinkHashAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndTags)
 	s.GetMapIDs = prepare(sqlGetMapIDs)
+	s.SaveValue = prepare(sqlSaveValue)
+	s.DeleteValue = prepare(sqlDeleteValue)
+	s.GetValue = prepare(sqlGetValue)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func newBatchStmts(tx *sql.Tx) (*batchStmts, error) {
+	var (
+		s   batchStmts
+		err error
+	)
+
+	prepare := func(str string) (stmt *sql.Stmt) {
+		if err == nil {
+			stmt, err = tx.Prepare(str)
+		}
+		return
+	}
+
+	s.SaveSegment = prepare(sqlSaveSegment)
+	s.DeleteSegment = prepare(sqlDeleteSegment)
+	s.SaveValue = prepare(sqlSaveValue)
+	s.DeleteValue = prepare(sqlDeleteValue)
 
 	if err != nil {
 		return nil, err
