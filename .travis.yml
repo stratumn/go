@@ -4,8 +4,12 @@ go:
   - 1.8
   - tip
 
+install:
+  - go get -u github.com/golang/lint/golint
+
 script:
   - make coverage
+  - make lint
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
