@@ -72,6 +72,7 @@ type Store struct {
 	session      *rethink.Session
 	db           rethink.Term
 	segments     rethink.Term
+	values       rethink.Term
 }
 
 type wrapper struct {
@@ -82,6 +83,11 @@ type wrapper struct {
 	MapID        string      `json:"mapId"`
 	PrevLinkHash []byte      `json:"prevLinkHash"`
 	Tags         []string    `json:"tags"`
+}
+
+type valueWrapper struct {
+	ID    []byte `json:"id"`
+	Value []byte `json:"value"`
 }
 
 // New creates an instance of a Store.
@@ -97,6 +103,7 @@ func New(config *Config) (*Store, error) {
 		session:  session,
 		db:       db,
 		segments: db.Table("segments"),
+		values:   db.Table("values"),
 	}, nil
 }
 
@@ -278,6 +285,69 @@ func (a *Store) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 	return mapIDs, nil
 }
 
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+func (a *Store) GetValue(key []byte) ([]byte, error) {
+	cur, err := a.values.Get(key).Run(a.session)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close()
+
+	var w valueWrapper
+	if err := cur.One(&w); err != nil {
+		if err == rethink.ErrEmptyResult {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return w.Value, nil
+}
+
+// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
+func (a *Store) SaveValue(key, value []byte) error {
+	v := &valueWrapper{
+		ID:    key,
+		Value: value,
+	}
+
+	if err := a.values.Get(key).Replace(&v).Exec(a.session); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+func (a *Store) DeleteValue(key []byte) ([]byte, error) {
+	res, err := a.values.
+		Get(key).
+		Delete(rethink.DeleteOpts{ReturnChanges: true}).
+		RunWrite(a.session)
+	if err != nil {
+		return nil, err
+	}
+	if res.Deleted < 1 {
+		return nil, nil
+	}
+	b, err := json.Marshal(res.Changes[0].OldValue)
+	if err != nil {
+		return nil, err
+	}
+
+	var w valueWrapper
+	if err := json.Unmarshal(b, &w); err != nil {
+		return nil, err
+	}
+
+	return w.Value, nil
+}
+
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (a *Store) NewBatch() store.Batch {
+	return NewBatch(a)
+}
+
 // Create creates the database tables and indexes.
 func (a *Store) Create() (err error) {
 	exec := func(term rethink.Term) {
@@ -313,12 +383,23 @@ func (a *Store) Create() (err error) {
 	}))
 	exec(a.segments.IndexWait("prevLinkHashOrder"))
 
+	exec(a.db.TableCreate("values", tblOpts))
+	exec(a.values.Wait())
+
 	return err
 }
 
 // Drop drops the database tables and indexes.
-func (a *Store) Drop() error {
-	return a.db.TableDrop("segments").Exec(a.session)
+func (a *Store) Drop() (err error) {
+	exec := func(term rethink.Term) {
+		if err == nil {
+			err = term.Exec(a.session)
+		}
+	}
+	exec(a.db.TableDrop("segments"))
+	exec(a.db.TableDrop("values"))
+
+	return
 }
 
 // Exists returns whether the database tables exists.
@@ -331,7 +412,7 @@ func (a *Store) Exists() (bool, error) {
 
 	var name string
 	for cur.Next(&name) {
-		if name == "segments" {
+		if name == "segments" || name == "values" {
 			return true, nil
 		}
 	}
