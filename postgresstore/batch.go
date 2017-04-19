@@ -14,7 +14,7 @@ type Batch struct {
 	store *Store
 }
 
-// NewBatch creates a new instance of a Postgres Batch
+// NewBatch creates a new instance of a Postgres Batch.
 func NewBatch(a *Store, tx *sql.Tx) (*Batch, error) {
 	stmts, err := newBatchStmts(tx)
 	if err != nil {
@@ -27,6 +27,7 @@ func NewBatch(a *Store, tx *sql.Tx) (*Batch, error) {
 	}, nil
 }
 
+// Write implements github.com/stratumn/sdk/store.Adapter.Write.
 func (b *Batch) Write() error {
 	return b.store.commit(b)
 }
