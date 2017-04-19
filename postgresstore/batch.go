@@ -11,11 +11,12 @@ import "database/sql"
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.
 type Batch struct {
 	*writer
-	store *Store
+	done bool
+	tx   *sql.Tx
 }
 
 // NewBatch creates a new instance of a Postgres Batch.
-func NewBatch(a *Store, tx *sql.Tx) (*Batch, error) {
+func NewBatch(tx *sql.Tx) (*Batch, error) {
 	stmts, err := newBatchStmts(tx)
 	if err != nil {
 		return nil, err
@@ -23,11 +24,12 @@ func NewBatch(a *Store, tx *sql.Tx) (*Batch, error) {
 
 	return &Batch{
 		writer: &writer{stmts: stmts.writeStmts},
-		store:  a,
+		tx:     tx,
 	}, nil
 }
 
 // Write implements github.com/stratumn/sdk/store.Adapter.Write.
 func (b *Batch) Write() error {
-	return b.store.commit(b)
+	b.done = true
+	return b.tx.Commit()
 }

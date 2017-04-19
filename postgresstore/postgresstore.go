@@ -59,7 +59,7 @@ type Store struct {
 	db           *sql.DB
 	stmts        *stmts
 
-	batches map[store.Batch]*sql.Tx
+	batches map[*Batch]*sql.Tx
 }
 
 // New creates an instance of a Store.
@@ -68,7 +68,7 @@ func New(config *Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{config: config, db: db, batches: make(map[store.Batch]*sql.Tx)}, nil
+	return &Store{config: config, db: db, batches: make(map[*Batch]*sql.Tx)}, nil
 }
 
 // AddDidSaveChannel implements
@@ -217,24 +217,23 @@ func (a *Store) GetValue(key []byte) ([]byte, error) {
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (a *Store) NewBatch() store.Batch {
+	for b := range a.batches {
+		if b.done {
+			delete(a.batches, b)
+		}
+	}
+
 	tx, err := a.db.Begin()
 	if err != nil {
 		panic(err)
 	}
-	b, err := NewBatch(a, tx)
+	b, err := NewBatch(tx)
 	if err != nil {
 		panic(err)
 	}
 	a.batches[b] = tx
 
 	return b
-}
-
-func (a *Store) commit(b *Batch) error {
-	tx := a.batches[b]
-	defer delete(a.batches, b)
-
-	return tx.Commit()
 }
 
 // Create creates the database tables and indexes.
@@ -263,10 +262,12 @@ func (a *Store) Prepare() error {
 
 // Drop drops the database tables and indexes. It also rollbacks started batches.
 func (a *Store) Drop() error {
-	for _, tx := range a.batches {
-		err := tx.Rollback()
-		if err != nil {
-			return err
+	for b, tx := range a.batches {
+		if !b.done {
+			err := tx.Rollback()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
