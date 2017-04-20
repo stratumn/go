@@ -216,7 +216,7 @@ func (a *Store) GetValue(key []byte) ([]byte, error) {
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (a *Store) NewBatch() store.Batch {
+func (a *Store) NewBatch() (store.Batch, error) {
 	for b := range a.batches {
 		if b.done {
 			delete(a.batches, b)
@@ -225,15 +225,15 @@ func (a *Store) NewBatch() store.Batch {
 
 	tx, err := a.db.Begin()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	b, err := NewBatch(tx)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	a.batches[b] = tx
 
-	return b
+	return b, nil
 }
 
 // Create creates the database tables and indexes.

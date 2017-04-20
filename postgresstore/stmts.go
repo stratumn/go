@@ -170,9 +170,7 @@ type stmts struct {
 	GetValue                            *sql.Stmt
 }
 
-type batchStmts struct {
-	writeStmts
-}
+type batchStmts writeStmts
 
 func newStmts(db *sql.DB) (*stmts, error) {
 	var (
