@@ -14,6 +14,7 @@ import (
 	"github.com/tendermint/abci/types"
 	tmcommon "github.com/tendermint/go-common"
 	cfg "github.com/tendermint/go-config"
+	logger "github.com/tendermint/go-logger"
 	"github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/proxy"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -23,6 +24,8 @@ import (
 // Copied and modified from
 // https://github.com/tendermint/tendermint/blob/master/node/node.go
 func RunNode(config cfg.Config, app types.Application) *node.Node {
+	logger.SetLogLevel(config.GetString("log_level"))
+
 	// Wait until the genesis doc becomes available
 	genDocFile := config.GetString("genesis_file")
 	if !tmcommon.FileExists(genDocFile) {
