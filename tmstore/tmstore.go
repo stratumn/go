@@ -281,8 +281,8 @@ func (t *TMStore) GetMapIDs(pagination *store.Pagination) (ids []string, err err
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (t *TMStore) NewBatch() store.Batch {
-	return NewBatch(t)
+func (t *TMStore) NewBatch() (store.Batch, error) {
+	return NewBatch(t), nil
 }
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.

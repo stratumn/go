@@ -63,7 +63,11 @@ func (a *DBAdapter) Close() {
 
 // NewBatch implements github.com/tendermint/go-db/db.DB.NewBatch
 func (a *DBAdapter) NewBatch() db.Batch {
-	return NewBatchAdapter(a.storeAdapter.NewBatch())
+	b, err := a.storeAdapter.NewBatch()
+	if err != nil {
+		panic(err)
+	}
+	return NewBatchAdapter(b)
 }
 
 // Print is for debugging

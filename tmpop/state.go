@@ -24,15 +24,24 @@ type State struct {
 }
 
 // NewState creates a new State.
-func NewState(tree merkle.Tree, a store.Adapter) State {
-	return State{
+func NewState(tree merkle.Tree, a store.Adapter) (*State, error) {
+	deliveredSegments, err := a.NewBatch()
+	if err != nil {
+		return nil, err
+	}
+	checkedSegments, err := a.NewBatch()
+	if err != nil {
+		return nil, err
+	}
+
+	return &State{
 		committed:         tree,
 		deliverTx:         tree.Copy(),
 		checkTx:           tree.Copy(),
 		segments:          a,
-		deliveredSegments: a.NewBatch(),
-		checkedSegments:   a.NewBatch(),
-	}
+		deliveredSegments: deliveredSegments,
+		checkedSegments:   checkedSegments,
+	}, nil
 }
 
 // Committed returns the committed state.
@@ -53,13 +62,22 @@ func (s State) Check() *Snapshot {
 // Commit stores the current Append() state as committed
 // starts new Append/Check state, and
 // returns the hash for the commit.
-func (s *State) Commit() []byte {
+func (s *State) Commit() ([]byte, error) {
 	err := s.deliveredSegments.Write()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	s.deliveredSegments = s.segments.NewBatch()
-	s.checkedSegments = s.segments.NewBatch()
+	deliveredSegments, err := s.segments.NewBatch()
+	if err != nil {
+		return nil, err
+	}
+	s.deliveredSegments = deliveredSegments
+
+	checkedSegments, err := s.segments.NewBatch()
+	if err != nil {
+		return nil, err
+	}
+	s.checkedSegments = checkedSegments
 
 	var hash []byte
 	hash = s.deliverTx.Save()
@@ -67,5 +85,5 @@ func (s *State) Commit() []byte {
 	s.committed = s.deliverTx
 	s.deliverTx = s.committed.Copy()
 	s.checkTx = s.committed.Copy()
-	return hash
+	return hash, nil
 }

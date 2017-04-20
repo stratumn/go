@@ -253,7 +253,10 @@ func (f Factory) TestBatchWriteDeleteValue(t *testing.T) {
 func (f Factory) initBatch(t *testing.T) (store.Adapter, store.Batch) {
 	a := f.initAdapter(t)
 
-	b := a.NewBatch()
+	b, err := a.NewBatch()
+	if err != nil {
+		t.Fatalf("a.NewBatch(): err: %s", err)
+	}
 	if b == nil {
 		t.Fatal("b = nil want store.Batch")
 	}

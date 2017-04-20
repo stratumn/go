@@ -241,8 +241,8 @@ func (a *DummyStore) deleteValue(key []byte) ([]byte, error) {
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (a *DummyStore) NewBatch() store.Batch {
-	return NewBatch(a)
+func (a *DummyStore) NewBatch() (store.Batch, error) {
+	return NewBatch(a), nil
 }
 
 func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.Filter) (cs.SegmentSlice, error) {

@@ -72,7 +72,7 @@ type Adapter interface {
 	AddDidSaveChannel(chan *cs.Segment)
 
 	// Creates a new Batch
-	NewBatch() Batch
+	NewBatch() (Batch, error)
 }
 
 // Pagination contains pagination options.

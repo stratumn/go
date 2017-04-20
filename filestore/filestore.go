@@ -215,8 +215,8 @@ func (a *FileStore) GetMapIDs(pagination *store.Pagination) ([]string, error) {
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (a *FileStore) NewBatch() store.Batch {
-	return NewBatch(a)
+func (a *FileStore) NewBatch() (store.Batch, error) {
+	return NewBatch(a), nil
 }
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.

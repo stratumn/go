@@ -332,12 +332,12 @@ func (a *MockAdapter) GetMapIDs(pagination *store.Pagination) ([]string, error) 
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (a *MockAdapter) NewBatch() store.Batch {
+func (a *MockAdapter) NewBatch() (store.Batch, error) {
 	a.MockNewBatch.CalledCount++
 
 	if a.MockGetMapIDs.Fn != nil {
-		return a.MockNewBatch.Fn()
+		return a.MockNewBatch.Fn(), nil
 	}
 
-	return &MockBatch{}
+	return &MockBatch{}, nil
 }

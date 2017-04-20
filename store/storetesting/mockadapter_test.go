@@ -305,12 +305,16 @@ func TestMockAdapter_SaveValue(t *testing.T) {
 
 func TestMockAdapter_BatchSaveValue(t *testing.T) {
 	a := &MockAdapter{}
-	b := a.NewBatch().(*MockBatch)
+	batch, err := a.NewBatch()
+	if err != nil {
+		t.Fatalf("a.NewBatch(): err: %s", err)
+	}
+	b := batch.(*MockBatch)
 
 	k := testutil.RandomKey()
 	v := testutil.RandomValue()
 
-	err := b.SaveValue(k, v)
+	err = b.SaveValue(k, v)
 	if err != nil {
 		t.Fatalf("b.SaveValue(): err: %s", err)
 	}
@@ -334,10 +338,14 @@ func TestMockAdapter_BatchSaveValue(t *testing.T) {
 
 func TestMockAdapter_BatchDeleteValue(t *testing.T) {
 	a := &MockAdapter{}
-	b := a.NewBatch().(*MockBatch)
+	batch, err := a.NewBatch()
+	if err != nil {
+		t.Fatalf("a.NewBatch(): err: %s", err)
+	}
+	b := batch.(*MockBatch)
 
 	k1 := testutil.RandomKey()
-	_, err := b.DeleteValue(k1)
+	_, err = b.DeleteValue(k1)
 	if err != nil {
 		t.Fatalf("a.DeleteValue(): err: %s", err)
 	}
@@ -366,11 +374,15 @@ func TestMockAdapter_BatchDeleteValue(t *testing.T) {
 
 func TestMockAdapter_BatchSaveSegment(t *testing.T) {
 	a := &MockAdapter{}
-	b := a.NewBatch().(*MockBatch)
+	batch, err := a.NewBatch()
+	if err != nil {
+		t.Fatalf("a.NewBatch(): err: %s", err)
+	}
+	b := batch.(*MockBatch)
 
 	s := cstesting.RandomSegment()
 
-	err := b.SaveSegment(s)
+	err = b.SaveSegment(s)
 	if err != nil {
 		t.Fatalf("a.SaveSegment(): err: %s", err)
 	}
@@ -398,10 +410,14 @@ func TestMockAdapter_BatchSaveSegment(t *testing.T) {
 
 func TestMockAdapter_BatchDeleteSegment(t *testing.T) {
 	a := &MockAdapter{}
-	b := a.NewBatch().(*MockBatch)
+	batch, err := a.NewBatch()
+	if err != nil {
+		t.Fatalf("a.NewBatch(): err: %s", err)
+	}
+	b := batch.(*MockBatch)
 
 	linkHash1 := testutil.RandomHash()
-	_, err := b.DeleteSegment(linkHash1)
+	_, err = b.DeleteSegment(linkHash1)
 	if err != nil {
 		t.Fatalf("a.DeleteSegment(): err: %s", err)
 	}

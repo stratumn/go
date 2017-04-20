@@ -56,7 +56,7 @@ type Config struct {
 type TMPop struct {
 	abci.BaseApplication
 
-	state                State
+	state                *State
 	adapter              store.Adapter
 	lastBlock            *lastBlock
 	config               *Config
@@ -107,8 +107,13 @@ func New(a store.Adapter, config *Config) (*TMPop, error) {
 	// during the commit phase, and the transactions are not in the memory pool of anybody.
 	tree.Load(lastBlock.AppHash)
 
+	s, err := NewState(tree, a)
+	if err != nil {
+		return nil, err
+	}
+
 	return &TMPop{
-		state:     NewState(tree, a),
+		state:     s,
 		adapter:   a,
 		lastBlock: lastBlock,
 		config:    config,
@@ -176,7 +181,10 @@ func (t *TMPop) CheckTx(tx []byte) abci.Result {
 // Commit implements github.com/tendermint/abci/types.Application.Commit.
 // It actually commits the current state in the Store.
 func (t *TMPop) Commit() abci.Result {
-	appHash := t.state.Commit()
+	appHash, err := t.state.Commit()
+	if err != nil {
+		return abci.NewError(abci.CodeType_InternalError, err.Error())
+	}
 
 	if t.state.Committed().Size() == 0 {
 		return abci.NewResultOK(nil, "Empty hash for empty tree")
