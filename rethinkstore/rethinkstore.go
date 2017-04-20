@@ -344,8 +344,8 @@ func (a *Store) DeleteValue(key []byte) ([]byte, error) {
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (a *Store) NewBatch() store.Batch {
-	return NewBatch(a)
+func (a *Store) NewBatch() (store.Batch, error) {
+	return NewBatch(a), nil
 }
 
 // Create creates the database tables and indexes.
