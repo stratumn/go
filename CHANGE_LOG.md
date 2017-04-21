@@ -1,5 +1,13 @@
 ## Change log
 
+### 0.0.8-dev
+* Updated to Tendermint 0.9.0.
+* Improved Tendermint node stability.
+* Added batch support to stores.
+* Added key-values support to stores.
+* Cleaned error message stack trace.
+* Created homebrew formula.
+
 ### 0.0.7-dev
 * Made single binary for Indigo node and Tendermint core.
 * Improved `tmstore` websocket.
