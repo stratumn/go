@@ -32,6 +32,7 @@
 package storehttp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -48,6 +49,9 @@ import (
 )
 
 const (
+	// DefaultDidSaveChanSize is the default size of the DidSave channel.
+	DefaultDidSaveChanSize = 256
+
 	// DefaultAddress is the default address of the server.
 	DefaultAddress = ":5000"
 
@@ -89,9 +93,15 @@ const (
 // Server is an HTTP server for stores.
 type Server struct {
 	*jsonhttp.Server
-	adapter  store.Adapter
-	ws       *jsonws.Basic
-	saveChan chan *cs.Segment
+	adapter     store.Adapter
+	ws          *jsonws.Basic
+	didSaveChan chan *cs.Segment
+}
+
+// Config contains configuration options for the server.
+type Config struct {
+	// The size of the DidSave channel.
+	DidSaveChanSize int
 }
 
 // Info is the info returned by the root route.
@@ -108,15 +118,16 @@ type msg struct {
 // New create an instance of a server.
 func New(
 	a store.Adapter,
+	config *Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
 	bufConnConfig *jsonws.BufferedConnConfig,
 ) *Server {
 	s := Server{
-		Server:   jsonhttp.New(httpConfig),
-		adapter:  a,
-		ws:       jsonws.NewBasic(basicConfig, bufConnConfig),
-		saveChan: make(chan *cs.Segment),
+		Server:      jsonhttp.New(httpConfig),
+		adapter:     a,
+		ws:          jsonws.NewBasic(basicConfig, bufConnConfig),
+		didSaveChan: make(chan *cs.Segment, config.DidSaveChanSize),
 	}
 
 	s.Get("/", s.root)
@@ -151,16 +162,16 @@ func (s *Server) ListenAndServe() (err error) {
 }
 
 // Shutdown stops the server.
-func (s *Server) Shutdown() error {
+func (s *Server) Shutdown(ctx context.Context) error {
 	s.ws.Stop()
-	close(s.saveChan)
-	return s.Server.Shutdown()
+	close(s.didSaveChan)
+	return s.Server.Shutdown(ctx)
 }
 
 // Start starts the main loops. You do not need to call this if you call
 // ListenAndServe().
 func (s *Server) Start() {
-	s.adapter.AddDidSaveChannel(s.saveChan)
+	s.adapter.AddDidSaveChannel(s.didSaveChan)
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -180,7 +191,7 @@ func (s *Server) Start() {
 
 // Web socket loop.
 func (s *Server) loop() {
-	for seg := range s.saveChan {
+	for seg := range s.didSaveChan {
 		s.ws.Broadcast(&msg{
 			Type: DidSave,
 			Data: seg,

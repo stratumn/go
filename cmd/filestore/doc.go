@@ -10,16 +10,26 @@
 //
 //	$ filestore -h
 //	Usage of filestore:
+//	  -didsavechansize int
+//	    	Size of the DidSave channel (default 256)
 //	  -http string
 //	    	HTTP address (default ":5000")
+//	  -maxheaderbytes int
+//	    	maximum header bytes (default 256)
 //	  -maxmsgsize int
 //	    	Maximum size of a received web socket message (default 32768)
 //	  -path string
-//	      	path to directory where files are stored (default "/var/stratumn/filestore")
+//	    	path to directory where files are stored (default "/var/stratumn/filestore")
+//	  -readtimeout duration
+//	    	read timeout (default 10s)
+//	  -shutdowntimeout duration
+//	    	shutdown timeout (default 10s)
 //	  -tlscert string
 //	    	TLS certificate file
 //	  -tlskey string
 //	    	TLS private key file
+//	  -writetimeout duration
+//	    	write timeout (default 10s)
 //	  -wspinginterval duration
 //	    	Interval between web socket pings (default 54s)
 //	  -wspongtimeout duration

@@ -126,14 +126,10 @@ func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 
 	s.Register(bufConn)
 
+	errChan := make(chan error)
+
 	go func() {
-		if e := bufConn.Start(); e != nil {
-			log.WithFields(log.Fields{
-				"error":      e,
-				"request":    r,
-				"connection": bufConn,
-			}).Warn("Failed to write to web socket connection")
-		}
+		errChan <- bufConn.Start()
 	}()
 
 	log.WithFields(log.Fields{
@@ -166,5 +162,13 @@ func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 			"connection": bufConn,
 			"error":      err,
 		}).Warn("Failed to close web socket connection")
+	}
+
+	if err = <-errChan; err != nil {
+		log.WithFields(log.Fields{
+			"error":      err,
+			"request":    r,
+			"connection": bufConn,
+		}).Warn("Web socket connection failed")
 	}
 }

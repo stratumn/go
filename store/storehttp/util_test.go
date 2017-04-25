@@ -16,7 +16,7 @@ import (
 
 func createServer() (*Server, *storetesting.MockAdapter) {
 	a := &storetesting.MockAdapter{}
-	s := New(a, &jsonhttp.Config{}, &jsonws.BasicConfig{}, &jsonws.BufferedConnConfig{
+	s := New(a, &Config{}, &jsonhttp.Config{}, &jsonws.BasicConfig{}, &jsonws.BufferedConnConfig{
 		Size:         256,
 		WriteTimeout: 10 * time.Second,
 		PongTimeout:  70 * time.Second,

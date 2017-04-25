@@ -7,6 +7,7 @@
 package storehttp
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -601,7 +602,7 @@ func TestGetSocket(t *testing.T) {
 		sendChan <- c
 	}
 
-	s := New(a, &jsonhttp.Config{}, &jsonws.BasicConfig{
+	s := New(a, &Config{}, &jsonhttp.Config{}, &jsonws.BasicConfig{
 		UpgradeHandle: upgradeHandle,
 	}, &jsonws.BufferedConnConfig{
 		Size:         256,
@@ -612,7 +613,9 @@ func TestGetSocket(t *testing.T) {
 	})
 
 	go s.Start()
-	defer s.Shutdown()
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer s.Shutdown(ctx)
+	defer cancel()
 
 	// Register web socket connection.
 	w := httptest.NewRecorder()

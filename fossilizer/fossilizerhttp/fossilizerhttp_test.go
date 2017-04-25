@@ -7,6 +7,7 @@
 package fossilizerhttp
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/sdk/fossilizer/fossilizertesting"
 	"github.com/stratumn/sdk/jsonhttp"
 	"github.com/stratumn/sdk/testutil"
 )
@@ -63,43 +65,69 @@ func TestRoot_err(t *testing.T) {
 }
 
 func TestFossilize(t *testing.T) {
-	s, a := createServer()
-	l, err := net.Listen("tcp", ":6666")
+	a := &fossilizertesting.MockAdapter{}
+	ready := make(chan struct{})
+
+	// Capture result channel.
+	var rc chan *fossilizer.Result
+	a.MockAddResultChan.Fn = func(c chan *fossilizer.Result) {
+		rc = c
+		ready <- struct{}{}
+	}
+
+	// Mock fossilize to publish result to channel.
+	a.MockFossilize.Fn = func(data []byte, meta []byte) error {
+		rc <- &fossilizer.Result{
+			Evidence: "it is known",
+			Data:     data,
+			Meta:     meta,
+		}
+		return nil
+	}
+
+	s := New(a, &Config{
+		MinDataLen: 2,
+		MaxDataLen: 16,
+	}, &jsonhttp.Config{})
+
+	go s.Start()
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer s.Shutdown(ctx)
+	defer cancel()
+
+	<-ready
+
+	// Mock result endpoint.
+	l, err := net.Listen("tcp", ":8888")
 	if err != nil {
 		t.Fatalf("net.Listen(): err: %s", err)
 	}
-	h := &resultHandler{t: t, listener: l, want: "\"it is known\""}
+	defer l.Close()
+	h := &resultHandler{
+		t: t, listener: l,
+		want: "\"it is known\"",
+		done: make(chan struct{}),
+	}
+	go http.Serve(l, h)
 
-	go func() {
-		defer l.Close()
-		rc := a.MockAddResultChan.LastCalledWith
-		a.MockFossilize.Fn = func(data []byte, meta []byte) error {
-			rc <- &fossilizer.Result{
-				Evidence: "it is known",
-				Data:     data,
-				Meta:     meta,
-			}
-			return nil
-		}
+	// Make request.
+	req := httptest.NewRequest("POST", "/fossils", nil)
+	req.Form = url.Values{}
+	req.Form.Set("data", "1234567890")
+	req.Form.Set("callbackUrl", "http://localhost:8888")
 
-		req := httptest.NewRequest("POST", "/fossils", nil)
-		req.Form = url.Values{}
-		req.Form.Set("data", "1234567890")
-		req.Form.Set("callbackUrl", "http://localhost:6666")
+	w := httptest.NewRecorder()
+	s.ServeHTTP(w, req)
 
-		w := httptest.NewRecorder()
-		s.ServeHTTP(w, req)
+	if got, want := w.Code, http.StatusOK; got != want {
+		t.Errorf("w.Code = %d want %d", got, want)
+	}
 
-		if got, want := w.Code, http.StatusOK; got != want {
-			t.Errorf("w.Code = %d want %d", got, want)
-		}
-
-		sleep := 2 * time.Second
-		time.Sleep(sleep)
-		t.Errorf("callback URL not called after %s", sleep)
-	}()
-
-	http.Serve(l, h)
+	select {
+	case <-h.done:
+	case <-time.After(time.Second):
+		t.Fatal("callback URL not called after 1s")
+	}
 }
 
 func TestFossilize_noData(t *testing.T) {

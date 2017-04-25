@@ -20,9 +20,11 @@ package fossilizerhttp
 
 import (
 	"bytes"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -53,7 +55,7 @@ const (
 
 // Config contains configuration options for the server.
 type Config struct {
-	// The default number of goroutines that will be used to handle
+	// The number of goroutines that will be used to handle
 	// fossilizer results.
 	NumResultWorkers int
 
@@ -72,47 +74,72 @@ type Info struct {
 	Adapter interface{} `json:"adapter"`
 }
 
-type context struct {
-	adapter fossilizer.Adapter
-	config  *Config
-}
-
-type handle func(http.ResponseWriter, *http.Request, httprouter.Params, *context) (interface{}, error)
-
-type handler struct {
-	context *context
-	handle  handle
-}
-
-func (h handler) serve(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	return h.handle(w, r, p, h.context)
+// Server is an HTTP server for fossilizers.
+type Server struct {
+	*jsonhttp.Server
+	adapter    fossilizer.Adapter
+	config     *Config
+	resultChan chan *fossilizer.Result
 }
 
 // New create an instance of a server.
-func New(a fossilizer.Adapter, config *Config, httpConfig *jsonhttp.Config) *jsonhttp.Server {
+func New(a fossilizer.Adapter, config *Config, httpConfig *jsonhttp.Config) *Server {
 	if config.NumResultWorkers < 1 {
 		config.NumResultWorkers = DefaultNumResultWorkers
 	}
 
-	s := jsonhttp.New(httpConfig)
-	ctx := &context{a, config}
-
-	s.Get("/", handler{ctx, root}.serve)
-	s.Post("/fossils", handler{ctx, fossilize}.serve)
-
-	// Launch result workers.
-	rc := make(chan *fossilizer.Result, config.NumResultWorkers)
-	a.AddResultChan(rc)
-	client := http.Client{Timeout: config.CallbackTimeout}
-	for i := 0; i < config.NumResultWorkers; i++ {
-		go handleResults(rc, &client)
+	s := Server{
+		Server:     jsonhttp.New(httpConfig),
+		adapter:    a,
+		config:     config,
+		resultChan: make(chan *fossilizer.Result, config.NumResultWorkers),
 	}
 
-	return s
+	s.Get("/", s.root)
+	s.Post("/fossils", s.fossilize)
+
+	return &s
 }
 
-func root(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *context) (interface{}, error) {
-	adapterInfo, err := c.adapter.GetInfo()
+// ListenAndServe starts the server.
+func (s *Server) ListenAndServe() (err error) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		s.Start()
+		wg.Done()
+	}()
+
+	go func() {
+		err = s.Server.ListenAndServe()
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	return err
+}
+
+// Shutdown stops the server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	close(s.resultChan)
+	return s.Server.Shutdown(ctx)
+}
+
+// Start starts the main loops. You do not need to call this if you call
+// ListenAndServe().
+func (s *Server) Start() {
+	s.adapter.AddResultChan(s.resultChan)
+	client := http.Client{Timeout: s.config.CallbackTimeout}
+
+	for i := 0; i < s.config.NumResultWorkers; i++ {
+		go handleResults(s.resultChan, &client)
+	}
+}
+
+func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
+	adapterInfo, err := s.adapter.GetInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -122,17 +149,48 @@ func root(w http.ResponseWriter, r *http.Request, _ httprouter.Params, c *contex
 	}, nil
 }
 
-func fossilize(w http.ResponseWriter, r *http.Request, p httprouter.Params, c *context) (interface{}, error) {
-	data, url, err := parseFossilizeValues(r, c)
+func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
+	data, url, err := s.parseFossilizeValues(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := c.adapter.Fossilize(data, []byte(url)); err != nil {
+	if err := s.adapter.Fossilize(data, []byte(url)); err != nil {
 		return nil, err
 	}
 
 	return "ok", nil
+}
+
+func (s *Server) parseFossilizeValues(r *http.Request) ([]byte, string, error) {
+	if err := r.ParseForm(); err != nil {
+		return nil, "", err
+	}
+
+	datastr := r.Form.Get("data")
+	if datastr == "" {
+		return nil, "", newErrData("")
+	}
+
+	l := len(datastr)
+	if l < s.config.MinDataLen {
+		return nil, "", newErrDataLen("")
+	}
+	if s.config.MaxDataLen > 0 && l > s.config.MaxDataLen {
+		return nil, "", newErrDataLen("")
+	}
+
+	data, err := hex.DecodeString(datastr)
+	if err != nil {
+		return nil, "", jsonhttp.NewErrHTTP(err.Error(), http.StatusBadRequest)
+	}
+
+	url := r.Form.Get("callbackUrl")
+	if url == "" {
+		return nil, "", newErrCallbackURL("")
+	}
+
+	return data, url, nil
 }
 
 func handleResults(resultChan chan *fossilizer.Result, client *http.Client) {
@@ -174,35 +232,4 @@ func handleResults(resultChan chan *fossilizer.Result, client *http.Client) {
 			}).Error("Failed to close callback request")
 		}
 	}
-}
-
-func parseFossilizeValues(r *http.Request, c *context) ([]byte, string, error) {
-	if err := r.ParseForm(); err != nil {
-		return nil, "", err
-	}
-
-	datastr := r.Form.Get("data")
-	if datastr == "" {
-		return nil, "", newErrData("")
-	}
-
-	l := len(datastr)
-	if l < c.config.MinDataLen {
-		return nil, "", newErrDataLen("")
-	}
-	if c.config.MaxDataLen > 0 && l > c.config.MaxDataLen {
-		return nil, "", newErrDataLen("")
-	}
-
-	data, err := hex.DecodeString(datastr)
-	if err != nil {
-		return nil, "", jsonhttp.NewErrHTTP(err.Error(), http.StatusBadRequest)
-	}
-
-	url := r.Form.Get("callbackUrl")
-	if url == "" {
-		return nil, "", newErrCallbackURL("")
-	}
-
-	return data, url, nil
 }

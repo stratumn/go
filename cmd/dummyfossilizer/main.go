@@ -7,11 +7,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -28,6 +30,10 @@ var (
 	minDataLen       = flag.Int("mindata", fossilizerhttp.DefaultMinDataLen, "minimum data length")
 	maxDataLen       = flag.Int("maxdata", fossilizerhttp.DefaultMaxDataLen, "maximum data length")
 	callbackTimeout  = flag.Duration("callbacktimeout", fossilizerhttp.DefaultCallbackTimeout, "callback requests timeout")
+	readTimeout      = flag.Duration("readtimeout", jsonhttp.DefaultReadTimeout, "read timeout")
+	writeTimeout     = flag.Duration("writetimeout", jsonhttp.DefaultWriteTimeout, "write timeout")
+	maxHeaderBytes   = flag.Int("maxheaderbytes", jsonhttp.DefaultMaxHeaderBytes, "maximum header bytes")
+	shutdownTimeout  = flag.Duration("shutdowntimeout", 10*time.Second, "shutdown timeout")
 	version          = "0.1.0"
 	commit           = "00000000000000000000000000000000"
 )
@@ -42,15 +48,6 @@ func main() {
 
 	a := dummyfossilizer.New(&dummyfossilizer.Config{Version: version, Commit: commit})
 
-	go func() {
-		sigc := make(chan os.Signal)
-		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
-		sig := <-sigc
-		log.WithField("signal", sig).Info("Got exit signal")
-		log.Info("Stopped")
-		os.Exit(0)
-	}()
-
 	config := &fossilizerhttp.Config{
 		NumResultWorkers: *numResultWorkers,
 		MinDataLen:       *minDataLen,
@@ -58,11 +55,29 @@ func main() {
 		CallbackTimeout:  *callbackTimeout,
 	}
 	httpConfig := &jsonhttp.Config{
-		Address:  *http,
-		CertFile: *certFile,
-		KeyFile:  *keyFile,
+		Address:        *http,
+		ReadTimeout:    *readTimeout,
+		WriteTimeout:   *writeTimeout,
+		MaxHeaderBytes: *maxHeaderBytes,
+		CertFile:       *certFile,
+		KeyFile:        *keyFile,
 	}
 	h := fossilizerhttp.New(a, config, httpConfig)
+
+	go func() {
+		sigc := make(chan os.Signal)
+		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-sigc
+		log.WithField("signal", sig).Info("Got exit signal")
+		log.Info("Cleaning up")
+		ctx, cancel := context.WithTimeout(context.Background(), *shutdownTimeout)
+		defer cancel()
+		if err := h.Shutdown(ctx); err != nil {
+			log.WithField("error", err).Fatal("Failed to shutdown server")
+		}
+		log.Info("Stopped")
+		os.Exit(0)
+	}()
 
 	log.WithField("http", *http).Info("Listening")
 	if err := h.ListenAndServe(); err != nil {

@@ -119,12 +119,9 @@ func (a *FileStore) saveSegment(segment *cs.Segment) error {
 		return err
 	}
 
-	// Send saved segment to all the save channels without blocking.
-	go func(chans []chan *cs.Segment) {
-		for _, c := range chans {
-			c <- segment
-		}
-	}(a.didSaveChans)
+	for _, c := range a.didSaveChans {
+		c <- segment
+	}
 
 	return nil
 }

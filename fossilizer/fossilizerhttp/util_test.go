@@ -16,9 +16,12 @@ import (
 	"github.com/stratumn/sdk/jsonhttp"
 )
 
-func createServer() (*jsonhttp.Server, *fossilizertesting.MockAdapter) {
+func createServer() (*Server, *fossilizertesting.MockAdapter) {
 	a := &fossilizertesting.MockAdapter{}
-	s := New(a, &Config{MinDataLen: 2, MaxDataLen: 16}, &jsonhttp.Config{})
+	s := New(a, &Config{
+		MinDataLen: 2,
+		MaxDataLen: 16,
+	}, &jsonhttp.Config{})
 
 	return s, a
 }
@@ -27,6 +30,7 @@ type resultHandler struct {
 	t        *testing.T
 	listener net.Listener
 	want     string
+	done     chan struct{}
 }
 
 func (h *resultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -43,4 +47,6 @@ func (h *resultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if got, want := string(body), h.want; got != want {
 		h.t.Errorf("h.ServerHTTP(): body = %q want %q", got, want)
 	}
+
+	h.done <- struct{}{}
 }

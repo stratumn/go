@@ -7,11 +7,13 @@
 package fossilizerhttp_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/stratumn/sdk/dummyfossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
@@ -32,6 +34,10 @@ func Example() {
 
 	// Create a server.
 	s := fossilizerhttp.New(a, config, httpConfig)
+	go s.Start()
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer s.Shutdown(ctx)
+	defer cancel()
 
 	// Create a test server.
 	ts := httptest.NewServer(s)

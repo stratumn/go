@@ -7,10 +7,12 @@
 package storehttp
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 
@@ -22,15 +24,17 @@ import (
 // Run launches a HTTP Store
 func Run(
 	a store.Adapter,
+	config *Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
 	bufConnConfig *jsonws.BufferedConnConfig,
+	shutdownTimeout time.Duration,
 ) {
 	log.Info("Copyright (c) 2017 Stratumn SAS")
 	log.Info("Mozilla Public License 2.0")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	h := New(a, httpConfig, basicConfig, bufConnConfig)
+	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
 
 	go func() {
 		sigc := make(chan os.Signal)
@@ -38,7 +42,9 @@ func Run(
 		sig := <-sigc
 		log.WithField("signal", sig).Info("Got exit signal")
 		log.Info("Cleaning up")
-		if err := h.Shutdown(); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		defer cancel()
+		if err := h.Shutdown(ctx); err != nil {
 			log.WithField("error", err).Fatal("Failed to shutdown server")
 		}
 		log.Info("Stopped")

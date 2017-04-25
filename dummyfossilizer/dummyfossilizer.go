@@ -79,11 +79,9 @@ func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 		Meta: meta,
 	}
 
-	go func(chans []chan *fossilizer.Result) {
-		for _, c := range chans {
-			c <- r
-		}
-	}(a.resultChans)
+	for _, c := range a.resultChans {
+		c <- r
+	}
 
 	return nil
 }

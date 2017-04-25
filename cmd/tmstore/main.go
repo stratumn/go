@@ -8,6 +8,7 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/stratumn/sdk/jsonhttp"
@@ -17,6 +18,7 @@ import (
 )
 
 var (
+	didSaveChanSize   = flag.Int("didsavechansize", storehttp.DefaultDidSaveChanSize, "Size of the DidSave channel")
 	http              = flag.String("http", storehttp.DefaultAddress, "HTTP address")
 	wsReadBufSize     = flag.Int("wsreadbufsize", storehttp.DefaultWebSocketReadBufferSize, "Web socket read buffer size")
 	wsWriteBufSize    = flag.Int("wswritebufsize", storehttp.DefaultWebSocketWriteBufferSize, "Web socket write buffer size")
@@ -26,9 +28,13 @@ var (
 	wsPingInterval    = flag.Duration("wspinginterval", storehttp.DefaultWebSocketPingInterval, "Interval between web socket pings")
 	wsMaxMsgSize      = flag.Int64("maxmsgsize", storehttp.DefaultWebSocketMaxMsgSize, "Maximum size of a received web socket message")
 	endpoint          = flag.String("endpoint", tmstore.DefaultEndpoint, "Endpoint used to communicate with Tendermint Core")
-	tmWsRetryInterval = flag.Duration("tmWsRetryInterval", tmstore.DefaultWsRetryInterval, "Interval between tendermint websocket connection tries")
+	tmWsRetryInterval = flag.Duration("tmwsretryinterval", tmstore.DefaultWsRetryInterval, "Interval between tendermint websocket connection tries")
 	certFile          = flag.String("tlscert", "", "TLS certificate file")
 	keyFile           = flag.String("tlskey", "", "TLS private key file")
+	readTimeout       = flag.Duration("readtimeout", jsonhttp.DefaultReadTimeout, "read timeout")
+	writeTimeout      = flag.Duration("writetimeout", jsonhttp.DefaultWriteTimeout, "write timeout")
+	maxHeaderBytes    = flag.Int("maxheaderbytes", jsonhttp.DefaultMaxHeaderBytes, "maximum header bytes")
+	shutdownTimeout   = flag.Duration("shutdowntimeout", 10*time.Second, "shutdown timeout")
 	version           = "0.1.0"
 	commit            = "00000000000000000000000000000000"
 )
@@ -41,10 +47,16 @@ func main() {
 
 	go a.RetryStartWebsocket(*tmWsRetryInterval)
 
+	config := &storehttp.Config{
+		DidSaveChanSize: *didSaveChanSize,
+	}
 	httpConfig := &jsonhttp.Config{
-		Address:  *http,
-		CertFile: *certFile,
-		KeyFile:  *keyFile,
+		Address:        *http,
+		ReadTimeout:    *readTimeout,
+		WriteTimeout:   *writeTimeout,
+		MaxHeaderBytes: *maxHeaderBytes,
+		CertFile:       *certFile,
+		KeyFile:        *keyFile,
 	}
 	basicConfig := &jsonws.BasicConfig{
 		ReadBufferSize:  *wsReadBufSize,
@@ -57,5 +69,12 @@ func main() {
 		PingInterval: *wsPingInterval,
 		MaxMsgSize:   *wsMaxMsgSize,
 	}
-	storehttp.Run(a, httpConfig, basicConfig, bufConnConfig)
+	storehttp.Run(
+		a,
+		config,
+		httpConfig,
+		basicConfig,
+		bufConnConfig,
+		*shutdownTimeout,
+	)
 }

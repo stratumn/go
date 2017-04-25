@@ -11,8 +11,10 @@
 package jsonhttp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
@@ -21,12 +23,30 @@ import (
 const (
 	// DefaultAddress is the default address of the server.
 	DefaultAddress = ":5000"
+
+	// DefaultReadTimeout is the default read timeout.
+	DefaultReadTimeout = 10 * time.Second
+
+	// DefaultWriteTimeout is the default read timeout.
+	DefaultWriteTimeout = 10 * time.Second
+
+	// DefaultMaxHeaderBytes is the default max header bytes.
+	DefaultMaxHeaderBytes = 1 << 8
 )
 
 // Config contains configuration options for the server.
 type Config struct {
 	// The address of the server.
 	Address string
+
+	// ReadTimeout is the read timeout.
+	ReadTimeout time.Duration
+
+	// WriteTimeout is the read timeout.
+	WriteTimeout time.Duration
+
+	// MaxHeaderBytes is the max header bytes.
+	MaxHeaderBytes int
 
 	// Optionally, the path to a TLS certificate.
 	CertFile string
@@ -37,6 +57,7 @@ type Config struct {
 
 // Server is the type that implements net/http.Handler.
 type Server struct {
+	server *http.Server
 	router *httprouter.Router
 	config *Config
 }
@@ -54,9 +75,15 @@ func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (inte
 
 // New creates an instance of Server.
 func New(config *Config) *Server {
-	r := httprouter.New()
-	r.NotFound = notFoundHandler{config, NotFound}
-	return &Server{r, config}
+	router := httprouter.New()
+	router.NotFound = notFoundHandler{config, NotFound}
+	server := &http.Server{
+		Addr:           config.Address,
+		ReadTimeout:    config.ReadTimeout,
+		WriteTimeout:   config.WriteTimeout,
+		MaxHeaderBytes: config.MaxHeaderBytes,
+	}
+	return &Server{server, router, config}
 }
 
 // ServeHTTP implements net/http.Handler.ServeHTTP.
@@ -107,16 +134,15 @@ func (s *Server) ListenAndServe() error {
 	}
 
 	if s.config.CertFile != "" && s.config.KeyFile != "" {
-		return http.ListenAndServeTLS(addr, s.config.CertFile, s.config.KeyFile, s)
+		return s.server.ListenAndServeTLS(s.config.CertFile, s.config.KeyFile)
 	}
 
-	return http.ListenAndServe(addr, s)
+	return s.server.ListenAndServe()
 }
 
-// Shutdown stops the server. It does not do anything yet, but in go 1.8 it will
-// be possible to gracefully shutdown the HTTP server.
-func (s *Server) Shutdown() error {
-	return nil
+// Shutdown stops the server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
 
 type handler struct {

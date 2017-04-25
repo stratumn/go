@@ -10,18 +10,28 @@
 //
 //	$ tmstore -h
 //	Usage of tmstore:
+//	  -didsavechansize int
+//	    	Size of the DidSave channel (default 256)
 //	  -endpoint string
-//     		endpoint used to communicate with Tendermint Core (default "tcp://127.0.0.1:46657")
-//	  -tmWsRetryInterval duration
-//		interval between tendermint websocket connection tries (default 5s)
+//	    	Endpoint used to communicate with Tendermint Core (default "tcp://127.0.0.1:46657")
 //	  -http string
 //	    	HTTP address (default ":5000")
+//	  -maxheaderbytes int
+//	    	maximum header bytes (default 256)
 //	  -maxmsgsize int
 //	    	Maximum size of a received web socket message (default 32768)
+//	  -readtimeout duration
+//	    	read timeout (default 10s)
+//	  -shutdowntimeout duration
+//	    	shutdown timeout (default 10s)
 //	  -tlscert string
 //	    	TLS certificate file
 //	  -tlskey string
 //	    	TLS private key file
+//	  -tmwsretryinterval duration
+//	    	Interval between tendermint websocket connection tries (default 5s)
+//	  -writetimeout duration
+//	    	write timeout (default 10s)
 //	  -wspinginterval duration
 //	    	Interval between web socket pings (default 54s)
 //	  -wspongtimeout duration

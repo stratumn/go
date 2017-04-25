@@ -7,6 +7,7 @@
 package storehttp_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,6 +27,9 @@ import (
 func Example() {
 	// Create a dummy adapter.
 	a := dummystore.New(&dummystore.Config{Version: "0.1.0", Commit: "abc"})
+	config := &storehttp.Config{
+		DidSaveChanSize: 8,
+	}
 	httpConfig := &jsonhttp.Config{
 		Address: "5555",
 	}
@@ -39,9 +43,11 @@ func Example() {
 	}
 
 	// Create a server.
-	s := storehttp.New(a, httpConfig, basicConfig, bufConnConfig)
+	s := storehttp.New(a, config, httpConfig, basicConfig, bufConnConfig)
 	go s.Start()
-	defer s.Shutdown()
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer s.Shutdown(ctx)
+	defer cancel()
 
 	// Create a test server.
 	ts := httptest.NewServer(s)
