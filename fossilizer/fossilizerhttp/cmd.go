@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package storehttp
+package fossilizerhttp
 
 import (
 	"context"
@@ -17,43 +17,36 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/jsonhttp"
-	"github.com/stratumn/sdk/jsonws"
-	"github.com/stratumn/sdk/store"
 )
 
 var (
-	didSaveChanSize int
-	addr            string
-	wsReadBufSize   int
-	wsWriteBufSize  int
-	wsWriteChanSize int
-	wsWriteTimeout  time.Duration
-	wsPongTimeout   time.Duration
-	wsPingInterval  time.Duration
-	wsMaxMsgSize    int64
-	certFile        string
-	keyFile         string
-	readTimeout     time.Duration
-	writeTimeout    time.Duration
-	maxHeaderBytes  int
-	shutdownTimeout time.Duration
+	addr             string
+	certFile         string
+	keyFile          string
+	numResultWorkers int
+	minDataLen       int
+	maxDataLen       int
+	callbackTimeout  time.Duration
+	readTimeout      time.Duration
+	writeTimeout     time.Duration
+	maxHeaderBytes   int
+	shutdownTimeout  time.Duration
 )
 
-// Run launches a storehttp server.
+// Run launches a fossilizerhttp server.
 func Run(
-	a store.Adapter,
+	a fossilizer.Adapter,
 	config *Config,
 	httpConfig *jsonhttp.Config,
-	basicConfig *jsonws.BasicConfig,
-	bufConnConfig *jsonws.BufferedConnConfig,
 	shutdownTimeout time.Duration,
 ) {
 	log.Info("Copyright (c) 2017 Stratumn SAS")
 	log.Info("Mozilla Public License 2.0")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
+	h := New(a, config, httpConfig)
 
 	go func() {
 		sigc := make(chan os.Signal)
@@ -78,17 +71,13 @@ func Run(
 
 // RegisterFlags register the flags used by RunWithFlags.
 func RegisterFlags() {
-	flag.IntVar(&didSaveChanSize, "did_save_chan_size", DefaultDidSaveChanSize, "Size of the DidSave channel")
 	flag.StringVar(&addr, "http", DefaultAddress, "HTTP address")
-	flag.IntVar(&wsReadBufSize, "ws_read_buf_size", DefaultWebSocketReadBufferSize, "Web socket read buffer size")
-	flag.IntVar(&wsWriteBufSize, "ws_write_buf_size", DefaultWebSocketWriteBufferSize, "Web socket write buffer size")
-	flag.IntVar(&wsWriteChanSize, "ws_write_chan_size", DefaultWebSocketWriteChanSize, "Size of a web socket connection write channel")
-	flag.DurationVar(&wsWriteTimeout, "ws_write_timeout", DefaultWebSocketWriteTimeout, "Timeout for a web socket write")
-	flag.DurationVar(&wsPongTimeout, "ws_pong_timeout", DefaultWebSocketPongTimeout, "Timeout for a web socket expected pong")
-	flag.DurationVar(&wsPingInterval, "ws_ping_interval", DefaultWebSocketPingInterval, "Interval between web socket pings")
-	flag.Int64Var(&wsMaxMsgSize, "max_msg_size", DefaultWebSocketMaxMsgSize, "Maximum size of a received web socket message")
 	flag.StringVar(&certFile, "tls_cert", "", "TLS certificate file")
 	flag.StringVar(&keyFile, "tls_key", "", "TLS private key file")
+	flag.IntVar(&numResultWorkers, "workers", DefaultNumResultWorkers, "Number of result workers")
+	flag.IntVar(&minDataLen, "mindata", DefaultMinDataLen, "Minimum data length")
+	flag.IntVar(&maxDataLen, "maxdata", DefaultMaxDataLen, "Maximum data length")
+	flag.DurationVar(&callbackTimeout, "callbacktimeout", DefaultCallbackTimeout, "Callback request timeout")
 	flag.DurationVar(&readTimeout, "read_timeout", jsonhttp.DefaultReadTimeout, "Read timeout")
 	flag.DurationVar(&writeTimeout, "write_timeout", jsonhttp.DefaultWriteTimeout, "Write timeout")
 	flag.IntVar(&maxHeaderBytes, "max_header_bytes", jsonhttp.DefaultMaxHeaderBytes, "Maximum header bytes")
@@ -96,10 +85,13 @@ func RegisterFlags() {
 }
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
-// a storehttp server configured using flag values.
-func RunWithFlags(a store.Adapter) {
+// a fossilizerhttp server configured using flag values.
+func RunWithFlags(a fossilizer.Adapter) {
 	config := &Config{
-		DidSaveChanSize: didSaveChanSize,
+		NumResultWorkers: numResultWorkers,
+		MinDataLen:       minDataLen,
+		MaxDataLen:       maxDataLen,
+		CallbackTimeout:  callbackTimeout,
 	}
 	httpConfig := &jsonhttp.Config{
 		Address:        addr,
@@ -109,24 +101,11 @@ func RunWithFlags(a store.Adapter) {
 		CertFile:       certFile,
 		KeyFile:        keyFile,
 	}
-	basicConfig := &jsonws.BasicConfig{
-		ReadBufferSize:  wsReadBufSize,
-		WriteBufferSize: wsWriteBufSize,
-	}
-	bufConnConfig := &jsonws.BufferedConnConfig{
-		Size:         wsWriteChanSize,
-		WriteTimeout: wsWriteTimeout,
-		PongTimeout:  wsPongTimeout,
-		PingInterval: wsPingInterval,
-		MaxMsgSize:   wsMaxMsgSize,
-	}
 
 	Run(
 		a,
 		config,
 		httpConfig,
-		basicConfig,
-		bufConnConfig,
 		shutdownTimeout,
 	)
 }

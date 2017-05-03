@@ -4,6 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// The command filetmpop starts a tmpop node with a filestore.
 package main
 
 import (
@@ -15,8 +16,8 @@ import (
 )
 
 var (
-	path      = flag.String("path", filestore.DefaultPath, "path to directory where files are stored")
-	cacheSize = flag.Int("cacheSize", tmpop.DefaultCacheSize, "size of the cache of the storage tree")
+	path      = flag.String("path", filestore.DefaultPath, "Path to directory where files are stored")
+	cacheSize = flag.Int("cache_size", tmpop.DefaultCacheSize, "Size of the cache of the storage tree")
 	version   = "0.1.0"
 	commit    = "00000000000000000000000000000000"
 )
