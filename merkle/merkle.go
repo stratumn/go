@@ -45,7 +45,7 @@ func (h HashTriplet) Validate() error {
 			got  = h.Parent.String()
 			want = hex.EncodeToString(expected[:])
 		)
-		return fmt.Errorf("unexpected parent hash got %q want %q\n", got, want)
+		return fmt.Errorf("unexpected parent hash got %q want %q", got, want)
 	}
 
 	return nil
@@ -70,7 +70,7 @@ func (p Path) Validate() error {
 					a1 = hex.EncodeToString(up.Left[:])
 					a2 = hex.EncodeToString(up.Right[:])
 				)
-				return fmt.Errorf("could not find parent hash %q, got %q and %q\n", e, a1, a2)
+				return fmt.Errorf("could not find parent hash %q, got %q and %q", e, a1, a2)
 			}
 		}
 	}
