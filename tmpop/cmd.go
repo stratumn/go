@@ -7,20 +7,22 @@
 package tmpop
 
 import (
-	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/stratumn/sdk/store"
-	"github.com/tendermint/abci/server"
+	"github.com/stratumn/sdk/tendermint"
 )
 
 // Run launches a TMPop Tendermint App
-func Run(a store.Adapter, config *Config, addrPtr, abciPtr *string) {
+func Run(a store.Adapter, config *Config) {
 	adapterInfo, err := a.GetInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpop, err := New(a, config)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,24 +33,5 @@ func Run(a store.Adapter, config *Config, addrPtr, abciPtr *string) {
 	log.Info("Mozilla Public License 2.0")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	tmpop, err := New(a, config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	srv, err := server.NewServer(*addrPtr, *abciPtr, tmpop)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	go func() {
-		sigc := make(chan os.Signal)
-		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
-		sig := <-sigc
-		log.WithField("signal", sig).Info("Got exit signal")
-		srv.Stop()
-		log.Info("Stopped")
-		os.Exit(0)
-	}()
-	select {}
+	tendermint.RunNodeForever(tendermint.GetConfig(), tmpop)
 }
