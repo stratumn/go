@@ -14,7 +14,7 @@ import (
 func TestStore(t *testing.T) {
 	storetestcases.Factory{
 		New: func() (store.Adapter, error) {
-			a, err := New(&Config{URL: "postgres://postgres@localhost/postgres?sslmode=disable"})
+			a, err := New(&Config{URL: "postgres://postgres@localhost/goprivate_test?sslmode=disable"})
 			if err := a.Create(); err != nil {
 				return nil, err
 			}
