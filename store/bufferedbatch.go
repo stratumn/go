@@ -105,3 +105,25 @@ func (b *BufferedBatch) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segm
 	}
 	return b.originalStore.GetSegment(linkHash)
 }
+
+// TODO: read from buffer in addition to store
+
+// GetSegment delegates the call to a underlying store
+func (b *BufferedBatch) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	return b.originalStore.GetSegment(linkHash)
+}
+
+// FindSegments delegates the call to a underlying store
+func (b *BufferedBatch) FindSegments(filter *Filter) (cs.SegmentSlice, error) {
+	return b.originalStore.FindSegments(filter)
+}
+
+// GetMapIDs delegates the call to a underlying store
+func (b *BufferedBatch) GetMapIDs(pagination *Pagination) ([]string, error) {
+	return b.originalStore.GetMapIDs(pagination)
+}
+
+// GetValue delegates the call to a underlying store
+func (b *BufferedBatch) GetValue(key []byte) ([]byte, error) {
+	return b.originalStore.GetValue(key)
+}
