@@ -2,14 +2,15 @@ package core
 
 import (
 	"fmt"
-	. "github.com/tendermint/go-common"
+
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
+	. "github.com/tendermint/tmlibs/common"
 )
 
 //-----------------------------------------------------------------------------
 
-// TODO: limit/permission on (max - min)
+// Returns at most 20 blocks
 func BlockchainInfo(minHeight, maxHeight int) (*ctypes.ResultBlockchainInfo, error) {
 	if maxHeight == 0 {
 		maxHeight = blockStore.Height()
@@ -18,8 +19,11 @@ func BlockchainInfo(minHeight, maxHeight int) (*ctypes.ResultBlockchainInfo, err
 	}
 	if minHeight == 0 {
 		minHeight = MaxInt(1, maxHeight-20)
+	} else {
+		minHeight = MaxInt(minHeight, maxHeight-20)
 	}
-	log.Debug("BlockchainInfoHandler", "maxHeight", maxHeight, "minHeight", minHeight)
+
+	logger.Debug("BlockchainInfoHandler", "maxHeight", maxHeight, "minHeight", minHeight)
 
 	blockMetas := []*types.BlockMeta{}
 	for height := maxHeight; height >= minHeight; height-- {

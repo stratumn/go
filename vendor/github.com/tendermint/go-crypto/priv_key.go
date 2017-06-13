@@ -6,29 +6,9 @@ import (
 	secp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/tendermint/ed25519"
 	"github.com/tendermint/ed25519/extra25519"
-	. "github.com/tendermint/go-common"
 	"github.com/tendermint/go-wire"
-)
-
-// PrivKey is part of PrivAccount and state.PrivValidator.
-type PrivKey interface {
-	Bytes() []byte
-	Sign(msg []byte) Signature
-	PubKey() PubKey
-	Equals(PrivKey) bool
-}
-
-// Types of PrivKey implementations
-const (
-	PrivKeyTypeEd25519   = byte(0x01)
-	PrivKeyTypeSecp256k1 = byte(0x02)
-)
-
-// for wire.readReflect
-var _ = wire.RegisterInterface(
-	struct{ PrivKey }{},
-	wire.ConcreteType{PrivKeyEd25519{}, PrivKeyTypeEd25519},
-	wire.ConcreteType{PrivKeySecp256k1{}, PrivKeyTypeSecp256k1},
+	data "github.com/tendermint/go-wire/data"
+	. "github.com/tendermint/tmlibs/common"
 )
 
 func PrivKeyFromBytes(privKeyBytes []byte) (privKey PrivKey, err error) {
@@ -36,32 +16,62 @@ func PrivKeyFromBytes(privKeyBytes []byte) (privKey PrivKey, err error) {
 	return
 }
 
+//----------------------------------------
+
+// DO NOT USE THIS INTERFACE.
+// You probably want to use PubKey
+// +gen wrapper:"PrivKey,Impl[PrivKeyEd25519,PrivKeySecp256k1],ed25519,secp256k1"
+type PrivKeyInner interface {
+	AssertIsPrivKeyInner()
+	Bytes() []byte
+	Sign(msg []byte) Signature
+	PubKey() PubKey
+	Equals(PrivKey) bool
+	Wrap() PrivKey
+}
+
 //-------------------------------------
+
+var _ PrivKeyInner = PrivKeyEd25519{}
 
 // Implements PrivKey
 type PrivKeyEd25519 [64]byte
 
+func (privKey PrivKeyEd25519) AssertIsPrivKeyInner() {}
+
 func (privKey PrivKeyEd25519) Bytes() []byte {
-	return wire.BinaryBytes(struct{ PrivKey }{privKey})
+	return wire.BinaryBytes(PrivKey{privKey})
 }
 
 func (privKey PrivKeyEd25519) Sign(msg []byte) Signature {
 	privKeyBytes := [64]byte(privKey)
 	signatureBytes := ed25519.Sign(&privKeyBytes, msg)
-	return SignatureEd25519(*signatureBytes)
+	return SignatureEd25519(*signatureBytes).Wrap()
 }
 
 func (privKey PrivKeyEd25519) PubKey() PubKey {
 	privKeyBytes := [64]byte(privKey)
-	return PubKeyEd25519(*ed25519.MakePublicKey(&privKeyBytes))
+	pubBytes := *ed25519.MakePublicKey(&privKeyBytes)
+	return PubKeyEd25519(pubBytes).Wrap()
 }
 
 func (privKey PrivKeyEd25519) Equals(other PrivKey) bool {
-	if otherEd, ok := other.(PrivKeyEd25519); ok {
+	if otherEd, ok := other.Unwrap().(PrivKeyEd25519); ok {
 		return bytes.Equal(privKey[:], otherEd[:])
 	} else {
 		return false
 	}
+}
+
+func (p PrivKeyEd25519) MarshalJSON() ([]byte, error) {
+	return data.Encoder.Marshal(p[:])
+}
+
+func (p *PrivKeyEd25519) UnmarshalJSON(enc []byte) error {
+	var ref []byte
+	err := data.Encoder.Unmarshal(&ref, enc)
+	copy(p[:], ref)
+	return err
 }
 
 func (privKey PrivKeyEd25519) ToCurve25519() *[32]byte {
@@ -105,11 +115,15 @@ func GenPrivKeyEd25519FromSecret(secret []byte) PrivKeyEd25519 {
 
 //-------------------------------------
 
+var _ PrivKeyInner = PrivKeySecp256k1{}
+
 // Implements PrivKey
 type PrivKeySecp256k1 [32]byte
 
+func (privKey PrivKeySecp256k1) AssertIsPrivKeyInner() {}
+
 func (privKey PrivKeySecp256k1) Bytes() []byte {
-	return wire.BinaryBytes(struct{ PrivKey }{privKey})
+	return wire.BinaryBytes(PrivKey{privKey})
 }
 
 func (privKey PrivKeySecp256k1) Sign(msg []byte) Signature {
@@ -118,22 +132,33 @@ func (privKey PrivKeySecp256k1) Sign(msg []byte) Signature {
 	if err != nil {
 		PanicSanity(err)
 	}
-	return SignatureSecp256k1(sig__.Serialize())
+	return SignatureSecp256k1(sig__.Serialize()).Wrap()
 }
 
 func (privKey PrivKeySecp256k1) PubKey() PubKey {
 	_, pub__ := secp256k1.PrivKeyFromBytes(secp256k1.S256(), privKey[:])
-	pub := [64]byte{}
-	copy(pub[:], pub__.SerializeUncompressed()[1:])
-	return PubKeySecp256k1(pub)
+	var pub PubKeySecp256k1
+	copy(pub[:], pub__.SerializeCompressed())
+	return pub.Wrap()
 }
 
 func (privKey PrivKeySecp256k1) Equals(other PrivKey) bool {
-	if otherSecp, ok := other.(PrivKeySecp256k1); ok {
+	if otherSecp, ok := other.Unwrap().(PrivKeySecp256k1); ok {
 		return bytes.Equal(privKey[:], otherSecp[:])
 	} else {
 		return false
 	}
+}
+
+func (p PrivKeySecp256k1) MarshalJSON() ([]byte, error) {
+	return data.Encoder.Marshal(p[:])
+}
+
+func (p *PrivKeySecp256k1) UnmarshalJSON(enc []byte) error {
+	var ref []byte
+	err := data.Encoder.Unmarshal(&ref, enc)
+	copy(p[:], ref)
+	return err
 }
 
 func (privKey PrivKeySecp256k1) String() string {

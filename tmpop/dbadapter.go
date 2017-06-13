@@ -70,9 +70,19 @@ func (a *DBAdapter) NewBatch() db.Batch {
 	return NewBatchAdapter(b)
 }
 
-// Print is for debugging
+// Print implements github.com/tendermint/go-db/db.DB.Print. Print is for debugging
 func (a *DBAdapter) Print() {
 
+}
+
+// Iterator implements github.com/tendermint/go-db/db.DB.Iterator. Iterator is for debugging.
+func (a *DBAdapter) Iterator() db.Iterator {
+	return nil
+}
+
+// Stats implements github.com/tendermint/go-db/db.DB.Stats. Stats is for debugging.
+func (a *DBAdapter) Stats() map[string]string {
+	return nil
 }
 
 // SetAdapter sets a new adapter on the DB

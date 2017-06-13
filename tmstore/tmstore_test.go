@@ -21,15 +21,12 @@ func TestTMStore(t *testing.T) {
 }
 
 func newTestTMStore() (store.Adapter, error) {
-	config := &Config{
-		Endpoint: GetConfig().GetString("rpc_laddr"),
-	}
-	s := New(config)
-	go s.StartWebsocket()
+	s := NewTestClient()
+	s.RetryStartWebsocket(DefaultWsRetryInterval)
+
 	return s, nil
 }
 
 func freeTestTMStore(s store.Adapter) {
-	s.(*TMStore).StopWebsocket()
 	Reset()
 }

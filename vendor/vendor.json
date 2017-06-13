@@ -15,17 +15,46 @@
 			"revisionTime": "2016-11-18T03:08:06Z"
 		},
 		{
-			"checksumSHA1": "AtOcmACVkpXUNlFf3AiRabIiU88=",
-			"origin": "github.com/tendermint/tendermint/vendor/github.com/ebuchman/fail-test",
+			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "346938d642f2ec3594ed81d874461961cd0faa76",
+			"revisionTime": "2016-10-29T20:57:26Z"
+		},
+		{
+			"checksumSHA1": "+8KcDKGfXDhdd5Tl3QWwebRFMp0=",
 			"path": "github.com/ebuchman/fail-test",
-			"revision": "764091dfbb035f1b28da4b067526e04c6a849966",
-			"revisionTime": "2017-01-13T23:59:34Z"
+			"revision": "95f809107225be108efcf10a3509e4ea6ceef3c4",
+			"revisionTime": "2017-03-03T06:12:30Z"
 		},
 		{
 			"checksumSHA1": "nmc2qcdbg17Ny8tHeEDQuphV6jA=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "bd2828f9f176e52d7222e565abb2d338d3f3c103",
 			"revisionTime": "2016-10-13T01:22:19Z"
+		},
+		{
+			"checksumSHA1": "bzCBeQrZ+LxbYyJbp7uDILX6t7c=",
+			"path": "github.com/go-kit/kit/log",
+			"revision": "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b",
+			"revisionTime": "2017-06-08T17:28:36Z"
+		},
+		{
+			"checksumSHA1": "t7aTpDH0h4BZcGU0KkUr14QQG2w=",
+			"path": "github.com/go-kit/kit/log/level",
+			"revision": "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b",
+			"revisionTime": "2017-06-08T17:28:36Z"
+		},
+		{
+			"checksumSHA1": "g8QJZeWwOsnMZfpe0zimGKouPlw=",
+			"path": "github.com/go-kit/kit/log/term",
+			"revision": "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b",
+			"revisionTime": "2017-06-08T17:28:36Z"
+		},
+		{
+			"checksumSHA1": "KxX/Drph+byPXBFIXaCZaCOAnrU=",
+			"path": "github.com/go-logfmt/logfmt",
+			"revision": "390ab7935ee28ec6b286364bba9b4dd6410cb3d5",
+			"revisionTime": "2016-11-15T14:25:13Z"
 		},
 		{
 			"checksumSHA1": "2sj/DbXoXdnPAfjAEyhS0Jj5QL0=",
@@ -124,6 +153,12 @@
 			"revisionTime": "2014-10-17T20:07:13Z"
 		},
 		{
+			"checksumSHA1": "iMD8udYqqFMbeCHGhd/8AgdKCSE=",
+			"path": "github.com/jmhodges/levigo",
+			"revision": "c42d9e0ca023e2198120196f842701bb4c55d7b9",
+			"revisionTime": "2016-11-15T19:34:49Z"
+		},
+		{
 			"checksumSHA1": "Drsz3oT4NmM2tVQCRk+occxVvPA=",
 			"path": "github.com/julienschmidt/httprouter",
 			"revision": "d8ff598a019f2c7bad0980917a588193cf26666e",
@@ -140,6 +175,12 @@
 			"path": "github.com/kr/fs",
 			"revision": "2788f0dbd16903de03cb8186e5c7d97b69ad387b",
 			"revisionTime": "2013-11-06T22:25:44Z"
+		},
+		{
+			"checksumSHA1": "abKzFXAn0KDr5U+JON1ZgJ2lUtU=",
+			"path": "github.com/kr/logfmt",
+			"revision": "b84e30acd515aadc4b783ad4ff83aff3299bdfe0",
+			"revisionTime": "2014-02-26T03:06:59Z"
 		},
 		{
 			"checksumSHA1": "S6PDDQMYaKwLDIP/NsRYb4FRAqQ=",
@@ -196,6 +237,12 @@
 			"revisionTime": "2016-09-30T22:07:58Z"
 		},
 		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
 			"checksumSHA1": "V8karzcTIpqi4yarvOCqXnGWbvo=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "4b6ea7319e214d98c938f12692336f7ca9348d6b",
@@ -250,6 +297,18 @@
 			"path": "github.com/spf13/viper",
 			"revision": "285f1510193473600929e1183915f6220fabab94",
 			"revisionTime": "2016-10-23T21:04:21Z"
+		},
+		{
+			"checksumSHA1": "5NBHAe3S15q3L9hOLThnMZjIZRE=",
+			"path": "github.com/stretchr/testify/assert",
+			"revision": "f6abca593680b2315d2075e0f5e2a9751e3f431a",
+			"revisionTime": "2017-06-01T20:57:54Z"
+		},
+		{
+			"checksumSHA1": "7vs6dSc1PPGBKyzb/SCIyeMJPLQ=",
+			"path": "github.com/stretchr/testify/require",
+			"revision": "f6abca593680b2315d2075e0f5e2a9751e3f431a",
+			"revisionTime": "2017-06-01T20:57:54Z"
 		},
 		{
 			"checksumSHA1": "QvOrAO5S37PL/6XZVWIVGyAbn60=",
@@ -324,28 +383,28 @@
 			"revisionTime": "2016-12-27T11:05:19Z"
 		},
 		{
-			"checksumSHA1": "VEZk77xuTkDM/xgDVHt/i4ozg+g=",
+			"checksumSHA1": "ZVdUY6WMNZhDdeWnqkgJOuyHDZg=",
 			"path": "github.com/tendermint/abci/client",
-			"revision": "v0.4.0",
-			"version": "v0.4.0"
+			"revision": "v0.5.0",
+			"version": "v0.5.0"
 		},
 		{
-			"checksumSHA1": "XpVL0T6xImiPEOPpfUE80xH1ojU=",
+			"checksumSHA1": "5fmNlHusVh/uThXmeSxevGzKtOQ=",
 			"path": "github.com/tendermint/abci/example/dummy",
-			"revision": "v0.4.0",
-			"version": "v0.4.0"
+			"revision": "v0.5.0",
+			"version": "v0.5.0"
 		},
 		{
-			"checksumSHA1": "+nNI80wQxJcwzDoLYd+9QODrPkg=",
+			"checksumSHA1": "VzKR7zOZUOe099XOeLC900t1kh0=",
 			"path": "github.com/tendermint/abci/server",
-			"revision": "v0.4.0",
-			"version": "v0.4.0"
+			"revision": "v0.5.0",
+			"version": "v0.5.0"
 		},
 		{
-			"checksumSHA1": "fz1ozCvj8YmLEIswymkJKLik0Gw=",
+			"checksumSHA1": "nLCM/6vw4zDxy888cc6ABQ3Nhb4=",
 			"path": "github.com/tendermint/abci/types",
-			"revision": "v0.4.0",
-			"version": "v0.4.0"
+			"revision": "v0.5.0",
+			"version": "v0.5.0"
 		},
 		{
 			"checksumSHA1": "TtGkGKxlUhabNnz7nr/8r+nKfy4=",
@@ -366,57 +425,10 @@
 			"revisionTime": "2016-07-23T19:44:52Z"
 		},
 		{
-			"checksumSHA1": "0lxBu/Mti4DocQkQm68cenPkKaQ=",
-			"path": "github.com/tendermint/go-autofile",
-			"revision": "0416e0aa9c68205aa44844096f9f151ada9d0405",
-			"revisionTime": "2016-12-06T09:46:23Z"
-		},
-		{
-			"checksumSHA1": "+ynAD0AKyALpyvOxcr6p9qkm+E0=",
-			"path": "github.com/tendermint/go-clist",
-			"revision": "3baa390bbaf7634251c42ad69a8682e7e3990552",
-			"revisionTime": "2016-07-23T15:23:29Z"
-		},
-		{
-			"checksumSHA1": "O/f9P/ORL4t7AIr4vTaatVGiO3M=",
-			"path": "github.com/tendermint/go-common",
-			"revision": "e289af53b6bf6af28da129d9ef64389a4cf7987f",
-			"revisionTime": "2017-01-13T02:37:18Z"
-		},
-		{
-			"checksumSHA1": "7c0D3SPebMXUB7q/q0AR0OIqx2E=",
-			"path": "github.com/tendermint/go-config",
-			"revision": "620dcbbd7d587cf3599dedbf329b64311b0c307a"
-		},
-		{
-			"checksumSHA1": "z5VhnP7WdI53P0h+rHAQ/nf9joc=",
+			"checksumSHA1": "NhuSgp6eEYVeOcxPPeA4szUg4ME=",
 			"path": "github.com/tendermint/go-crypto",
-			"revision": "4b11d62bdb324027ea01554e5767b71174680ba0",
-			"revisionTime": "2016-07-24T20:21:57Z"
-		},
-		{
-			"checksumSHA1": "uyIAbU1q27T+i5NEd4QOy57+CU4=",
-			"path": "github.com/tendermint/go-db",
-			"revision": "72f6dacd22a686cdf7fcd60286503e3aceda77ba",
-			"revisionTime": "2017-01-13T03:32:20Z"
-		},
-		{
-			"checksumSHA1": "2Xin+Me5jdZYpY9lRSAY1UrxcjE=",
-			"path": "github.com/tendermint/go-events",
-			"revision": "fddee66d90305fccb6f6d84d16c34fa65ea5b7f6",
-			"revisionTime": "2017-01-13T02:38:04Z"
-		},
-		{
-			"checksumSHA1": "ItkpnuFVHPXaE9sXFhgbKwQRnvM=",
-			"path": "github.com/tendermint/go-flowrate/flowrate",
-			"revision": "a20c98e61957faa93b4014fbd902f20ab9317a6a",
-			"revisionTime": "2016-11-04T13:14:49Z"
-		},
-		{
-			"checksumSHA1": "3dOtXORtIHLIq6MgwTNJBc2a/Mk=",
-			"path": "github.com/tendermint/go-logger",
-			"revision": "cefb3a45c0bf3c493a04e9bcd9b1540528be59f2",
-			"revisionTime": "2016-06-26T04:45:56Z"
+			"revision": "7dff40942a64cdeefefa9446b2d104750b349f8a",
+			"revisionTime": "2017-05-18T09:37:23Z"
 		},
 		{
 			"checksumSHA1": "XaOMocqkmiyaS9cEbCOzgi/PA7s=",
@@ -425,135 +437,217 @@
 			"revisionTime": "2017-03-03T05:31:54Z"
 		},
 		{
-			"checksumSHA1": "DjCMB/jImpqGWIr5CqaHlXaAYjw=",
-			"path": "github.com/tendermint/go-p2p",
-			"revision": "97a5ed2d1a17eaee8717b8a32cfaf7a9a82a273d"
-		},
-		{
-			"checksumSHA1": "wc/QUF9U50qYAPUinVNHB3AoZAo=",
-			"path": "github.com/tendermint/go-p2p/upnp",
-			"revision": "97a5ed2d1a17eaee8717b8a32cfaf7a9a82a273d"
-		},
-		{
-			"checksumSHA1": "Birt2LXAyG3011mffYFlrbe/DaI=",
-			"path": "github.com/tendermint/go-rpc",
-			"revision": "fcea0cda21f64889be00a0f4b6d13266b1a76ee7",
-			"revisionTime": "2017-01-13T03:02:40Z"
-		},
-		{
-			"checksumSHA1": "ju5VBzgbTbpSMvbVktsZA8BjPMA=",
-			"path": "github.com/tendermint/go-rpc/client",
-			"revision": "fcea0cda21f64889be00a0f4b6d13266b1a76ee7",
-			"revisionTime": "2017-01-13T03:02:40Z"
-		},
-		{
-			"checksumSHA1": "iTAhgkDnfC7XOAQ/JIOVQY4HwF4=",
-			"path": "github.com/tendermint/go-rpc/server",
-			"revision": "fcea0cda21f64889be00a0f4b6d13266b1a76ee7",
-			"revisionTime": "2017-01-13T03:02:40Z"
-		},
-		{
-			"checksumSHA1": "j4UqgX1DxrLLvrkrVpLYIIAkbfc=",
-			"path": "github.com/tendermint/go-rpc/types",
-			"revision": "fcea0cda21f64889be00a0f4b6d13266b1a76ee7",
-			"revisionTime": "2017-01-13T03:02:40Z"
-		},
-		{
 			"checksumSHA1": "BXz3WhyKVRk8DJPNKAc1nqNVpCk=",
 			"path": "github.com/tendermint/go-wire",
 			"revision": "2f3b7aafe21c80b19b6ee3210ecb3e3d07c7a471",
 			"revisionTime": "2016-12-23T01:15:39Z"
 		},
 		{
-			"checksumSHA1": "H35oCq4FobJ18dg04Ql9NnKAfKM=",
-			"path": "github.com/tendermint/log15",
-			"revision": "ae0f3d6450da9eac7074b439c8e1c3cabf0d5ce6",
-			"revisionTime": "2016-11-04T17:26:45Z"
+			"checksumSHA1": "GvlFNFdgvmCfencwTbCuCIprqy8=",
+			"path": "github.com/tendermint/go-wire/data",
+			"revision": "5f88da3dbc1a72844e6dfaf274ce87f851d488eb",
+			"revisionTime": "2017-05-18T09:36:00Z"
 		},
 		{
-			"checksumSHA1": "KR+YEquWKPA1aVFHSAEFMbGNQgk=",
-			"path": "github.com/tendermint/log15/term",
-			"revision": "ae0f3d6450da9eac7074b439c8e1c3cabf0d5ce6",
-			"revisionTime": "2016-11-04T17:26:45Z"
+			"checksumSHA1": "WZFMfSadXyq5yApZ0RWnMiFY4ns=",
+			"path": "github.com/tendermint/merkleeyes",
+			"revision": "b653442978ee84c7df583417e86e82dd9fe3d674",
+			"revisionTime": "2017-06-05T21:16:34Z"
 		},
 		{
-			"checksumSHA1": "5CpiLFVVejqRRaNHL2TkYWkpNKE=",
+			"checksumSHA1": "Y9FHKc4+aIG8pPCswpE22+7uGJU=",
+			"path": "github.com/tendermint/merkleeyes/iavl",
+			"revision": "b653442978ee84c7df583417e86e82dd9fe3d674",
+			"revisionTime": "2017-06-05T21:16:34Z"
+		},
+		{
+			"checksumSHA1": "zbPdIeOLHa3v8OyJZEcONa18SXM=",
 			"path": "github.com/tendermint/tendermint/blockchain",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "wJduXlfMuGF/clmLUAM12sFjni4=",
-			"path": "github.com/tendermint/tendermint/config/tendermint",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"checksumSHA1": "zAf41fcJXtJH0+RILZxud/yxkOc=",
+			"path": "github.com/tendermint/tendermint/config",
+			"revision": "ca632c9e90cf06a67bacedd43d76407ce7b3614e",
+			"revisionTime": "2017-06-03T03:59:46Z"
 		},
 		{
-			"checksumSHA1": "TvqbC04DRQIJLPuY/8tdRMwlnIo=",
-			"path": "github.com/tendermint/tendermint/config/tendermint_test",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
-		},
-		{
-			"checksumSHA1": "cPxEZTSlfjbHQEsRpyhKvqlIzfc=",
+			"checksumSHA1": "2iIdtn4FKQYtyQj5YU15lvpjW04=",
 			"path": "github.com/tendermint/tendermint/consensus",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "V/ZE0t7fHODeOl07HqnrZcThqRo=",
+			"checksumSHA1": "MiV1d7iyy2tFje6ri35hUYcr/2g=",
 			"path": "github.com/tendermint/tendermint/mempool",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "8LcwS4VN926hitP8mDBeDdyOo0Y=",
+			"checksumSHA1": "anesOrqhZppWkn1RGfozTxzqfuk=",
 			"path": "github.com/tendermint/tendermint/node",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "/4AXos2Y/p/kv4psnRT+OMTieDI=",
+			"checksumSHA1": "5ffG1cF3os/kwMmBj83XboWuKJw=",
+			"path": "github.com/tendermint/tendermint/p2p",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "tum7i2ON6CIp2+wnhfuNn2u269k=",
+			"path": "github.com/tendermint/tendermint/p2p/upnp",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "UNOLwJkMY8P9lh3k7mxT3HJhw0A=",
 			"path": "github.com/tendermint/tendermint/proxy",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "DWBzyF/sp3ArV4dc9kczryv4m+Q=",
+			"checksumSHA1": "zNLhXLX/XlW1Km+4umSsE7AuXm4=",
+			"path": "github.com/tendermint/tendermint/rpc/client",
+			"revision": "ca632c9e90cf06a67bacedd43d76407ce7b3614e",
+			"revisionTime": "2017-06-03T03:59:46Z",
+			"version": "v0.10.0",
+			"versionExact": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "TkVr91YJxdUuP8Rx23xVNy6E6+U=",
 			"path": "github.com/tendermint/tendermint/rpc/core",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "zPj9OlAQnUOkCjQubgrewngsduc=",
+			"checksumSHA1": "IbUN5pxMMd6Q2mBq/bQY1OeTGnQ=",
 			"path": "github.com/tendermint/tendermint/rpc/core/types",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "TYg0aIcga+UgKhIaR09K3S0+7NA=",
+			"checksumSHA1": "HcIKzp6S79hU5NgnTOgEur/BkIU=",
 			"path": "github.com/tendermint/tendermint/rpc/grpc",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "E+TQb7CZ2FgexMcljyLBhoaa6Q0=",
+			"checksumSHA1": "oiSIFtbY4NRTiEfbIyp6IQvbqzE=",
+			"path": "github.com/tendermint/tendermint/rpc/lib",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "gb/fRgwJXKiwOFbkDA61tENtyzE=",
+			"path": "github.com/tendermint/tendermint/rpc/lib/client",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "VDHYj0qk329UrH8mKrr32Utertc=",
+			"path": "github.com/tendermint/tendermint/rpc/lib/server",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "59iZDl4REE9cmaBfdgOFz6iK120=",
+			"path": "github.com/tendermint/tendermint/rpc/lib/types",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "9zFipqM0t0uvtUq6XB5pwrCf6po=",
+			"path": "github.com/tendermint/tendermint/rpc/test",
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "8uveoqMsXr42lBaisEz+Yd5vyKI=",
 			"path": "github.com/tendermint/tendermint/state",
-			"revision": "v0.9.2",
+			"revision": "v0.10.0",
 			"tree": true,
-			"version": "v0.9.2"
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "hYdt78iU8z5jVs8VMw1ofglIkdo=",
+			"checksumSHA1": "OaL55hULmDVxEfUkKiXm08hd1Cw=",
 			"path": "github.com/tendermint/tendermint/types",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
 		},
 		{
-			"checksumSHA1": "BRXD/vhC7J+4MM1Z3/2xIJRXXP8=",
+			"checksumSHA1": "a/oe0K1FyzqtegPUWfL2wMtRifc=",
 			"path": "github.com/tendermint/tendermint/version",
-			"revision": "v0.9.2",
-			"version": "v0.9.2"
+			"revision": "v0.10.0",
+			"version": "v0.10.0"
+		},
+		{
+			"checksumSHA1": "lCQSAlcp5obPjnSFZRZNI6tXqLE=",
+			"path": "github.com/tendermint/tmlibs",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "mThQO8WphUiTioLG0nrCp1OeEQQ=",
+			"path": "github.com/tendermint/tmlibs/autofile",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "dpqbNL6iLTqw+ww46AH5Ui+FoRY=",
+			"path": "github.com/tendermint/tmlibs/cli/flags",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "EykyuZmS92fGuj0G5vNRttTAPrU=",
+			"path": "github.com/tendermint/tmlibs/clist",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "w/oo3jOGhQa5zWpLk5U4Scl1wC4=",
+			"path": "github.com/tendermint/tmlibs/common",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "GmPTcSKXW8xtXMw5GBT7vkCScRI=",
+			"path": "github.com/tendermint/tmlibs/db",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "FgUOzkX6m/a7+DD0S1DGnr8P9Tk=",
+			"path": "github.com/tendermint/tmlibs/events",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "5oBWTotlgaAEMxK5aWtDvH9Mk60=",
+			"path": "github.com/tendermint/tmlibs/flowrate",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "UFwb0ivqeCVrsHxqhCsOTzO4aTA=",
+			"path": "github.com/tendermint/tmlibs/log",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "Ya1tN6Ou8oF8AVdfo52Yej9EYog=",
+			"path": "github.com/tendermint/tmlibs/logger",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
+		},
+		{
+			"checksumSHA1": "TWsj8jQG7I4n5KAx6L1ZJnDdLqo=",
+			"path": "github.com/tendermint/tmlibs/merkle",
+			"revision": "6b619742ac69388dd591c30f55aaee46197b086e",
+			"revisionTime": "2017-06-02T08:56:17Z"
 		},
 		{
 			"checksumSHA1": "TT1rac6kpQp2vz24m5yDGUNQ/QQ=",

@@ -20,9 +20,10 @@ import (
 	"github.com/stratumn/sdk/utils"
 
 	abci "github.com/tendermint/abci/types"
-	wire "github.com/tendermint/go-wire"
+	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+	"github.com/tendermint/tmlibs/events"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -43,10 +44,11 @@ const (
 
 // TMStore is the type that implements github.com/stratumn/sdk/store.Adapter.
 type TMStore struct {
-	config       *Config
-	didSaveChans []chan *cs.Segment
-	tmClient     *TMClient
-	stoppingWS   bool
+	config        *Config
+	didSaveChans  []chan *cs.Segment
+	tmClient      client.Client
+	stoppingWS    bool
+	clientFactory func(endpoint string) client.Client
 }
 
 // Config contains configuration options for the store.
@@ -72,39 +74,29 @@ type Info struct {
 
 // New creates a new instance of a TMStore.
 func New(config *Config) *TMStore {
-	client := NewTMClient(config.Endpoint)
+	return NewFromClient(config, func(endpoint string) client.Client {
+		return client.NewHTTP(config.Endpoint, "/websocket")
+	})
+}
 
-	return &TMStore{config, nil, client, false}
+// NewFromClient creates a new instance of a TMStore with the given client.
+func NewFromClient(config *Config, clientFactory func(endpoint string) client.Client) *TMStore {
+	return &TMStore{config, nil, clientFactory(config.Endpoint), false, clientFactory}
 }
 
 // StartWebsocket starts the websocket client and wait for New Block events.
 func (t *TMStore) StartWebsocket() error {
 	t.stoppingWS = false
-	if err := t.tmClient.StartWebsocket(); err != nil {
+	if _, err := t.tmClient.Start(); err != nil {
 		return err
 	}
 	eventType := tmtypes.EventStringNewBlock()
-	t.tmClient.Subscribe(eventType)
-
-	r, e, q := t.tmClient.GetEventChannels()
-
-	for {
-		select {
-		case msg := <-r:
-			if err := t.notifyDidSaveChans(msg); err != nil {
-				log.Error(err)
-			}
-		case err := <-e:
+	t.tmClient.AddListenerForEvent("TMStore", eventType, func(msg events.EventData) {
+		if err := t.notifyDidSaveChans(msg); err != nil {
 			log.Error(err)
-		case <-q:
-			if t.stoppingWS {
-				return nil
-			}
-			log.Error("Unexpected quit signal... Retrying")
-			t.tmClient.StopWebsocket()
-			t.RetryStartWebsocket(DefaultWsRetryInterval)
 		}
-	}
+	})
+	return nil
 }
 
 // RetryStartWebsocket starts the websocket client and wait for New Block events, it retries on errors.
@@ -112,6 +104,10 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 	return utils.Retry(func(attempt int) (retry bool, err error) {
 		err = t.StartWebsocket()
 		if err != nil {
+			// the tendermint RPC HTTPClient does not handle well connection errors
+			// we have to recreate the client in case of errors
+			// (Check if it is still needed on Tendermint updates)
+			t.tmClient = t.clientFactory(t.config.Endpoint)
 			log.Infof("%v, retrying...", err)
 			time.Sleep(interval)
 		}
@@ -122,33 +118,22 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 // StopWebsocket stops the websocket client.
 func (t *TMStore) StopWebsocket() {
 	t.stoppingWS = true
-	t.tmClient.StopWebsocket()
+	t.tmClient.Stop()
 }
 
-func (t *TMStore) notifyDidSaveChans(msg json.RawMessage) error {
-	if msg == nil {
+func (t *TMStore) notifyDidSaveChans(evt events.EventData) error {
+	if evt == nil {
 		log.Debug("Received empty websocket message")
 		return nil
 	}
 
-	result, err := new(ctypes.TMResult), new(error)
-	wire.ReadJSONPtr(result, msg, err)
-	if *err != nil {
-		return *err
-	}
-
-	var event *ctypes.ResultEvent
-	switch (*result).(type) {
-	case *ctypes.ResultEvent:
-		event = (*result).(*ctypes.ResultEvent)
-	default:
+	tmevt, ok := evt.(tmtypes.TMEventData)
+	if !ok {
+		log.Debug("Received wrong websocket message")
 		return nil
 	}
 
-	if event.Name != "NewBlock" {
-		return fmt.Errorf("Unexpected event received: %v", *event)
-	}
-	newBlock, _ := (event.Data).(tmtypes.EventDataNewBlock)
+	newBlock, ok := tmevt.Unwrap().(tmtypes.EventDataNewBlock)
 
 	for _, txBytes := range newBlock.Block.Data.Txs {
 		tx := &tmpop.Tx{}
@@ -200,6 +185,7 @@ func (t *TMStore) SaveSegment(segment *cs.Segment) error {
 		Segment: segment,
 	}
 	_, err := t.broadcastTx(tx)
+
 	return err
 }
 
@@ -232,12 +218,12 @@ func (t *TMStore) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segment, e
 		TxType:   tmpop.DeleteSegment,
 		LinkHash: linkHash,
 	}
-
 	val, err := t.broadcastTx(tx)
 	if err != nil {
 		return nil, err
 	}
-	if val != nil && val.DeliverTx != nil && val.DeliverTx.Data != nil {
+
+	if val != nil && val.DeliverTx.Data != nil {
 		segment = &cs.Segment{}
 		err = json.Unmarshal(val.DeliverTx.Data, segment)
 		if err != nil {
@@ -316,7 +302,7 @@ func (t *TMStore) DeleteValue(key []byte) (value []byte, err error) {
 	if err != nil {
 		return
 	}
-	if val != nil && val.DeliverTx != nil {
+	if val != nil && val.DeliverTx.Data != nil {
 		value = val.DeliverTx.Data
 	}
 
@@ -337,7 +323,7 @@ func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, er
 	return result, nil
 }
 
-func (t *TMStore) sendQuery(name string, args interface{}) (res abci.ResponseQuery, err error) {
+func (t *TMStore) sendQuery(name string, args interface{}) (res *abci.ResultQuery, err error) {
 	query, err := tmpop.BuildQueryBinary(args)
 	if err != nil {
 		return
@@ -347,9 +333,9 @@ func (t *TMStore) sendQuery(name string, args interface{}) (res abci.ResponseQue
 	if err != nil {
 		return
 	}
-	if !result.Response.Code.IsOK() {
-		return res, fmt.Errorf("NOK Response from TMPop: %v", result.Response)
+	if !result.ResultQuery.Code.IsOK() {
+		return res, fmt.Errorf("NOK Response from TMPop: %v", result.ResultQuery)
 	}
 
-	return result.Response, nil
+	return result.ResultQuery, nil
 }
