@@ -477,84 +477,83 @@
 			"revisionTime": "2016-11-04T17:26:45Z"
 		},
 		{
-			"checksumSHA1": "N8ngAkUI1lO8jv11zyBTTN+DIIc=",
+			"checksumSHA1": "5CpiLFVVejqRRaNHL2TkYWkpNKE=",
 			"path": "github.com/tendermint/tendermint/blockchain",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "MeSCFajUf8WdZhIEtSJKaQE0X7g=",
+			"checksumSHA1": "wJduXlfMuGF/clmLUAM12sFjni4=",
 			"path": "github.com/tendermint/tendermint/config/tendermint",
-			"revision": "d4f625455109d88e7f55a999fdb25e208f174802",
-			"revisionTime": "2017-03-06T10:34:45Z",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
 			"checksumSHA1": "TvqbC04DRQIJLPuY/8tdRMwlnIo=",
 			"path": "github.com/tendermint/tendermint/config/tendermint_test",
-			"revision": "d4f625455109d88e7f55a999fdb25e208f174802",
-			"revisionTime": "2017-03-06T10:34:45Z",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "U+wyKVmgCgnQOFl57WA1iM8jJhA=",
+			"checksumSHA1": "cPxEZTSlfjbHQEsRpyhKvqlIzfc=",
 			"path": "github.com/tendermint/tendermint/consensus",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
 			"checksumSHA1": "V/ZE0t7fHODeOl07HqnrZcThqRo=",
 			"path": "github.com/tendermint/tendermint/mempool",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "673cllae8vpnI7vviRcflyxmuKI=",
+			"checksumSHA1": "8LcwS4VN926hitP8mDBeDdyOo0Y=",
 			"path": "github.com/tendermint/tendermint/node",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "uX8NXuJoFB+MJor9hQX9PStWMtU=",
+			"checksumSHA1": "/4AXos2Y/p/kv4psnRT+OMTieDI=",
 			"path": "github.com/tendermint/tendermint/proxy",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "vvWHwNV7U4LbhaVVRc4Nm21O1fo=",
+			"checksumSHA1": "DWBzyF/sp3ArV4dc9kczryv4m+Q=",
 			"path": "github.com/tendermint/tendermint/rpc/core",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "uGhcDF7ZDTg1q3w4sWzh4pg/gok=",
+			"checksumSHA1": "zPj9OlAQnUOkCjQubgrewngsduc=",
 			"path": "github.com/tendermint/tendermint/rpc/core/types",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
 			"checksumSHA1": "TYg0aIcga+UgKhIaR09K3S0+7NA=",
 			"path": "github.com/tendermint/tendermint/rpc/grpc",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "SS4jjCrfHEJ5GlH/o16pE684LU4=",
+			"checksumSHA1": "E+TQb7CZ2FgexMcljyLBhoaa6Q0=",
 			"path": "github.com/tendermint/tendermint/state",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"tree": true,
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "gMI30sML5RrhVXFUfLHqmDQf3yM=",
+			"checksumSHA1": "hYdt78iU8z5jVs8VMw1ofglIkdo=",
 			"path": "github.com/tendermint/tendermint/types",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
-			"checksumSHA1": "OVFdWFVZS6dvjqeaRPSXbaplspw=",
+			"checksumSHA1": "jiiDO0LOFpoG+co5rOxPl++v4po=",
 			"path": "github.com/tendermint/tendermint/version",
-			"revision": "v0.9.0",
-			"version": "v0.9.0"
+			"revision": "v0.9.1",
+			"version": "v0.9.1"
 		},
 		{
 			"checksumSHA1": "TT1rac6kpQp2vz24m5yDGUNQ/QQ=",
