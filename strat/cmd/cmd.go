@@ -150,8 +150,31 @@ func varsPath() string {
 	return filepath.Join(cfgPath, VarsFile)
 }
 
+func findProjectFile(wd string) (string, error) {
+	dir, err := filepath.Abs(wd)
+	if err != nil {
+		return "", err
+	}
+	for {
+		file := filepath.Join(dir, ProjectFile)
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			oldDir := dir
+			dir = filepath.Dir(oldDir)
+			if dir == oldDir {
+				return "", fmt.Errorf("Could not find %s in %s and its parent directories", ProjectFile, wd)
+			}
+			continue
+		}
+		return file, nil
+	}
+}
+
 func runScript(name, wd string, args []string, ignoreNotExist, stdin bool) error {
-	prj, err := NewProjectFromFile(filepath.Join(wd, ProjectFile))
+	prjFile, err := findProjectFile(wd)
+	if err != nil {
+		return err
+	}
+	prj, err := NewProjectFromFile(prjFile)
 	if err != nil {
 		return err
 	}
