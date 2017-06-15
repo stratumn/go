@@ -79,6 +79,7 @@ func New(config *Config) *Server {
 	router.NotFound = notFoundHandler{config, NotFound}
 	server := &http.Server{
 		Addr:           config.Address,
+		Handler:        router,
 		ReadTimeout:    config.ReadTimeout,
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
