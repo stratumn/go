@@ -21,7 +21,7 @@ func TestUpdate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", "")
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
 	desc, updated, err := r.Update("master", false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
@@ -69,7 +69,7 @@ func TestUpdate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "404", "")
+	r := New(dir, "stratumn", "404", os.Getenv("GITHUB_TOKEN"))
 	_, _, err = r.Update("master", false)
 	if err == nil {
 		t.Error("err: r.Update(): err = nil want Error")
@@ -83,7 +83,7 @@ func TestGetState(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", "")
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
 
 	desc, err := r.GetState("master")
 	if err != nil {
@@ -115,7 +115,7 @@ func TestGetStateOrCreate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", "")
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
 
 	desc, err := r.GetStateOrCreate("master")
 	if err != nil {
@@ -134,7 +134,7 @@ func TestList(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", "")
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
 
 	list, err := r.List("master")
 	if err != nil {
@@ -159,7 +159,7 @@ func TestGenerate(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators", "")
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
 	opts := generator.Options{
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\nstratumn\n\n"),
 	}
@@ -183,7 +183,7 @@ func TestGenerate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators", "")
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
 	opts := generator.Options{
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
 	}
