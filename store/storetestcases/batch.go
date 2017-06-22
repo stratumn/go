@@ -67,9 +67,7 @@ func (f Factory) TestBatchDeleteSegment(t *testing.T) {
 	defer f.free(a)
 
 	s1 := cstesting.RandomSegment()
-	if err := a.SaveSegment(s1); err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
-	}
+	a.SaveSegment(s1)
 
 	linkHash := s1.GetLinkHash()
 
