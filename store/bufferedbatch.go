@@ -105,3 +105,41 @@ func (b *BufferedBatch) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segm
 	}
 	return b.originalStore.GetSegment(linkHash)
 }
+
+// GetSegment returns a segment from the cache or delegates the call to the store
+func (b *BufferedBatch) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
+	for _, sOp := range b.SegmentOps {
+		if sOp.LinkHash == linkHash && sOp.OpType == OpTypeSet {
+			segment = sOp.Segment
+		}
+	}
+	if segment != nil {
+		return segment, nil
+	}
+
+	return b.originalStore.GetSegment(linkHash)
+}
+
+// FindSegments delegates the call to the store
+func (b *BufferedBatch) FindSegments(filter *Filter) (cs.SegmentSlice, error) {
+	return b.originalStore.FindSegments(filter)
+}
+
+// GetMapIDs delegates the call to the store
+func (b *BufferedBatch) GetMapIDs(pagination *Pagination) ([]string, error) {
+	return b.originalStore.GetMapIDs(pagination)
+}
+
+// GetValue returns a segment from the cache or delegates the call to the store
+func (b *BufferedBatch) GetValue(key []byte) (value []byte, err error) {
+	for _, sOp := range b.ValueOps {
+		if bytes.Compare(sOp.Key, key) == 0 && sOp.OpType == OpTypeSet {
+			value = sOp.Value
+		}
+	}
+	if value != nil {
+		return value, nil
+	}
+
+	return b.originalStore.GetValue(key)
+}

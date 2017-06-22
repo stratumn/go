@@ -5,9 +5,10 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/tendermint/go-common"
-	flow "github.com/tendermint/go-flowrate/flowrate"
 	"github.com/tendermint/tendermint/types"
+	. "github.com/tendermint/tmlibs/common"
+	flow "github.com/tendermint/tmlibs/flowrate"
+	"github.com/tendermint/tmlibs/log"
 )
 
 const (
@@ -58,12 +59,11 @@ func NewBlockPool(start int, requestsCh chan<- BlockRequest, timeoutsCh chan<- s
 		requestsCh: requestsCh,
 		timeoutsCh: timeoutsCh,
 	}
-	bp.BaseService = *NewBaseService(log, "BlockPool", bp)
+	bp.BaseService = *NewBaseService(nil, "BlockPool", bp)
 	return bp
 }
 
 func (pool *BlockPool) OnStart() error {
-	pool.BaseService.OnStart()
 	go pool.makeRequestersRoutine()
 	pool.startTime = time.Now()
 	return nil
@@ -107,7 +107,7 @@ func (pool *BlockPool) removeTimedoutPeers() {
 			// XXX remove curRate != 0
 			if curRate != 0 && curRate < minRecvRate {
 				pool.sendTimeout(peer.id)
-				log.Warn("SendTimeout", "peer", peer.id, "reason", "curRate too low")
+				pool.Logger.Error("SendTimeout", "peer", peer.id, "reason", "curRate too low")
 				peer.didTimeout = true
 			}
 		}
@@ -133,7 +133,7 @@ func (pool *BlockPool) IsCaughtUp() bool {
 
 	// Need at least 1 peer to be considered caught up.
 	if len(pool.peers) == 0 {
-		log.Debug("Blockpool has no peers")
+		pool.Logger.Debug("Blockpool has no peers")
 		return false
 	}
 
@@ -143,7 +143,7 @@ func (pool *BlockPool) IsCaughtUp() bool {
 	}
 
 	isCaughtUp := (height > 0 || time.Now().Sub(pool.startTime) > 5*time.Second) && (maxPeerHeight == 0 || height >= maxPeerHeight)
-	log.Notice(Fmt("IsCaughtUp: %v", isCaughtUp), "height", height, "maxPeerHeight", maxPeerHeight)
+	pool.Logger.Info(Fmt("IsCaughtUp: %v", isCaughtUp), "height", height, "maxPeerHeight", maxPeerHeight)
 	return isCaughtUp
 }
 
@@ -227,6 +227,7 @@ func (pool *BlockPool) SetPeerHeight(peerID string, height int) {
 		peer.height = height
 	} else {
 		peer = newBPPeer(pool, peerID, height)
+		peer.setLogger(pool.Logger.With("peer", peerID))
 		pool.peers[peerID] = peer
 	}
 }
@@ -241,7 +242,9 @@ func (pool *BlockPool) RemovePeer(peerID string) {
 func (pool *BlockPool) removePeer(peerID string) {
 	for _, requester := range pool.requesters {
 		if requester.getPeerID() == peerID {
-			pool.numPending++
+			if requester.getBlock() != nil {
+				pool.numPending++
+			}
 			go requester.redo() // pick another peer and ...
 		}
 	}
@@ -278,6 +281,7 @@ func (pool *BlockPool) makeNextRequester() {
 
 	nextHeight := pool.height + len(pool.requesters)
 	request := newBPRequester(pool, nextHeight)
+	request.SetLogger(pool.Logger.With("height", nextHeight))
 
 	pool.requesters[nextHeight] = request
 	pool.numPending++
@@ -327,6 +331,8 @@ type bpPeer struct {
 	numPending int32
 	timeout    *time.Timer
 	didTimeout bool
+
+	logger log.Logger
 }
 
 func newBPPeer(pool *BlockPool, peerID string, height int) *bpPeer {
@@ -335,8 +341,13 @@ func newBPPeer(pool *BlockPool, peerID string, height int) *bpPeer {
 		id:         peerID,
 		height:     height,
 		numPending: 0,
+		logger:     log.NewNopLogger(),
 	}
 	return peer
+}
+
+func (peer *bpPeer) setLogger(l log.Logger) {
+	peer.logger = l
 }
 
 func (peer *bpPeer) resetMonitor() {
@@ -376,7 +387,7 @@ func (peer *bpPeer) onTimeout() {
 	defer peer.pool.mtx.Unlock()
 
 	peer.pool.sendTimeout(peer.id)
-	log.Warn("SendTimeout", "peer", peer.id, "reason", "onTimeout")
+	peer.logger.Error("SendTimeout", "reason", "onTimeout")
 	peer.didTimeout = true
 }
 
@@ -409,7 +420,6 @@ func newBPRequester(pool *BlockPool, height int) *bpRequester {
 }
 
 func (bpr *bpRequester) OnStart() error {
-	bpr.BaseService.OnStart()
 	go bpr.requestRoutine()
 	return nil
 }

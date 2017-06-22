@@ -2,35 +2,15 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/sha256"
 
 	secp256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/tendermint/ed25519"
 	"github.com/tendermint/ed25519/extra25519"
-	. "github.com/tendermint/go-common"
 	"github.com/tendermint/go-wire"
+	data "github.com/tendermint/go-wire/data"
+	. "github.com/tendermint/tmlibs/common"
 	"golang.org/x/crypto/ripemd160"
-)
-
-// PubKey is part of Account and Validator.
-type PubKey interface {
-	Address() []byte
-	Bytes() []byte
-	KeyString() string
-	VerifyBytes(msg []byte, sig Signature) bool
-	Equals(PubKey) bool
-}
-
-// Types of PubKey implementations
-const (
-	PubKeyTypeEd25519   = byte(0x01)
-	PubKeyTypeSecp256k1 = byte(0x02)
-)
-
-// for wire.readReflect
-var _ = wire.RegisterInterface(
-	struct{ PubKey }{},
-	wire.ConcreteType{PubKeyEd25519{}, PubKeyTypeEd25519},
-	wire.ConcreteType{PubKeySecp256k1{}, PubKeyTypeSecp256k1},
 )
 
 func PubKeyFromBytes(pubKeyBytes []byte) (pubKey PubKey, err error) {
@@ -38,10 +18,29 @@ func PubKeyFromBytes(pubKeyBytes []byte) (pubKey PubKey, err error) {
 	return
 }
 
+//----------------------------------------
+
+// DO NOT USE THIS INTERFACE.
+// You probably want to use PubKey
+// +gen wrapper:"PubKey,Impl[PubKeyEd25519,PubKeySecp256k1],ed25519,secp256k1"
+type PubKeyInner interface {
+	AssertIsPubKeyInner()
+	Address() []byte
+	Bytes() []byte
+	KeyString() string
+	VerifyBytes(msg []byte, sig Signature) bool
+	Equals(PubKey) bool
+	Wrap() PubKey
+}
+
 //-------------------------------------
 
-// Implements PubKey
+var _ PubKeyInner = PubKeyEd25519{}
+
+// Implements PubKeyInner
 type PubKeyEd25519 [32]byte
+
+func (pubKey PubKeyEd25519) AssertIsPubKeyInner() {}
 
 func (pubKey PubKeyEd25519) Address() []byte {
 	w, n, err := new(bytes.Buffer), new(int), new(error)
@@ -50,24 +49,36 @@ func (pubKey PubKeyEd25519) Address() []byte {
 		PanicCrisis(*err)
 	}
 	// append type byte
-	encodedPubkey := append([]byte{PubKeyTypeEd25519}, w.Bytes()...)
+	encodedPubkey := append([]byte{TypeEd25519}, w.Bytes()...)
 	hasher := ripemd160.New()
 	hasher.Write(encodedPubkey) // does not error
 	return hasher.Sum(nil)
 }
 
 func (pubKey PubKeyEd25519) Bytes() []byte {
-	return wire.BinaryBytes(struct{ PubKey }{pubKey})
+	return wire.BinaryBytes(PubKey{pubKey})
 }
 
 func (pubKey PubKeyEd25519) VerifyBytes(msg []byte, sig_ Signature) bool {
-	sig, ok := sig_.(SignatureEd25519)
+	// make sure we use the same algorithm to sign
+	sig, ok := sig_.Unwrap().(SignatureEd25519)
 	if !ok {
 		return false
 	}
 	pubKeyBytes := [32]byte(pubKey)
 	sigBytes := [64]byte(sig)
 	return ed25519.Verify(&pubKeyBytes, msg, &sigBytes)
+}
+
+func (p PubKeyEd25519) MarshalJSON() ([]byte, error) {
+	return data.Encoder.Marshal(p[:])
+}
+
+func (p *PubKeyEd25519) UnmarshalJSON(enc []byte) error {
+	var ref []byte
+	err := data.Encoder.Unmarshal(&ref, enc)
+	copy(p[:], ref)
+	return err
 }
 
 // For use with golang/crypto/nacl/box
@@ -92,7 +103,7 @@ func (pubKey PubKeyEd25519) KeyString() string {
 }
 
 func (pubKey PubKeyEd25519) Equals(other PubKey) bool {
-	if otherEd, ok := other.(PubKeyEd25519); ok {
+	if otherEd, ok := other.Unwrap().(PubKeyEd25519); ok {
 		return bytes.Equal(pubKey[:], otherEd[:])
 	} else {
 		return false
@@ -101,33 +112,39 @@ func (pubKey PubKeyEd25519) Equals(other PubKey) bool {
 
 //-------------------------------------
 
-// Implements PubKey
-type PubKeySecp256k1 [64]byte
+var _ PubKeyInner = PubKeySecp256k1{}
 
+// Implements PubKey.
+// Compressed pubkey (just the x-cord),
+// prefixed with 0x02 or 0x03, depending on the y-cord.
+type PubKeySecp256k1 [33]byte
+
+func (pubKey PubKeySecp256k1) AssertIsPubKeyInner() {}
+
+// Implements Bitcoin style addresses: RIPEMD160(SHA256(pubkey))
 func (pubKey PubKeySecp256k1) Address() []byte {
-	w, n, err := new(bytes.Buffer), new(int), new(error)
-	wire.WriteBinary(pubKey[:], w, n, err)
-	if *err != nil {
-		PanicCrisis(*err)
-	}
-	// append type byte
-	encodedPubkey := append([]byte{PubKeyTypeSecp256k1}, w.Bytes()...)
-	hasher := ripemd160.New()
-	hasher.Write(encodedPubkey) // does not error
-	return hasher.Sum(nil)
+	hasherSHA256 := sha256.New()
+	hasherSHA256.Write(pubKey[:]) // does not error
+	sha := hasherSHA256.Sum(nil)
+
+	hasherRIPEMD160 := ripemd160.New()
+	hasherRIPEMD160.Write(sha) // does not error
+	return hasherRIPEMD160.Sum(nil)
 }
 
 func (pubKey PubKeySecp256k1) Bytes() []byte {
-	return wire.BinaryBytes(struct{ PubKey }{pubKey})
+	return wire.BinaryBytes(PubKey{pubKey})
 }
 
 func (pubKey PubKeySecp256k1) VerifyBytes(msg []byte, sig_ Signature) bool {
-	pub__, err := secp256k1.ParsePubKey(append([]byte{0x04}, pubKey[:]...), secp256k1.S256())
-	if err != nil {
+	// and assert same algorithm to sign and verify
+	sig, ok := sig_.Unwrap().(SignatureSecp256k1)
+	if !ok {
 		return false
 	}
-	sig, ok := sig_.(SignatureSecp256k1)
-	if !ok {
+
+	pub__, err := secp256k1.ParsePubKey(pubKey[:], secp256k1.S256())
+	if err != nil {
 		return false
 	}
 	sig__, err := secp256k1.ParseDERSignature(sig[:], secp256k1.S256())
@@ -135,6 +152,17 @@ func (pubKey PubKeySecp256k1) VerifyBytes(msg []byte, sig_ Signature) bool {
 		return false
 	}
 	return sig__.Verify(Sha256(msg), pub__)
+}
+
+func (p PubKeySecp256k1) MarshalJSON() ([]byte, error) {
+	return data.Encoder.Marshal(p[:])
+}
+
+func (p *PubKeySecp256k1) UnmarshalJSON(enc []byte) error {
+	var ref []byte
+	err := data.Encoder.Unmarshal(&ref, enc)
+	copy(p[:], ref)
+	return err
 }
 
 func (pubKey PubKeySecp256k1) String() string {
@@ -148,7 +176,7 @@ func (pubKey PubKeySecp256k1) KeyString() string {
 }
 
 func (pubKey PubKeySecp256k1) Equals(other PubKey) bool {
-	if otherSecp, ok := other.(PubKeySecp256k1); ok {
+	if otherSecp, ok := other.Unwrap().(PubKeySecp256k1); ok {
 		return bytes.Equal(pubKey[:], otherSecp[:])
 	} else {
 		return false

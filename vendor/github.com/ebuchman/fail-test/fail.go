@@ -71,5 +71,8 @@ func FailRand(n int) {
 }
 
 func Exit() {
-	panic(fmt.Sprintf("*** fail-test %d ***", callIndex))
+	fmt.Printf("*** fail-test %d ***\n", callIndex)
+	proc, _ := os.FindProcess(os.Getpid())
+	proc.Signal(os.Interrupt)
+	//	panic(fmt.Sprintf("*** fail-test %d ***", callIndex))
 }

@@ -75,7 +75,7 @@ func TestInfo(t *testing.T) {
 	got := h.Info()
 
 	if !strings.Contains(got.Data, Name) {
-		t.Errorf("a.Info(): expected to contain %s got %d", Name, got)
+		t.Errorf("a.Info(): expected to contain %s got %v", Name, got)
 	}
 }
 

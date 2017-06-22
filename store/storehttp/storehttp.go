@@ -8,7 +8,7 @@
 //
 // It serves the following routes:
 //	GET /
-//		Renders information about the fossilizer.
+//		Renders information about the store.
 //
 //	POST /segments
 //		Saves then renders a segment.
@@ -37,9 +37,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/julienschmidt/httprouter"
-
 	"time"
+
+	"github.com/julienschmidt/httprouter"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/jsonhttp"

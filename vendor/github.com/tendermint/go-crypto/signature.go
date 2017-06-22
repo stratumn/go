@@ -4,29 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	. "github.com/tendermint/go-common"
 	"github.com/tendermint/go-wire"
-)
-
-// Signature is a part of Txs and consensus Votes.
-type Signature interface {
-	Bytes() []byte
-	IsZero() bool
-	String() string
-	Equals(Signature) bool
-}
-
-// Types of Signature implementations
-const (
-	SignatureTypeEd25519   = byte(0x01)
-	SignatureTypeSecp256k1 = byte(0x02)
-)
-
-// for wire.readReflect
-var _ = wire.RegisterInterface(
-	struct{ Signature }{},
-	wire.ConcreteType{SignatureEd25519{}, SignatureTypeEd25519},
-	wire.ConcreteType{SignatureSecp256k1{}, SignatureTypeSecp256k1},
+	data "github.com/tendermint/go-wire/data"
+	. "github.com/tendermint/tmlibs/common"
 )
 
 func SignatureFromBytes(sigBytes []byte) (sig Signature, err error) {
@@ -34,13 +14,31 @@ func SignatureFromBytes(sigBytes []byte) (sig Signature, err error) {
 	return
 }
 
+//----------------------------------------
+
+// DO NOT USE THIS INTERFACE.
+// You probably want to use Signature.
+// +gen wrapper:"Signature,Impl[SignatureEd25519,SignatureSecp256k1],ed25519,secp256k1"
+type SignatureInner interface {
+	AssertIsSignatureInner()
+	Bytes() []byte
+	IsZero() bool
+	String() string
+	Equals(Signature) bool
+	Wrap() Signature
+}
+
 //-------------------------------------
+
+var _ SignatureInner = SignatureEd25519{}
 
 // Implements Signature
 type SignatureEd25519 [64]byte
 
+func (sig SignatureEd25519) AssertIsSignatureInner() {}
+
 func (sig SignatureEd25519) Bytes() []byte {
-	return wire.BinaryBytes(struct{ Signature }{sig})
+	return wire.BinaryBytes(Signature{sig})
 }
 
 func (sig SignatureEd25519) IsZero() bool { return len(sig) == 0 }
@@ -48,20 +46,35 @@ func (sig SignatureEd25519) IsZero() bool { return len(sig) == 0 }
 func (sig SignatureEd25519) String() string { return fmt.Sprintf("/%X.../", Fingerprint(sig[:])) }
 
 func (sig SignatureEd25519) Equals(other Signature) bool {
-	if otherEd, ok := other.(SignatureEd25519); ok {
+	if otherEd, ok := other.Unwrap().(SignatureEd25519); ok {
 		return bytes.Equal(sig[:], otherEd[:])
 	} else {
 		return false
 	}
 }
 
+func (sig SignatureEd25519) MarshalJSON() ([]byte, error) {
+	return data.Encoder.Marshal(sig[:])
+}
+
+func (sig *SignatureEd25519) UnmarshalJSON(enc []byte) error {
+	var ref []byte
+	err := data.Encoder.Unmarshal(&ref, enc)
+	copy(sig[:], ref)
+	return err
+}
+
 //-------------------------------------
+
+var _ SignatureInner = SignatureSecp256k1{}
 
 // Implements Signature
 type SignatureSecp256k1 []byte
 
+func (sig SignatureSecp256k1) AssertIsSignatureInner() {}
+
 func (sig SignatureSecp256k1) Bytes() []byte {
-	return wire.BinaryBytes(struct{ Signature }{sig})
+	return wire.BinaryBytes(Signature{sig})
 }
 
 func (sig SignatureSecp256k1) IsZero() bool { return len(sig) == 0 }
@@ -69,9 +82,17 @@ func (sig SignatureSecp256k1) IsZero() bool { return len(sig) == 0 }
 func (sig SignatureSecp256k1) String() string { return fmt.Sprintf("/%X.../", Fingerprint(sig[:])) }
 
 func (sig SignatureSecp256k1) Equals(other Signature) bool {
-	if otherEd, ok := other.(SignatureSecp256k1); ok {
+	if otherEd, ok := other.Unwrap().(SignatureSecp256k1); ok {
 		return bytes.Equal(sig[:], otherEd[:])
 	} else {
 		return false
 	}
+}
+
+func (sig SignatureSecp256k1) MarshalJSON() ([]byte, error) {
+	return data.Encoder.Marshal(sig)
+}
+
+func (sig *SignatureSecp256k1) UnmarshalJSON(enc []byte) error {
+	return data.Encoder.Unmarshal((*[]byte)(sig), enc)
 }

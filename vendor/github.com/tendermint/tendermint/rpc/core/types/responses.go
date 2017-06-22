@@ -1,11 +1,13 @@
 package core_types
 
 import (
+	"strings"
+
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-crypto"
-	"github.com/tendermint/go-p2p"
-	"github.com/tendermint/go-rpc/types"
-	"github.com/tendermint/go-wire"
+	"github.com/tendermint/go-wire/data"
+
+	"github.com/tendermint/tendermint/p2p"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -32,10 +34,23 @@ type ResultCommit struct {
 type ResultStatus struct {
 	NodeInfo          *p2p.NodeInfo `json:"node_info"`
 	PubKey            crypto.PubKey `json:"pub_key"`
-	LatestBlockHash   []byte        `json:"latest_block_hash"`
-	LatestAppHash     []byte        `json:"latest_app_hash"`
+	LatestBlockHash   data.Bytes    `json:"latest_block_hash"`
+	LatestAppHash     data.Bytes    `json:"latest_app_hash"`
 	LatestBlockHeight int           `json:"latest_block_height"`
 	LatestBlockTime   int64         `json:"latest_block_time"` // nano
+}
+
+func (s *ResultStatus) TxIndexEnabled() bool {
+	if s == nil || s.NodeInfo == nil {
+		return false
+	}
+	for _, s := range s.NodeInfo.Other {
+		info := strings.Split(s, "=")
+		if len(info) == 2 && info[0] == "tx_index" {
+			return info[1] == "on"
+		}
+	}
+	return false
 }
 
 type ResultNetInfo struct {
@@ -45,6 +60,7 @@ type ResultNetInfo struct {
 }
 
 type ResultDialSeeds struct {
+	Log string `json:"log"`
 }
 
 type Peer struct {
@@ -65,13 +81,25 @@ type ResultDumpConsensusState struct {
 
 type ResultBroadcastTx struct {
 	Code abci.CodeType `json:"code"`
-	Data []byte        `json:"data"`
+	Data data.Bytes    `json:"data"`
 	Log  string        `json:"log"`
+
+	Hash data.Bytes `json:"hash"`
 }
 
 type ResultBroadcastTxCommit struct {
-	CheckTx   *abci.ResponseCheckTx   `json:"check_tx"`
-	DeliverTx *abci.ResponseDeliverTx `json:"deliver_tx"`
+	CheckTx   abci.Result `json:"check_tx"`
+	DeliverTx abci.Result `json:"deliver_tx"`
+	Hash      data.Bytes  `json:"hash"`
+	Height    int         `json:"height"`
+}
+
+type ResultTx struct {
+	Height   int           `json:"height"`
+	Index    int           `json:"index"`
+	TxResult abci.Result   `json:"tx_result"`
+	Tx       types.Tx      `json:"tx"`
+	Proof    types.TxProof `json:"proof,omitempty"`
 }
 
 type ResultUnconfirmedTxs struct {
@@ -84,94 +112,18 @@ type ResultABCIInfo struct {
 }
 
 type ResultABCIQuery struct {
-	Response abci.ResponseQuery `json:"response"`
+	*abci.ResultQuery `json:"response"`
 }
 
 type ResultUnsafeFlushMempool struct{}
 
-type ResultUnsafeSetConfig struct{}
-
 type ResultUnsafeProfile struct{}
 
-type ResultSubscribe struct {
-}
+type ResultSubscribe struct{}
 
-type ResultUnsubscribe struct {
-}
+type ResultUnsubscribe struct{}
 
 type ResultEvent struct {
 	Name string            `json:"name"`
 	Data types.TMEventData `json:"data"`
 }
-
-//----------------------------------------
-// response & result types
-
-const (
-	// 0x0 bytes are for the blockchain
-	ResultTypeGenesis        = byte(0x01)
-	ResultTypeBlockchainInfo = byte(0x02)
-	ResultTypeBlock          = byte(0x03)
-	ResultTypeCommit         = byte(0x04)
-
-	// 0x2 bytes are for the network
-	ResultTypeStatus    = byte(0x20)
-	ResultTypeNetInfo   = byte(0x21)
-	ResultTypeDialSeeds = byte(0x22)
-
-	// 0x4 bytes are for the consensus
-	ResultTypeValidators         = byte(0x40)
-	ResultTypeDumpConsensusState = byte(0x41)
-
-	// 0x6 bytes are for txs / the application
-	ResultTypeBroadcastTx       = byte(0x60)
-	ResultTypeUnconfirmedTxs    = byte(0x61)
-	ResultTypeBroadcastTxCommit = byte(0x62)
-
-	// 0x7 bytes are for querying the application
-	ResultTypeABCIQuery = byte(0x70)
-	ResultTypeABCIInfo  = byte(0x71)
-
-	// 0x8 bytes are for events
-	ResultTypeSubscribe   = byte(0x80)
-	ResultTypeUnsubscribe = byte(0x81)
-	ResultTypeEvent       = byte(0x82)
-
-	// 0xa bytes for testing
-	ResultTypeUnsafeSetConfig        = byte(0xa0)
-	ResultTypeUnsafeStartCPUProfiler = byte(0xa1)
-	ResultTypeUnsafeStopCPUProfiler  = byte(0xa2)
-	ResultTypeUnsafeWriteHeapProfile = byte(0xa3)
-	ResultTypeUnsafeFlushMempool     = byte(0xa4)
-)
-
-type TMResult interface {
-	rpctypes.Result
-}
-
-// for wire.readReflect
-var _ = wire.RegisterInterface(
-	struct{ TMResult }{},
-	wire.ConcreteType{&ResultGenesis{}, ResultTypeGenesis},
-	wire.ConcreteType{&ResultBlockchainInfo{}, ResultTypeBlockchainInfo},
-	wire.ConcreteType{&ResultBlock{}, ResultTypeBlock},
-	wire.ConcreteType{&ResultCommit{}, ResultTypeCommit},
-	wire.ConcreteType{&ResultStatus{}, ResultTypeStatus},
-	wire.ConcreteType{&ResultNetInfo{}, ResultTypeNetInfo},
-	wire.ConcreteType{&ResultDialSeeds{}, ResultTypeDialSeeds},
-	wire.ConcreteType{&ResultValidators{}, ResultTypeValidators},
-	wire.ConcreteType{&ResultDumpConsensusState{}, ResultTypeDumpConsensusState},
-	wire.ConcreteType{&ResultBroadcastTx{}, ResultTypeBroadcastTx},
-	wire.ConcreteType{&ResultBroadcastTxCommit{}, ResultTypeBroadcastTxCommit},
-	wire.ConcreteType{&ResultUnconfirmedTxs{}, ResultTypeUnconfirmedTxs},
-	wire.ConcreteType{&ResultSubscribe{}, ResultTypeSubscribe},
-	wire.ConcreteType{&ResultUnsubscribe{}, ResultTypeUnsubscribe},
-	wire.ConcreteType{&ResultEvent{}, ResultTypeEvent},
-	wire.ConcreteType{&ResultUnsafeSetConfig{}, ResultTypeUnsafeSetConfig},
-	wire.ConcreteType{&ResultUnsafeProfile{}, ResultTypeUnsafeStartCPUProfiler},
-	wire.ConcreteType{&ResultUnsafeProfile{}, ResultTypeUnsafeStopCPUProfiler},
-	wire.ConcreteType{&ResultUnsafeProfile{}, ResultTypeUnsafeWriteHeapProfile},
-	wire.ConcreteType{&ResultUnsafeFlushMempool{}, ResultTypeUnsafeFlushMempool},
-	wire.ConcreteType{&ResultABCIQuery{}, ResultTypeABCIQuery},
-	wire.ConcreteType{&ResultABCIInfo{}, ResultTypeABCIInfo},
-)

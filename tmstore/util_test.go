@@ -7,67 +7,42 @@ of tests in various packages.
 **/
 
 import (
-	logger "github.com/tendermint/go-logger"
-
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/dummystore"
-	"github.com/stratumn/sdk/tendermint"
 	"github.com/stratumn/sdk/tmpop"
-	cfg "github.com/tendermint/go-config"
-	"github.com/tendermint/tendermint/config/tendermint_test"
+	cfg "github.com/tendermint/tendermint/config"
+	node "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/rpc/client"
+	rpctest "github.com/tendermint/tendermint/rpc/test"
 )
 
 var (
-	config        cfg.Config
+	config        *cfg.Config
 	TestSegment   = cstesting.RandomSegment()
 	ToSaveSegment = cstesting.RandomSegment()
 	SegmentSaved  = false
 	TestLimit     = 1
 	testTmpop     *tmpop.TMPop
+	testNode      *node.Node
 )
 
-const tmLogLevel = "error"
-
-// GetConfig returns a config for the test cases as a singleton
-func GetConfig() cfg.Config {
-	if config == nil {
-		config = tendermint_test.ResetConfig("rpc_test_client_test")
-		// Shut up the logging
-		logger.SetLogLevel(tmLogLevel)
-	}
-	return config
+// NewTestClient returns a rpc client pointing to the test node
+func NewTestClient() *TMStore {
+	return NewFromClient(&Config{}, func(endpoint string) client.Client {
+		return client.NewLocal(testNode)
+	})
 }
 
-// GetClient gets a rpc client pointing to the test node
-func GetClient() *TMClient {
-	rpcAddr := GetConfig().GetString("rpc_laddr")
-	return NewTMClient(rpcAddr)
-}
-
-// StartNode starts a test node in a go routine and returns when it is initialized
-func StartNode() {
-	// start a node
-	ready := make(chan struct{})
-	go NewNode(ready)
-	<-ready
-}
-
-// NewNode creates a new node and sleeps forever
-func NewNode(ready chan struct{}) {
+func StartNode() *node.Node {
 	adapter := dummystore.New(&dummystore.Config{})
 	var err error
 	testTmpop, err = tmpop.New(adapter, &tmpop.Config{})
 	if err != nil {
 		panic(err)
 	}
+	testNode = rpctest.StartTendermint(testTmpop)
 
-	tendermint.RunNode(GetConfig(), testTmpop)
-
-	ready <- struct{}{}
-
-	// Sleep forever
-	ch := make(chan struct{})
-	<-ch
+	return testNode
 }
 
 func Reset() {
