@@ -650,6 +650,24 @@
 			"revisionTime": "2017-06-02T08:56:17Z"
 		},
 		{
+			"checksumSHA1": "B9K+5clCq0PU8n8/utbKT0QjQyU=",
+			"path": "github.com/xeipuuv/gojsonpointer",
+			"revision": "6fe8760cad3569743d51ddbb243b26f8456742dc",
+			"revisionTime": "2017-02-25T23:34:18Z"
+		},
+		{
+			"checksumSHA1": "pSoUW+qY6LwIJ5lFwGohPU5HUpg=",
+			"path": "github.com/xeipuuv/gojsonreference",
+			"revision": "e02fc20de94c78484cd5ffb007f8af96be030a45",
+			"revisionTime": "2015-08-08T06:50:54Z"
+		},
+		{
+			"checksumSHA1": "5+YVBClSfR0M/M/G5JI2cG7G+ak=",
+			"path": "github.com/xeipuuv/gojsonschema",
+			"revision": "702b404897d4364af44dc8dcabc9815947942325",
+			"revisionTime": "2017-03-24T00:22:21Z"
+		},
+		{
 			"checksumSHA1": "TT1rac6kpQp2vz24m5yDGUNQ/QQ=",
 			"path": "golang.org/x/crypto/cast5",
 			"revision": "a20de3fa94e069ec699987416679230d72e030a3",
