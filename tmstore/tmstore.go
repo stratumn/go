@@ -319,6 +319,12 @@ func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, er
 	if err != nil {
 		return nil, err
 	}
+	if result.CheckTx.IsErr() {
+		return nil, fmt.Errorf(result.CheckTx.Error())
+	}
+	if result.DeliverTx.IsErr() {
+		return nil, fmt.Errorf(result.DeliverTx.Error())
+	}
 
 	return result, nil
 }
