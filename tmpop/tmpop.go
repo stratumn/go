@@ -220,7 +220,9 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
 			break
 		}
-		value, proof, _ := commit.GetSegment(linkHash)
+		var value *cs.Segment
+		var proof []byte
+		value, proof, err = commit.GetSegment(linkHash)
 
 		t.addCurrentProof(value, proof)
 
