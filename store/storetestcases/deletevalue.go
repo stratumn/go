@@ -32,7 +32,7 @@ func (f Factory) TestDeleteValue(t *testing.T) {
 	}
 
 	if got := value2; got == nil {
-		t.Error("s2 = nil want []byte")
+		t.Fatal("s2 = nil want []byte")
 	}
 
 	if got, want := value2, value1; bytes.Compare(got, want) != 0 {

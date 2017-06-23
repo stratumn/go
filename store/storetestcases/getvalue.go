@@ -33,7 +33,7 @@ func (f Factory) TestGetValue(t *testing.T) {
 	}
 
 	if got := v2; got == nil {
-		t.Error("s2 = nil want []byte")
+		t.Fatal("s2 = nil want []byte")
 	}
 
 	if got, want := v2, v1; bytes.Compare(got, want) != 0 {

@@ -7,22 +7,22 @@ import (
 
 	"golang.org/x/crypto/ripemd160"
 
-	. "github.com/tendermint/go-common"
+	cmn "github.com/tendermint/tmlibs/common"
 )
 
 func BinaryBytes(o interface{}) []byte {
 	w, n, err := new(bytes.Buffer), new(int), new(error)
 	WriteBinary(o, w, n, err)
 	if *err != nil {
-		PanicSanity(*err)
+		cmn.PanicSanity(*err)
 	}
 	return w.Bytes()
 }
 
-// o: a pointer to the object to be filled
-func ReadBinaryBytes(d []byte, o interface{}) error {
+// ptr: a pointer to the object to be filled
+func ReadBinaryBytes(d []byte, ptr interface{}) error {
 	r, n, err := bytes.NewBuffer(d), new(int), new(error)
-	ReadBinaryPtr(o, r, 0, n, err)
+	ReadBinaryPtr(ptr, r, len(d), n, err)
 	return *err
 }
 
@@ -30,7 +30,7 @@ func JSONBytes(o interface{}) []byte {
 	w, n, err := new(bytes.Buffer), new(int), new(error)
 	WriteJSON(o, w, n, err)
 	if *err != nil {
-		PanicSanity(*err)
+		cmn.PanicSanity(*err)
 	}
 	return w.Bytes()
 }
@@ -41,18 +41,18 @@ func JSONBytesPretty(o interface{}) []byte {
 	var object interface{}
 	err := json.Unmarshal(jsonBytes, &object)
 	if err != nil {
-		PanicSanity(err)
+		cmn.PanicSanity(err)
 	}
 	jsonBytes, err = json.MarshalIndent(object, "", "\t")
 	if err != nil {
-		PanicSanity(err)
+		cmn.PanicSanity(err)
 	}
 	return jsonBytes
 }
 
-// o: a pointer to the object to be filled
-func ReadJSONBytes(d []byte, o interface{}) (err error) {
-	ReadJSONPtr(o, d, &err)
+// ptr: a pointer to the object to be filled
+func ReadJSONBytes(d []byte, ptr interface{}) (err error) {
+	ReadJSONPtr(ptr, d, &err)
 	return
 }
 
@@ -75,7 +75,7 @@ func BinarySha256(o interface{}) []byte {
 	hasher, n, err := sha256.New(), new(int), new(error)
 	WriteBinary(o, hasher, n, err)
 	if *err != nil {
-		PanicSanity(*err)
+		cmn.PanicSanity(*err)
 	}
 	return hasher.Sum(nil)
 }
@@ -85,7 +85,7 @@ func BinaryRipemd160(o interface{}) []byte {
 	hasher, n, err := ripemd160.New(), new(int), new(error)
 	WriteBinary(o, hasher, n, err)
 	if *err != nil {
-		PanicSanity(*err)
+		cmn.PanicSanity(*err)
 	}
 	return hasher.Sum(nil)
 }

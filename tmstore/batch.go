@@ -27,21 +27,29 @@ func (b *Batch) Write() error {
 	for _, op := range b.ValueOps {
 		switch op.OpType {
 		case store.OpTypeSet:
-			b.originalTMStore.SaveValue(op.Key, op.Value)
+			if err := b.originalTMStore.SaveValue(op.Key, op.Value); err != nil {
+				return err
+			}
 		case store.OpTypeDelete:
-			b.originalTMStore.DeleteValue(op.Key)
+			if _, err := b.originalTMStore.DeleteValue(op.Key); err != nil {
+				return err
+			}
 		default:
-			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			return fmt.Errorf("invalid Batch operation type: %v", op.OpType)
 		}
 	}
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
 		case store.OpTypeSet:
-			b.originalTMStore.SaveSegment(op.Segment)
+			if err := b.originalTMStore.SaveSegment(op.Segment); err != nil {
+				return err
+			}
 		case store.OpTypeDelete:
-			b.originalTMStore.DeleteSegment(op.LinkHash)
+			if _, err := b.originalTMStore.DeleteSegment(op.LinkHash); err != nil {
+				return err
+			}
 		default:
-			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			return fmt.Errorf("invalid Batch operation type: %v", op.OpType)
 		}
 	}
 

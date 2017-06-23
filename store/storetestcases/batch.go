@@ -77,10 +77,11 @@ func (f Factory) TestBatchDeleteSegment(t *testing.T) {
 	}
 
 	if got := s2; got == nil {
-		t.Error("s2 = nil want *cs.Segment")
+		t.Fatal("s2 = nil want *cs.Segment")
 	}
 
 	delete(s2.Meta, "evidence")
+
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -93,7 +94,7 @@ func (f Factory) TestBatchDeleteSegment(t *testing.T) {
 	}
 	if got := s2; got == nil {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		t.Errorf("s2 = %s\n want %s", gotJS, s2)
+		t.Fatalf("s2 = %s\n want %s", gotJS, s2)
 	}
 }
 
@@ -113,7 +114,7 @@ func (f Factory) TestBatchDeleteValue(t *testing.T) {
 	}
 
 	if got := v2; got == nil {
-		t.Error("s2 = nil want []byte")
+		t.Fatal("s2 = nil want []byte")
 	}
 
 	if got, want := v2, v1; bytes.Compare(got, want) != 0 {
@@ -125,7 +126,7 @@ func (f Factory) TestBatchDeleteValue(t *testing.T) {
 		t.Fatalf("a.GetValue(): err: %s", err)
 	}
 	if got := v2; got == nil {
-		t.Errorf("s2 = %s\n want %s", got, v2)
+		t.Fatalf("s2 = %s\n want %s", got, v2)
 	}
 }
 
@@ -151,9 +152,11 @@ func (f Factory) TestBatchWriteSaveSegment(t *testing.T) {
 	}
 
 	if got := s2; got == nil {
-		t.Error("s2 = nil want *cs.Segment")
+		t.Fatal("s2 = nil want *cs.Segment")
 	}
+
 	delete(s2.Meta, "evidence")
+
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -184,7 +187,7 @@ func (f Factory) TestBatchWriteSaveValue(t *testing.T) {
 	}
 
 	if got := v2; got == nil {
-		t.Error("s2 = nil want []byte")
+		t.Fatal("s2 = nil want []byte")
 	}
 
 	if got, want := v2, v1; bytes.Compare(got, want) != 0 {

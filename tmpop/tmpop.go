@@ -331,7 +331,7 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 				})
 		}
 
-		snapshot.SetSegment(tx.Segment)
+		err = snapshot.SetSegment(tx.Segment)
 	case DeleteSegment:
 		var segment *cs.Segment
 		var found bool
