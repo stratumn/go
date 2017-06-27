@@ -8,6 +8,7 @@ package storetesting
 
 import (
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
 )
 
@@ -29,6 +30,18 @@ type MockBatch struct {
 
 	// The mock for the Write function.
 	MockWrite MockBatchWrite
+
+	// The mock for the GetSegment function.
+	MockGetSegment MockBatchGetSegment
+
+	// The mock for the FindSegments function.
+	MockFindSegments MockBatchFindSegments
+
+	// The mock for the GetMapIDs function.
+	MockGetMapIDs MockBatchGetMapIDs
+
+	// The mock for the GetValue function.
+	MockGetValue MockBatchGetValue
 }
 
 // MockBatchSaveSegment mocks the SaveSegment function.
@@ -100,6 +113,42 @@ type MockBatchWrite struct {
 	Fn func() error
 }
 
+// MockBatchGetSegment mocks the GetSegment function.
+type MockBatchGetSegment struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// An optional implementation of the function.
+	Fn func(linkHash *types.Bytes32) (*cs.Segment, error)
+}
+
+// MockBatchFindSegments mocks the FindSegments function.
+type MockBatchFindSegments struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// An optional implementation of the function.
+	Fn func(filter *store.Filter) (cs.SegmentSlice, error)
+}
+
+// MockBatchGetMapIDs mocks the GetMapIDs function.
+type MockBatchGetMapIDs struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// An optional implementation of the function.
+	Fn func(pagination *store.Pagination) ([]string, error)
+}
+
+// MockBatchGetValue mocks the GetValue function.
+type MockBatchGetValue struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// An optional implementation of the function.
+	Fn func(key []byte) ([]byte, error)
+}
+
 // SaveSegment implements github.com/stratumn/sdk/store.Batch.SaveSegment.
 func (a *MockBatch) SaveSegment(segment *cs.Segment) error {
 	a.MockSaveSegment.CalledCount++
@@ -161,4 +210,44 @@ func (a *MockBatch) Write() error {
 		return a.MockWrite.Fn()
 	}
 	return nil
+}
+
+// GetSegment delegates the call to a underlying store
+func (a *MockBatch) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	a.MockGetSegment.CalledCount++
+
+	if a.MockGetSegment.Fn != nil {
+		return a.MockGetSegment.Fn(linkHash)
+	}
+	return nil, nil
+}
+
+// FindSegments delegates the call to a underlying store
+func (a *MockBatch) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
+	a.MockFindSegments.CalledCount++
+
+	if a.MockFindSegments.Fn != nil {
+		return a.MockFindSegments.Fn(filter)
+	}
+	return nil, nil
+}
+
+// GetMapIDs delegates the call to a underlying store
+func (a *MockBatch) GetMapIDs(pagination *store.Pagination) ([]string, error) {
+	a.MockGetMapIDs.CalledCount++
+
+	if a.MockGetMapIDs.Fn != nil {
+		return a.MockGetMapIDs.Fn(pagination)
+	}
+	return nil, nil
+}
+
+// GetValue delegates the call to a underlying store
+func (a *MockBatch) GetValue(key []byte) ([]byte, error) {
+	a.MockGetValue.CalledCount++
+
+	if a.MockGetValue.Fn != nil {
+		return a.MockGetValue.Fn(key)
+	}
+	return nil, nil
 }

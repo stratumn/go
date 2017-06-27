@@ -54,6 +54,7 @@ type Reader interface {
 
 // Batch represents a database transaction
 type Batch interface {
+	Reader
 	Writer
 
 	// Write definitely writes the content of the Batch
