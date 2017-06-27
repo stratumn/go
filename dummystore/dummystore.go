@@ -148,6 +148,9 @@ func (a *DummyStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 
 	delete(a.segments, linkHashStr)
 	delete(a.maps[segment.Link.GetMapID()], linkHashStr)
+	if len(a.maps[segment.Link.GetMapID()]) == 0 {
+		delete(a.maps, segment.Link.GetMapID())
+	}
 
 	return segment, nil
 }

@@ -224,7 +224,9 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
 			break
 		}
-		value, proof, _ := commit.GetSegment(linkHash)
+		var value *cs.Segment
+		var proof []byte
+		value, proof, err = commit.GetSegment(linkHash)
 
 		t.addCurrentProof(value, proof)
 
@@ -331,7 +333,7 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 				})
 		}
 
-		snapshot.SetSegment(tx.Segment)
+		err = snapshot.SetSegment(tx.Segment)
 	case DeleteSegment:
 		var segment *cs.Segment
 		var found bool
@@ -392,17 +394,6 @@ func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
 	}
 
 	return tx, abci.NewResultOK([]byte{}, "ok")
-}
-
-// ResetAdapter sets the adapter (used in tests).
-func (t *TMPop) ResetAdapter(a store.Adapter) {
-	t.adapter = a
-	t.state.segments = a
-	t.adapter.SaveValue(tmpopLastBlockKey, wire.BinaryBytes(lastBlock{
-		AppHash: []byte{},
-		Height:  0,
-	}))
-	t.lastBlock, _ = readLastBlock(a)
 }
 
 func readLastBlock(a store.Adapter) (*lastBlock, error) {

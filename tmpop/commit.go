@@ -10,7 +10,10 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
+
 	merkle "github.com/tendermint/go-merkle"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // Commit represents a committed state of the blockchain.
@@ -53,6 +56,8 @@ func (c *Commit) GetSegment(lh *types.Bytes32) (*cs.Segment, []byte, error) {
 	if exists == true {
 		return s, proof, nil
 	}
+
+	log.Warn("Segment in adapter but not in tree")
 
 	return nil, nil, nil
 }

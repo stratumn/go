@@ -23,27 +23,32 @@ func NewBatch(a *TMStore) *Batch {
 	return &Batch{store.NewBufferedBatch(a), a}
 }
 
-func (b *Batch) Write() error {
+func (b *Batch) Write() (err error) {
 	for _, op := range b.ValueOps {
 		switch op.OpType {
 		case store.OpTypeSet:
-			b.originalTMStore.SaveValue(op.Key, op.Value)
+			err = b.originalTMStore.SaveValue(op.Key, op.Value)
 		case store.OpTypeDelete:
-			b.originalTMStore.DeleteValue(op.Key)
+			_, err = b.originalTMStore.DeleteValue(op.Key)
 		default:
-			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
-		}
-	}
-	for _, op := range b.SegmentOps {
-		switch op.OpType {
-		case store.OpTypeSet:
-			b.originalTMStore.SaveSegment(op.Segment)
-		case store.OpTypeDelete:
-			b.originalTMStore.DeleteSegment(op.LinkHash)
-		default:
-			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
 		}
 	}
 
-	return nil
+	if err != nil {
+		return
+	}
+
+	for _, op := range b.SegmentOps {
+		switch op.OpType {
+		case store.OpTypeSet:
+			err = b.originalTMStore.SaveSegment(op.Segment)
+		case store.OpTypeDelete:
+			_, err = b.originalTMStore.DeleteSegment(op.LinkHash)
+		default:
+			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+		}
+	}
+
+	return
 }

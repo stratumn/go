@@ -44,8 +44,3 @@ func StartNode() *node.Node {
 
 	return testNode
 }
-
-func Reset() {
-	a := dummystore.New(&dummystore.Config{})
-	testTmpop.ResetAdapter(a)
-}

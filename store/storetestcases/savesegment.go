@@ -38,7 +38,7 @@ func (f Factory) TestSaveSegmentUpdatedState(t *testing.T) {
 		t.Fatalf("a.SaveSegment(): err: %s", err)
 	}
 
-	cstesting.ChangeSegmentState(s)
+	s = cstesting.ChangeSegmentState(s)
 	if err := a.SaveSegment(s); err != nil {
 		t.Fatalf("a.SaveSegment(): err: %s", err)
 	}

@@ -34,9 +34,11 @@ func (f Factory) TestDeleteSegment(t *testing.T) {
 	}
 
 	if got := s2; got == nil {
-		t.Error("s2 = nil want *cs.Segment")
+		t.Fatal("s2 = nil want *cs.Segment")
 	}
+
 	delete(s2.Meta, "evidence")
+
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")

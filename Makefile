@@ -83,7 +83,7 @@ coverage: $(COVERAGE_FILE)
 
 $(COVERAGE_FILE): $(COVERAGE_SOURCES)
 	@for d in $(TEST_PACKAGES); do \
-	    $(GO_TEST) -coverprofile=profile.out -covermode=atomic $$d; \
+	    $(GO_TEST) -coverprofile=profile.out -covermode=atomic $$d || exit 1; \
 	    if [ -f profile.out ]; then \
 	        cat profile.out >> $(COVERAGE_FILE); \
 	        rm profile.out; \
@@ -93,7 +93,7 @@ $(COVERAGE_FILE): $(COVERAGE_SOURCES)
 coverhtml:
 	echo 'mode: set' > $(COVERHTML_FILE)
 	@for d in $(TEST_PACKAGES); do \
-	    $(GO_TEST) -coverprofile=profile.out $$d; \
+	    $(GO_TEST) -coverprofile=profile.out $$d || exit 1; \
 	    if [ -f profile.out ]; then \
 	        tail -n +2 profile.out >> $(COVERHTML_FILE); \
 	        rm profile.out; \

@@ -81,7 +81,7 @@ type Pagination struct {
 	// Index of the first entry.
 	Offset int `json:"offset"`
 
-	// Maximum number of entries, all if zero.
+	// Maximum number of entries.
 	Limit int `json:"limit"`
 }
 
