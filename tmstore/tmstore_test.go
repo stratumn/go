@@ -13,7 +13,13 @@ import (
 	"github.com/stratumn/sdk/store/storetestcases"
 )
 
+var (
+	tmstore *TMStore
+	test    *testing.T
+)
+
 func TestTMStore(t *testing.T) {
+	test = t
 	storetestcases.Factory{
 		New:  newTestTMStore,
 		Free: freeTestTMStore,
@@ -21,12 +27,24 @@ func TestTMStore(t *testing.T) {
 }
 
 func newTestTMStore() (store.Adapter, error) {
-	s := NewTestClient()
-	s.RetryStartWebsocket(DefaultWsRetryInterval)
+	tmstore = NewTestClient()
+	tmstore.RetryStartWebsocket(DefaultWsRetryInterval)
 
-	return s, nil
+	return tmstore, nil
 }
 
 func freeTestTMStore(s store.Adapter) {
-	Reset()
+	mapIDs, err := tmstore.GetMapIDs(&store.Pagination{Limit: 100})
+	if err != nil {
+		test.Fatal(err)
+	}
+	for _, m := range mapIDs {
+		segments, err := tmstore.FindSegments(&store.Filter{MapID: m, Pagination: store.Pagination{Limit: 100}})
+		if err != nil {
+			test.Fatal(err)
+		}
+		for _, s := range segments {
+			tmstore.DeleteSegment(s.GetLinkHash())
+		}
+	}
 }

@@ -383,17 +383,6 @@ func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
 	return tx, abci.NewResultOK([]byte{}, "ok")
 }
 
-// ResetAdapter sets the adapter (used in tests).
-func (t *TMPop) ResetAdapter(a store.Adapter) {
-	t.adapter = a
-	t.state.segments = a
-	t.adapter.SaveValue(tmpopLastBlockKey, wire.BinaryBytes(lastBlock{
-		AppHash: []byte{},
-		Height:  0,
-	}))
-	t.lastBlock, _ = readLastBlock(a)
-}
-
 func readLastBlock(a store.Adapter) (*lastBlock, error) {
 	lBytes, err := a.GetValue(tmpopLastBlockKey)
 	if err != nil {
