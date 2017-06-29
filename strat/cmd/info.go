@@ -1,6 +1,6 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
+// Copyright 2017 Stratumn SAS. All rights reserved.
 //
-// Licensed under the Apache License, Info 2.0 (the "License");
+// Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
@@ -35,7 +35,7 @@ It outputs version, copyright, license, and runtime information.`,
 		}
 		fmt.Printf("%s v%s@%s\n", "Stratumn CLI", version, commit[:7])
 		fmt.Println("Copyright (c) 2017 Stratumn SAS")
-		fmt.Println("Mozilla Public License 2.0")
+		fmt.Println("Apache License 2.0")
 		fmt.Printf("Runtime %s %s %s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 		return nil
 	},

@@ -54,6 +54,7 @@ NIX_ZIP_FILES=$(foreach command, $(COMMANDS), $(foreach os-arch, $(NIX_OS_ARCHS)
 WIN_ZIP_FILES=$(foreach command, $(COMMANDS), $(foreach os-arch, $(WIN_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command).zip))
 ZIP_FILES=$(NIX_ZIP_FILES) $(WIN_ZIP_FILES)
 DOCKER_FILES=$(foreach command, $(COMMANDS), $(DIST_DIR)/$(command).Dockerfile)
+LICENSED_FILES=$(shell find . -name '*.go' | grep -v vendor)
 
 TEST_LIST=$(foreach package, $(TEST_PACKAGES), test_$(package))
 BENCHMARK_LIST=$(foreach package, $(TEST_PACKAGES), benchmark_$(package))
@@ -214,6 +215,12 @@ docker_push: $(DOCKER_PUSH_LIST)
 $(DOCKER_PUSH_LIST): docker_push_%:
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):$(VERSION)
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):latest
+
+# == license_headers ==========================================================
+license_headers: $(LICENSED_FILES)
+
+$(LICENSED_FILES): LICENSE_HEADER
+	perl -i -0pe 's/\/\/ Copyright \d* Stratumn.*\n(\/\/.*\n)*/`cat LICENSE_HEADER`/ge' $@
 
 # == clean ====================================================================
 clean: $(CLEAN_LIST)

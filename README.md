@@ -17,7 +17,7 @@ https://github.com/stratumn/sdk/releases/latest
 
 Copyright 2017 Stratumn SAS. All rights reserved.
 
-Unless otherwise noted, the source files are distributed under the Mozilla Public
+Unless otherwise noted, the source files are distributed under the Apache
 License 2.0 found in the LICENSE file.
 
 Third party dependencies included in the vendor directory are distributed under
