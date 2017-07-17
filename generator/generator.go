@@ -196,11 +196,13 @@ func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
 		"getenv":  os.Getenv,
+		"gid":     os.Getegid,
 		"input":   gen.input,
 		"now":     now,
 		"nowUTC":  nowUTC,
 		"partial": gen.partial,
 		"secret":  secret,
+		"uid":     os.Geteuid,
 	}
 }
 
@@ -321,6 +323,7 @@ func (gen *Generator) generate(dst string) error {
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 		vars := map[string]interface{}{}
 		for k, v := range gen.opts.TmplVars {
 			vars[k] = v

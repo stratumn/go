@@ -307,6 +307,7 @@ func (r *Repo) download(ref, sha1 string) (*State, error) {
 				return nil, err
 			}
 			_, err = io.Copy(f, tr)
+			f.Close()
 			if err != nil {
 				return nil, err
 			}
