@@ -62,22 +62,16 @@ To launch tests, run within the project folder:
 $ strat test
 ```
 
-To update the CLI to the latest stable release, run: 
+To update the SDK to the latest stable release, run: 
 
 ```bash
 $ strat update
 ```
 
-To update the CLI to the latest prerelease, run: 
+To update the SDK to the latest prerelease, run: 
 
 ```bash
 $ strat update --prerelease
-```
-
-To update the generators, run: 
-
-```bash
-$ strat update --generators
 ```
 
 ### Configuration
