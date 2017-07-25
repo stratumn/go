@@ -34,6 +34,7 @@ import (
 	"github.com/tendermint/tmlibs/events"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/stratumn/sdk/jsonhttp"
 )
 
 const (
@@ -328,6 +329,11 @@ func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, er
 		return nil, err
 	}
 	if result.CheckTx.IsErr() {
+		if result.CheckTx.Code == tmpop.CodeTypeValidation {
+			// TODO: this package should be HTTP unaware, so
+			// we need a better way to pass error types.
+			return nil, jsonhttp.NewErrBadRequest(result.CheckTx.Error())
+		}
 		return nil, fmt.Errorf(result.CheckTx.Error())
 	}
 	if result.DeliverTx.IsErr() {

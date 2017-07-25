@@ -15,8 +15,11 @@
 package tmstore
 
 import (
+	"net/http"
 	"testing"
 
+	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/jsonhttp"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
 )
@@ -54,5 +57,30 @@ func freeTestTMStore(s store.Adapter) {
 		for _, s := range segments {
 			tmstore.DeleteSegment(s.GetLinkHash())
 		}
+	}
+}
+
+func TestValidation(t *testing.T) {
+	tmstore, err := newTestTMStore()
+	if err != nil {
+		t.Fatalf("newTestTMStore(): err: %s", err)
+	}
+
+	s := cstesting.RandomSegment()
+	s.Link.Meta["action"] = "init"
+	s.Link.State["string"] = 42
+
+	err = tmstore.SaveSegment(s)
+	if err == nil {
+		t.Error("a.DeliverTx(): want error")
+	}
+
+	errHTTP, ok := err.(jsonhttp.ErrHTTP)
+	if !ok {
+		t.Error("a.DeliverTx(): want ErrHTTP")
+	}
+
+	if got := errHTTP.Status(); got != http.StatusBadRequest {
+		t.Errorf("status = %d want %d", got, http.StatusBadRequest)
 	}
 }

@@ -75,11 +75,11 @@ func (rv *rootValidator) loadFromJSON(data []byte) error {
 	rv.Validators = make([]selectiveValidator, len(jsonStruct))
 	for i, val := range jsonStruct {
 		if val.Schema == nil {
-			return fmt.Errorf("loadFromJSON: schema missing for validator %s", val)
+			return fmt.Errorf("loadFromJSON: schema missing for validator %v", val)
 		}
 
 		if val.Type == "" {
-			return fmt.Errorf("loadFromJSON: type missing for validator %s", val)
+			return fmt.Errorf("loadFromJSON: type missing for validator %v", val)
 		}
 
 		schemaData, _ := val.Schema.MarshalJSON()

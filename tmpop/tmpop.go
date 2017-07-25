@@ -77,14 +77,19 @@ type TMPop struct {
 }
 
 const (
-	// Name of the Tendermint Application
+	// Name of the Tendermint Application.
 	Name = "TMPop"
 
-	// Description of this Tendermint Application
+	// Description of this Tendermint Application.
 	Description = "Agent Store in a Blockchain"
 
-	// DefaultCacheSize is the default size of the DB cache
+	// DefaultCacheSize is the default size of the DB cache.
 	DefaultCacheSize = 0
+)
+
+const (
+	// CodeTypeValidation is the ABCI error code for a validation error.
+	CodeTypeValidation abci.CodeType = 400
 )
 
 // New creates a new instance of a TMPop.
@@ -379,7 +384,10 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 func (t *TMPop) checkSegment(snapshot *Snapshot, segment *cs.Segment) abci.Result {
 	err := segment.Validate()
 	if err != nil {
-		return abci.ErrUnauthorized.SetLog(fmt.Sprintf("Invalid segment %v: %v", segment, err))
+		return abci.NewError(
+			CodeTypeValidation,
+			fmt.Sprintf("Segment validation failed %v: %v", segment, err),
+		)
 	}
 
 	// TODO: in production do not reload validation rules each time a new segment is created
@@ -388,7 +396,10 @@ func (t *TMPop) checkSegment(snapshot *Snapshot, segment *cs.Segment) abci.Resul
 	err = rootValidator.Validate(snapshot.segments, segment)
 
 	if err != nil {
-		return abci.ErrUnauthorized.SetLog(fmt.Sprintf("Segment validation failed %v: %v", segment, err))
+		return abci.NewError(
+			CodeTypeValidation,
+			fmt.Sprintf("Segment validation failed %v: %v", segment, err),
+		)
 	}
 
 	return abci.OK

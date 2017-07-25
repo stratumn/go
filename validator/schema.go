@@ -27,7 +27,7 @@ func newSchemaValidator(segmentType string, data []byte) (*schemaValidator, erro
 }
 
 func (sv schemaValidator) Filter(_ store.Reader, segment *cs.Segment) bool {
-	// TODO: standartise action as string
+	// TODO: standardise action as string
 	segmentAction, ok := segment.Link.Meta["action"].(string)
 	if !ok {
 		log.Error("malformed segment")

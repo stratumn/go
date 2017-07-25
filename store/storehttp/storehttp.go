@@ -226,7 +226,7 @@ func (s *Server) saveSegment(w http.ResponseWriter, r *http.Request, _ httproute
 		return nil, jsonhttp.NewErrBadRequest("")
 	}
 	if err := seg.Validate(); err != nil {
-		return nil, jsonhttp.NewErrHTTP(err.Error(), http.StatusBadRequest)
+		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
 	if err := s.adapter.SaveSegment(&seg); err != nil {
 		return nil, err

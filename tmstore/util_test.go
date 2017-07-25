@@ -7,6 +7,8 @@ of tests in various packages.
 **/
 
 import (
+	"path/filepath"
+
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/dummystore"
 	"github.com/stratumn/sdk/tmpop"
@@ -36,7 +38,9 @@ func NewTestClient() *TMStore {
 func StartNode() *node.Node {
 	adapter := dummystore.New(&dummystore.Config{})
 	var err error
-	testTmpop, err = tmpop.New(adapter, &tmpop.Config{})
+	testTmpop, err = tmpop.New(adapter, &tmpop.Config{
+		ValidatorFilename: filepath.Join("testdata", "rules.json"),
+	})
 	if err != nil {
 		panic(err)
 	}

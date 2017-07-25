@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -364,6 +365,38 @@ func TestEvidence(t *testing.T) {
 
 	verifyProof(t, evidence["originalProof"], evidence["originalHeader"], s1.GetLinkHash())
 }
+func TestValidation(t *testing.T) {
+	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
+	h.config.ValidatorFilename = filepath.Join("testdata", "rules.json")
+
+	s := cstesting.RandomSegment()
+	s.Link.Meta["action"] = "init"
+	s.Link.State["string"] = "test"
+	tx := makeSaveSegmentTxFromSegment(t, s)
+
+	h.BeginBlock(header.AppHash, header)
+	res := h.DeliverTx(tx)
+
+	if res.IsErr() {
+		t.Errorf("a.Commit(): failed: %v", res.Log)
+	}
+
+	s = cstesting.RandomSegment()
+	s.Link.Meta["action"] = "init"
+	s.Link.State["string"] = 42
+	tx = makeSaveSegmentTxFromSegment(t, s)
+
+	h.BeginBlock(header.AppHash, header)
+	res = h.DeliverTx(tx)
+
+	if !res.IsErr() {
+		t.Error("a.DeliverTx(): want error")
+	}
+
+	if res.Code != CodeTypeValidation {
+		t.Errorf("res.Code = got %d want %d", res.Code, CodeTypeValidation)
+	}
+}
 
 func (tmpop *TMPop) makeQuery(name string, args interface{}, res interface{}) error {
 	bytes, err := BuildQueryBinary(args)
@@ -490,7 +523,10 @@ func createDefaultTMPop(a store.Adapter, t *testing.T) *TMPop {
 
 func makeSaveSegmentTx(t *testing.T) (*cs.Segment, []byte) {
 	s := cstesting.RandomSegment()
+	return s, makeSaveSegmentTxFromSegment(t, s)
+}
 
+func makeSaveSegmentTxFromSegment(t *testing.T, s *cs.Segment) []byte {
 	tx := Tx{
 		TxType:  SaveSegment,
 		Segment: s,
@@ -499,7 +535,7 @@ func makeSaveSegmentTx(t *testing.T) (*cs.Segment, []byte) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return s, res
+	return res
 }
 
 func makeDeleteSegmentTx(t *testing.T, s *cs.Segment) []byte {
