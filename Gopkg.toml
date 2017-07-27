@@ -1,0 +1,67 @@
+[[constraint]]
+  name = "github.com/Sirupsen/logrus"
+  version = "1.0.2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/google/go-github"
+
+[[constraint]]
+  name = "github.com/gorilla/websocket"
+  version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/julienschmidt/httprouter"
+  version = "1.1.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/kardianos/osext"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/go-homedir"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/spf13/cobra"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/spf13/viper"
+
+[[constraint]]
+  name = "github.com/tendermint/abci"
+  version = "0.5.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/tendermint/go-db"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/tendermint/go-merkle"
+
+[[constraint]]
+  name = "github.com/tendermint/go-wire"
+  version = "0.6.2"
+
+[[constraint]]
+  name = "github.com/tendermint/tendermint"
+  version = "0.10.2"
+
+[[constraint]]
+  name = "github.com/tendermint/tmlibs"
+  version = "0.2.2"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/xeipuuv/gojsonschema"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/oauth2"

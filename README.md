@@ -18,6 +18,44 @@ https://indigoframework.com
 
 ---
 
+## Development
+
+Install dependencies:
+
+```bash
+go get -u github.com/golang/dep/cmd/dep
+dep ensure
+```
+
+To manage dependencies, see [dep](https://github.com/golang/dep).
+
+Run all tests:
+
+```bash
+make test
+```
+
+See test coverage in the browser:
+
+```bash
+make coverhtml
+```
+
+Run the linter:
+
+```bash
+go get -u github.com/golang/lint/golint
+make lint
+```
+
+Build tagged docker images:
+
+```bash
+make docker_images
+```
+
+## License
+
 Copyright 2017 Stratumn SAS. All rights reserved.
 
 Unless otherwise noted, the source files are distributed under the Apache

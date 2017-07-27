@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: deal with context properly.
+
 // Package repo deals with a Github repository of generators.
 //
 // It provides functionality to store and update remote generators from
@@ -24,6 +26,7 @@ package repo
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -113,7 +116,7 @@ func (r *Repo) Update(ref string, force bool) (*State, bool, error) {
 		sha1 = state.SHA1
 	}
 
-	sha1, res, err := r.client.Repositories.GetCommitSHA1(r.owner, r.repo, ref, sha1)
+	sha1, res, err := r.client.Repositories.GetCommitSHA1(context.TODO(), r.owner, r.repo, ref, sha1)
 	if res != nil {
 		defer res.Body.Close()
 		if res.StatusCode == http.StatusNotModified {
@@ -261,7 +264,13 @@ func (r *Repo) Generate(name, dst string, opts *generator.Options, ref string) e
 
 func (r *Repo) download(ref, sha1 string) (*State, error) {
 	opts := github.RepositoryContentGetOptions{Ref: sha1}
-	url, ghres, err := r.client.Repositories.GetArchiveLink(r.owner, r.repo, github.Tarball, &opts)
+	url, ghres, err := r.client.Repositories.GetArchiveLink(
+		context.TODO(),
+		r.owner,
+		r.repo,
+		github.Tarball,
+		&opts,
+	)
 	if err != nil {
 		return nil, err
 	}

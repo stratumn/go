@@ -84,7 +84,7 @@ func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (inte
 // New creates an instance of Server.
 func New(config *Config) *Server {
 	router := httprouter.New()
-	router.NotFound = notFoundHandler{config, NotFound}
+	router.NotFound = notFoundHandler{config, NotFound}.ServeHTTP
 	server := &http.Server{
 		Addr:           config.Address,
 		Handler:        router,

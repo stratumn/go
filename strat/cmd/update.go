@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: deal with context properly.
+
 package cmd
 
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -234,7 +237,7 @@ func updateCLI() error {
 }
 
 func findRelease(client *github.Client) (*github.ReleaseAsset, *string, error) {
-	rels, res, err := client.Repositories.ListReleases(Owner, Repo, nil)
+	rels, res, err := client.Repositories.ListReleases(context.TODO(), Owner, Repo, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -264,7 +267,7 @@ func findRelease(client *github.Client) (*github.ReleaseAsset, *string, error) {
 }
 
 func dlRelease(client *github.Client, dst string, asset *github.ReleaseAsset) error {
-	release, _, err := client.Repositories.GetReleaseAsset(Owner, Repo, *asset.ID)
+	release, _, err := client.Repositories.GetReleaseAsset(context.TODO(), Owner, Repo, *asset.ID)
 	if err != nil {
 		return err
 	}
