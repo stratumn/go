@@ -10,6 +10,7 @@ import "database/sql"
 
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.
 type Batch struct {
+	*reader
 	*writer
 	done bool
 	tx   *sql.Tx
@@ -23,7 +24,8 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 	}
 
 	return &Batch{
-		writer: &writer{stmts: writeStmts(*stmts)},
+		reader: &reader{stmts: readStmts(stmts.readStmts)},
+		writer: &writer{stmts: writeStmts(stmts.writeStmts)},
 		tx:     tx,
 	}, nil
 }

@@ -155,22 +155,29 @@ type writeStmts struct {
 	DeleteValue   *sql.Stmt
 }
 
-type stmts struct {
-	writeStmts
-
+type readStmts struct {
 	GetSegment                          *sql.Stmt
 	FindSegments                        *sql.Stmt
+	GetMapIDs                           *sql.Stmt
+	GetValue                            *sql.Stmt
+}
+
+type readExtraStmts struct {
 	FindSegmentsWithMapID               *sql.Stmt
 	FindSegmentsWithPrevLinkHash        *sql.Stmt
 	FindSegmentsWithTags                *sql.Stmt
 	FindSegmentsWithTagsAndLimit        *sql.Stmt
 	FindSegmentsWithMapIDAndTags        *sql.Stmt
 	FindSegmentsWithPrevLinkHashAndTags *sql.Stmt
-	GetMapIDs                           *sql.Stmt
-	GetValue                            *sql.Stmt
 }
 
-type batchStmts writeStmts
+type stmts struct {
+	readStmts
+	readExtraStmts
+	writeStmts
+}
+
+type batchStmts stmts
 
 func newStmts(db *sql.DB) (*stmts, error) {
 	var (
@@ -185,19 +192,21 @@ func newStmts(db *sql.DB) (*stmts, error) {
 		return
 	}
 
-	s.SaveSegment = prepare(sqlSaveSegment)
 	s.GetSegment = prepare(sqlGetSegment)
-	s.DeleteSegment = prepare(sqlDeleteSegment)
 	s.FindSegments = prepare(sqlFindSegments)
+	s.GetMapIDs = prepare(sqlGetMapIDs)
+	s.GetValue = prepare(sqlGetValue)
+
 	s.FindSegmentsWithMapID = prepare(sqlFindSegmentsWithMapID)
 	s.FindSegmentsWithPrevLinkHash = prepare(sqlFindSegmentsWithPrevLinkHash)
 	s.FindSegmentsWithTags = prepare(sqlFindSegmentsWithTags)
 	s.FindSegmentsWithMapIDAndTags = prepare(sqlFindSegmentsWithMapIDAndTags)
 	s.FindSegmentsWithPrevLinkHashAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndTags)
-	s.GetMapIDs = prepare(sqlGetMapIDs)
+
+	s.SaveSegment = prepare(sqlSaveSegment)
+	s.DeleteSegment = prepare(sqlDeleteSegment)
 	s.SaveValue = prepare(sqlSaveValue)
 	s.DeleteValue = prepare(sqlDeleteValue)
-	s.GetValue = prepare(sqlGetValue)
 
 	if err != nil {
 		return nil, err
@@ -218,6 +227,11 @@ func newBatchStmts(tx *sql.Tx) (*batchStmts, error) {
 		}
 		return
 	}
+
+	s.GetSegment = prepare(sqlGetSegment)
+	s.FindSegments = prepare(sqlFindSegments)
+	s.GetMapIDs = prepare(sqlGetMapIDs)
+	s.GetValue = prepare(sqlGetValue)
 
 	s.SaveSegment = prepare(sqlSaveSegment)
 	s.DeleteSegment = prepare(sqlDeleteSegment)
