@@ -156,13 +156,11 @@ type writeStmts struct {
 }
 
 type readStmts struct {
-	GetSegment                          *sql.Stmt
-	FindSegments                        *sql.Stmt
-	GetMapIDs                           *sql.Stmt
-	GetValue                            *sql.Stmt
-}
+	GetSegment   *sql.Stmt
+	FindSegments *sql.Stmt
+	GetMapIDs    *sql.Stmt
+	GetValue     *sql.Stmt
 
-type readExtraStmts struct {
 	FindSegmentsWithMapID               *sql.Stmt
 	FindSegmentsWithPrevLinkHash        *sql.Stmt
 	FindSegmentsWithTags                *sql.Stmt
@@ -173,7 +171,6 @@ type readExtraStmts struct {
 
 type stmts struct {
 	readStmts
-	readExtraStmts
 	writeStmts
 }
 
