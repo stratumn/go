@@ -61,10 +61,6 @@ const (
 	// repository.
 	DefaultGeneratorsRepo = "generators"
 
-	// DefaultGeneratorsRef is the default reference of the generators'
-	// Github repository.
-	DefaultGeneratorsRef = "master"
-
 	// StratumnConfigEnv is the name of the environment variable to override
 	// the default configuration path.
 	StratumnConfigEnv = "STRATUMN_CONFIG"
@@ -112,6 +108,13 @@ const (
 
 	// DownTestScript is the name of the project down script for test.
 	DownTestScript = "down:test"
+)
+
+var (
+	// DefaultGeneratorsRef is the default reference of the generators'
+	// Github repository. It is a variable because it is overridden at
+	// compile time.
+	DefaultGeneratorsRef = "master"
 )
 
 const win = "windows"

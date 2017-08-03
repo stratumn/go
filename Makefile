@@ -29,7 +29,7 @@ GITHUB_RELEASE_FLAGS=--user '$(GITHUB_USER)' --repo '$(GITHUB_REPO)' --tag '$(GI
 GITHUB_RELEASE_RELEASE_FLAGS=$(GITHUB_RELEASE_FLAGS) --name '$(RELEASE_NAME)' --description "$$(cat $(RELEASE_NOTES_FILE))"
 
 GO_LIST=$(GO_CMD) list
-GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT)'
+GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X github.com/stratumn/sdk/strat/cmd.DefaultGeneratorsRef=$(GIT_TAG)'
 GO_TEST=$(GO_CMD) test
 GO_BENCHMARK=$(GO_TEST) -bench .
 GO_LINT=$(GO_LINT_CMD) -set_exit_status
