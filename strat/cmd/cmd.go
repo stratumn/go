@@ -117,11 +117,15 @@ var (
 	DefaultGeneratorsRef = "master"
 )
 
-const win = "windows"
+const (
+	win    = "windows"
+	darwin = "darwin"
+)
 
 var (
-	nixShell = []string{"sh", "-i", "-c"}
-	winShell = []string{"cmd", "/C"}
+	nixShell    = []string{"sh", "-i", "-c"}
+	winShell    = []string{"cmd", "/C"}
+	brewInfoCmd = []string{"brew", "info", "--json=v1", "stratumn/sdk/strat"}
 )
 
 // Project describes a project.

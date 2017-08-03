@@ -20,12 +20,14 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -58,7 +60,9 @@ It will also update the generators if newer versions are available.
 			return errors.New("unexpected arguments")
 		}
 
-		if err := updateCLI(); err != nil {
+		if isBrew() && !force {
+			fmt.Println("NOTE: The CLI won't be updated because a Homebrew installation was detected. To update the CLI to the latest version, run `brew update && brew upgrade`.")
+		} else if err := updateCLI(); err != nil {
 			return err
 		}
 
@@ -84,6 +88,35 @@ func init() {
 		false,
 		"Download prerelease version",
 	)
+}
+
+func isBrew() bool {
+	if runtime.GOOS != darwin {
+		return false
+	}
+
+	fmt.Println("Checking for Homebrew installation...")
+
+	out, err := exec.Command(brewInfoCmd[0], brewInfoCmd[1:]...).Output()
+	if err != nil {
+		return false
+	}
+
+	var info []struct {
+		LinkedKeg string `json:"linked_keg"`
+	}
+
+	if err := json.Unmarshal(out, &info); err != nil {
+		return false
+	}
+
+	for _, i := range info {
+		if i.LinkedKeg == "v"+version {
+			return true
+		}
+	}
+
+	return false
 }
 
 func updateGenerators() error {
