@@ -92,7 +92,7 @@ func (rv *rootValidator) loadFromJSON(data []byte) error {
 		rv.Validators[i] = sv
 	}
 
-	log.Infof("validators loaded: %d", len(rv.Validators))
+	log.Debugf("validators loaded: %d", len(rv.Validators))
 
 	return nil
 }

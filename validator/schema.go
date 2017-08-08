@@ -30,7 +30,7 @@ func (sv schemaValidator) Filter(_ store.Reader, segment *cs.Segment) bool {
 	// TODO: standardise action as string
 	segmentAction, ok := segment.Link.Meta["action"].(string)
 	if !ok {
-		log.Error("malformed segment")
+		log.Debug("No action found in segment %v", segment)
 		return false
 	}
 
