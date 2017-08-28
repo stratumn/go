@@ -106,13 +106,13 @@ func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
-func (a *Store) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
+func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	return a.reader.FindSegments(filter)
 }
 
 // GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
-func (a *Store) GetMapIDs(pagination *store.Pagination) ([]string, error) {
-	return a.reader.GetMapIDs(pagination)
+func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+	return a.reader.GetMapIDs(filter)
 }
 
 // GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
