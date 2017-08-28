@@ -10,16 +10,18 @@ const (
 			map_id,
 			prev_link_hash,
 			tags,
-			data
+			data,
+			process
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (link_hash)
 		DO UPDATE SET
 			priority = $2,
 			map_id = $3,
 			prev_link_hash = $4,
 			tags = $5,
-			data = $6
+			data = $6,
+			process = $7
 	`
 	sqlGetSegment = `
 		SELECT data FROM segments
@@ -32,41 +34,48 @@ const (
 	`
 	sqlFindSegments = `
 		SELECT data FROM segments
+		WHERE (length($3) = 0 OR process = $3)
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $1 LIMIT $2
 	`
-	sqlFindSegmentsWithMapID = `
+	sqlFindSegmentsWithMapIDs = `
 		SELECT data FROM segments
-		WHERE map_id = $1
+		WHERE map_id = any($1::text[])
+		AND (length($4) = 0 OR process = $4)
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
 	`
 	sqlFindSegmentsWithPrevLinkHash = `
 		SELECT data FROM segments
 		WHERE prev_link_hash = $1
+		AND (length($4) = 0 OR process = $4)
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
 	`
 	sqlFindSegmentsWithTags = `
 		SELECT data FROM segments
 		WHERE tags @> $1
+		AND (length($4) = 0 OR process = $4)
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $2 LIMIT $3
 	`
-	sqlFindSegmentsWithMapIDAndTags = `
+	sqlFindSegmentsWithMapIDsAndTags = `
 		SELECT data FROM segments
-		WHERE map_id = $1 AND tags @> $2
+		WHERE map_id = any($1::text[]) AND tags @> $2
+		AND (length($5) = 0 OR process = $5)
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
 	`
 	sqlFindSegmentsWithPrevLinkHashAndTags = `
 		SELECT data FROM segments
 		WHERE prev_link_hash = $1 AND tags @> $2
+		AND (length($5) = 0 OR process = $5)
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
 	`
 	sqlGetMapIDs = `
 		SELECT DISTINCT map_id FROM segments
+		WHERE (length($3) = 0 OR process = $3)
 		ORDER BY map_id
 		OFFSET $1 LIMIT $2
 	`
@@ -101,6 +110,7 @@ var sqlCreate = []string{
 			prev_link_hash bytea DEFAULT NULL,
 			tags text[] DEFAULT NULL,
 			data jsonb NOT NULL,
+			process text NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
@@ -161,11 +171,11 @@ type readStmts struct {
 	GetMapIDs    *sql.Stmt
 	GetValue     *sql.Stmt
 
-	FindSegmentsWithMapID               *sql.Stmt
+	FindSegmentsWithMapIDs              *sql.Stmt
 	FindSegmentsWithPrevLinkHash        *sql.Stmt
 	FindSegmentsWithTags                *sql.Stmt
 	FindSegmentsWithTagsAndLimit        *sql.Stmt
-	FindSegmentsWithMapIDAndTags        *sql.Stmt
+	FindSegmentsWithMapIDsAndTags       *sql.Stmt
 	FindSegmentsWithPrevLinkHashAndTags *sql.Stmt
 }
 
@@ -194,10 +204,10 @@ func newStmts(db *sql.DB) (*stmts, error) {
 	s.GetMapIDs = prepare(sqlGetMapIDs)
 	s.GetValue = prepare(sqlGetValue)
 
-	s.FindSegmentsWithMapID = prepare(sqlFindSegmentsWithMapID)
+	s.FindSegmentsWithMapIDs = prepare(sqlFindSegmentsWithMapIDs)
 	s.FindSegmentsWithPrevLinkHash = prepare(sqlFindSegmentsWithPrevLinkHash)
 	s.FindSegmentsWithTags = prepare(sqlFindSegmentsWithTags)
-	s.FindSegmentsWithMapIDAndTags = prepare(sqlFindSegmentsWithMapIDAndTags)
+	s.FindSegmentsWithMapIDsAndTags = prepare(sqlFindSegmentsWithMapIDsAndTags)
 	s.FindSegmentsWithPrevLinkHashAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndTags)
 
 	s.SaveSegment = prepare(sqlSaveSegment)
