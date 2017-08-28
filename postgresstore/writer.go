@@ -27,6 +27,7 @@ func (a *writer) SaveSegment(segment *cs.Segment) error {
 		mapID        = segment.Link.GetMapID()
 		prevLinkHash = segment.Link.GetPrevLinkHash()
 		tags         = segment.Link.GetTags()
+		process      = segment.Link.GetProcess()
 	)
 
 	data, err := json.Marshal(segment)
@@ -35,9 +36,9 @@ func (a *writer) SaveSegment(segment *cs.Segment) error {
 	}
 
 	if prevLinkHash == nil {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, nil, pq.Array(tags), string(data))
+		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, nil, pq.Array(tags), string(data), process)
 	} else {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data))
+		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data), process)
 	}
 
 	if err != nil {
