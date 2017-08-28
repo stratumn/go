@@ -83,6 +83,7 @@ type wrapper struct {
 	MapID        string      `json:"mapId"`
 	PrevLinkHash []byte      `json:"prevLinkHash"`
 	Tags         []string    `json:"tags"`
+	Process      string      `json:"process"`
 }
 
 type valueWrapper struct {
@@ -137,6 +138,7 @@ func (a *Store) SaveSegment(segment *cs.Segment) error {
 		UpdatedAt: time.Now().UTC(),
 		MapID:     segment.Link.GetMapID(),
 		Tags:      segment.Link.GetTags(),
+		Process:   segment.Link.GetProcess(),
 	}
 
 	if prevLinkHash != nil {
@@ -203,7 +205,7 @@ func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
-func (a *Store) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
+func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	q := a.segments
 
 	if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil {
@@ -218,19 +220,21 @@ func (a *Store) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
 			LeftBound:  "closed",
 			RightBound: "closed",
 		}).OrderBy(rethink.OrderByOpts{Index: "prevLinkHashOrder"})
-	} else if mapID := filter.MapID; mapID != "" {
-		q = q.Between([]interface{}{
-			mapID,
-			rethink.MinVal,
-		}, []interface{}{
-			mapID,
-			rethink.MaxVal,
-		}, rethink.BetweenOpts{
-			Index:      "mapIdOrder",
-			RightBound: "closed",
-		}).OrderBy(rethink.OrderByOpts{Index: "mapIdOrder"})
+	} else if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
+		ids := make([]interface{}, len(mapIDs))
+		for i, v := range mapIDs {
+			ids[i] = v
+		}
+		q = q.Filter(func(row rethink.Term) interface{} {
+			return rethink.Expr(ids).Contains(row.Field("mapId"))
+		})
+		// q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("mapIdOrder")})
 	} else {
 		q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("order")})
+	}
+
+	if process := filter.Process; len(process) > 0 {
+		q = q.Filter(rethink.Row.Field("process").Eq(process))
 	}
 
 	if tags := filter.Tags; len(tags) > 0 {
@@ -262,15 +266,35 @@ func (a *Store) FindSegments(filter *store.Filter) (cs.SegmentSlice, error) {
 }
 
 // GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
-func (a *Store) GetMapIDs(pagination *store.Pagination) ([]string, error) {
-	cur, err := a.segments.
-		Between(rethink.MinVal, rethink.MaxVal, rethink.BetweenOpts{
+func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+	q := a.segments
+	if process := filter.Process; len(process) > 0 {
+
+		q = q.Between([]interface{}{
+			process,
+			rethink.MinVal,
+		}, []interface{}{
+			process,
+			rethink.MaxVal,
+		}, rethink.BetweenOpts{
+			Index:      "processOrder",
+			LeftBound:  "closed",
+			RightBound: "closed",
+		})
+		q = q.OrderBy(rethink.OrderByOpts{Index: "processOrder"}).
+			Distinct(rethink.DistinctOpts{Index: "processOrder"}).
+			Map(func(row rethink.Term) interface{} {
+				return row.AtIndex(1)
+			})
+	} else {
+		q = q.Between(rethink.MinVal, rethink.MaxVal, rethink.BetweenOpts{
 			Index: "mapId",
 		}).
-		OrderBy(rethink.OrderByOpts{Index: "mapId"}).
-		Distinct(rethink.DistinctOpts{Index: "mapId"}).
-		Skip(pagination.Offset).
-		Limit(pagination.Limit).
+			OrderBy(rethink.OrderByOpts{Index: "mapId"}).
+			Distinct(rethink.DistinctOpts{Index: "mapId"})
+	}
+	cur, err := q.Skip(filter.Pagination.Offset).
+		Limit(filter.Pagination.Limit).
 		Run(a.session)
 	if err != nil {
 		return nil, err
@@ -382,6 +406,11 @@ func (a *Store) Create() (err error) {
 		rethink.Row.Field("updatedAt"),
 	}))
 	exec(a.segments.IndexWait("prevLinkHashOrder"))
+	exec(a.segments.IndexCreateFunc("processOrder", []interface{}{
+		rethink.Row.Field("process"),
+		rethink.Row.Field("mapId"),
+	}))
+	exec(a.segments.IndexWait("processOrder"))
 
 	exec(a.db.TableCreate("values", tblOpts))
 	exec(a.values.Wait())
