@@ -30,13 +30,14 @@ var (
 )
 
 var (
-	cfgPath         string
-	ghToken         string
-	generatorsPath  string
-	generatorsOwner string
-	generatorsRepo  string
-	generatorsRef   string
-	useStdin        bool
+	cfgPath                 string
+	ghToken                 string
+	generatorsPath          string
+	generatorsOwner         string
+	generatorsRepo          string
+	generatorsRef           string
+	generatorsUseLocalFiles bool
+	useStdin                bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -110,6 +111,13 @@ func init() {
 		"generators-ref",
 		DefaultGeneratorsRef,
 		"Git branch, tag, or commit of generators repository",
+	)
+
+	RootCmd.PersistentFlags().BoolVar(
+		&generatorsUseLocalFiles,
+		"generators-use-local-files",
+		false,
+		"Do not retrieve generators files from git",
 	)
 
 	RootCmd.PersistentFlags().BoolVar(

@@ -142,7 +142,7 @@ func updateGenerators() error {
 
 		fmt.Printf("  * Updating %q...\n", name)
 
-		r := repo.New(p, owner, rep, ghToken)
+		r := repo.New(p, owner, rep, ghToken, !generatorsUseLocalFiles)
 		if err != nil {
 			return err
 		}

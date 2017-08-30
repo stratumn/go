@@ -16,6 +16,7 @@ package repo
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -29,7 +30,7 @@ func TestUpdate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
 	desc, updated, err := r.Update("master", false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
@@ -77,7 +78,7 @@ func TestUpdate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "404", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "404", os.Getenv("GITHUB_TOKEN"), true)
 	_, _, err = r.Update("master", false)
 	if err == nil {
 		t.Error("err: r.Update(): err = nil want Error")
@@ -91,7 +92,7 @@ func TestGetState(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
 
 	desc, err := r.GetState("master")
 	if err != nil {
@@ -123,7 +124,7 @@ func TestGetStateOrCreate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
 
 	desc, err := r.GetStateOrCreate("master")
 	if err != nil {
@@ -142,7 +143,7 @@ func TestList(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
 
 	list, err := r.List("master")
 	if err != nil {
@@ -151,6 +152,46 @@ func TestList(t *testing.T) {
 
 	if got := len(list); got < 1 {
 		t.Errorf("err: len() %d want > 0", got)
+	}
+}
+
+func TestLocalList(t *testing.T) {
+	// Get generators from git, it should be better
+	dir, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dir)
+
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+
+	_, err = r.GetStateOrCreate("master")
+	if err != nil {
+		t.Fatalf("err: r.GetStateOrCreate(): %s", err)
+	}
+
+	r = New(path.Join(dir, "src", "master"), "foo", "bar", "nil", false)
+
+	list, err := r.List("unread arg")
+	if err != nil {
+		t.Fatalf("err: r.List(): %s", err)
+	}
+
+	if got := len(list); got < 1 {
+		t.Errorf("err: len() %d want > 0", got)
+	}
+}
+
+func TestNotFoundLocalList(t *testing.T) {
+	r := New("/foo/bar", "foo", "bar", "nil", false)
+
+	list, err := r.List("unread arg")
+	if err == nil {
+		t.Fatalf("err: r.List() should return an error")
+	}
+
+	if got := len(list); got != 0 {
+		t.Errorf("err: len() %d want 0", got)
 	}
 }
 
@@ -167,7 +208,7 @@ func TestGenerate(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
 	opts := generator.Options{
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\nstratumn\n\n"),
 	}
@@ -191,7 +232,7 @@ func TestGenerate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"))
+	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
 	opts := generator.Options{
 		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
 	}

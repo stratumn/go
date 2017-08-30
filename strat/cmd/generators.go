@@ -37,8 +37,7 @@ It outputs the name, description, author, version, and license of each generator
 		}
 
 		path := generatorPath()
-		repo := repo.New(path, generatorsOwner, generatorsRepo, ghToken)
-
+		repo := repo.New(path, generatorsOwner, generatorsRepo, ghToken, !generatorsUseLocalFiles)
 		list, err := repo.List(generatorsRef)
 		if err != nil {
 			return err

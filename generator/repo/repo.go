@@ -28,6 +28,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -80,14 +81,15 @@ type State struct {
 
 // Repo manages a Github repository.
 type Repo struct {
-	path   string
-	owner  string
-	repo   string
-	client *github.Client
+	path     string
+	owner    string
+	repo     string
+	isRemote bool
+	client   *github.Client
 }
 
 // New instantiates a repository.
-func New(path, owner, repo, ghToken string) *Repo {
+func New(path, owner, repo, ghToken string, isRemote bool) *Repo {
 	var tc *http.Client
 	if ghToken != "" {
 		ts := oauth2.StaticTokenSource(
@@ -96,16 +98,21 @@ func New(path, owner, repo, ghToken string) *Repo {
 		tc = oauth2.NewClient(oauth2.NoContext, ts)
 	}
 	return &Repo{
-		path:   path,
-		owner:  owner,
-		repo:   repo,
-		client: github.NewClient(tc),
+		path:     path,
+		owner:    owner,
+		repo:     repo,
+		isRemote: isRemote,
+		client:   github.NewClient(tc),
 	}
 }
 
 // Update downloads the latest release if needed (or if force is true).
 // Ref can be a branch, a tag, or a commit SHA1.
 func (r *Repo) Update(ref string, force bool) (*State, bool, error) {
+	if !r.isRemote {
+		return nil, false, nil
+	}
+
 	state, err := r.GetState(ref)
 	if err != nil {
 		return nil, false, err
@@ -155,6 +162,9 @@ func (r *Repo) Update(ref string, force bool) (*State, bool, error) {
 // Ref can be a branch, a tag, or a commit SHA1.
 // If the repository does not exist locally, it returns nil.
 func (r *Repo) GetState(ref string) (*State, error) {
+	if !r.isRemote {
+		return nil, nil
+	}
 	path := filepath.Join(r.path, StatesDir, ref, StateFile)
 	var state *State
 	f, err := os.Open(path)
@@ -189,76 +199,82 @@ func (r *Repo) GetStateOrCreate(ref string) (*State, error) {
 	return state, nil
 }
 
-// List lists the generators of the repository.
-// If the repository does not exist locally, it creates it by calling Update().
-// Ref can be a branch, a tag, or a commit SHA1.
-func (r *Repo) List(ref string) ([]*generator.Definition, error) {
+// createGeneratorPath returns the path to generators files
+func (r Repo) createGeneratorPath(ref string) string {
+	if r.isRemote {
+		return filepath.Join(r.path, SrcDir, ref)
+	}
+	return r.path
+}
+
+// applyFuncOnGenerators iterates on generators and apply a function on all of theses
+func (r Repo) applyFuncOnGenerators(ref string, functor func(*generator.Definition, string)) error {
 	_, err := r.GetStateOrCreate(ref)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	matches, err := filepath.Glob(filepath.Join(r.path, SrcDir, ref, "*", generator.DefinitionFile))
+	pattern := filepath.Join(r.createGeneratorPath(ref), "*", generator.DefinitionFile)
+	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if len(matches) == 0 {
+		return errors.New("No generator found in " + pattern)
 	}
 	sort.Strings(matches)
 
-	var defs []*generator.Definition
 	for _, p := range matches {
 		f, err := os.Open(p)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		defer f.Close()
 
 		dec := json.NewDecoder(f)
 		var def generator.Definition
 		if err = dec.Decode(&def); err != nil {
-			return nil, err
+			return err
 		}
-		defs = append(defs, &def)
+		functor(&def, p)
 	}
 
-	return defs, nil
+	return nil
+}
+
+// List lists the generators of the repository.
+// If the repository does not exist locally, it creates it by calling Update().
+// Ref can be a branch, a tag, or a commit SHA1.
+func (r *Repo) List(ref string) ([]*generator.Definition, error) {
+	var defs []*generator.Definition
+	err := r.applyFuncOnGenerators(ref, func(def *generator.Definition, _ string) {
+		defs = append(defs, def)
+	})
+	return defs, err
 }
 
 // Generate executes a generator by name.
 // Ref can be a branch, a tag, or a commit SHA1.
 func (r *Repo) Generate(name, dst string, opts *generator.Options, ref string) error {
-	_, err := r.GetStateOrCreate(ref)
-	if err != nil {
-		return err
-	}
-
-	matches, err := filepath.Glob(filepath.Join(r.path, SrcDir, ref, "*", generator.DefinitionFile))
-	if err != nil {
-		return err
-	}
-	sort.Strings(matches)
-
-	for _, p := range matches {
-		f, err := os.Open(p)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		dec := json.NewDecoder(f)
-		var def generator.Definition
-		if err = dec.Decode(&def); err != nil {
-			return err
-		}
-
+	var genFound = false
+	var genError error
+	if err := r.applyFuncOnGenerators(ref, func(def *generator.Definition, path string) {
 		if def.Name == name {
-			gen, err := generator.NewFromDir(filepath.Dir(p), opts)
+			genFound = true
+			gen, err := generator.NewFromDir(filepath.Dir(path), opts)
 			if err != nil {
-				return err
+				genError = err
+			} else {
+				genError = gen.Exec(dst)
 			}
-			return gen.Exec(dst)
 		}
+	}); err != nil {
+		return err
 	}
 
+	if genFound {
+		return genError
+	}
 	return fmt.Errorf("could not find generator %q", name)
 }
 

@@ -158,6 +158,9 @@ func (prj *Project) GetScript(name string) string {
 }
 
 func generatorPath() string {
+	if generatorsUseLocalFiles {
+		return generatorsPath
+	}
 	return filepath.Join(generatorsPath, generatorsOwner, generatorsRepo)
 }
 

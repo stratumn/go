@@ -52,7 +52,7 @@ It asks which generator to use, then uses that generator to generate a project i
 		out := args[0]
 
 		path := generatorPath()
-		repo := repo.New(path, generatorsOwner, generatorsRepo, ghToken)
+		repo := repo.New(path, generatorsOwner, generatorsRepo, ghToken, !generatorsUseLocalFiles)
 
 		name := generatorName
 		if name == "" {
