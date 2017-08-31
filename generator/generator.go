@@ -183,6 +183,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 //	  returns its value
 //	- getenv(name string) string: returns the value of an environment
 //	  variable
+// 	- gid() int: returns the system group id (GID)
 // 	- input(id string) (interface{}, error): returns the value of an input
 // 	- now(format string) string: returns a formatted representation of the
 //	  current date
@@ -192,6 +193,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 //	  partial with given name
 //	  and variables (path relative to `partials` directory)
 // 	- secret(length int) (string, error): returns a random secret string
+// 	- uid() int: returns the system user id (UID)
 func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
