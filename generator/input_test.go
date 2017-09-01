@@ -17,6 +17,7 @@ package generator
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -69,6 +70,13 @@ func TestInputSliceUnmarshalJSON_invalidString(t *testing.T) {
 func TestInputSliceUnmarshalJSON_invalidSelect(t *testing.T) {
 	var gen Definition
 	if err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "select:string", "options": [1]}}}`), &gen); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestInputSliceUnmarshalJSON_invalidSlice(t *testing.T) {
+	var gen Definition
+	if err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "slice:string", "separator": 1}}}`), &gen); err == nil {
 		t.Error("err: err = nil want Error")
 	}
 }
@@ -333,6 +341,183 @@ y: yes
 n: no (default)
 `
 	if got := in.Msg(); got != want {
+		t.Errorf("err: in.Msg(): got %q want %q", got, want)
+	}
+}
+
+func TestStringSliceSet_one(t *testing.T) {
+	in := StringSlice{Separator: ","}
+	if err := in.Set("hello"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 1; got != want {
+		t.Fatalf("err: len(in.values): got %d want %d", got, want)
+	}
+	if got, want := in.values, []string{"hello"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_two(t *testing.T) {
+	in := StringSlice{Separator: ","}
+	if err := in.Set("hello,hi"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 2; got != want {
+		t.Errorf("err: len(in.values): got %q want %q", got, want)
+	}
+	if got, want := in.values, []string{"hello", "hi"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_defaultOne(t *testing.T) {
+	in := StringSlice{Separator: ",", Default: "hello"}
+	if err := in.Set(""); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 1; got != want {
+		t.Fatalf("err: len(in.values): got %d want %d", got, want)
+	}
+	if got, want := in.values, []string{"hello"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_defaultTwo(t *testing.T) {
+	in := StringSlice{Separator: ",", Default: "hello,hi"}
+	if err := in.Set(""); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 2; got != want {
+		t.Errorf("err: len(in.values): got %q want %q", got, want)
+	}
+	if got, want := in.values, []string{"hello", "hi"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_emptyList(t *testing.T) {
+	in := StringSlice{}
+	if err := in.Set(""); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSliceSet_notString(t *testing.T) {
+	in := StringSlice{}
+	if err := in.Set(3); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSliceSet_withoutSeparator(t *testing.T) {
+	in := StringSlice{}
+	if err := in.Set("hello"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 5; got != want {
+		t.Fatalf("err: len(in.values): got %d want %d", got, want)
+	}
+	if got, want := in.values, []string{"h", "e", "l", "l", "o"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_withSemicolonSeparator(t *testing.T) {
+	in := StringSlice{Separator: ";"}
+	if err := in.Set("Bit,Coin;ether/eum;Tender%mint"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 3; got != want {
+		t.Fatalf("err: len(in.values): got %d want %d", got, want)
+	}
+	if got, want := in.values, []string{"Bit,Coin", "ether/eum", "Tender%mint"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_formatValid(t *testing.T) {
+	in := StringSlice{Separator: ";", Format: "^[a-z].*"}
+	if err := in.Set("bitcoin;ethereum;tendermint"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 3; got != want {
+		t.Fatalf("err: len(in.values): got %d want %d", got, want)
+	}
+	if got, want := in.values, []string{"bitcoin", "ethereum", "tendermint"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceSet_formatInvalidFirst(t *testing.T) {
+	in := StringSlice{Separator: ";", Format: "^[a-z].*"}
+	if err := in.Set("Bitcoin;ethereum;tendermint"); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSliceSet_formatInvalidOther(t *testing.T) {
+	in := StringSlice{Separator: ";", Format: "^[a-z].*"}
+	if err := in.Set("bitcoin;ethereum;Tendermint"); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSliceSet_invalidFormat(t *testing.T) {
+	in := StringSlice{Format: "("}
+	if err := in.Set("("); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSliceGet(t *testing.T) {
+	in := StringSlice{values: []string{"bitcoin", "ethereum", "tendermint"}, Default: "hello,world", Separator: ","}
+	if got, want := in.Get(), []string{"bitcoin", "ethereum", "tendermint"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.Get(): got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceGet_default(t *testing.T) {
+	in := StringSlice{Default: "hello,world", Separator: ","}
+	if got, want := in.Get(), []string{"hello", "world"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.Get(): got %v want %v", got, want)
+	}
+}
+
+func TestStringSliceGet_defaultWithoutSeparator(t *testing.T) {
+	in := StringSlice{Default: "hello,world"}
+	if got, want := in.Get(), []string(nil); !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.Get(): got %#v want %#v", got, want)
+	}
+}
+
+func TestStringSliceGet_defaultWithoutDefault(t *testing.T) {
+	in := StringSlice{Default: noValue, Separator: ","}
+	if got, want := in.Get(), []string(nil); !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.Get(): got %#v want %#v", got, want)
+	}
+}
+
+func TestStringSliceMsg(t *testing.T) {
+	in := StringSlice{
+		values:      []string{"bitcoin", "ethereum", "tendermint"},
+		Separator:   ";",
+		InputShared: InputShared{Prompt: "what:"},
+	}
+	if got, want := in.Msg(), "what: (separator \";\")\n"; got != want {
+		t.Errorf("err: in.Msg(): got %q want %q", got, want)
+	}
+}
+
+func TestStringSliceMsg_default(t *testing.T) {
+	in := StringSlice{
+		values:      []string{"bitcoin", "ethereum", "tendermint"},
+		Default:     "hello,world",
+		Separator:   ";",
+		InputShared: InputShared{Prompt: "what:"},
+	}
+	if got, want := in.Msg(), "what: (separator \";\") (default \"hello,world\")\n"; got != want {
 		t.Errorf("err: in.Msg(): got %q want %q", got, want)
 	}
 }

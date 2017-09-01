@@ -37,6 +37,54 @@ func TestNewGeneratorFromFile(t *testing.T) {
 	if want := runtime.GOOS; got != want {
 		t.Errorf(`err: gen.Variables["os"] = %q want %q`, got, want)
 	}
+
+	got, ok = gen.Inputs["name"]
+	if !ok {
+		t.Errorf(`err: gen.Inputs["name"]: ok = false want true`)
+	} else if input, ok := got.(*StringInput); !ok {
+		t.Errorf(`err: gen.Inputs["name"] should be an StringInput but decoded %#v`, got)
+	} else {
+		if got, want := input.Prompt, "Project name:"; got != want {
+			t.Errorf(`err: input.Prompt = %q want %q`, got, want)
+		}
+		if got, want := input.Format, ".+"; got != want {
+			t.Errorf(`err: input.Format = %q want %q`, got, want)
+		}
+	}
+
+	got, ok = gen.Inputs["license"]
+	if !ok {
+		t.Errorf(`err: gen.Inputs["license"]: ok = false want true`)
+	} else if input, ok := got.(*StringSelect); !ok {
+		t.Errorf(`err: gen.Inputs["license"] should be an StringSelect but decoded %#v`, got)
+	} else {
+		if got, want := input.Prompt, "License:"; got != want {
+			t.Errorf(`err: input.Prompt = %q want %q`, got, want)
+		}
+		if got, want := len(input.Options), 2; got != want {
+			t.Errorf(`err: len(input.Options) = %q want %q`, got, want)
+		}
+		if got, want := input.Default, "mit"; got != want {
+			t.Errorf(`err: input.Prompt = %q want %q`, got, want)
+		}
+	}
+
+	got, ok = gen.Inputs["process"]
+	if !ok {
+		t.Errorf(`err: gen.Inputs["process"]: ok = false want true`)
+	} else if input, ok := got.(*StringSlice); !ok {
+		t.Errorf(`err: gen.Inputs["process"] should be an StringSlice but decoded %#v`, got)
+	} else {
+		if got, want := input.Prompt, "List of process names:"; got != want {
+			t.Errorf(`err: input.Prompt = %q want %q`, got, want)
+		}
+		if got, want := input.Format, "^[a-zA-Z].*$"; got != want {
+			t.Errorf(`err: input.Format = %q want %q`, got, want)
+		}
+		if got, want := input.Separator, ","; got != want {
+			t.Errorf(`err: input.Format = %q want %q`, got, want)
+		}
+	}
 }
 
 func TestNewFromDir(t *testing.T) {
@@ -84,7 +132,7 @@ func TestGeneratorExec(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\n")
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\nProcess1,Process2\n")
 
 	gen, err := NewFromDir("testdata/nodejs", &Options{Reader: r})
 	if err != nil {
@@ -245,7 +293,7 @@ func TestGeneratorExec_invalidPartial(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\n")
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\nProcess1,Process2\n")
 
 	gen, err := NewFromDir("testdata/invalid_partial", &Options{Reader: r})
 	if err != nil {
@@ -264,7 +312,7 @@ func TestGeneratorExec_invalidPartialExec(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\n")
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\nProcess1,Process2\n")
 
 	gen, err := NewFromDir("testdata/invalid_partial_exec", &Options{Reader: r})
 	if err != nil {

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -28,6 +29,9 @@ const (
 
 	// StringSelectID is the string identifying a string select.
 	StringSelectID = "select:string"
+
+	// StringSliceID is a slice of string for mutiple entries.
+	StringSliceID = "slice:string"
 )
 
 const noValue = "<no value>"
@@ -86,6 +90,12 @@ func UnmarshalJSONInput(data []byte) (Input, error) {
 			return nil, err
 		}
 		return &in, nil
+	case StringSliceID:
+		var in = StringSlice{Separator: ","}
+		if err := json.Unmarshal(data, &in); err != nil {
+			return nil, err
+		}
+		return &in, nil
 	default:
 		return nil, fmt.Errorf("invalid input type %q", shared.Type)
 	}
@@ -137,14 +147,14 @@ func (in *StringInput) Set(val interface{}) error {
 }
 
 // Get implements github.com/stratumn/sdk/generator.Input.
-func (in *StringInput) Get() interface{} {
+func (in StringInput) Get() interface{} {
 	if in.value == "" && in.Default != noValue {
 		return in.Default
 	}
 	return in.value
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Prompt.
+// Msg implements github.com/stratumn/sdk/generator.Input.
 func (in *StringInput) Msg() string {
 	if in.Default != "" && in.Default != noValue {
 		return fmt.Sprintf("%s (default %q)\n", in.Prompt, in.Default)
@@ -189,14 +199,14 @@ func (in *StringSelect) Set(val interface{}) error {
 }
 
 // Get implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSelect) Get() interface{} {
+func (in StringSelect) Get() interface{} {
 	if in.value == "" && in.Default != noValue {
 		return in.Default
 	}
 	return in.value
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Prompt.
+// Msg implements github.com/stratumn/sdk/generator.Input.
 func (in *StringSelect) Msg() string {
 	p := in.Prompt + "\n"
 	for _, v := range in.Options {
@@ -219,4 +229,66 @@ type StringSelectOption struct {
 
 	// Text will be displayed when presenting this option to the user.
 	Text string `json:"text"`
+}
+
+// StringSlice contains properties for string inputs.
+type StringSlice struct {
+	InputShared
+
+	// Default is the default value.
+	Default string `json:"default"`
+
+	// Format is a string containing a regexp the value must have.
+	Format string `json:"format"`
+
+	// Separator is a string used to split the input to list.
+	Separator string `json:"separator"`
+
+	values []string
+}
+
+// Set implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSlice) Set(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return errors.New("value must be a string")
+	}
+	if str == "" && in.Default != noValue {
+		str = in.Default
+	}
+	if str == "" {
+		return fmt.Errorf("list must be non empty")
+	}
+
+	for _, value := range strings.Split(str, in.Separator) {
+		if in.Format != "" {
+			ok, err := regexp.MatchString(in.Format, strings.TrimSpace(value))
+			if !ok {
+				err = fmt.Errorf("value %q must have format %q", value, in.Format)
+			}
+			if err != nil {
+				in.values = nil
+				return err
+			}
+		}
+		in.values = append(in.values, value)
+	}
+	return nil
+}
+
+// Get implements github.com/stratumn/sdk/generator.Input.
+func (in StringSlice) Get() interface{} {
+	if len(in.values) == 0 && in.Default != noValue && in.Separator != "" {
+		return strings.Split(in.Default, in.Separator)
+	}
+	return in.values
+}
+
+// Msg implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSlice) Msg() string {
+	ret := fmt.Sprintf("%s (separator %q)\n", in.Prompt, in.Separator)
+	if in.Default != "" && in.Default != noValue {
+		ret = fmt.Sprintf("%s (default %q)\n", ret[0:len(ret)-1], in.Default)
+	}
+	return ret
 }

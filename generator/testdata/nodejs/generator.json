@@ -50,6 +50,12 @@
         "text": "BSD"
       }],
       "default": "mit"
+    },
+    "process": {
+      "type": "slice:string",
+      "prompt": "List of process names:",
+      "default": "{{.process}}",
+      "format": "^[a-zA-Z].*$"
     }
   },
   "priorities": [
