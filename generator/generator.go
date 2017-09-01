@@ -77,6 +77,9 @@ type Definition struct {
 	// Priorities is an array of files which should be parsed first.
 	// The paths are relative to the `files` directory.
 	Priorities []string `json:"priorities"`
+
+	// FilenameSubsts is a map to replace a string in a filename by an input content.
+	FilenameSubsts map[string]string `json:"filename-substitutions"`
 }
 
 // NewDefinitionFromFile loads a generator definition from a file.
@@ -291,6 +294,30 @@ func (s tmplDescSlice) Less(i, j int) bool {
 	return p1 < p2
 }
 
+func (gen Generator) generateFileListFromSubstitution(name string) ([]string, error) {
+	for pattern, subst := range gen.def.FilenameSubsts {
+		if !strings.Contains(name, pattern) {
+			continue
+		}
+		input, err := gen.input(subst)
+		if err != nil {
+			return nil, fmt.Errorf("Filename %q contains the pattern %q but no input is found to replace %q / error: %q",
+				name, pattern, subst, err.Error())
+		}
+		if str, ok := input.(string); ok {
+			return []string{strings.Replace(name, pattern, str, 1)}, nil
+		} else if str, ok := input.([]string); ok {
+			names := make([]string, len(str), len(str))
+			for i, s := range str {
+				names[i] = strings.Replace(name, pattern, s, 1)
+			}
+			return names, nil
+		}
+		return nil, fmt.Errorf("Filename %q contains the pattern %q but input has bad type %#v", name, pattern, input)
+	}
+	return []string{name}, nil
+}
+
 func (gen *Generator) generate(dst string) error {
 	var descs tmplDescSlice
 	for _, tmpl := range gen.files.Templates() {
@@ -311,30 +338,35 @@ func (gen *Generator) generate(dst string) error {
 
 	for _, desc := range descs {
 		tmpl := desc.tmpl
-		name := tmpl.Name()
-		in := filepath.Join(gen.src, FilesDir, name)
-		info, err := os.Stat(in)
+		names, err := gen.generateFileListFromSubstitution(tmpl.Name())
 		if err != nil {
 			return err
 		}
-		out := filepath.Join(dst, name)
-		if err = os.MkdirAll(filepath.Dir(out), DirPerm); err != nil {
-			return err
-		}
-		f, err := os.OpenFile(out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		vars := map[string]interface{}{}
-		for k, v := range gen.opts.TmplVars {
-			vars[k] = v
-		}
-		for k, v := range gen.def.Variables {
-			vars[k] = v
-		}
-		if err := tmpl.Execute(f, vars); err != nil {
-			return err
+		for _, name := range names {
+			in := filepath.Join(gen.src, FilesDir, tmpl.Name())
+			info, err := os.Stat(in)
+			if err != nil {
+				return err
+			}
+			out := filepath.Join(dst, name)
+			if err = os.MkdirAll(filepath.Dir(out), DirPerm); err != nil {
+				return err
+			}
+			f, err := os.OpenFile(out, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			vars := map[string]interface{}{}
+			for k, v := range gen.opts.TmplVars {
+				vars[k] = v
+			}
+			for k, v := range gen.def.Variables {
+				vars[k] = v
+			}
+			if err := tmpl.Execute(f, vars); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

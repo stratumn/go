@@ -17,12 +17,13 @@ package generator
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 	"testing"
 )
 
-func TestNewGeneratorFromFile(t *testing.T) {
+func TestNewGeneratorFromFile_checkVariables(t *testing.T) {
 	vars := map[string]interface{}{
 		"os": runtime.GOOS,
 	}
@@ -37,8 +38,17 @@ func TestNewGeneratorFromFile(t *testing.T) {
 	if want := runtime.GOOS; got != want {
 		t.Errorf(`err: gen.Variables["os"] = %q want %q`, got, want)
 	}
+}
 
-	got, ok = gen.Inputs["name"]
+func TestNewGeneratorFromFile_checkStringInput(t *testing.T) {
+	vars := map[string]interface{}{
+		"os": runtime.GOOS,
+	}
+	gen, err := NewDefinitionFromFile("testdata/nodejs/generator.json", vars, nil)
+	if err != nil {
+		t.Fatalf("err: NewDefinitionFromFile(): %s", err)
+	}
+	got, ok := gen.Inputs["name"]
 	if !ok {
 		t.Errorf(`err: gen.Inputs["name"]: ok = false want true`)
 	} else if input, ok := got.(*StringInput); !ok {
@@ -51,8 +61,17 @@ func TestNewGeneratorFromFile(t *testing.T) {
 			t.Errorf(`err: input.Format = %q want %q`, got, want)
 		}
 	}
+}
 
-	got, ok = gen.Inputs["license"]
+func TestNewGeneratorFromFile_checkSelectInput(t *testing.T) {
+	vars := map[string]interface{}{
+		"os": runtime.GOOS,
+	}
+	gen, err := NewDefinitionFromFile("testdata/nodejs/generator.json", vars, nil)
+	if err != nil {
+		t.Fatalf("err: NewDefinitionFromFile(): %s", err)
+	}
+	got, ok := gen.Inputs["license"]
 	if !ok {
 		t.Errorf(`err: gen.Inputs["license"]: ok = false want true`)
 	} else if input, ok := got.(*StringSelect); !ok {
@@ -68,8 +87,17 @@ func TestNewGeneratorFromFile(t *testing.T) {
 			t.Errorf(`err: input.Prompt = %q want %q`, got, want)
 		}
 	}
+}
 
-	got, ok = gen.Inputs["process"]
+func TestNewGeneratorFromFile_checkSliceInput(t *testing.T) {
+	vars := map[string]interface{}{
+		"os": runtime.GOOS,
+	}
+	gen, err := NewDefinitionFromFile("testdata/nodejs/generator.json", vars, nil)
+	if err != nil {
+		t.Fatalf("err: NewDefinitionFromFile(): %s", err)
+	}
+	got, ok := gen.Inputs["process"]
 	if !ok {
 		t.Errorf(`err: gen.Inputs["process"]: ok = false want true`)
 	} else if input, ok := got.(*StringSlice); !ok {
@@ -355,6 +383,58 @@ func TestGeneratorExec_invalidPartialArgs(t *testing.T) {
 
 	if err := gen.Exec(dst); err == nil {
 		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestGeneratorExec_filenameSubstitution(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	//r := strings.NewReader("test\nTest project\nAlex\n2017\nStratumn\n2\nProcess1,Process2\n")
+	r := strings.NewReader("Process1,Process2\nTheTest\n")
+
+	gen, err := NewFromDir("testdata/filename_subst", &Options{Reader: r})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err != nil {
+		t.Fatalf("err: gen.Exec(): %s", err)
+	}
+
+	if _, err := os.Stat(path.Join(dst, "file-Process1.js")); err != nil {
+		t.Errorf("err: err %s want Error", err.Error())
+	}
+
+	if _, err := os.Stat(path.Join(dst, "file-Process2.js")); err != nil {
+		t.Errorf("err: err %s want Error", err.Error())
+	}
+
+	if _, err := os.Stat(path.Join(dst, "file-TheTest.json")); err != nil {
+		t.Errorf("err: err %s want Error", err.Error())
+	}
+}
+
+func TestGeneratorExec_invalidFilenameSubstitution(t *testing.T) {
+	dst, err := ioutil.TempDir("", "generator")
+	if err != nil {
+		t.Fatalf("err: ioutil.TempDir(): %s", err)
+	}
+	defer os.RemoveAll(dst)
+
+	//r := strings.NewReader("test\nTest project\nAlex\n2017\nStratumn\n2\nProcess1,Process2\n")
+	r := strings.NewReader("Process1,Process2\nTheTest\n")
+
+	gen, err := NewFromDir("testdata/invalid_filename_subst", &Options{Reader: r})
+	if err != nil {
+		t.Fatalf("err: NewFromDir(): %s", err)
+	}
+
+	if err := gen.Exec(dst); err == nil {
+		t.Fatal("err: gen.Exec() must return an error")
 	}
 }
 

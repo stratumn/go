@@ -1,0 +1,24 @@
+{
+  "name": "subst-tmpl",
+  "version": "0.1.0",
+  "description": "Subst test",
+  "author": "Stratumn",
+  "license": "Apache-2.0",
+  "filename-substitutions": {
+    "XXX": "invalid"
+  },
+  "inputs": {
+    "name": {
+      "type": "string",
+      "prompt": "Project name:",
+      "default": "{{.dir}}",
+      "format": ".+"
+    },
+    "process": {
+      "type": "slice:string",
+      "prompt": "List of process names:",
+      "default": "{{.process}}",
+      "format": "^[a-zA-Z].*$"
+    }
+  }
+}
