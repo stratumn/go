@@ -393,14 +393,18 @@ func (t *TMPop) checkSegment(snapshot *Snapshot, segment *cs.Segment) abci.Resul
 
 	// TODO: in production do not reload validation rules each time a new segment is created
 	// Use instead notification mechanisms
-	rootValidator := validator.NewRootValidator(t.config.ValidatorFilename, true)
-	err = rootValidator.Validate(snapshot.segments, segment)
+	if t.config.ValidatorFilename != "" {
+		rootValidator := validator.NewRootValidator(t.config.ValidatorFilename, true)
+		err = rootValidator.Validate(snapshot.segments, segment)
 
-	if err != nil {
-		return abci.NewError(
-			CodeTypeValidation,
-			fmt.Sprintf("Segment validation failed %v: %v", segment, err),
-		)
+		if err != nil {
+			return abci.NewError(
+				CodeTypeValidation,
+				fmt.Sprintf("Segment validation failed %v: %v", segment, err),
+			)
+		}
+	} else {
+		log.Debug("No custom validation configured")
 	}
 
 	return abci.OK
