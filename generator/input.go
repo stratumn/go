@@ -261,8 +261,9 @@ func (in *StringSlice) Set(val interface{}) error {
 	}
 
 	for _, value := range strings.Split(str, in.Separator) {
+		value = strings.TrimSpace(value)
 		if in.Format != "" {
-			ok, err := regexp.MatchString(in.Format, strings.TrimSpace(value))
+			ok, err := regexp.MatchString(in.Format, value)
 			if !ok {
 				err = fmt.Errorf("value %q must have format %q", value, in.Format)
 			}
