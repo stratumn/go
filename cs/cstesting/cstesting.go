@@ -24,8 +24,9 @@ import (
 )
 
 // CreateSegment creates a minimal segment.
-func CreateSegment(linkHash, mapID, prevLinkHash string, tags []interface{}, priority float64) *cs.Segment {
+func CreateSegment(process, linkHash, mapID, prevLinkHash string, tags []interface{}, priority float64) *cs.Segment {
 	linkMeta := map[string]interface{}{
+		"process":  process,
 		"mapId":    mapID,
 		"priority": priority,
 		"random":   testutil.RandomString(12),
@@ -55,7 +56,7 @@ func CreateSegment(linkHash, mapID, prevLinkHash string, tags []interface{}, pri
 
 // RandomSegment creates a random segment.
 func RandomSegment() *cs.Segment {
-	return CreateSegment(testutil.RandomHash().String(), testutil.RandomString(24),
+	return CreateSegment(testutil.RandomString(24), testutil.RandomHash().String(), testutil.RandomString(24),
 		testutil.RandomHash().String(), RandomTags(), rand.Float64())
 }
 
@@ -75,7 +76,7 @@ func ChangeSegmentMapID(s *cs.Segment) *cs.Segment {
 
 // RandomBranch appends a random segment to a segment.
 func RandomBranch(s *cs.Segment) *cs.Segment {
-	branch := CreateSegment(testutil.RandomHash().String(), testutil.RandomString(24),
+	branch := CreateSegment(testutil.RandomString(24), testutil.RandomHash().String(), testutil.RandomString(24),
 		s.Meta["linkHash"].(string), RandomTags(), rand.Float64())
 	branch.Link.Meta["mapId"] = s.Link.Meta["mapId"]
 	return branch

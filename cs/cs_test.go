@@ -71,6 +71,24 @@ func TestSegmentValidate_linkHashWrongType(t *testing.T) {
 	testSegmentValidateError(t, s, "meta.linkHash should be a non empty string")
 }
 
+func TestSegmentValidate_processNil(t *testing.T) {
+	s := cstesting.RandomSegment()
+	delete(s.Link.Meta, "process")
+	testSegmentValidateError(t, s, "link.meta.process should be a non empty string")
+}
+
+func TestSegmentValidate_processEmpty(t *testing.T) {
+	s := cstesting.RandomSegment()
+	s.Link.Meta["process"] = ""
+	testSegmentValidateError(t, s, "link.meta.process should be a non empty string")
+}
+
+func TestSegmentValidate_processWrongType(t *testing.T) {
+	s := cstesting.RandomSegment()
+	s.Link.Meta["process"] = true
+	testSegmentValidateError(t, s, "link.meta.process should be a non empty string")
+}
+
 func TestSegmentValidate_mapIDNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "mapId")

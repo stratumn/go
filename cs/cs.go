@@ -56,6 +56,9 @@ func (s *Segment) Validate() error {
 	if linkHash, ok := s.Meta["linkHash"].(string); !ok || linkHash == "" {
 		return errors.New("meta.linkHash should be a non empty string")
 	}
+	if process, ok := s.Link.Meta["process"].(string); !ok || process == "" {
+		return errors.New("link.meta.process should be a non empty string")
+	}
 	if mapID, ok := s.Link.Meta["mapId"].(string); !ok || mapID == "" {
 		return errors.New("link.meta.mapId should be a non empty string")
 	}
