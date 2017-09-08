@@ -168,10 +168,7 @@ func (a *DummyStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	var (
-		linkHashes = hashSet{}
-		exists     = true
-	)
+	var linkHashes = hashSet{}
 
 	if len(filter.MapIDs) == 0 || filter.PrevLinkHash != nil {
 		for linkHash := range a.segments {
@@ -180,17 +177,12 @@ func (a *DummyStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	} else {
 		for _, mapID := range filter.MapIDs {
 			l, e := a.maps[mapID]
-			exists = exists && e
 			if e {
 				for k, v := range l {
 					linkHashes[k] = v
 				}
 			}
 		}
-	}
-
-	if !exists {
-		return cs.SegmentSlice{}, nil
 	}
 
 	return a.findHashesSegments(linkHashes, filter)
@@ -273,20 +265,29 @@ HASH_LOOP:
 
 		if filter.PrevLinkHash != nil {
 			prevLinkHash := segment.Link.GetPrevLinkHash()
-			if prevLinkHash == nil || *filter.PrevLinkHash != *prevLinkHash {
+			if *filter.PrevLinkHash != *prevLinkHash {
 				continue
 			}
-		} else if len(filter.Process) != 0 &&
+			if len(filter.MapIDs) > 0 {
+				skip := true
+				for _, mapID := range filter.MapIDs {
+					skip = skip && mapID != segment.Link.GetMapID()
+				}
+				if skip {
+					continue
+				}
+			}
+		}
+
+		if len(filter.Process) != 0 &&
 			filter.Process != segment.Link.GetProcess() {
 			continue
 		}
 
-		if len(filter.Tags) > 0 {
-			tags := segment.Link.GetTagMap()
-			for _, tag := range filter.Tags {
-				if _, ok := tags[tag]; !ok {
-					continue HASH_LOOP
-				}
+		tags := segment.Link.GetTagMap()
+		for _, tag := range filter.Tags {
+			if _, ok := tags[tag]; !ok {
+				continue HASH_LOOP
 			}
 		}
 

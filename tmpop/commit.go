@@ -38,8 +38,8 @@ func (c *Commit) FindSegments(filter *store.SegmentFilter) ([]*cs.Segment, [][]b
 	if err != nil {
 		return nil, nil, err
 	}
-	var values []*cs.Segment
-	var proofs [][]byte
+	var values = make([]*cs.Segment, 0)
+	var proofs = make([][]byte, 0)
 
 	for _, s := range segments {
 		_, proof, exists := c.Proof(s.GetLinkHash()[:])
