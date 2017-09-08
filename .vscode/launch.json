@@ -3,11 +3,21 @@
     "configurations": [
 
         {
+            "name": "Launch cs test function",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceRoot}/cs",
+            "env": {},
+            "args": []
+        },
+        {
             "name": "Launch dummyfossilizer test function",
             "type": "go",
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/dummyfossilizer",
+            "env": {},
             "args": []
         },
         {
@@ -16,6 +26,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/dummystore",
+            "env": {},
             "args": []
         },
         {
@@ -24,6 +35,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/filestore",
+            "env": {},
             "args": []
         },
         {
@@ -32,6 +44,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/fossilizer",
+            "env": {},
             "args": []
         },
         {
@@ -40,6 +53,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/generator",
+            "env": {},
             "args": []
         },
         {
@@ -48,6 +62,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/jsonhttp",
+            "env": {},
             "args": []
         },
         {
@@ -56,6 +71,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/jsonws",
+            "env": {},
             "args": []
         },
         {
@@ -64,6 +80,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/store",
+            "env": {},
             "args": []
         },
         {
@@ -72,6 +89,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/store/storehttp",
+            "env": {},
             "args": []
         },
         {
@@ -80,6 +98,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/store/storetesting",
+            "env": {},
             "args": []
         },
         {
@@ -88,6 +107,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/tmstore",
+            "env": {},
             "args": []
         },
         {
@@ -96,6 +116,7 @@
             "request": "launch",
             "mode": "test",
             "program": "${workspaceRoot}/tmpop",
+            "env": {},
             "args": [
                 "-test.run",
                 "TestQuery/Evidence"
