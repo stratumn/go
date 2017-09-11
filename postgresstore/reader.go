@@ -62,11 +62,21 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 
 	if filter.PrevLinkHash != nil {
 		prevLinkHash := filter.PrevLinkHash[:]
-		if len(filter.Tags) > 0 {
-			tags := pq.Array(filter.Tags)
-			rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndTags.Query(prevLinkHash, tags, offset, limit, process)
+		if len(filter.MapIDs) > 0 {
+			mapIDs := pq.Array(filter.MapIDs)
+			if len(filter.Tags) > 0 {
+				tags := pq.Array(filter.Tags)
+				rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndMapIDsAndTags.Query(prevLinkHash, mapIDs, tags, offset, limit, process)
+			} else {
+				rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndMapIDs.Query(prevLinkHash, mapIDs, offset, limit, process)
+			}
 		} else {
-			rows, err = a.stmts.FindSegmentsWithPrevLinkHash.Query(prevLinkHash, offset, limit, process)
+			if len(filter.Tags) > 0 {
+				tags := pq.Array(filter.Tags)
+				rows, err = a.stmts.FindSegmentsWithPrevLinkHashAndTags.Query(prevLinkHash, tags, offset, limit, process)
+			} else {
+				rows, err = a.stmts.FindSegmentsWithPrevLinkHash.Query(prevLinkHash, offset, limit, process)
+			}
 		}
 	} else if len(filter.MapIDs) > 0 {
 		mapIDs := pq.Array(filter.MapIDs)
