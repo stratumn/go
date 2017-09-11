@@ -73,6 +73,22 @@ const (
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $3 LIMIT $4
 	`
+	sqlFindSegmentsWithPrevLinkHashAndMapIDs = `
+		SELECT data FROM segments
+		WHERE prev_link_hash = $1
+		AND map_id = any($2::text[])
+		AND (length($5) = 0 OR process = $5)
+		ORDER BY priority DESC, created_at DESC
+		OFFSET $3 LIMIT $4
+	`
+	sqlFindSegmentsWithPrevLinkHashAndMapIDsAndTags = `
+		SELECT data FROM segments
+		WHERE prev_link_hash = $1
+		AND map_id = any($2::text[]) AND tags @> $3
+		AND (length($6) = 0 OR process = $6)
+		ORDER BY priority DESC, created_at DESC
+		OFFSET $4 LIMIT $5
+	`
 	sqlGetMapIDs = `
 		SELECT DISTINCT map_id FROM segments
 		WHERE (length($3) = 0 OR process = $3)
@@ -171,12 +187,14 @@ type readStmts struct {
 	GetMapIDs    *sql.Stmt
 	GetValue     *sql.Stmt
 
-	FindSegmentsWithMapIDs              *sql.Stmt
-	FindSegmentsWithPrevLinkHash        *sql.Stmt
-	FindSegmentsWithTags                *sql.Stmt
-	FindSegmentsWithTagsAndLimit        *sql.Stmt
-	FindSegmentsWithMapIDsAndTags       *sql.Stmt
-	FindSegmentsWithPrevLinkHashAndTags *sql.Stmt
+	FindSegmentsWithMapIDs                       *sql.Stmt
+	FindSegmentsWithPrevLinkHash                 *sql.Stmt
+	FindSegmentsWithTags                         *sql.Stmt
+	FindSegmentsWithTagsAndLimit                 *sql.Stmt
+	FindSegmentsWithMapIDsAndTags                *sql.Stmt
+	FindSegmentsWithPrevLinkHashAndTags          *sql.Stmt
+	FindSegmentsWithPrevLinkHashAndMapIDs        *sql.Stmt
+	FindSegmentsWithPrevLinkHashAndMapIDsAndTags *sql.Stmt
 }
 
 type stmts struct {
@@ -209,6 +227,8 @@ func newStmts(db *sql.DB) (*stmts, error) {
 	s.FindSegmentsWithTags = prepare(sqlFindSegmentsWithTags)
 	s.FindSegmentsWithMapIDsAndTags = prepare(sqlFindSegmentsWithMapIDsAndTags)
 	s.FindSegmentsWithPrevLinkHashAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndTags)
+	s.FindSegmentsWithPrevLinkHashAndMapIDs = prepare(sqlFindSegmentsWithPrevLinkHashAndMapIDs)
+	s.FindSegmentsWithPrevLinkHashAndMapIDsAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndMapIDsAndTags)
 
 	s.SaveSegment = prepare(sqlSaveSegment)
 	s.DeleteSegment = prepare(sqlDeleteSegment)
