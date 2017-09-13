@@ -421,8 +421,8 @@ func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
 	}
 }
 
-// TestFindSegmentsPrevLinkHashGoodMapID tests that the map ID is ignored if a
-// previous link hash is given.
+// TestFindSegmentsPrevLinkHashGoodMapID tests that map IDs match with
+// segments found with the given previous link hash.
 func (f Factory) TestFindSegmentsPrevLinkHashGoodMapID(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.free(a)
@@ -462,8 +462,8 @@ func (f Factory) TestFindSegmentsPrevLinkHashGoodMapID(t *testing.T) {
 	}
 }
 
-// TestFindSegmentsPrevLinkHashBadMapID tests that the map ID is ignored if a
-// previous link hash is given.
+// TestFindSegmentsPrevLinkHashBadMapID tests that map IDs invalidate all
+// segments found with the given previous link hash.
 func (f Factory) TestFindSegmentsPrevLinkHashBadMapID(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.free(a)
