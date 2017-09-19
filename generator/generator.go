@@ -220,10 +220,7 @@ func (gen *Generator) Exec(dst string) error {
 	if err := gen.parseFiles(); err != nil {
 		return err
 	}
-	if err := gen.generate(dst); err != nil {
-		return err
-	}
-	return nil
+	return gen.generate(dst)
 }
 
 // parse parsers templates in given directory into the given template object.
