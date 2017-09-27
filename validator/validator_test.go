@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -11,52 +12,60 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-const defaultJSON = `
-[
-  {
-    "type": "init",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "seller": {
-          "type": "string"
+const testProcessName = "testProcess"
+
+var defaultJSON = fmt.Sprintf(`
+{
+  "%s": [
+    {
+      "type": "init",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "seller": {
+            "type": "string"
+          },
+          "lot": {
+            "type": "string"
+          },
+          "initialPrice": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
-        "lot": {
-          "type": "string"
+        "required": [
+          "seller",
+          "lot",
+          "initialPrice"
+        ]
+      }
+    },
+    {
+      "type": "bid",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "buyer": {
+            "type": "string"
+          },
+          "bidPrice": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
-        "initialPrice": {
-          "type": "integer",
-          "minimum": 0
-        }
-      },
-      "required": [
-        "seller",
-        "lot",
-        "initialPrice"
-      ]
+        "required": [
+          "buyer",
+          "bidPrice"
+        ]
+      }
     }
-  },
-  {
-    "type": "bid",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "buyer": {
-          "type": "string"
-        },
-        "bidPrice": {
-          "type": "integer",
-          "minimum": 0
-        }
-      },
-      "required": [
-        "buyer",
-        "bidPrice"
-      ]
-    }
-  }
-]
-`
+  ],
+  "otherProcess": [{
+	"type": "abc",
+	"schema": {}    
+  }]
+}
+`, testProcessName)
 
 const bidValidator = `
 {
@@ -79,27 +88,28 @@ const bidValidator = `
 var malformedJSONs = []string{
 	``,
 	`abba`,
-	`{}`,
+	`[]`,
 	`[{}]`,
-	`[{"schema":{}}]`,
-	`[{"type":"abc"}]`,
-	`[{"schema":[], "type":"abc"}]`,
-	`[{"schema":"xyz", "type":"abc"}]`,
-	`[{"schema":10, "type":"abc"}]`,
-	`[{"schema":null, "type":"abc"}]`,
-	`[{"schema":{}, "type":{}}]`,
-	`[{"schema":{}, "type":10}]`,
-	`[{"schema":{}, "type":[]}]`,
-	`[{"schema":{}, "type":null}]`,
+	`{"process": [{"schema":{}}]}`,
+	`{"process": [{"type":"abc"}]}`,
+	`{"process": [{"schema":[], "type":"abc"}]}`,
+	`{"process": [{"schema":"xyz", "type":"abc"}]}`,
+	`{"process": [{"schema":10, "type":"abc"}]}`,
+	`{"process": [{"schema":null, "type":"abc"}]}`,
+	`{"process": [{"schema":{}, "type":{}}]}`,
+	`{"process": [{"schema":{}, "type":10}]}`,
+	`{"process": [{"schema":{}, "type":[]}]}`,
+	`{"process": [{"schema":{}, "type":null}]}`,
 }
 
 var validJSONs = []struct {
-	Data  string
-	Count int
+	Data         string
+	ProcessCount int
+	ActionCount  int
 }{
-	{`[]`, 0},
-	{`[{"type":"abc", "schema":{}}]`, 1},
-	{`[{"type":"abc", "schema":{}},{"type":"def", "schema":{}}]`, 2},
+	{`{}`, 0, 0},
+	{`{ "testProcess": [{"type":"abc", "schema":{}}]}`, 1, 1},
+	{`{ "testProcess": [{"type":"abc", "schema":{}},{"type":"def", "schema":{}}], "otherProcess": []}`, 2, 2},
 }
 
 func TestLoadDefaultJSON(t *testing.T) {
@@ -107,8 +117,12 @@ func TestLoadDefaultJSON(t *testing.T) {
 
 	rootValidator.loadFromJSON([]byte(defaultJSON))
 
-	if len(rootValidator.Validators) != 2 {
-		t.Errorf("cannot load validators, want 2, got %d", len(rootValidator.Validators))
+	if len(rootValidator.ValidatorsByProcess) != 2 {
+		t.Errorf("cannot load validators, want 2, got %d", len(rootValidator.ValidatorsByProcess))
+	}
+
+	if len(rootValidator.ValidatorsByProcess[testProcessName]) != 2 {
+		t.Errorf("cannot load validation schema for process %s, want 2, got %d", testProcessName, len(rootValidator.ValidatorsByProcess))
 	}
 }
 
@@ -134,15 +148,19 @@ func TestLoadValidJSON(t *testing.T) {
 			t.Errorf("valid JSON: error: %s, %s", testCase.Data, err)
 		}
 
-		if len(rootValidator.Validators) != testCase.Count {
-			t.Errorf("valid JSON: validators count mismatch. want: %d, got: %d", testCase.Count, len(rootValidator.Validators))
+		if len(rootValidator.ValidatorsByProcess) != testCase.ProcessCount {
+			t.Errorf("valid JSON: validators count mismatch. want: %d, got: %d", testCase.ProcessCount, len(rootValidator.ValidatorsByProcess))
+		}
+
+		if len(rootValidator.ValidatorsByProcess[testProcessName]) != testCase.ActionCount {
+			t.Errorf("valid JSON: action validators count mismatch. want: %d, got: %d", testCase.ActionCount, len(rootValidator.ValidatorsByProcess[testProcessName]))
 		}
 	}
 }
 
 func makeSegment(action string) *cs.Segment {
 	return &cs.Segment{Link: cs.Link{
-		Meta:  map[string]interface{}{"action": action},
+		Meta:  map[string]interface{}{"action": action, "process": testProcessName},
 		State: map[string]interface{}{},
 	}}
 }
@@ -206,10 +224,9 @@ func TestNewRootValidator(t *testing.T) {
 	if _, err := tmpfile.Write([]byte(defaultJSON)); err != nil {
 		t.Error(err)
 	}
-
 	defaultRootValidator := NewRootValidator(tmpfile.Name(), true)
 
-	if len(defaultRootValidator.(*rootValidator).Validators) != 2 {
+	if len(defaultRootValidator.(*rootValidator).ValidatorsByProcess) != 2 {
 		t.Errorf("fail to load root validator")
 	}
 
@@ -219,7 +236,7 @@ func TestNewRootValidator(t *testing.T) {
 
 	fileNotFoundRootValidator := NewRootValidator("/file/that/does/not/exist", true)
 
-	if len(fileNotFoundRootValidator.(*rootValidator).Validators) != 0 {
+	if len(fileNotFoundRootValidator.(*rootValidator).ValidatorsByProcess) != 0 {
 		t.Errorf("fail to create root validator: file not found")
 	}
 }
@@ -231,14 +248,24 @@ func TestRootValidator(t *testing.T) {
 	acceptNoneSchema, _ := gojsonschema.NewSchema(gojsonschema.NewBytesLoader([]byte(`{"type": "array"}`)))
 	sv1 := schemaValidator{Type: "init", Schema: acceptAllSchema}
 	sv2 := schemaValidator{Type: "init", Schema: acceptNoneSchema}
+	sv3 := schemaValidator{Type: "unknown", Schema: acceptAllSchema}
 
-	validators1 := make([]selectiveValidator, 0)
-	validators1 = append(validators1, sv1)
-	validators2 := make([]selectiveValidator, 0)
-	validators2 = append(validators2, sv2)
-	rv1 := rootValidator{Validators: validators1, ValidByDefault: true}
-	rv2 := rootValidator{Validators: validators2, ValidByDefault: true}
+	validators1 := make(map[string][]selectiveValidator, 0)
+	validators1[testProcessName] = make([]selectiveValidator, 0)
+	validators1[testProcessName] = append(validators1[testProcessName], sv1)
+
+	validators2 := make(map[string][]selectiveValidator, 0)
+	validators2[testProcessName] = make([]selectiveValidator, 0)
+	validators2[testProcessName] = append(validators2[testProcessName], sv2)
+
+	validators3 := make(map[string][]selectiveValidator, 0)
+	validators3[testProcessName] = make([]selectiveValidator, 0)
+	validators3[testProcessName] = append(validators3[testProcessName], sv3)
+
+	rv1 := rootValidator{ValidatorsByProcess: validators1, ValidByDefault: true}
+	rv2 := rootValidator{ValidatorsByProcess: validators2, ValidByDefault: true}
 	rv3 := rootValidator{ValidByDefault: false}
+	rv4 := rootValidator{ValidatorsByProcess: validators3, ValidByDefault: false}
 
 	if err := rv1.Validate(&storetesting.MockBatch{}, segment); err != nil {
 		t.Errorf("failed to validate rv1")
@@ -248,5 +275,8 @@ func TestRootValidator(t *testing.T) {
 	}
 	if err := rv3.Validate(&storetesting.MockBatch{}, segment); err == nil {
 		t.Errorf("rv3 validation successeful")
+	}
+	if err := rv4.Validate(&storetesting.MockBatch{}, segment); err == nil {
+		t.Errorf("rv4 validation successeful")
 	}
 }

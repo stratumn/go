@@ -65,6 +65,7 @@ func TestValidation(t *testing.T) {
 	}
 
 	s := cstesting.RandomSegment()
+	s.Link.Meta["process"] = "testProcess"
 	s.Link.Meta["action"] = "init"
 	s.Link.State["string"] = 42
 

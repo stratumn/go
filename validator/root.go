@@ -14,8 +14,8 @@ import (
 )
 
 type rootValidator struct {
-	ValidByDefault bool
-	Validators     []selectiveValidator
+	ValidByDefault      bool
+	ValidatorsByProcess map[string][]selectiveValidator
 }
 
 type selectiveValidator interface {
@@ -23,7 +23,7 @@ type selectiveValidator interface {
 	Filter(store.Reader, *cs.Segment) bool
 }
 
-type jsonData []struct {
+type jsonSchemaData []struct {
 	Type   string           `json:"type"`
 	Schema *json.RawMessage `json:"schema"`
 }
@@ -50,7 +50,12 @@ func NewRootValidator(filename string, validByDefault bool) Validator {
 
 func (rv rootValidator) Validate(store store.Reader, segment *cs.Segment) error {
 	validByDefault := rv.ValidByDefault
-	for _, validator := range rv.Validators {
+	processValidators, exists := rv.ValidatorsByProcess[segment.Link.GetProcess()]
+	if !exists && !validByDefault {
+		return errors.New("root validation failed : process validation not found")
+	}
+
+	for _, validator := range processValidators {
 		if validator.Filter(store, segment) {
 			if err := validator.Validate(store, segment); err != nil {
 				return err
@@ -65,34 +70,38 @@ func (rv rootValidator) Validate(store store.Reader, segment *cs.Segment) error 
 }
 
 func (rv *rootValidator) loadFromJSON(data []byte) error {
-	var jsonStruct jsonData
+	var jsonStruct map[string]jsonSchemaData
 	err := json.Unmarshal(data, &jsonStruct)
 
 	if err != nil {
 		return err
 	}
 
-	rv.Validators = make([]selectiveValidator, len(jsonStruct))
-	for i, val := range jsonStruct {
-		if val.Schema == nil {
-			return fmt.Errorf("loadFromJSON: schema missing for validator %v", val)
+	rv.ValidatorsByProcess = make(map[string][]selectiveValidator, len(jsonStruct))
+	for processName, jsonSchemaData := range jsonStruct {
+		var actionValidators = make([]selectiveValidator, len(jsonSchemaData))
+		for i, val := range jsonSchemaData {
+			if val.Schema == nil {
+				return fmt.Errorf("loadFromJSON: schema missing for validator %v", val)
+			}
+
+			if val.Type == "" {
+				return fmt.Errorf("loadFromJSON: type missing for validator %v", val)
+			}
+
+			schemaData, _ := val.Schema.MarshalJSON()
+
+			sv, err := newSchemaValidator(val.Type, schemaData)
+			if err != nil {
+				return err
+			}
+
+			actionValidators[i] = sv
 		}
-
-		if val.Type == "" {
-			return fmt.Errorf("loadFromJSON: type missing for validator %v", val)
-		}
-
-		schemaData, _ := val.Schema.MarshalJSON()
-
-		sv, err := newSchemaValidator(val.Type, schemaData)
-		if err != nil {
-			return err
-		}
-
-		rv.Validators[i] = sv
+		rv.ValidatorsByProcess[processName] = actionValidators
 	}
 
-	log.Debugf("validators loaded: %d", len(rv.Validators))
+	log.Debugf("validators loaded: %d", len(rv.ValidatorsByProcess))
 
 	return nil
 }

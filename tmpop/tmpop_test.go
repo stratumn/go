@@ -372,6 +372,7 @@ func TestValidation(t *testing.T) {
 	h.config.ValidatorFilename = filepath.Join("testdata", "rules.json")
 
 	s := cstesting.RandomSegment()
+	s.Link.Meta["process"] = "testProcess"
 	s.Link.Meta["action"] = "init"
 	s.Link.State["string"] = "test"
 	tx := makeSaveSegmentTxFromSegment(t, s)
@@ -384,6 +385,7 @@ func TestValidation(t *testing.T) {
 	}
 
 	s = cstesting.RandomSegment()
+	s.Link.Meta["process"] = "testProcess"
 	s.Link.Meta["action"] = "init"
 	s.Link.State["string"] = 42
 	tx = makeSaveSegmentTxFromSegment(t, s)
