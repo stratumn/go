@@ -1,16 +1,26 @@
+sudo: required
 language: go
-
+services:
+  - docker
 go:
   - 1.9
   - tip
-
+env:
+  global:
+  - COMMIT=${TRAVIS_COMMIT::8}
+  - DOCKER_USER=stratumndocker
 install:
   - go get -u github.com/golang/dep/cmd/dep
   - go get -u github.com/golang/lint/golint
   - dep ensure
-
 script:
   - make coverage && make lint
-
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+deploy:
+  skip_cleanup: true
+  provider: script
+  script: docker login --username $DOCKER_USER --password $DOCKER_PASS && make build && make docker_images VERSION=$COMMIT && make docker_push VERSION=$COMMIT
+  on:
+    go: 1.9
+    branch: master
