@@ -16,7 +16,7 @@ package tmpop
 
 import (
 	"github.com/stratumn/sdk/store"
-	merkle "github.com/tendermint/go-merkle"
+	"github.com/tendermint/tmlibs/merkle"
 )
 
 // State represents the app states, separating the commited state (for queries)

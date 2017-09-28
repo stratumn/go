@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/stratumn/sdk/store"
-	db "github.com/tendermint/go-db"
+	"github.com/tendermint/tmlibs/db"
 )
 
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.

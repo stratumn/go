@@ -15,6 +15,8 @@ var (
 	privValidatorFile string
 	moniker           string
 	genesisFile       string
+	proxyApp          string
+	abciVal           string
 	logLevel          string
 	profLaddr         string
 	fastSync          bool
@@ -38,7 +40,7 @@ var (
 	poolRecheck      bool
 	poolRecheckEmpty bool
 	poolBroadcast    bool
-	poolWalPath      string
+	poolWalDir       string
 
 	rpcLaddr       string
 	grpcListenAddr string
@@ -59,7 +61,6 @@ var (
 	maxBlockSizeBytes           int
 	createEmptyBlocks           bool
 	createEmptyBlocksInterval   int
-	blockPartSize               int
 	peerGossipSleepDuration     int
 	peerQueryMaj23SleepDuration int
 )
@@ -72,6 +73,8 @@ func RegisterFlags() {
 	flag.StringVar(&privValidatorFile, "priv_validator_file", config.BaseConfig.PrivValidator, "Validator private key file")
 	flag.StringVar(&moniker, "moniker", config.BaseConfig.Moniker, "Node name")
 	flag.StringVar(&genesisFile, "genesis_file", config.BaseConfig.Genesis, "The location of the genesis file")
+	flag.StringVar(&proxyApp, "proxy_app", config.BaseConfig.ProxyApp, "TCP or UNIX socket address of the ABCI application, or the name of an ABCI application compiled in with the Tendermint binary")
+	flag.StringVar(&abciVal, "abci", config.BaseConfig.ABCI, "Mechanism to connect to the ABCI application: socket | grpc")
 	flag.StringVar(&logLevel, "log_level", config.BaseConfig.LogLevel, "Log level")
 	flag.StringVar(&profLaddr, "prof_laddr", config.BaseConfig.ProfListenAddress, "Profile listen address")
 	flag.BoolVar(&fastSync, "fast_sync", config.BaseConfig.FastSync, "Fast blockchain syncing")
@@ -95,7 +98,7 @@ func RegisterFlags() {
 	flag.BoolVar(&poolRecheck, "pool_recheck", config.Mempool.Recheck, "")
 	flag.BoolVar(&poolRecheckEmpty, "pool_recheck_empty", config.Mempool.RecheckEmpty, "")
 	flag.BoolVar(&poolBroadcast, "pool_broadcast", config.Mempool.Broadcast, "")
-	flag.StringVar(&poolWalPath, "pool_wal_dir", config.Mempool.WalPath, "")
+	flag.StringVar(&poolWalDir, "pool_wal_dir", config.Mempool.WalPath, "")
 
 	flag.StringVar(&rpcLaddr, "rpc_laddr", config.RPC.ListenAddress, "RPC listen address (port required)")
 	flag.StringVar(&grpcListenAddr, "grpc_laddr", config.RPC.GRPCListenAddress, "TCP or UNIX socket address for the gRPC server to listen on. This server only supports /broadcast_tx_commit")
@@ -116,7 +119,6 @@ func RegisterFlags() {
 	flag.IntVar(&maxBlockSizeBytes, "max_block_size_bytes", config.Consensus.MaxBlockSizeBytes, "Maximum block size")
 	flag.BoolVar(&createEmptyBlocks, "create_empty_blocks", config.Consensus.CreateEmptyBlocks, "EmptyBlocks mode")
 	flag.IntVar(&createEmptyBlocksInterval, "create_empty_blocks_interval", config.Consensus.CreateEmptyBlocksInterval, "Possible interval between empty blocks in seconds")
-	flag.IntVar(&blockPartSize, "block_part_size", config.Consensus.BlockPartSize, "Block part size to make easy tests writing for the wal/replay (dev feature)")
 	flag.IntVar(&peerGossipSleepDuration, "peer_gossip_sleep_duration", config.Consensus.PeerGossipSleepDuration, "Reactor sleep duration parameters, in ms")
 	flag.IntVar(&peerQueryMaj23SleepDuration, "peer_query_maj23_sleep_duration", config.Consensus.PeerQueryMaj23SleepDuration, "Reactor sleep duration parameters, in ms")
 }
@@ -129,6 +131,8 @@ func GetConfig() *cfg.Config {
 	config.BaseConfig.PrivValidator = privValidatorFile
 	config.BaseConfig.Moniker = moniker
 	config.BaseConfig.Genesis = genesisFile
+	config.BaseConfig.ProxyApp = proxyApp
+	config.BaseConfig.ABCI = abciVal
 	config.BaseConfig.LogLevel = logLevel
 	config.BaseConfig.ProfListenAddress = profLaddr
 	config.BaseConfig.FastSync = fastSync
@@ -152,7 +156,7 @@ func GetConfig() *cfg.Config {
 	config.Mempool.Recheck = poolRecheck
 	config.Mempool.RecheckEmpty = poolRecheckEmpty
 	config.Mempool.Broadcast = poolBroadcast
-	config.Mempool.WalPath = poolWalPath
+	config.Mempool.WalPath = poolWalDir
 
 	config.RPC.ListenAddress = rpcLaddr
 	config.RPC.GRPCListenAddress = grpcListenAddr
@@ -172,7 +176,6 @@ func GetConfig() *cfg.Config {
 	config.Consensus.MaxBlockSizeBytes = maxBlockSizeBytes
 	config.Consensus.CreateEmptyBlocks = createEmptyBlocks
 	config.Consensus.CreateEmptyBlocksInterval = createEmptyBlocksInterval
-	config.Consensus.BlockPartSize = blockPartSize
 	config.Consensus.PeerGossipSleepDuration = peerGossipSleepDuration
 	config.Consensus.PeerQueryMaj23SleepDuration = peerQueryMaj23SleepDuration
 

@@ -30,7 +30,7 @@ import (
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
 	abci "github.com/tendermint/abci/types"
-	merkle "github.com/tendermint/go-merkle"
+	"github.com/tendermint/merkleeyes/iavl"
 
 	"strings"
 
@@ -43,9 +43,13 @@ const (
 	chainID = "testChain"
 )
 
-var header = &abci.Header{
-	Height:  height,
-	ChainId: chainID,
+var requestBeginBlock = abci.RequestBeginBlock{
+	Hash: []byte{},
+	Header: &abci.Header{
+		Height:  height,
+		ChainId: chainID,
+		AppHash: []byte{},
+	},
 }
 
 func TestNew(t *testing.T) {
@@ -81,7 +85,9 @@ func TestNew(t *testing.T) {
 func TestInfo(t *testing.T) {
 	h := createDefaultTMPop(nil, t)
 
-	got := h.Info()
+	got := h.Info(abci.RequestInfo{
+		Version: "UT",
+	})
 
 	if !strings.Contains(got.Data, Name) {
 		t.Errorf("a.Info(): expected to contain %s got %v", Name, got)
@@ -91,14 +97,13 @@ func TestInfo(t *testing.T) {
 func TestBeginBlock_SavesLastBlockInfo(t *testing.T) {
 	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
 
-	var hash []byte
 	height := uint64(2)
 
-	h.BeginBlock(hash, &abci.Header{
-		Height:  height,
-		ChainId: chainID,
-		AppHash: hash,
-	})
+	req := requestBeginBlock
+	req.Header.Height = height
+	hash := req.GetHeader().GetAppHash()
+
+	h.BeginBlock(req)
 
 	got := h.readHeight(t)
 	if got != (height - 1) {
@@ -376,7 +381,7 @@ func TestValidation(t *testing.T) {
 	s.Link.State["string"] = "test"
 	tx := makeSaveSegmentTxFromSegment(t, s)
 
-	h.BeginBlock(header.AppHash, header)
+	h.BeginBlock(requestBeginBlock)
 	res := h.DeliverTx(tx)
 
 	if res.IsErr() {
@@ -388,7 +393,7 @@ func TestValidation(t *testing.T) {
 	s.Link.State["string"] = 42
 	tx = makeSaveSegmentTxFromSegment(t, s)
 
-	h.BeginBlock(header.AppHash, header)
+	h.BeginBlock(requestBeginBlock)
 	res = h.DeliverTx(tx)
 
 	if !res.IsErr() {
@@ -414,8 +419,8 @@ func (tmpop *TMPop) makeQuery(name string, args interface{}, res interface{}) er
 	return json.Unmarshal(q.Value, &res)
 }
 
-func readIAVLProof(raw map[string]interface{}) (*merkle.IAVLProof, error) {
-	var nodes []merkle.IAVLProofInnerNode
+func readIAVLProof(raw map[string]interface{}) (*iavl.IAVLProof, error) {
+	var nodes []iavl.IAVLProofInnerNode
 
 	nodesI := raw["InnerNodes"].([]interface{})
 
@@ -433,7 +438,7 @@ func readIAVLProof(raw map[string]interface{}) (*merkle.IAVLProof, error) {
 			return nil, err
 		}
 
-		nodes = append(nodes, merkle.IAVLProofInnerNode{
+		nodes = append(nodes, iavl.IAVLProofInnerNode{
 			Height: int8(node["Height"].(float64)),
 			Size:   int(node["Size"].(float64)),
 			Left:   leftHash,
@@ -451,7 +456,7 @@ func readIAVLProof(raw map[string]interface{}) (*merkle.IAVLProof, error) {
 		return nil, err
 	}
 
-	return &merkle.IAVLProof{
+	return &iavl.IAVLProof{
 		LeafHash:   leafHash,
 		InnerNodes: nodes,
 		RootHash:   rootHash,
@@ -515,7 +520,7 @@ func createDefaultTMPop(a store.Adapter, t *testing.T) *TMPop {
 	}
 
 	// reset header
-	header = &abci.Header{
+	requestBeginBlock.Header = &abci.Header{
 		Height:  height,
 		ChainId: chainID,
 		AppHash: []byte{},
@@ -588,7 +593,7 @@ func commitMockTx(t *testing.T, h *TMPop) *cs.Segment {
 }
 
 func commitTx(t *testing.T, h *TMPop, tx []byte) {
-	h.BeginBlock(header.AppHash, header)
+	h.BeginBlock(requestBeginBlock)
 
 	h.DeliverTx(tx)
 
@@ -596,6 +601,6 @@ func commitTx(t *testing.T, h *TMPop, tx []byte) {
 	if commitResult.IsErr() {
 		t.Errorf("a.Commit(): failed: %v", commitResult.Log)
 	}
-	header.AppHash = commitResult.Data
-	header.Height++
+	requestBeginBlock.Header.AppHash = commitResult.Data
+	requestBeginBlock.Header.Height++
 }

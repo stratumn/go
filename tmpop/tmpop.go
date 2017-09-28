@@ -25,8 +25,8 @@ import (
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
-	"github.com/tendermint/go-merkle"
 	"github.com/tendermint/go-wire"
+	merkle "github.com/tendermint/merkleeyes/iavl"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -139,9 +139,10 @@ func New(a store.Adapter, config *Config) (*TMPop, error) {
 }
 
 // Info implements github.com/tendermint/abci/types.Application.Info.
-func (t *TMPop) Info() abci.ResponseInfo {
+func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
 	return abci.ResponseInfo{
 		Data:             Name,
+		Version:          t.config.Version,
 		LastBlockHeight:  t.lastBlock.Height,
 		LastBlockAppHash: t.lastBlock.AppHash,
 	}
@@ -152,9 +153,13 @@ func (t *TMPop) SetOption(key string, value string) (log string) {
 	return "No options are supported yet"
 }
 
-// BeginBlock implements github.com/tendermint/abci/types.BlockchainAware.BeginBlock.
-func (t *TMPop) BeginBlock(hash []byte, header *abci.Header) {
-	t.header = header
+// BeginBlock implements github.com/tendermint/abci/types.Application.BeginBlock.
+func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
+	t.header = req.GetHeader()
+	if t.header == nil {
+		log.Error("Cannot begin block without header")
+		return
+	}
 
 	// If the AppHash is present in this block, consensus has been formed around
 	// it. Even though the current block might not get Committed in the end, that
@@ -174,9 +179,9 @@ func (t *TMPop) BeginBlock(hash []byte, header *abci.Header) {
 	// We have been waiting for the BeginBlock callback to save the new LastBlockHeight and
 	// LastBlockAppHeight to be absolutely sure that App has not saved a State it has
 	// not communicated to Core. That would prevent the Handshake to succeed.
-	t.lastBlock.Height = header.Height - 1
+	t.lastBlock.Height = t.header.Height - 1
 	t.lastBlock.AppHash = t.state.Committed().Hash()
-	t.lastBlock.LastHeader = header
+	t.lastBlock.LastHeader = t.header
 
 	saveLastBlock(t.adapter, *t.lastBlock)
 

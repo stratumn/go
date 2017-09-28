@@ -16,10 +16,10 @@ package tmpop
 
 import (
 	"github.com/stratumn/sdk/store"
-	db "github.com/tendermint/go-db"
+	"github.com/tendermint/tmlibs/db"
 )
 
-// DBAdapter implements github.com/tendermint/go-db/db.DB.
+// DBAdapter implements github.com/tendermint/tmlibs/db/db.DB.
 type DBAdapter struct {
 	storeAdapter store.Adapter
 }
@@ -29,7 +29,7 @@ func NewDBAdapter(a store.Adapter) *DBAdapter {
 	return &DBAdapter{a}
 }
 
-// Get implements github.com/tendermint/go-db/db.DB.Get
+// Get implements github.com/tendermint/tmlibs/db/db.DB.Get
 func (a *DBAdapter) Get(key []byte) []byte {
 	value, err := a.storeAdapter.GetValue(key)
 	if err != nil {
@@ -38,7 +38,7 @@ func (a *DBAdapter) Get(key []byte) []byte {
 	return value
 }
 
-// Set implements github.com/tendermint/go-db/db.DB.Set
+// Set implements github.com/tendermint/tmlibs/db/db.DB.Set
 func (a *DBAdapter) Set(key, value []byte) {
 	err := a.storeAdapter.SaveValue(key, value)
 	if err != nil {
@@ -46,12 +46,12 @@ func (a *DBAdapter) Set(key, value []byte) {
 	}
 }
 
-// SetSync implements github.com/tendermint/go-db/db.DB.SetSync
+// SetSync implements github.com/tendermint/tmlibs/db/db.DB.SetSync
 func (a *DBAdapter) SetSync(key, value []byte) {
 	a.Set(key, value)
 }
 
-// Delete implements github.com/tendermint/go-db/db.DB.Delete
+// Delete implements github.com/tendermint/tmlibs/db/db.DB.Delete
 func (a *DBAdapter) Delete(key []byte) {
 	_, err := a.storeAdapter.DeleteValue(key)
 	if err != nil {
@@ -59,17 +59,17 @@ func (a *DBAdapter) Delete(key []byte) {
 	}
 }
 
-// DeleteSync implements github.com/tendermint/go-db/db.DB.DeleteSync
+// DeleteSync implements github.com/tendermint/tmlibs/db/db.DB.DeleteSync
 func (a *DBAdapter) DeleteSync(key []byte) {
 	a.Delete(key)
 }
 
-// Close implements github.com/tendermint/go-db/db.DB.Close
+// Close implements github.com/tendermint/tmlibs/db/db.DB.Close
 func (a *DBAdapter) Close() {
 
 }
 
-// NewBatch implements github.com/tendermint/go-db/db.DB.NewBatch
+// NewBatch implements github.com/tendermint/tmlibs/db/db.DB.NewBatch
 func (a *DBAdapter) NewBatch() db.Batch {
 	b, err := a.storeAdapter.NewBatch()
 	if err != nil {
@@ -78,17 +78,17 @@ func (a *DBAdapter) NewBatch() db.Batch {
 	return NewBatchAdapter(b)
 }
 
-// Print implements github.com/tendermint/go-db/db.DB.Print. Print is for debugging
+// Print implements github.com/tendermint/tmlibs/db/db.DB.Print. Print is for debugging
 func (a *DBAdapter) Print() {
 
 }
 
-// Iterator implements github.com/tendermint/go-db/db.DB.Iterator. Iterator is for debugging.
+// Iterator implements github.com/tendermint/tmlibs/db/db.DB.Iterator. Iterator is for debugging.
 func (a *DBAdapter) Iterator() db.Iterator {
 	return nil
 }
 
-// Stats implements github.com/tendermint/go-db/db.DB.Stats. Stats is for debugging.
+// Stats implements github.com/tendermint/tmlibs/db/db.DB.Stats. Stats is for debugging.
 func (a *DBAdapter) Stats() map[string]string {
 	return nil
 }

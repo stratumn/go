@@ -18,7 +18,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
-	merkle "github.com/tendermint/go-merkle"
+	"github.com/tendermint/tmlibs/merkle"
 )
 
 // Snapshot represents a version of the state.

@@ -84,7 +84,7 @@ type Info struct {
 // New creates a new instance of a TMStore.
 func New(config *Config) *TMStore {
 	return NewFromClient(config, func(endpoint string) client.Client {
-		return client.NewHTTP(config.Endpoint, "/websocket")
+		return client.NewHTTP(endpoint, "/websocket")
 	})
 }
 
@@ -105,6 +105,7 @@ func (t *TMStore) StartWebsocket() error {
 			log.Error(err)
 		}
 	})
+	log.Info("Connected to TMPoP")
 	return nil
 }
 

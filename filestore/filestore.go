@@ -35,7 +35,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
-	db "github.com/tendermint/go-db"
+	"github.com/tendermint/tmlibs/db"
 )
 
 const (

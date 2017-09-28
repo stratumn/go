@@ -16,7 +16,7 @@ package tmpop
 
 import "github.com/stratumn/sdk/store"
 
-// BatchAdapter implements github.com/tendermint/go-db/db.Batch.
+// BatchAdapter implements github.com/tendermint/tmlibs/db/db.Batch.
 type BatchAdapter struct {
 	batch store.Batch
 }
@@ -26,7 +26,7 @@ func NewBatchAdapter(batch store.Batch) *BatchAdapter {
 	return &BatchAdapter{batch}
 }
 
-// Set implements github.com/tendermint/go-db/db.Batch.Set
+// Set implements github.com/tendermint/tmlibs/db/db.Batch.Set
 func (b *BatchAdapter) Set(key, value []byte) {
 	saveError := b.batch.SaveValue(key, value)
 
@@ -35,7 +35,7 @@ func (b *BatchAdapter) Set(key, value []byte) {
 	}
 }
 
-// Delete implements github.com/tendermint/go-db/db.Batch.Delete
+// Delete implements github.com/tendermint/tmlibs/db/db.Batch.Delete
 func (b *BatchAdapter) Delete(key []byte) {
 	_, saveError := b.batch.DeleteValue(key)
 
@@ -44,7 +44,7 @@ func (b *BatchAdapter) Delete(key []byte) {
 	}
 }
 
-// Write implements github.com/tendermint/go-db/db.Batch.Write
+// Write implements github.com/tendermint/tmlibs/db/db.Batch.Write
 func (b *BatchAdapter) Write() {
 	err := b.batch.Write()
 	if err != nil {

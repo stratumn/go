@@ -37,6 +37,15 @@ func NewNode(config *cfg.Config, app abci.Application) *node.Node {
 	logger := tmlog.NewTMLogger(log.StandardLogger().Out)
 	logger, _ = flags.ParseLogLevel(config.BaseConfig.LogLevel, logger, "info")
 
-	privValidator := types.LoadOrGenPrivValidator(config.PrivValidatorFile(), logger)
-	return node.NewNode(config, privValidator, proxy.NewLocalClientCreator(app), logger)
+	privValidator := types.LoadOrGenPrivValidatorFS(config.PrivValidatorFile())
+	ret, err := node.NewNode(config,
+		privValidator,
+		proxy.NewLocalClientCreator(app),
+		node.DefaultGenesisDocProviderFunc(config),
+		node.DefaultDBProvider,
+		logger)
+	if err != nil {
+		log.Errorf("Error on new node creation: %s", err.Error())
+	}
+	return ret
 }
