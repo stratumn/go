@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -28,7 +27,6 @@ import (
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetesting"
 	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/merkleeyes/iavl"
 
@@ -67,7 +65,7 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	delete(got.Meta, "evidence")
+	got.Meta.Evidences = nil
 	if !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -153,7 +151,7 @@ func TestQuery(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		delete(got.Meta, "evidence")
+		got.Meta.Evidences = nil
 		if !reflect.DeepEqual(want, got) {
 			gotJS, _ := json.MarshalIndent(got, "", "  ")
 			wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -201,7 +199,8 @@ func TestQuery(t *testing.T) {
 			t.Fatalf("h.Query(): unexpected size for FindSegments result, got %v", gots)
 		}
 		got := gots[0]
-		delete(got.Meta, "evidence")
+
+		got.Meta.Evidences = nil
 		if !reflect.DeepEqual(want, got) {
 			gotJS, _ := json.MarshalIndent(got, "", "  ")
 			wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -259,25 +258,83 @@ func TestQuery(t *testing.T) {
 }
 
 func TestTx(t *testing.T) {
-	s := dummystore.New(&dummystore.Config{})
-	h := createDefaultTMPop(s, t)
+	store := dummystore.New(&dummystore.Config{})
+	h := createDefaultTMPop(store, t)
 
 	t.Run("WriteSaveSegment()", func(t *testing.T) {
 		want := commitMockTx(t, h)
 
-		got, err := s.GetSegment(want.GetLinkHash())
+		got, err := store.GetSegment(want.GetLinkHash())
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		ev := got.GetEvidence()
-		delete(got.Meta, "evidence")
+		ev := got.Meta.GetEvidence(h.header.ChainId)
+		got.Meta.Evidences = nil
 		if !reflect.DeepEqual(want, got) {
 			gotJS, _ := json.MarshalIndent(got, "", "  ")
 			wantJS, _ := json.MarshalIndent(want, "", "  ")
 			t.Errorf("h.Commit(): expected to return %s, got %s", wantJS, gotJS)
 		}
-		got.SetEvidence(ev)
+		got.Meta.AddEvidence(*ev)
+	})
+
+	t.Run("WriteDoubleSaveSegment()", func(t *testing.T) {
+		s := cstesting.RandomSegment()
+		s.Meta.Data["test"] = "test"
+		tx := makeSaveSegmentTxFromSegment(t, s)
+		h.BeginBlock(requestBeginBlock)
+
+		h.DeliverTx(tx)
+		res := h.Commit()
+
+		got, err := store.GetSegment(s.GetLinkHash())
+		if err != nil {
+			t.Fatal(err)
+		}
+		ev := got.Meta.GetEvidence(h.header.ChainId)
+		if ev.State != cs.PendingEvidence {
+			t.Errorf("h.DeliverTx(): wrong evidence state after saving segment, got %s, want %s", ev.State, cs.PendingEvidence)
+		}
+		if got.Meta.Data["test"] != "test" {
+			t.Errorf("h.DeliverTx(): wrong segment.Meta.Data after saving, got %s, want %s", got.Meta.Data, s.Meta.Data)
+		}
+		// We try to save a segment with the same link (and linkHash)
+		// but with new evidences and meta data
+		newRequest := requestBeginBlock
+		newRequest.Header.AppHash = res.Data.Bytes()
+
+		h.BeginBlock(newRequest)
+		s.Meta.Evidences = nil
+		s.Meta.AddEvidence(cs.Evidence{
+			Provider: "test1",
+			Backend:  "TMPop",
+		})
+		s.Meta.AddEvidence(cs.Evidence{
+			Provider: "test2",
+			Backend:  "TMPop",
+			Proof:    nil,
+		})
+		s.Meta.Data["random"] = nil
+		s.Meta.Data["test"] = "random"
+		tx = makeSaveSegmentTxFromSegment(t, s)
+		h.DeliverTx(tx)
+		h.Commit()
+
+		got, err = store.GetSegment(s.GetLinkHash())
+		if err != nil {
+			t.Fatal(err)
+		}
+		ev = got.Meta.GetEvidence(h.header.ChainId)
+		if ev.State != cs.CompleteEvidence {
+			t.Errorf("h.DeliverTx(): wrong evidence state after saving segment, got %s, want %s", ev.State, cs.CompleteEvidence)
+		}
+		if len(got.Meta.Evidences) != 3 {
+			t.Errorf("h.DeliverTx(): wrong length of segment.Meta.Evidences, got %d want %d", len(got.Meta.Evidences), 3)
+		}
+		if got.Meta.Data["test"] != "random" || got.Meta.Data["random"] != nil {
+			t.Errorf("h.DeliverTx(): wrong segment.Meta.Data after saving, got %s, want %s", got.Meta.Data, s.Meta.Data)
+		}
 	})
 
 	t.Run("WriteDeleteSegment", func(t *testing.T) {
@@ -286,7 +343,7 @@ func TestTx(t *testing.T) {
 		tx := makeDeleteSegmentTx(t, segment)
 		commitTx(t, h, tx)
 
-		got, err := s.GetSegment(segment.GetLinkHash())
+		got, err := store.GetSegment(segment.GetLinkHash())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -301,7 +358,7 @@ func TestTx(t *testing.T) {
 
 		commitTx(t, h, tx)
 
-		got, err := s.GetValue(k)
+		got, err := store.GetValue(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -318,7 +375,7 @@ func TestTx(t *testing.T) {
 		tx := makeDeleteValueTx(t, k)
 		commitTx(t, h, tx)
 
-		got, err := s.GetValue(k)
+		got, err := store.GetValue(k)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -338,20 +395,20 @@ func TestEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	evidence := got.GetEvidence()
+	evidence := got.Meta.GetEvidence(h.header.ChainId)
 
-	txs := evidence["transactions"].(map[string]interface{})
+	proof := evidence.Proof.(*TendermintFullProof)
 
-	if len(txs) != 1 {
-		t.Fatalf("h.Query(): expected to have one transaction in evidence")
+	if proof == nil {
+		t.Fatalf("h.Commit(): expected original proof not to be nil")
 	}
-	if !strings.Contains(fmt.Sprint(txs), fmt.Sprint(height)) {
-		t.Errorf("Expected transaction to contain %v, got %v", height, txs)
+	if proof.Original.BlockHeight != height {
+		t.Errorf("h.Commit(): Expected originalEvidence.BlockHeight to contain %v, got %v", height, proof.Original.BlockHeight)
 	}
 
-	gotState, wantState := evidence["state"].(string), "PENDING"
+	gotState, wantState := evidence.State, cs.PendingEvidence
 	if strings.Compare(gotState, wantState) != 0 {
-		t.Errorf("Expected state to be %s since the next block has not been commited, got %s", wantState, gotState)
+		t.Errorf("h.Commit(): Expected state to be %s since the next block has not been commited, got %s", wantState, gotState)
 	}
 
 	// Create a new Block that confirms the AppHash
@@ -362,17 +419,117 @@ func TestEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	evidence = got.GetEvidence()
+	evidence = got.Meta.GetEvidence(h.header.ChainId)
 
-	gotState, wantState = evidence["state"].(string), "COMPLETE"
+	gotState, wantState = evidence.State, cs.CompleteEvidence
 	if strings.Compare(gotState, wantState) != 0 {
-		t.Errorf("Expected state to be %s since the next block has been commited, got %s", wantState, gotState)
+		t.Errorf("h.Commit(): Expected state to be %s since the next block has been commited, got %s", wantState, gotState)
+
 	}
+	if !evidence.Proof.Verify(s1.GetLinkHash()) {
+		t.Errorf("TendermintProof.Verify(): Expected proof %v to be valid", evidence.Proof.FullProof())
 
-	verifyProof(t, evidence["currentProof"], evidence["currentHeader"], s1.GetLinkHash())
-
-	verifyProof(t, evidence["originalProof"], evidence["originalHeader"], s1.GetLinkHash())
+	}
 }
+
+func TestTendermintProof(t *testing.T) {
+	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
+
+	t.Run("TestTime()", func(t *testing.T) {
+		s := commitMockTx(t, h)
+
+		queried := &cs.Segment{}
+		err := h.makeQuery(GetSegment, s.GetLinkHash(), queried)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e := queried.Meta.GetEvidence(h.header.ChainId)
+		got := e.Proof.Time()
+		if got != 0 {
+			t.Errorf("TendermintProof.Time(): Expected timestamp to be %d, got %d", 0, got)
+		}
+
+		commitMockTx(t, h)
+		err = h.makeQuery(GetSegment, s.GetLinkHash(), queried)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e = queried.Meta.GetEvidence(h.header.ChainId)
+		want := h.header.GetTime()
+		got = e.Proof.Time()
+		if got != want {
+			t.Errorf("TendermintProof.Time(): Expected timestamp to be %d, got %d", want, got)
+		}
+
+	})
+
+	t.Run("TestFullProof()", func(t *testing.T) {
+		s := commitMockTx(t, h)
+
+		queried := &cs.Segment{}
+		err := h.makeQuery(GetSegment, s.GetLinkHash(), queried)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e := queried.Meta.GetEvidence(h.header.ChainId)
+		got := e.Proof.FullProof()
+		if got == nil {
+			t.Errorf("TendermintProof.FullProof(): Expected proof to be a json-formatted bytes array, got %v", got)
+		}
+
+		commitMockTx(t, h)
+		err = h.makeQuery(GetSegment, s.GetLinkHash(), queried)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e = queried.Meta.GetEvidence(h.header.ChainId)
+		wantDifferent := got
+		got = e.Proof.FullProof()
+		if got == nil {
+			t.Errorf("TendermintProof.FullProof(): Expected proof to be a json-formatted bytes array, got %v", got)
+		}
+		if bytes.Compare(got, wantDifferent) == 0 {
+			t.Errorf("TendermintProof.FullProof(): Expected proof after appHash validation to be complete, got %s", string(got))
+		}
+		if err := json.Unmarshal(got, &TendermintProof{}); err != nil {
+			t.Errorf("TendermintProof.FullProof(): Could not unmarshal bytes proof, err = %+v", err)
+		}
+
+	})
+
+	t.Run("TestVerify()", func(t *testing.T) {
+		s := commitMockTx(t, h)
+
+		queried := &cs.Segment{}
+		err := h.makeQuery(GetSegment, s.GetLinkHash(), queried)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e := queried.Meta.GetEvidence(h.header.ChainId)
+		got := e.Proof.Verify(s.GetLinkHash())
+		if got == true {
+			t.Errorf("TendermintProof.Verify(): Expected incomplete original proof to be false, got %v", got)
+		}
+
+		commitMockTx(t, h)
+		if err = h.makeQuery(GetSegment, s.GetLinkHash(), queried); err != nil {
+			t.Fatal(err)
+		}
+
+		e = queried.Meta.GetEvidence(h.header.ChainId)
+
+		if got = e.Proof.Verify(s.GetLinkHash()); got != true {
+			t.Errorf("TendermintProof.Verify(): Expected original proof to be true, got %v", got)
+		}
+
+	})
+}
+
 func TestValidation(t *testing.T) {
 	h := createDefaultTMPop(dummystore.New(&dummystore.Config{}), t)
 	h.config.ValidatorFilename = filepath.Join("testdata", "rules.json")
@@ -418,7 +575,6 @@ func (tmpop *TMPop) makeQuery(name string, args interface{}, res interface{}) er
 		Data: bytes,
 		Path: name,
 	})
-
 	return json.Unmarshal(q.Value, &res)
 }
 
@@ -474,22 +630,6 @@ func readHeader(raw map[string]interface{}) (*abci.Header, error) {
 	return &abci.Header{
 		AppHash: appHash,
 	}, nil
-}
-
-func verifyProof(t *testing.T, proofI, headerI interface{}, linkHash *types.Bytes32) {
-	proof, err := readIAVLProof(proofI.(map[string]interface{}))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	header, err := readHeader(headerI.(map[string]interface{}))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !proof.Verify(linkHash[:], nil, header.AppHash) {
-		t.Errorf("Expected proof %s to be valid with header %s", proofI, headerI)
-	}
 }
 
 func createDefaultStore() store.Adapter {

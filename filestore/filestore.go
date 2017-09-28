@@ -111,17 +111,27 @@ func (a *FileStore) SaveSegment(segment *cs.Segment) error {
 	return a.saveSegment(segment)
 }
 
-func (a *FileStore) saveSegment(segment *cs.Segment) error {
+func (a *FileStore) saveSegment(segment *cs.Segment) (err error) {
+	if err = a.initDir(); err != nil {
+		return err
+	}
+
+	curr, err := a.getSegment(segment.GetLinkHash())
+	if err != nil {
+		return err
+	}
+	if curr != nil {
+		if segment, err = curr.MergeMeta(segment); err != nil {
+			return err
+		}
+	}
+
 	js, err := json.MarshalIndent(segment, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	if err = a.initDir(); err != nil {
-		return err
-	}
-
-	segmentPath := a.getSegmentPath(segment.Meta["linkHash"].(string))
+	segmentPath := a.getSegmentPath(segment.GetLinkHashString())
 
 	if err := ioutil.WriteFile(segmentPath, js, 0644); err != nil {
 		return err

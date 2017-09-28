@@ -134,7 +134,7 @@ func TestSaveSegment_invalidSegment(t *testing.T) {
 	s, a := createServer()
 
 	s1 := cstesting.RandomSegment()
-	s1.Meta["linkHash"] = true
+	s1.Meta.LinkHash = ""
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/segments", s1, &body)
 	if err != nil {
@@ -164,7 +164,7 @@ func TestSaveSegment_invalidJSON(t *testing.T) {
 	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
-	if got, want := body["error"].(string), jsonhttp.NewErrBadRequest("").Error(); got != want {
+	if got, want := body["error"].(string), "json: cannot unmarshal string into Go value of type cs.Segment"; got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
 	}
 	if got, want := a.MockSaveSegment.CalledCount, 0; got != want {

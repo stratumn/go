@@ -90,8 +90,7 @@ func (f Factory) TestBatchDeleteSegment(t *testing.T) {
 		t.Fatal("s2 = nil want *cs.Segment")
 	}
 
-	delete(s2.Meta, "evidence")
-
+	s2.Meta.Evidences = nil
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -165,8 +164,7 @@ func (f Factory) TestBatchWriteSaveSegment(t *testing.T) {
 		t.Fatal("s2 = nil want *cs.Segment")
 	}
 
-	delete(s2.Meta, "evidence")
-
+	s2.Meta.Evidences = nil
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")

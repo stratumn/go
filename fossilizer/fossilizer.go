@@ -15,6 +15,10 @@
 // Package fossilizer defines types to implement a fossilizer.
 package fossilizer
 
+import (
+	"github.com/stratumn/sdk/cs"
+)
+
 // Adapter must be implemented by a fossilier.
 type Adapter interface {
 	// Returns arbitrary information about the adapter.
@@ -31,7 +35,7 @@ type Adapter interface {
 // Result is the type sent to the result channels.
 type Result struct {
 	// Evidence created by the fossilizer.
-	Evidence interface{}
+	Evidence cs.Evidence
 
 	// The data that was fossilized.
 	Data []byte

@@ -19,6 +19,7 @@ import (
 	"flag"
 
 	log "github.com/sirupsen/logrus"
+	_ "github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/store/storehttp"
 	"github.com/stratumn/sdk/tmstore"
 )

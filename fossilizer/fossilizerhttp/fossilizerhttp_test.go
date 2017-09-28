@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizertesting"
 	"github.com/stratumn/sdk/jsonhttp"
@@ -86,7 +87,7 @@ func TestFossilize(t *testing.T) {
 	// Mock fossilize to publish result to channel.
 	a.MockFossilize.Fn = func(data []byte, meta []byte) error {
 		rc <- &fossilizer.Result{
-			Evidence: "it is known",
+			Evidence: cs.Evidence{},
 			Data:     data,
 			Meta:     meta,
 		}
@@ -113,7 +114,7 @@ func TestFossilize(t *testing.T) {
 	defer l.Close()
 	h := &resultHandler{
 		t: t, listener: l,
-		want: "\"it is known\"",
+		want: "{\"state\":\"\",\"backend\":\"\",\"provider\":\"\",\"proof\":null}",
 		done: make(chan struct{}),
 	}
 	go http.Serve(l, h)

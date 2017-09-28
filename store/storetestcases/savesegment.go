@@ -69,6 +69,30 @@ func (f Factory) TestSaveSegmentUpdatedMapID(t *testing.T) {
 	}
 }
 
+// TestSaveSegmentWithEvidences tests what happens when you update the state of a
+// segment.
+func (f Factory) TestSaveSegmentWithEvidences(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	e1 := cs.Evidence{Backend: "TMPop"}
+	e2 := cs.Evidence{Backend: "dummy"}
+	e3 := cs.Evidence{Backend: "batch"}
+	e4 := cs.Evidence{Backend: "bcbatch"}
+	e5 := cs.Evidence{Backend: "generic"}
+
+	s := cstesting.RandomSegment()
+	s.Meta.AddEvidence(e1)
+	s.Meta.AddEvidence(e2)
+	s.Meta.AddEvidence(e3)
+	s.Meta.AddEvidence(e4)
+	s.Meta.AddEvidence(e5)
+
+	if err := a.SaveSegment(s); err != nil {
+		t.Fatalf("a.SaveSegment(): err: %s", err)
+	}
+}
+
 // TestSaveSegmentBranch tests what happens when you save a segment with a
 // previous link hash.
 func (f Factory) TestSaveSegmentBranch(t *testing.T) {

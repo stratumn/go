@@ -15,7 +15,10 @@
 package dummyfossilizer
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stratumn/sdk/fossilizer"
 )
@@ -55,7 +58,47 @@ func TestFossilize(t *testing.T) {
 	if got, want := string(r.Meta), string(meta); got != want {
 		t.Errorf("<-rc: Meta = %q want %q", got, want)
 	}
-	if got, want := r.Evidence.(map[string]interface{})["authority"].(string), "dummy"; got != want {
-		t.Errorf(`<-rc: Evidence["authority"] = %q want %q`, got, want)
+	if got, want := r.Evidence.Provider, "dummy"; got != want {
+		t.Errorf(`<-rc: Evidence.Provider = %s want %s`, got, want)
 	}
+}
+
+func TestDummyProof(t *testing.T) {
+	a := New(&Config{})
+	rc := make(chan *fossilizer.Result)
+	a.AddResultChan(rc)
+
+	var (
+		data      = []byte("data")
+		meta      = []byte("meta")
+		timestamp = uint64(time.Now().Unix())
+	)
+
+	go func() {
+		if err := a.Fossilize(data, meta); err != nil {
+			t.Errorf("a.Fossilize(): err: %s", err)
+		}
+	}()
+
+	r := <-rc
+
+	t.Run("Time()", func(t *testing.T) {
+		if got, want := r.Evidence.Proof, timestamp; got.Time() != want {
+			t.Errorf(`<-rc: Evidence.originalProof.Time() = %d, want %d`, got.Time(), want)
+		}
+	})
+
+	t.Run("FullProof()", func(t *testing.T) {
+		got := r.Evidence.Proof
+		want := fmt.Sprintf("{\n   \"timestamp\": %d\n}", got.Time())
+		if bytes.Compare(got.FullProof(), []byte(want)) != 0 {
+			t.Errorf(`<-rc: Evidence.originalProof.FullProof() = %s, want %s`, got.FullProof(), want)
+		}
+	})
+
+	t.Run("Verify()", func(t *testing.T) {
+		if got, want := r.Evidence.Proof.Verify(""), true; got != want {
+			t.Errorf(`<-rc: Evidence.originalProof.Verify() = %v, want %v`, got, want)
+		}
+	})
 }

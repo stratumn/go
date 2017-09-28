@@ -104,15 +104,14 @@ func (a *DummyStore) SaveSegment(segment *cs.Segment) error {
 	return a.saveSegment(segment)
 }
 
-func (a *DummyStore) saveSegment(segment *cs.Segment) error {
+func (a *DummyStore) saveSegment(segment *cs.Segment) (err error) {
 	linkHashStr := segment.GetLinkHashString()
 	curr := a.segments[linkHashStr]
 	mapID := segment.Link.GetMapID()
 
 	if curr != nil {
-		currMapID := curr.Link.GetMapID()
-		if currMapID != mapID {
-			delete(a.maps[currMapID], linkHashStr)
+		if segment, err = curr.MergeMeta(segment); err != nil {
+			return err
 		}
 	}
 

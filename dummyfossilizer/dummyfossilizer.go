@@ -18,8 +18,10 @@
 package dummyfossilizer
 
 import (
+	"encoding/json"
 	"time"
 
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/fossilizer"
 )
 
@@ -55,6 +57,41 @@ type DummyFossilizer struct {
 	resultChans []chan *fossilizer.Result
 }
 
+// DummyProof implements the cs.Proof interface
+type DummyProof struct {
+	Timestamp uint64 `json:"timestamp"`
+}
+
+// Time returns the timestamp from the block header
+func (p *DummyProof) Time() uint64 {
+	return p.Timestamp
+}
+
+// FullProof returns a JSON formatted proof
+func (p *DummyProof) FullProof() []byte {
+	bytes, err := json.MarshalIndent(p, "", "   ")
+	if err != nil {
+		return nil
+	}
+	return bytes
+}
+
+// Verify returns true if the proof of a given linkHash is correct
+func (p *DummyProof) Verify(interface{}) bool {
+	return true
+}
+
+// init needs to define a way to deserialize a DummyProof
+func init() {
+	cs.DeserializeMethods[Name] = func(rawProof json.RawMessage) (cs.Proof, error) {
+		p := DummyProof{}
+		if err := json.Unmarshal(rawProof, &p); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+}
+
 // New creates an instance of a DummyFossilizer.
 func New(config *Config) *DummyFossilizer {
 	return &DummyFossilizer{config, nil}
@@ -79,9 +116,13 @@ func (a *DummyFossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 // Fossilize implements github.com/stratumn/sdk/fossilizer.Adapter.Fossilize.
 func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 	r := &fossilizer.Result{
-		Evidence: map[string]interface{}{
-			"authority": "dummy",
-			"timestamp": time.Now().UTC().Format("20060102150405"),
+		Evidence: cs.Evidence{
+			State:    cs.CompleteEvidence,
+			Backend:  Name,
+			Provider: Name,
+			Proof: &DummyProof{
+				Timestamp: uint64(time.Now().Unix()),
+			},
 		},
 		Data: data,
 		Meta: meta,

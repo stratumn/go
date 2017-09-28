@@ -22,7 +22,10 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
+	// import every type of evidence to see if we can deserialize all of them
+	_ "github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
 )
@@ -45,8 +48,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		t.Fatal("s2 = nil want *cs.Segment")
 	}
 
-	delete(s2.Meta, "evidence")
-
+	s2.Meta.Evidences = nil
 	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
@@ -62,24 +64,24 @@ func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 
 	s1 := cstesting.RandomSegment()
 	a.SaveSegment(s1)
-	s1 = cstesting.ChangeSegmentState(s1)
-	a.SaveSegment(s1)
+	s2 := cstesting.ChangeSegmentState(s1)
+	a.SaveSegment(s2)
 
-	s2, err := a.GetSegment(s1.GetLinkHash())
+	got, err := a.GetSegment(s1.GetLinkHash())
 	if err != nil {
 		t.Fatalf("a.GetSegment(): err: %s", err)
 	}
 
-	if got := s2; got == nil {
+	if got == nil {
 		t.Fatal("s2 = nil want *cs.Segment")
 	}
 
-	delete(s2.Meta, "evidence")
-
-	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
+	got.Meta.Evidences = nil
+	want := s1
+	if !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
+		t.Errorf("got = %s\n want %s", gotJS, wantJS)
 	}
 }
 
@@ -91,24 +93,56 @@ func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 
 	s1 := cstesting.RandomSegment()
 	a.SaveSegment(s1)
-	s1 = cstesting.ChangeSegmentMapID(s1)
-	a.SaveSegment(s1)
+	s2 := cstesting.ChangeSegmentMapID(s1)
+	a.SaveSegment(s2)
 
-	s2, err := a.GetSegment(s1.GetLinkHash())
+	got, err := a.GetSegment(s1.GetLinkHash())
 	if err != nil {
 		t.Fatalf("a.GetSegment(): err: %s", err)
 	}
 
-	if got := s2; got == nil {
+	if got == nil {
 		t.Fatal("s2 = nil want *cs.Segment")
 	}
 
-	delete(s2.Meta, "evidence")
-
-	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
+	got.Meta.Evidences = nil
+	want := s1
+	if !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
 		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
+	}
+}
+
+// TestGetSegmentWithEvidences tests what happens when you update the state of a
+// segment.
+func (f Factory) TestGetSegmentWithEvidences(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
+	e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
+	e3 := cs.Evidence{Backend: "batch", Provider: "3"}
+	e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
+	e5 := cs.Evidence{Backend: "generic", Provider: "5"}
+
+	s := cstesting.RandomSegment()
+	s.Meta.AddEvidence(e1)
+	s.Meta.AddEvidence(e2)
+	s.Meta.AddEvidence(e3)
+	s.Meta.AddEvidence(e4)
+	s.Meta.AddEvidence(e5)
+
+	if err := a.SaveSegment(s); err != nil {
+		t.Fatalf("a.SaveSegment(): err: %s", err)
+	}
+	got, err := a.GetSegment(s.GetLinkHash())
+	if err != nil {
+		t.Fatalf("a.GetSegment(): err: %s", err)
+	}
+
+	if got == nil {
+		t.Fatal("s2 = nil want *cs.Segment")
 	}
 }
 

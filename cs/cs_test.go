@@ -28,21 +28,20 @@ import (
 func TestSegmentGetLinkHash(t *testing.T) {
 	s := cstesting.RandomSegment()
 	wantStr := "0123456789012345678901234567890123456789012345678901234567890123"
-	s.Meta["linkHash"] = wantStr
+	s.Meta.LinkHash = wantStr
 	got := s.GetLinkHash()
 	want, _ := types.NewBytes32FromString(wantStr)
 	if *got != *want {
 		t.Errorf("s.GetLinkHash() = %q want %q", got, want)
 	}
 }
-
 func TestSegmentGetLinkHashString(t *testing.T) {
 	s := cstesting.RandomSegment()
-	want := "0123456789012345678901234567890123456789012345678901234567890123"
-	s.Meta["linkHash"] = want
+	wantStr := "0123456789012345678901234567890123456789012345678901234567890123"
+	s.Meta.LinkHash = wantStr
 	got := s.GetLinkHashString()
-	if got != want {
-		t.Errorf("s.GetLinkHash() = %q want %q", got, want)
+	if got != wantStr {
+		t.Errorf("s.GetLinkHashString() = %s want %s", got, wantStr)
 	}
 }
 
@@ -53,21 +52,9 @@ func TestSegmentValidate_valid(t *testing.T) {
 	}
 }
 
-func TestSegmentValidate_linkHashNil(t *testing.T) {
-	s := cstesting.RandomSegment()
-	delete(s.Meta, "linkHash")
-	testSegmentValidateError(t, s, "meta.linkHash should be a non empty string")
-}
-
 func TestSegmentValidate_linkHashEmpty(t *testing.T) {
 	s := cstesting.RandomSegment()
-	s.Meta["linkHash"] = ""
-	testSegmentValidateError(t, s, "meta.linkHash should be a non empty string")
-}
-
-func TestSegmentValidate_linkHashWrongType(t *testing.T) {
-	s := cstesting.RandomSegment()
-	s.Meta["linkHash"] = 3
+	s.Meta.LinkHash = ""
 	testSegmentValidateError(t, s, "meta.linkHash should be a non empty string")
 }
 
@@ -187,14 +174,14 @@ func TestSegmentSliceSort_priority(t *testing.T) {
 
 func TestSegmentSliceSort_linkHash(t *testing.T) {
 	slice := cs.SegmentSlice{
-		&cs.Segment{Link: cs.Link{Meta: map[string]interface{}{"priority": 2.0}}, Meta: map[string]interface{}{"linkHash": "c"}},
-		&cs.Segment{Link: cs.Link{Meta: map[string]interface{}{"priority": 2.0}}, Meta: map[string]interface{}{"linkHash": "b"}},
+		&cs.Segment{Link: cs.Link{Meta: map[string]interface{}{"priority": 2.0}}, Meta: cs.SegmentMeta{LinkHash: "c"}},
+		&cs.Segment{Link: cs.Link{Meta: map[string]interface{}{"priority": 2.0}}, Meta: cs.SegmentMeta{LinkHash: "b"}},
 	}
 
 	sort.Sort(slice)
 	wantGTE := "a"
 	for i, s := range slice {
-		got := s.Meta["linkHash"].(string)
+		got := s.Meta.LinkHash
 		if got < wantGTE {
 			t.Errorf("slice#%d: linkHash = %q want >= %q", i, got, wantGTE)
 		}
@@ -323,4 +310,109 @@ func TestLinkGetTagMap(t *testing.T) {
 	if _, got := tags["three"]; got {
 		t.Errorf(`tags["three"] = %v want %v`, got, false)
 	}
+}
+
+func TestAddEvidence(t *testing.T) {
+	s := cstesting.RandomSegment()
+	s.Meta.AddEvidence(TestEvidence)
+
+	if got := s.Meta.Evidences; len(got) != 1 {
+		t.Errorf("len(s.Meta.Evidences) = %d want %d", len(got), 1)
+	}
+
+	if err := s.Meta.AddEvidence(TestEvidence); err == nil {
+		t.Errorf("trying to add an already existing evidence: should have failed")
+	}
+
+	e2 := TestEvidence
+	e2.Provider = "xyz"
+	if err := s.Meta.AddEvidence(e2); err != nil {
+		t.Error(err)
+	}
+
+	if got := s.Meta.Evidences; len(got) != 2 {
+		t.Errorf("len(s.Meta.Evidences) = %d want %d", len(got), 2)
+	}
+}
+
+func TestGetEvidence(t *testing.T) {
+	s := cstesting.RandomSegment()
+	s.Meta.AddEvidence(TestEvidence)
+
+	if got := s.Meta.GetEvidence(TestChainId); *got != TestEvidence {
+		t.Errorf("s.Meta.GetEvidence() = %v want %v", got, TestEvidence)
+	}
+
+	if got := s.Meta.GetEvidence("unknown"); got != nil {
+		t.Errorf("s.Meta.GetEvidence() = %v want (nil)", got)
+	}
+}
+
+func TestFindEvidences(t *testing.T) {
+	s := cstesting.RandomSegment()
+	e1 := TestEvidence
+	s.Meta.AddEvidence(e1)
+
+	e2 := TestEvidence
+	e2.Provider = "xyz"
+	s.Meta.AddEvidence(e2)
+
+	e3 := TestEvidence
+	e3.Provider = "zef"
+	e3.Backend = "bcbatchfossilizer"
+	s.Meta.AddEvidence(e3)
+
+	if got := s.Meta.FindEvidences(TestEvidence.Backend); len(got) != 2 {
+		t.Errorf("len(got) = %q want %q", got, 2)
+	}
+
+	if got := s.Meta.FindEvidences("unknown"); len(got) != 0 {
+		t.Errorf("len(got) = %d want %d", len(got), 0)
+	}
+}
+
+func TestMergeMeta(t *testing.T) {
+	s1 := cstesting.RandomSegment()
+	e1 := TestEvidence
+	e1.State = cs.PendingEvidence
+	s1.Meta.Data["test"] = "test"
+	s1.Meta.AddEvidence(e1)
+
+	s2 := cstesting.RandomSegment()
+	s2.Meta.Data["test"] = "update"
+	s2.Meta.LinkHash = s1.Meta.LinkHash
+	e2 := TestEvidence
+	e2.Provider = "xyz"
+	s2.Meta.AddEvidence(e2)
+
+	t.Run("MergeMetaOK", func(t *testing.T) {
+		s1_complete := cstesting.RandomSegment()
+		s1_complete.Meta.LinkHash = s1.GetLinkHashString()
+		e1_complete := TestEvidence
+		s1_complete.Meta.AddEvidence(e1_complete)
+		if _, err := s1.MergeMeta(s1_complete); err != nil {
+			t.Errorf("Segment.MergeMeta(): %s", err)
+		}
+
+		s1, err := s1.MergeMeta(s2)
+		if err != nil {
+			t.Errorf("Segment.MergeMeta(): %s", err)
+		}
+		if len(s1.Meta.Evidences) != 2 {
+			t.Errorf("Segment.MergeMeta(): len(s1.Meta.Evidences) = %d, want %d", len(s1.Meta.Evidences), 2)
+		}
+		if s1.Meta.Data["test"] != "update" {
+			t.Errorf(`Segment.MergeMeta(): s1.Meta.Data["test"] = %s, want %s`, s1.Meta.Data["test"], "update")
+		}
+		if s1.Meta.GetEvidence(e1.Provider).State == cs.PendingEvidence {
+			t.Errorf("Segment.MergeMeta(): Evidence state is %s, want %s", cs.PendingEvidence, cs.CompleteEvidence)
+		}
+	})
+
+	t.Run("MergeMetaDifferentLinkHash", func(t *testing.T) {
+		s2.Meta.LinkHash = "SomethingElse"
+		if _, err := s1.MergeMeta(s2); err == nil {
+			t.Errorf("Segment.MergeMeta(): should have failed")
+		}
+	})
 }

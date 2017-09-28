@@ -27,6 +27,7 @@ import (
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-wire"
 	merkle "github.com/tendermint/merkleeyes/iavl"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -342,16 +343,30 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 		if res = t.checkSegment(snapshot, tx.Segment); res.IsErr() {
 			return res
 		}
-		t.currentBlockSegments = append(t.currentBlockSegments, tx.Segment.GetLinkHash())
+		// if the segment already exists in the tree, it shouldn't be updated
+		// with a new originalEvidence, therefore we do not append it to currentBlockSegments.
+		// However, we still set the segment in the snapshot so it's updated in the db.
+		existing, _, _ := t.state.Committed().GetSegment(tx.Segment.GetLinkHash())
+		if existing != nil {
+			if tx.Segment, err = existing.MergeMeta(tx.Segment); err != nil {
+				break
+			}
+		} else {
+			t.currentBlockSegments = append(t.currentBlockSegments, tx.Segment.GetLinkHash())
 
-		if t.header != nil {
-			tx.Segment.SetEvidence(
-				map[string]interface{}{
-					"state":        cs.PendingEvidence,
-					"transactions": map[string]string{fmt.Sprintf("[%s]:[%s]", Name, t.header.ChainId): fmt.Sprintf("%v", t.header.Height)},
-				})
+			if t.header != nil {
+				tx.Segment.Meta.AddEvidence(
+					cs.Evidence{
+						State:    cs.PendingEvidence,
+						Backend:  Name,
+						Provider: t.header.ChainId,
+						Proof: &TendermintFullProof{
+							Original: TendermintProof{BlockHeight: t.header.Height},
+						},
+					})
+			}
+
 		}
-
 		err = snapshot.SetSegment(tx.Segment)
 	case DeleteSegment:
 		var segment *cs.Segment
@@ -468,11 +483,17 @@ func (t *TMPop) addOriginalEvidence(lh *types.Bytes32) error {
 	if err != nil {
 		return err
 	}
-	e := s.GetEvidence()
+	e := s.Meta.GetEvidence(t.header.ChainId)
 
-	e["originalProof"] = iavlProof
-	e["state"] = cs.CompleteEvidence
-	e["originalHeader"] = *t.header
+	e.State = cs.CompleteEvidence
+	e.Proof = &TendermintFullProof{
+		Original: TendermintProof{
+			BlockHeight: t.header.Height - 1,
+			Header:      *t.header,
+			MerkleProof: *iavlProof,
+		},
+		Current: TendermintProof{},
+	}
 
 	return t.adapter.SaveSegment(s)
 }
@@ -482,10 +503,80 @@ func (t *TMPop) addCurrentProof(s *cs.Segment, proof []byte) error {
 	if err != nil {
 		return err
 	}
-	e := s.GetEvidence()
+	e := s.Meta.GetEvidence(t.header.ChainId)
 
-	e["currentHeader"] = *t.header
-	e["currentProof"] = iavlProof
+	e.Proof.(*TendermintFullProof).Current = TendermintProof{
+		BlockHeight: t.header.Height - 1,
+		Header:      *t.header,
+		MerkleProof: *iavlProof,
+	}
 
 	return nil
+}
+
+// init needs to define a way to deserialize a TendermintProof
+func init() {
+	cs.DeserializeMethods[Name] = func(rawProof json.RawMessage) (cs.Proof, error) {
+		p := TendermintFullProof{}
+		if err := json.Unmarshal(rawProof, &p); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+}
+
+// TendermintProof implements the Proof interface
+type TendermintProof struct {
+	BlockHeight uint64           `json:"blockHeight"`
+	Header      abci.Header      `json:"header"`
+	MerkleProof merkle.IAVLProof `json:"merkleProof"`
+	Signatures  []tmtypes.Vote   `json:"signatures"`
+}
+
+// Time returns the timestamp from the block header
+func (p *TendermintProof) Time() uint64 {
+	return p.Header.GetTime()
+}
+
+// FullProof returns a JSON formatted proof
+func (p *TendermintProof) FullProof() []byte {
+	bytes, err := json.MarshalIndent(p, "", "   ")
+	if err != nil {
+		return nil
+	}
+	return bytes
+}
+
+// Verify returns true if the proof of a given linkHash is correct
+func (p *TendermintProof) Verify(linkHash interface{}) bool {
+	checkedLinkHash, exists := linkHash.(*types.Bytes32)
+	if exists != true {
+		return false
+	}
+	return p.MerkleProof.Verify(checkedLinkHash[:], nil, p.Header.AppHash)
+}
+
+// TendermintFullProof implements the Proof interface
+type TendermintFullProof struct {
+	Original TendermintProof `json:"original"`
+	Current  TendermintProof `json:"current"`
+}
+
+// Time returns the timestamp from the block header
+func (p *TendermintFullProof) Time() uint64 {
+	return p.Original.Time()
+}
+
+// FullProof returns a JSON formatted proof
+func (p *TendermintFullProof) FullProof() []byte {
+	bytes, err := json.MarshalIndent(p, "", "   ")
+	if err != nil {
+		return nil
+	}
+	return bytes
+}
+
+// Verify returns true if the proof of a given linkHash is correct
+func (p *TendermintFullProof) Verify(linkHash interface{}) bool {
+	return p.Original.Verify(linkHash) && p.Current.Verify(linkHash)
 }
