@@ -64,9 +64,9 @@ var (
 	peerQueryMaj23SleepDuration int
 )
 
-// RegisterFlags register the tendemrint flags.
+// RegisterFlags registers the tendermint flags.
 func RegisterFlags() {
-	flag.StringVar(&rootDir, "home", os.ExpandEnv("$HOME/.tendermint"), "Root directory for config and data")
+	flag.StringVar(&rootDir, "home", os.ExpandEnv("$TMHOME"), "Root directory for config and data")
 
 	flag.StringVar(&chainID, "chain_id", config.BaseConfig.ChainID, "The ID of the chain to join (should be signed with every transaction and vote)")
 	flag.StringVar(&privValidatorFile, "priv_validator_file", config.BaseConfig.PrivValidator, "Validator private key file")
@@ -123,7 +123,11 @@ func RegisterFlags() {
 
 // GetConfig returns a Tendermint config setup from flags
 func GetConfig() *cfg.Config {
-	config.SetRoot(rootDir)
+	if rootDir != "" {
+		config.SetRoot(rootDir)
+	} else {
+		config.SetRoot(os.ExpandEnv("$HOME/.tendermint"))
+	}
 
 	config.BaseConfig.ChainID = chainID
 	config.BaseConfig.PrivValidator = privValidatorFile
