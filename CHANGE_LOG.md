@@ -1,5 +1,23 @@
 ## Change log
 
+### 0.1.1
+* Updated to Tendermint 0.11.1.
+
+### 0.1.0 - BREAKING CHANGES
+* Updated to Tendermint 0.11.0.
+* Added basic segment schema based validation at the node level.
+* Added "multi-process" support:
+  - Made field `segment.link.meta.process` mandatory
+  - Scoped all read requests by process
+* Updated FindSegments so that it filters by prevLinkHash and mapIDs
+* Changed `strat update` so that it updates both the CLI and generators.
+* Changed license back to Apache 2.
+* Switched to the [dep](https://github.com/golang/dep) package manager.
+* Made goroutines more predictable.
+* Fixed CI and tests.
+* Cleaned up command flags.
+* Cleaned logs.
+
 ### 0.0.8-dev
 * Updated to Tendermint 0.9.0.
 * Improved Tendermint node stability.
