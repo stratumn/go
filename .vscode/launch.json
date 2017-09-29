@@ -160,6 +160,44 @@
             "env": {},
             "args": ["-path", "${workspaceRoot}/segments"],
             "showLog": true
+        },
+        {
+            "name": "tmstore debug",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "remotePath": "",
+            "port": 2345,
+            "host": "127.0.0.1",
+            "program": "${workspaceRoot}/cmd/tmstore",
+            "env": {},
+            "args": []
+        },
+        {
+            "name": "filetmpop debug",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "remotePath": "",
+            "port": 2345,
+            "host": "127.0.0.1",
+            "program": "${workspaceRoot}/cmd/filetmpop",
+            "env": {},
+            "args": [
+                "-path", "${workspaceRoot}/tmfilestore"
+            ]
+        },
+        {
+            "name": "dummytmpop debug",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "remotePath": "",
+            "port": 2345,
+            "host": "127.0.0.1",
+            "program": "${workspaceRoot}/cmd/dummytmpop",
+            "env": {},
+            "args": []
         }
     ]
 }
