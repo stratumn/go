@@ -17,23 +17,10 @@ package storehttp
 import (
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
 )
-
-func splitArrayOfStrings(input string) []string {
-	if input == "" {
-		return nil
-	}
-	var ret []string
-	spaceTags := strings.Split(input, " ")
-	for _, t := range spaceTags {
-		ret = append(ret, strings.Split(t, "+")...)
-	}
-	return ret
-}
 
 func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 	pagination, err := parsePagination(r)
@@ -42,13 +29,12 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 	}
 
 	var (
-		mapIDsStr       = r.URL.Query().Get("mapIds")
-		process         = r.URL.Query().Get("process")
-		prevLinkHashStr = r.URL.Query().Get("prevLinkHash")
-		tagsStr         = r.URL.Query().Get("tags")
+		q               = r.URL.Query()
+		mapIDs          = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
+		process         = q.Get("process")
+		prevLinkHashStr = q.Get("prevLinkHash")
+		tags            = append(q["tags[]"], q["tags%5B%5D"]...)
 		prevLinkHash    *types.Bytes32
-		mapIDs          = splitArrayOfStrings(mapIDsStr)
-		tags            = splitArrayOfStrings(tagsStr)
 	)
 
 	if prevLinkHashStr != "" {
@@ -84,7 +70,8 @@ func parseMapFilter(r *http.Request) (*store.MapFilter, error) {
 func parsePagination(r *http.Request) (*store.Pagination, error) {
 	var err error
 
-	offsetstr := r.URL.Query().Get("offset")
+	q := r.URL.Query()
+	offsetstr := q.Get("offset")
 	offset := 0
 	if offsetstr != "" {
 		if offset, err = strconv.Atoi(offsetstr); err != nil || offset < 0 {
@@ -92,7 +79,7 @@ func parsePagination(r *http.Request) (*store.Pagination, error) {
 		}
 	}
 
-	limitstr := r.URL.Query().Get("limit")
+	limitstr := q.Get("limit")
 	limit := store.DefaultLimit
 	if limitstr != "" {
 		if limit, err = strconv.Atoi(limitstr); err != nil || limit < 0 {

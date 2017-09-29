@@ -329,7 +329,7 @@ func TestFindSegments(t *testing.T) {
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return s1, nil }
 
 	var s2 cs.SegmentSlice
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds=123&prevLinkHash="+zeros+"&tags=one+two", nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags%5B%5D=one&tags%5B%5D=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
@@ -375,7 +375,7 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return s1, nil }
 
 	var s2 cs.SegmentSlice
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds=123+456&prevLinkHash="+zeros+"&tags=one+two", nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds[]=123&mapIds[]=456&prevLinkHash="+zeros+"&tags[]=one&tags%5B%5D=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
@@ -423,7 +423,7 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return s1, nil }
 
 	var s2 cs.SegmentSlice
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds=123&prevLinkHash="+zeros+"&tags=one+two", nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags[]=one&tags[]=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}

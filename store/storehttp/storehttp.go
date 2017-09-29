@@ -28,7 +28,7 @@
 //	DELETE /segments/:linkHash
 //		Deletes then renders a segment.
 //
-//	GET /segments?[offset=offset]&[limit=limit]&[mapId=mapId]&[prevLinkHash=prevLinkHash]&[tags=list+of+tags]
+//	GET /segments?[offset=offset]&[limit=limit]&[mapIds[]=id1]&[mapIds[]=id2]&[prevLinkHash=prevLinkHash]&[tags[]=tag1]&[tags[]=tag2]
 //		Finds and renders segments.
 //
 //	GET /maps?[offset=offset]&[limit=limit]
