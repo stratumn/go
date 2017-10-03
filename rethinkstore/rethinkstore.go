@@ -131,6 +131,14 @@ func (a *Store) SaveSegment(segment *cs.Segment) error {
 		prevLinkHash = segment.Link.GetPrevLinkHash()
 	)
 
+	curr, err := a.GetSegment(segment.GetLinkHash())
+	if err != nil {
+		return err
+	}
+	if curr != nil {
+		segment, _ = curr.MergeMeta(segment)
+	}
+
 	w := wrapper{
 		ID:        segment.GetLinkHash()[:],
 		Content:   segment,
@@ -339,11 +347,7 @@ func (a *Store) SaveValue(key, value []byte) error {
 		Value: value,
 	}
 
-	if err := a.values.Get(key).Replace(&v).Exec(a.session); err != nil {
-		return err
-	}
-
-	return nil
+	return a.values.Get(key).Replace(&v).Exec(a.session)
 }
 
 // DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
