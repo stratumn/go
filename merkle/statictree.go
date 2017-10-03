@@ -70,16 +70,16 @@ func (t *StaticTree) Leaf(index int) *types.Bytes32 {
 }
 
 // Path implements Tree.Path.
-func (t *StaticTree) Path(index int) Path {
+func (t *StaticTree) Path(index int) types.Path {
 	row := len(t.rows) - 1
 	if row < 0 {
-		return Path{}
+		return types.Path{}
 	}
 
 	var (
 		col   = index
 		depth = 0
-		path  = make(Path, row)
+		path  = make(types.Path, row)
 	)
 
 	for row > 0 {
@@ -137,7 +137,7 @@ func (t *StaticTree) compute() {
 }
 
 // Computes the values of a hash triplet for given row and column.
-func (t *StaticTree) triplet(triplet *HashTriplet, row, col int) {
+func (t *StaticTree) triplet(triplet *types.MerkleNodeHashes, row, col int) {
 	r, c := t.left(row, col)
 	if r >= 0 {
 		t.read(triplet.Left[:], r, c)

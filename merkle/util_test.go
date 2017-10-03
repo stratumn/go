@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/sdk/types"
 )
 
-func loadPath(filename string, path *merkle.Path) error {
+func loadPath(filename string, path *types.Path) error {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
