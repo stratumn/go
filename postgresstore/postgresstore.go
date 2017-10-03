@@ -88,6 +88,14 @@ func (a *Store) GetInfo() (interface{}, error) {
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (a *Store) SaveSegment(segment *cs.Segment) error {
+	curr, err := a.GetSegment(segment.GetLinkHash())
+	if err != nil {
+		return err
+	}
+	if curr != nil {
+		segment, _ = curr.MergeMeta(segment)
+	}
+
 	a.writer.SaveSegment(segment)
 
 	// Send saved segment to all the save channels without blocking.
