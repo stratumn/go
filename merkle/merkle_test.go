@@ -5,89 +5,15 @@
 package merkle_test
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"math/rand"
 	"reflect"
 	"testing"
 
+	"github.com/stratumn/goprivate/merkle"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/merkle"
 )
-
-func TestHashTripletValidate_OK(t *testing.T) {
-	var (
-		left  = *testutil.RandomHash()
-		right = *testutil.RandomHash()
-		h     = merkle.HashTriplet{Left: left, Right: right}
-		hash  = sha256.New()
-	)
-
-	if _, err := hash.Write(left[:]); err != nil {
-		t.Fatalf("hash.Write(): err: %s", err)
-	}
-	if _, err := hash.Write(right[:]); err != nil {
-		t.Fatalf("hash.Write(): err: %s", err)
-	}
-
-	copy(h.Parent[:], hash.Sum(nil))
-
-	if err := h.Validate(); err != nil {
-		t.Errorf("h.Validate(): err: %s", err)
-	}
-}
-
-func TestHashTripletValidate_Error(t *testing.T) {
-	h := merkle.HashTriplet{
-		Left:   *testutil.RandomHash(),
-		Right:  *testutil.RandomHash(),
-		Parent: *testutil.RandomHash(),
-	}
-	if err := h.Validate(); err == nil {
-		t.Error("h.Validate(): err = nil want Error")
-	}
-}
-
-func TestPathValidate_OK(t *testing.T) {
-	var (
-		pathABCDE0 merkle.Path
-		pathABCDE4 merkle.Path
-	)
-	if err := loadPath("testdata/path-abcde-0.json", &pathABCDE0); err != nil {
-		t.Fatalf("loadPath(): err: %s", err)
-	}
-	if err := loadPath("testdata/path-abcde-4.json", &pathABCDE4); err != nil {
-		t.Fatalf("loadPath(): err: %s", err)
-	}
-
-	if err := pathABCDE0.Validate(); err != nil {
-		t.Errorf("pathABCDE0.Validate(): err: %s", err)
-	}
-	if err := pathABCDE4.Validate(); err != nil {
-		t.Errorf("pathABCDE4.Validate(): err: %s", err)
-	}
-}
-
-func TestPathValidate_Error(t *testing.T) {
-	var (
-		pathInvalid0 merkle.Path
-		pathInvalid1 merkle.Path
-	)
-	if err := loadPath("testdata/path-invalid-0.json", &pathInvalid0); err != nil {
-		t.Fatalf("loadPath(): err: %s", err)
-	}
-	if err := loadPath("testdata/path-invalid-1.json", &pathInvalid1); err != nil {
-		t.Fatalf("loadPath(): err: %s", err)
-	}
-
-	if err := pathInvalid0.Validate(); err == nil {
-		t.Error("pathInvalid0.Validate(): err = nil want Error")
-	}
-	if err := pathInvalid1.Validate(); err == nil {
-		t.Error("pathInvalid1.Validate(): err = nil want Error")
-	}
-}
 
 func TestTreeConsistency(t *testing.T) {
 	for i := 0; i < 10; i++ {

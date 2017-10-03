@@ -95,29 +95,29 @@ func (t *DynTree) Leaf(index int) *types.Bytes32 {
 }
 
 // Path implements Tree.Path.
-func (t *DynTree) Path(index int) Path {
+func (t *DynTree) Path(index int) types.Path {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
 	if len(t.leaves) < 2 {
-		return Path{}
+		return types.Path{}
 	}
 
 	var (
-		path  = make(Path, t.height)
+		path  = make(types.Path, t.height)
 		node  = t.leaves[index]
 		level = 0
 	)
 
 	for node.parent != nil {
 		if node.left != nil {
-			path[level] = HashTriplet{
+			path[level] = types.MerkleNodeHashes{
 				Left:   node.left.hash,
 				Right:  node.hash,
 				Parent: node.parent.hash,
 			}
 		} else {
-			path[level] = HashTriplet{
+			path[level] = types.MerkleNodeHashes{
 				Left:   node.hash,
 				Right:  node.right.hash,
 				Parent: node.parent.hash,
