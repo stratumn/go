@@ -15,6 +15,9 @@ func TestStore(t *testing.T) {
 	storetestcases.Factory{
 		New: func() (store.Adapter, error) {
 			a, err := New(&Config{URL: "localhost:28015", DB: "test"})
+			if err != nil {
+				return nil, err
+			}
 			if err := a.Create(); err != nil {
 				return nil, err
 			}
