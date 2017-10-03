@@ -18,8 +18,9 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
-	"github.com/stratumn/sdk/types"
 
 	"github.com/stratumn/goprivate/merkle"
 )
@@ -128,18 +129,6 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// Evidence is the evidence sent to the result channel.
-type Evidence struct {
-	Time int64          `json:"time"`
-	Root *types.Bytes32 `json:"merkleRoot"`
-	Path merkle.Path    `json:"merklePath"`
-}
-
-// EvidenceWrapper wraps evidence with a namespace.
-type EvidenceWrapper struct {
-	Evidence *Evidence `json:"batch"`
-}
-
 // Fossilizer is the type that
 // implements github.com/stratumn/sdk/fossilizer.Adapter.
 type Fossilizer struct {
@@ -158,7 +147,7 @@ type Fossilizer struct {
 }
 
 // Transformer is the type of a function to transform results.
-type Transformer func(evidence *Evidence, data, meta []byte) (*fossilizer.Result, error)
+type Transformer func(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error)
 
 // New creates an instance of a Fossilizer.
 func New(config *Config) (*Fossilizer, error) {
@@ -266,13 +255,11 @@ func (a *Fossilizer) SetTransformer(t Transformer) {
 	if t != nil {
 		a.transformer = t
 	} else {
-		a.transformer = func(evidence *Evidence, data, meta []byte) (*fossilizer.Result, error) {
+		a.transformer = func(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error) {
 			return &fossilizer.Result{
-				Evidence: &EvidenceWrapper{
-					evidence,
-				},
-				Data: data,
-				Meta: meta,
+				Evidence: *evidence,
+				Data:     data,
+				Meta:     meta,
 			}, nil
 		}
 	}
@@ -390,10 +377,15 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 			r    *fossilizer.Result
 		)
 
-		evidence := Evidence{
-			Time: ts,
-			Root: root,
-			Path: tree.Path(i),
+		evidence := cs.Evidence{
+			State:    cs.CompleteEvidence,
+			Backend:  Name,
+			Provider: Name,
+			Proof: &evidences.BatchProof{
+				Timestamp: ts,
+				Root:      root,
+				Path:      tree.Path(i),
+			},
 		}
 
 		if r, err = a.transformer(&evidence, d, m); err != nil {

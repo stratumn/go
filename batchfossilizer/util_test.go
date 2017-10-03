@@ -13,21 +13,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/merkle"
 )
 
 type fossilizeTest struct {
 	data       []byte
 	meta       []byte
-	path       merkle.Path
+	path       types.Path
 	sleep      time.Duration
 	fossilized bool
 }
 
-func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, start bool, fossilize bool) {
+func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, start bool, fossilize bool) (results []*fossilizer.Result) {
 	rc := make(chan *fossilizer.Result, 1)
 	a.AddResultChan(rc)
 
@@ -64,12 +64,13 @@ RESULT_LOOP:
 					want := fmt.Sprintf("%x", test.data)
 					t.Errorf("test#%d: Data = %q want %q", i, got, want)
 				}
-				evidence := r.Evidence.(*EvidenceWrapper).Evidence
+				evidence := r.Evidence.Proof.(*evidences.BatchProof)
 				if !reflect.DeepEqual(evidence.Path, test.path) {
 					got, _ := json.MarshalIndent(evidence.Path, "", "  ")
 					want, _ := json.MarshalIndent(test.path, "", "  ")
 					t.Errorf("test#%d: Path = %s\nwant %s", i, got, want)
 				}
+				results = append(results, r)
 				continue RESULT_LOOP
 			}
 		}
@@ -86,6 +87,7 @@ RESULT_LOOP:
 	if start {
 		a.Stop()
 	}
+	return
 }
 
 func benchmarkFossilize(b *testing.B, config *Config) {
