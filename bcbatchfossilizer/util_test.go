@@ -12,22 +12,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stratumn/goprivate/batchfossilizer"
+	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/batchfossilizer"
-	"github.com/stratumn/goprivate/merkle"
 )
 
 type fossilizeTest struct {
 	data       []byte
 	meta       []byte
-	path       merkle.Path
+	path       types.Path
 	sleep      time.Duration
 	fossilized bool
 }
 
-func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest) {
+func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest) (results []*fossilizer.Result) {
 	rc := make(chan *fossilizer.Result)
 	a.AddResultChan(rc)
 
@@ -60,12 +60,13 @@ RESULT_LOOP:
 					e := fmt.Sprintf("%x", test.data)
 					t.Errorf("test#%d: Data = %q want %q", i, a, e)
 				}
-				evidence := r.Evidence.(map[string]*Evidence)["dummy"]
-				if !reflect.DeepEqual(evidence.Path, test.path) {
-					ajs, _ := json.MarshalIndent(evidence.Path, "", "  ")
+				evidence := r.Evidence.Proof.(*evidences.BcBatchProof)
+				if !reflect.DeepEqual(evidence.Batch.Path, test.path) {
+					ajs, _ := json.MarshalIndent(evidence.Batch.Path, "", "  ")
 					ejs, _ := json.MarshalIndent(test.path, "", "  ")
 					t.Errorf("test#%d: Path = %s\nwant %s", i, ajs, ejs)
 				}
+				results = append(results, r)
 				continue RESULT_LOOP
 			}
 		}
@@ -80,6 +81,7 @@ RESULT_LOOP:
 	}
 
 	a.Stop()
+	return results
 }
 
 func benchmarkFossilize(b *testing.B, config *Config, batchConfig *batchfossilizer.Config) {
