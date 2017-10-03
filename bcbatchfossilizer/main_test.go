@@ -14,30 +14,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/sdk/types"
 )
 
 const interval = 100 * time.Millisecond
 
 var (
-	pathA0     merkle.Path
-	pathAB0    merkle.Path
-	pathAB1    merkle.Path
-	pathABC0   merkle.Path
-	pathABC1   merkle.Path
-	pathABC2   merkle.Path
-	pathABCD0  merkle.Path
-	pathABCD1  merkle.Path
-	pathABCD2  merkle.Path
-	pathABCD3  merkle.Path
-	pathABCDE0 merkle.Path
-	pathABCDE1 merkle.Path
-	pathABCDE2 merkle.Path
-	pathABCDE3 merkle.Path
-	pathABCDE4 merkle.Path
+	pathA0     types.Path
+	pathAB0    types.Path
+	pathAB1    types.Path
+	pathABC0   types.Path
+	pathABC1   types.Path
+	pathABC2   types.Path
+	pathABCD0  types.Path
+	pathABCD1  types.Path
+	pathABCD2  types.Path
+	pathABCD3  types.Path
+	pathABCDE0 types.Path
+	pathABCDE1 types.Path
+	pathABCDE2 types.Path
+	pathABCDE3 types.Path
+	pathABCDE4 types.Path
 )
 
-func loadPath(filename string, path *merkle.Path) {
+func loadPath(filename string, path *types.Path) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)

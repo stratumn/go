@@ -11,6 +11,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/types"
 
@@ -40,19 +42,13 @@ type Info struct {
 	Blockchain  string `json:"blockchain"`
 }
 
-// Evidence is the evidence sent to the result channel.
-type Evidence struct {
-	*batchfossilizer.Evidence
-	TransactionID blockchain.TransactionID `json:"txid"`
-}
-
 // Fossilizer is the type that
 // implements github.com/stratumn/sdk/fossilizer.Adapter.
 type Fossilizer struct {
 	*batchfossilizer.Fossilizer
 	config            *Config
 	lastRoot          *types.Bytes32
-	lastTransactionID blockchain.TransactionID
+	lastTransactionID types.TransactionID
 }
 
 // New creates an instance of a Fossilizer.
@@ -97,10 +93,10 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-func (a *Fossilizer) transform(evidence *batchfossilizer.Evidence, data, meta []byte) (*fossilizer.Result, error) {
+func (a *Fossilizer) transform(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error) {
 	var (
-		root = evidence.Root
-		txid blockchain.TransactionID
+		root = evidence.Proof.(*evidences.BatchProof).Root
+		txid types.TransactionID
 		err  error
 	)
 
@@ -118,14 +114,15 @@ func (a *Fossilizer) transform(evidence *batchfossilizer.Evidence, data, meta []
 		a.lastTransactionID = txid
 	}
 
-	evidenceWrapper := map[string]*Evidence{}
-	evidenceWrapper[a.config.HashTimestamper.Network().String()] = &Evidence{
-		Evidence:      evidence,
+	evidence.Provider = a.config.HashTimestamper.Network().String()
+	evidence.Backend = Name
+	evidence.Proof = &evidences.BcBatchProof{
+		Batch:         *evidence.Proof.(*evidences.BatchProof),
 		TransactionID: a.lastTransactionID,
 	}
 
 	r := fossilizer.Result{
-		Evidence: evidenceWrapper,
+		Evidence: *evidence,
 		Data:     data,
 		Meta:     meta,
 	}
