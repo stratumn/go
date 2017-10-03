@@ -14,30 +14,30 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stratumn/goprivate/merkle"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/merkle"
 )
 
 var (
-	pathA0     merkle.Path
-	pathAB0    merkle.Path
-	pathAB1    merkle.Path
-	pathABC0   merkle.Path
-	pathABC1   merkle.Path
-	pathABC2   merkle.Path
-	pathABCD0  merkle.Path
-	pathABCD1  merkle.Path
-	pathABCD2  merkle.Path
-	pathABCD3  merkle.Path
-	pathABCDE0 merkle.Path
-	pathABCDE1 merkle.Path
-	pathABCDE2 merkle.Path
-	pathABCDE3 merkle.Path
-	pathABCDE4 merkle.Path
+	pathA0     types.Path
+	pathAB0    types.Path
+	pathAB1    types.Path
+	pathABC0   types.Path
+	pathABC1   types.Path
+	pathABC2   types.Path
+	pathABCD0  types.Path
+	pathABCD1  types.Path
+	pathABCD2  types.Path
+	pathABCD3  types.Path
+	pathABCDE0 types.Path
+	pathABCDE1 types.Path
+	pathABCDE2 types.Path
+	pathABCDE3 types.Path
+	pathABCDE4 types.Path
 )
 
-func loadPath(filename string, path *merkle.Path) {
+func loadPath(filename string, path *types.Path) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
@@ -174,27 +174,27 @@ func (f Factory) TestLeaf(t *testing.T) {
 func (f Factory) TestPath(t *testing.T) {
 	tests := [...]struct {
 		leaves   []string
-		expected []merkle.Path
+		expected []types.Path
 	}{
 		{
 			[]string{"a"},
-			[]merkle.Path{pathA0},
+			[]types.Path{pathA0},
 		},
 		{
 			[]string{"a", "b"},
-			[]merkle.Path{pathAB0, pathAB1},
+			[]types.Path{pathAB0, pathAB1},
 		},
 		{
 			[]string{"a", "b", "c"},
-			[]merkle.Path{pathABC0, pathABC1, pathABC2},
+			[]types.Path{pathABC0, pathABC1, pathABC2},
 		},
 		{
 			[]string{"a", "b", "c", "d"},
-			[]merkle.Path{pathABCD0, pathABCD1, pathABCD2, pathABCD3},
+			[]types.Path{pathABCD0, pathABCD1, pathABCD2, pathABCD3},
 		},
 		{
 			[]string{"a", "b", "c", "d", "e"},
-			[]merkle.Path{pathABCDE0, pathABCDE1, pathABCDE2, pathABCDE3, pathABCDE4},
+			[]types.Path{pathABCDE0, pathABCDE1, pathABCDE2, pathABCDE3, pathABCDE4},
 		},
 	}
 
