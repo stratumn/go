@@ -9,11 +9,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 
-	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain"
+	"github.com/stratumn/sdk/types"
 )
 
-const networkString = "dummy"
+const networkString = "dummytimestamper"
 
 // Network is the identifier of the dummy network.
 type Network struct{}
@@ -32,7 +32,7 @@ func (Timestamper) Network() blockchain.Network {
 }
 
 // Timestamp implements github.com/stratumn/goprivate/blockchain.Timestamper.
-func (Timestamper) Timestamp(data interface{}) (blockchain.TransactionID, error) {
+func (Timestamper) Timestamp(data interface{}) (types.TransactionID, error) {
 	js, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (Timestamper) Timestamp(data interface{}) (blockchain.TransactionID, error)
 }
 
 // TimestampHash implements github.com/stratumn/goprivate/blockchain.HashTimestamper.
-func (Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.TransactionID, error) {
+func (Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
 	sum := sha256.Sum256(hash[:])
 	return sum[:], nil
 }

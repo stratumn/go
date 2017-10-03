@@ -17,9 +17,9 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain"
 	"github.com/stratumn/goprivate/blockchain/btc"
+	"github.com/stratumn/sdk/types"
 )
 
 const (
@@ -94,7 +94,7 @@ func (ts *Timestamper) Network() blockchain.Network {
 
 // TimestampHash implements
 // github.com/stratumn/goprivate/blockchain.HashTimestamper.
-func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (blockchain.TransactionID, error) {
+func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
 	var prevPKScripts [][]byte
 
 	addr := (*types.ReversedBytes20)(ts.address.Hash160())
