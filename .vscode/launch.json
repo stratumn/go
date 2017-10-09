@@ -3,6 +3,15 @@
     "configurations": [
 
         {
+            "name": "Launch bufferedbatch test function",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceRoot}/bufferedbatch",
+            "env": {},
+            "args": []
+        },
+        {
             "name": "Launch cs test function",
             "type": "go",
             "request": "launch",

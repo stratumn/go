@@ -17,26 +17,26 @@ package tmstore
 import (
 	"fmt"
 
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/bufferedbatch"
 )
 
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.
 type Batch struct {
-	*store.BufferedBatch
+	*bufferedbatch.Batch
 	originalTMStore *TMStore
 }
 
 // NewBatch creates a new Batch.
 func NewBatch(a *TMStore) *Batch {
-	return &Batch{store.NewBufferedBatch(a), a}
+	return &Batch{bufferedbatch.NewBatch(a), a}
 }
 
 func (b *Batch) Write() (err error) {
 	for _, op := range b.ValueOps {
 		switch op.OpType {
-		case store.OpTypeSet:
+		case bufferedbatch.OpTypeSet:
 			err = b.originalTMStore.SaveValue(op.Key, op.Value)
-		case store.OpTypeDelete:
+		case bufferedbatch.OpTypeDelete:
 			_, err = b.originalTMStore.DeleteValue(op.Key)
 		default:
 			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
@@ -49,9 +49,9 @@ func (b *Batch) Write() (err error) {
 
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
-		case store.OpTypeSet:
+		case bufferedbatch.OpTypeSet:
 			err = b.originalTMStore.SaveSegment(op.Segment)
-		case store.OpTypeDelete:
+		case bufferedbatch.OpTypeDelete:
 			_, err = b.originalTMStore.DeleteSegment(op.LinkHash)
 		default:
 			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)

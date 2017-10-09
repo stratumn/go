@@ -17,18 +17,18 @@ package dummystore
 import (
 	"fmt"
 
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/bufferedbatch"
 )
 
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.
 type Batch struct {
-	*store.BufferedBatch
+	*bufferedbatch.Batch
 	originalDummyStore *DummyStore
 }
 
 // NewBatch creates a new Batch
 func NewBatch(a *DummyStore) *Batch {
-	return &Batch{store.NewBufferedBatch(a), a}
+	return &Batch{bufferedbatch.NewBatch(a), a}
 }
 
 // Write implements github.com/stratumn/sdk/store.Adapter.Write.
@@ -38,9 +38,9 @@ func (b *Batch) Write() error {
 
 	for _, op := range b.ValueOps {
 		switch op.OpType {
-		case store.OpTypeSet:
+		case bufferedbatch.OpTypeSet:
 			b.originalDummyStore.saveValue(op.Key, op.Value)
-		case store.OpTypeDelete:
+		case bufferedbatch.OpTypeDelete:
 			b.originalDummyStore.deleteValue(op.Key)
 		default:
 			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
@@ -48,9 +48,9 @@ func (b *Batch) Write() error {
 	}
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
-		case store.OpTypeSet:
+		case bufferedbatch.OpTypeSet:
 			b.originalDummyStore.saveSegment(op.Segment)
-		case store.OpTypeDelete:
+		case bufferedbatch.OpTypeDelete:
 			b.originalDummyStore.deleteSegment(op.LinkHash)
 		default:
 			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)

@@ -17,13 +17,13 @@ package filestore
 import (
 	"fmt"
 
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/tendermint/tmlibs/db"
 )
 
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.
 type Batch struct {
-	*store.BufferedBatch
+	*bufferedbatch.Batch
 
 	originalFileStore *FileStore
 	originalBatch     db.Batch
@@ -32,7 +32,7 @@ type Batch struct {
 // NewBatch creates a new Batch
 func NewBatch(a *FileStore) *Batch {
 	return &Batch{
-		BufferedBatch:     store.NewBufferedBatch(a),
+		Batch:             bufferedbatch.NewBatch(a),
 		originalFileStore: a,
 		originalBatch:     a.kvDB.NewBatch(),
 	}
@@ -47,9 +47,9 @@ func (b *Batch) Write() error {
 
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
-		case store.OpTypeSet:
+		case bufferedbatch.OpTypeSet:
 			b.originalFileStore.saveSegment(op.Segment)
-		case store.OpTypeDelete:
+		case bufferedbatch.OpTypeDelete:
 			b.originalFileStore.deleteSegment(op.LinkHash)
 		default:
 			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)

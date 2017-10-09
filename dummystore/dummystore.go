@@ -196,7 +196,7 @@ func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	mapIDs := make([]string, 0, len(a.maps))
 	for mapID, linkHashes := range a.maps {
 		for linkHash := range linkHashes {
-			if segment, exist := a.segments[linkHash]; exist && (len(filter.Process) == 0 || filter.Process == segment.Link.GetProcess()) {
+			if segment, exist := a.segments[linkHash]; exist && filter.Match(segment) {
 				mapIDs = append(mapIDs, mapID)
 				break
 			}
@@ -259,39 +259,11 @@ func (a *DummyStore) NewBatch() (store.Batch, error) {
 func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var segments cs.SegmentSlice
 
-HASH_LOOP:
 	for linkHash := range linkHashes {
 		segment := a.segments[linkHash]
-
-		if filter.PrevLinkHash != nil {
-			prevLinkHash := segment.Link.GetPrevLinkHash()
-			if *filter.PrevLinkHash != *prevLinkHash {
-				continue
-			}
-			if len(filter.MapIDs) > 0 {
-				skip := true
-				for _, mapID := range filter.MapIDs {
-					skip = skip && mapID != segment.Link.GetMapID()
-				}
-				if skip {
-					continue
-				}
-			}
+		if filter.Match(segment) {
+			segments = append(segments, segment)
 		}
-
-		if len(filter.Process) != 0 &&
-			filter.Process != segment.Link.GetProcess() {
-			continue
-		}
-
-		tags := segment.Link.GetTagMap()
-		for _, tag := range filter.Tags {
-			if _, ok := tags[tag]; !ok {
-				continue HASH_LOOP
-			}
-		}
-
-		segments = append(segments, segment)
 	}
 
 	sort.Sort(segments)

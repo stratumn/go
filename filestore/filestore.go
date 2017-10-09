@@ -171,39 +171,9 @@ func (a *FileStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, 
 	var segments cs.SegmentSlice
 
 	a.forEach(func(segment *cs.Segment) error {
-		if filter.PrevLinkHash != nil {
-			prevLinkHash := segment.Link.GetPrevLinkHash()
-			if prevLinkHash == nil || *filter.PrevLinkHash != *prevLinkHash {
-				return nil
-			}
+		if filter.Match(segment) {
+			segments = append(segments, segment)
 		}
-
-		if filter.Process != "" && filter.Process != segment.Link.GetProcess() {
-			return nil
-		}
-
-		if len(filter.MapIDs) > 0 {
-			var match = false
-			mapID := segment.Link.GetMapID()
-			for _, filterMapIDs := range filter.MapIDs {
-				match = match || filterMapIDs == mapID
-			}
-			if !match {
-				return nil
-			}
-		}
-
-		if len(filter.Tags) > 0 {
-			tags := segment.Link.GetTagMap()
-			for _, tag := range filter.Tags {
-				if _, ok := tags[tag]; !ok {
-					return nil
-				}
-			}
-		}
-
-		segments = append(segments, segment)
-
 		return nil
 	})
 
@@ -219,7 +189,7 @@ func (a *FileStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 
 	set := map[string]struct{}{}
 	a.forEach(func(segment *cs.Segment) error {
-		if len(filter.Process) == 0 || segment.Link.GetProcess() == filter.Process {
+		if filter.Match(segment) {
 			set[segment.Link.GetMapID()] = struct{}{}
 		}
 		return nil
