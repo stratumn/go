@@ -24,7 +24,7 @@ var buildCmd = &cobra.Command{
 
 It executes, if present, the build command of the project.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runScript(BuildScript, "", args, false, useStdin)
+		return runScript(BuildScript, "", args, false)
 	},
 }
 

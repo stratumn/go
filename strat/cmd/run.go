@@ -31,7 +31,7 @@ It executes the given command of the project.`,
 		if len(args) < 1 {
 			return errors.New("expected command")
 		}
-		return runScript(args[0], "", args[1:], false, useStdin)
+		return runScript(args[0], "", args[1:], false)
 	},
 }
 

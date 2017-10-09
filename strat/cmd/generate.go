@@ -119,7 +119,7 @@ It asks which generator to use, then uses that generator to generate a project i
 		}
 
 		if _, err := os.Stat(filepath.Join(out, ProjectFile)); err == nil {
-			if err = runScript(InitScript, out, nil, true, useStdin); err != nil {
+			if err = runScript(InitScript, out, nil, true); err != nil {
 				return err
 			}
 		} else if !os.IsNotExist(err) {

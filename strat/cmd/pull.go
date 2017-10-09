@@ -24,7 +24,7 @@ var pullCmd = &cobra.Command{
 
 It executes, if present, the pull command of the project.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runScript(PullScript, "", args, false, useStdin)
+		return runScript(PullScript, "", args, false)
 	},
 }
 

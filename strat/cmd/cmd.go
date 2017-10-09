@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -168,7 +167,7 @@ func varsPath() string {
 	return filepath.Join(cfgPath, VarsFile)
 }
 
-func runScript(name, wd string, args []string, ignoreNotExist, stdin bool) error {
+func runScript(name, wd string, args []string, ignoreNotExist bool) error {
 	prj, err := NewProjectFromFile(filepath.Join(wd, ProjectFile))
 	if err != nil {
 		return err
@@ -203,28 +202,14 @@ func runScript(name, wd string, args []string, ignoreNotExist, stdin bool) error
 		shell = nixShell
 	}
 
-	parts := append(shell, script)
-	c := exec.Command(parts[0], parts[1:]...)
-	c.Dir = wd
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-
-	if stdin {
-		c.Stdin = os.Stdin
-	}
-
-	fmt.Printf("Running %q...\n", script)
-
-	if err := c.Start(); err != nil {
+	// Look for full path of shell binary.
+	bin, err := exec.LookPath(shell[0])
+	if err != nil {
 		return err
 	}
 
-	go func() {
-		sigc := make(chan os.Signal)
-		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
-		for range sigc {
-		}
-	}()
+	argv := append(shell, script)
 
-	return c.Wait()
+	// Calling syscall.Exec replaces the current process with the command.
+	return syscall.Exec(bin, argv, os.Environ())
 }

@@ -33,7 +33,7 @@ It executes, if present, the deploy:<env> command of the project.`,
 			return errors.New("expected environment")
 		}
 		script := fmt.Sprintf(DeployScriptFmt, args[0])
-		return runScript(script, "", args[1:], false, useStdin)
+		return runScript(script, "", args[1:], false)
 	},
 }
 

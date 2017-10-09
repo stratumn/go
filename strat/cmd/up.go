@@ -24,7 +24,7 @@ var upCmd = &cobra.Command{
 
 It executes, if present, the up command of the project.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runScript(UpScript, "", args, false, useStdin)
+		return runScript(UpScript, "", args, false)
 	},
 }
 

@@ -24,7 +24,7 @@ var pushCmd = &cobra.Command{
 
 It executes, if present, the push command of the project.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runScript(PushScript, "", args, false, useStdin)
+		return runScript(PushScript, "", args, false)
 	},
 }
 

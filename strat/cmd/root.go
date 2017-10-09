@@ -37,7 +37,6 @@ var (
 	generatorsRepo          string
 	generatorsRef           string
 	generatorsUseLocalFiles bool
-	useStdin                bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -118,13 +117,6 @@ func init() {
 		"generators-use-local-files",
 		false,
 		"Do not retrieve generators files from git",
-	)
-
-	RootCmd.PersistentFlags().BoolVar(
-		&useStdin,
-		"stdin",
-		true,
-		"Attach stdin to process when executing project commands",
 	)
 }
 

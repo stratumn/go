@@ -24,8 +24,8 @@ var testCmd = &cobra.Command{
 
 It executes, if present, the test command of the project.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		testErr := runScript(TestScript, "", args, false, useStdin)
-		downErr := runScript(DownTestScript, "", nil, true, useStdin)
+		testErr := runScript(TestScript, "", args, false)
+		downErr := runScript(DownTestScript, "", nil, true)
 
 		if testErr != nil {
 			return testErr

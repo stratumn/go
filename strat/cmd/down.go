@@ -24,7 +24,7 @@ var downCmd = &cobra.Command{
 
 It executes, if present, the down command of the project.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runScript(DownScript, "", args, false, useStdin)
+		return runScript(DownScript, "", args, false)
 	},
 }
 
