@@ -104,9 +104,6 @@ const (
 	// DeployScriptFmt is the format of the name of the project deploy
 	// script for an environment.
 	DeployScriptFmt = "deploy:%s"
-
-	// DownTestScript is the name of the project down script for test.
-	DownTestScript = "down:test"
 )
 
 var (
