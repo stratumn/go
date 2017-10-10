@@ -23,6 +23,14 @@ import (
 	"github.com/stratumn/sdk/generator"
 )
 
+var (
+	testUser  = "stratumn"
+	testRepo  = "generators"
+	testRef   = "sdk-test"
+	testOwner = "stratumn"
+	testInput = "test\n\nStephan\n\nStratumn\n\n\nstratumn\npurchase,shipment\n\n"
+)
+
 func TestUpdate(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
 	if err != nil {
@@ -30,8 +38,8 @@ func TestUpdate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
-	desc, updated, err := r.Update("master", false)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
+	desc, updated, err := r.Update(testRef, false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -40,11 +48,11 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
 	}
 
-	if got, want := desc.Owner, "stratumn"; got != want {
+	if got, want := desc.Owner, testOwner; got != want {
 		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
 	}
 
-	desc, updated, err = r.Update("master", false)
+	desc, updated, err = r.Update(testRef, false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -53,11 +61,11 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
 	}
 
-	if got, want := desc.Owner, "stratumn"; got != want {
+	if got, want := desc.Owner, testOwner; got != want {
 		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
 	}
 
-	desc, updated, err = r.Update("master", true)
+	desc, updated, err = r.Update(testRef, true)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
@@ -66,7 +74,7 @@ func TestUpdate(t *testing.T) {
 		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
 	}
 
-	if got, want := desc.Owner, "stratumn"; got != want {
+	if got, want := desc.Owner, testOwner; got != want {
 		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
 	}
 }
@@ -78,8 +86,8 @@ func TestUpdate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "404", os.Getenv("GITHUB_TOKEN"), true)
-	_, _, err = r.Update("master", false)
+	r := New(dir, testUser, "404", os.Getenv("GITHUB_TOKEN"), true)
+	_, _, err = r.Update(testRef, false)
 	if err == nil {
 		t.Error("err: r.Update(): err = nil want Error")
 	}
@@ -92,9 +100,9 @@ func TestGetState(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
-	desc, err := r.GetState("master")
+	desc, err := r.GetState(testRef)
 	if err != nil {
 		t.Fatalf("err: r.GetState(): %s", err)
 	}
@@ -102,17 +110,17 @@ func TestGetState(t *testing.T) {
 		t.Fatalf("err: r.GetState(): desc = %#v want nil", desc)
 	}
 
-	_, _, err = r.Update("master", false)
+	_, _, err = r.Update(testRef, false)
 	if err != nil {
 		t.Fatalf("err: r.Update(): %s", err)
 	}
 
-	desc, err = r.GetState("master")
+	desc, err = r.GetState(testRef)
 	if err != nil {
 		t.Fatalf("err: r.GetState(): %s", err)
 	}
 
-	if got, want := desc.Owner, "stratumn"; got != want {
+	if got, want := desc.Owner, testOwner; got != want {
 		t.Errorf("err: r.GetState(): owner = %q want %q", got, want)
 	}
 }
@@ -124,14 +132,14 @@ func TestGetStateOrCreate(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
-	desc, err := r.GetStateOrCreate("master")
+	desc, err := r.GetStateOrCreate(testRef)
 	if err != nil {
 		t.Fatalf("err: r.GetStateOrCreate(): %s", err)
 	}
 
-	if got, want := desc.Owner, "stratumn"; got != want {
+	if got, want := desc.Owner, testOwner; got != want {
 		t.Errorf("err: r.GetStateOrCreate(): owner = %q want %q", got, want)
 	}
 }
@@ -143,9 +151,9 @@ func TestList(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
-	list, err := r.List("master")
+	list, err := r.List(testRef)
 	if err != nil {
 		t.Fatalf("err: r.List(): %s", err)
 	}
@@ -163,14 +171,14 @@ func TestLocalList(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
-	_, err = r.GetStateOrCreate("master")
+	_, err = r.GetStateOrCreate(testRef)
 	if err != nil {
 		t.Fatalf("err: r.GetStateOrCreate(): %s", err)
 	}
 
-	r = New(path.Join(dir, "src", "master"), "foo", "bar", "nil", false)
+	r = New(path.Join(dir, "src", testRef), "foo", "bar", "nil", false)
 
 	list, err := r.List("unread arg")
 	if err != nil {
@@ -208,12 +216,12 @@ func TestGenerate(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 	opts := generator.Options{
-		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\nstratumn\n\n"),
+		Reader: strings.NewReader(testInput),
 	}
 
-	err = r.Generate("agent-basic-js", dst, &opts, "master")
+	err = r.Generate("agent-basic-js", dst, &opts, testRef)
 	if err != nil {
 		t.Fatalf("err: r.Generate(): %s", err)
 	}
@@ -232,12 +240,12 @@ func TestGenerate_notFound(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := New(dir, "stratumn", "generators", os.Getenv("GITHUB_TOKEN"), true)
+	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 	opts := generator.Options{
-		Reader: strings.NewReader("test\n\nStephan\n\nStratumn\n\n\n\n"),
+		Reader: strings.NewReader(testInput),
 	}
 
-	err = r.Generate("404", dst, &opts, "master")
+	err = r.Generate("404", dst, &opts, testRef)
 	if err == nil {
 		t.Error("err: r.Generate(): err = nil want Error")
 	}
