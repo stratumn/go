@@ -27,8 +27,9 @@
   name = "github.com/spf13/cobra"
 
 [[constraint]]
-  branch = "master"
+  #branch = "master"
   name = "github.com/spf13/viper"
+  version = "1.0.0"
 
 [[constraint]]
   name = "github.com/tendermint/abci"

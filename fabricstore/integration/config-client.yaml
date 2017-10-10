@@ -1,0 +1,111 @@
+name: "indigo"
+x-type: "hlfv1"
+x-loggingLevel: info
+
+description: "Hyperledger Fabric network used for Indigo framework"
+version: 0.0.1
+
+client:
+  organization: Org1
+  
+  logging:
+    level: info
+
+  cryptoconfig:
+    path: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config
+
+  tls:
+    enabled: false
+
+  credentialStore:
+    path: /tmp/.hfc-key-store
+    # path: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/creds
+
+  BCCSP:
+    security:
+      enabled: true
+      default:
+        provider: "SW"
+      hashAlgorithm: "SHA2"
+      softVerify: true
+      ephemeral: false
+      level: 256
+
+  endorserConnectionTimeout: 5s
+
+  eventServiceConnectionTimeout: 3s
+
+  ordererConnectionTimeout: 3s
+
+  ordererResponseTimeout: 5s
+
+  eventRegistrationResponseTimeout: 3s
+
+  queryResponseTimeout: 20s
+
+  executeTxResponseTimeout: 30s
+
+channels:
+  mychannel:
+    orderers:
+      - orderer.example.com
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+    chaincodes:
+      - pop:1.0
+
+organizations:
+  Org1:
+    mspid: Org1MSP
+    cryptoPath: peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+    peers:
+      - peer0.org1.example.com
+    certificateAuthorities:
+      - ca.example.com
+
+  ordererOrg:
+    mspid: OrdererMSP
+    cryptoPath: ordererOrganizations/example.com/users/Admin@example.com/msp
+
+orderers:
+  orderer.example.com:
+    url: 0.0.0.0:7050
+
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      grpc-max-send-message-length: 15
+
+    tlsCACerts:
+      path: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+peers:
+  peer0.org1.example.com:
+    url: 0.0.0.0:7051
+    eventUrl: 0.0.0.0:7053
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      grpc.http2.keepalive_time: 15
+    tlsCACerts:
+      path: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+certificateAuthorities:
+  ca.example.com:
+    url: https://0.0.0.0:7054
+    httpOptions:
+      verify: true
+    tlsCACerts:
+      path: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem
+      client:
+        keyfile: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/peerOrganizations/org1.example.com/tlsca/ed3fd82393e95fc2c475afc113c8d2c591f745d1babc4d6d9cce0a1acc168acb_sk
+        certfile: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+        # keyfile: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/cd96d5260ad4757551ed4a5a991e62130f8008a0bf996e4e4b84cd097a747fec_sk
+        # certfile: $GOPATH/src/github.com/stratumn/sdk/fabricstore/integration/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    caName: ca.example.com
+  
