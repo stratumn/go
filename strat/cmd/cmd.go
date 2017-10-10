@@ -168,7 +168,13 @@ func varsPath() string {
 }
 
 func runScript(name, wd string, args []string, ignoreNotExist bool) error {
-	prj, err := NewProjectFromFile(filepath.Join(wd, ProjectFile))
+	if wd != "" {
+		if err := os.Chdir(wd); err != nil {
+			return err
+		}
+	}
+
+	prj, err := NewProjectFromFile(ProjectFile)
 	if err != nil {
 		return err
 	}
