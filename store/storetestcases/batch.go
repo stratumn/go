@@ -16,11 +16,13 @@ package storetestcases
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"bytes"
 
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
@@ -258,6 +260,104 @@ func (f Factory) TestBatchWriteDeleteValue(t *testing.T) {
 	}
 	if got := v2; got != nil {
 		t.Errorf("s2 = %s\n want nil", got)
+	}
+}
+
+// TestBatchFindSegments tests what happens when you find segments in batch and store.
+func (f Factory) TestBatchFindSegments(t *testing.T) {
+	a, b := f.initBatch(t)
+	defer f.free(a)
+
+	var nbSegs = store.DefaultLimit / 2
+	var seg *cs.Segment
+
+	for i := 0; i < nbSegs; i++ {
+		seg = cstesting.RandomSegment()
+		a.SaveSegment(seg)
+	}
+
+	var segs cs.SegmentSlice
+	var err error
+	if segs, err = b.FindSegments(&store.SegmentFilter{}); err != nil {
+		t.Fatalf("b.FindSegments(): err: %s", err)
+	}
+
+	if got, want := len(segs), nbSegs; got != want {
+		t.Logf("len(b.FindSegments()) = %d want %d", got, want)
+	}
+	nbSegs = len(segs)
+
+	b.SaveSegment(cstesting.RandomSegment())
+	b.SaveSegment(cstesting.RandomSegment())
+	b.DeleteSegment(seg.GetLinkHash())
+
+	if segs, err = b.FindSegments(&store.SegmentFilter{}); err != nil {
+		t.Fatalf("b.FindSegments(): err: %s", err)
+	}
+
+	if got, want := len(segs), nbSegs+2-1; got != want {
+		t.Fatalf("len(b.FindSegments()) = %d want %d", got, want)
+	}
+}
+
+// TestBatchGetMapIDs tests what happens when you get mapIds in batch and store.
+func (f Factory) TestBatchGetMapIDs(t *testing.T) {
+	a, b := f.initBatch(t)
+	defer f.free(a)
+
+	segsByMapID := make(map[string]cs.SegmentSlice, 3)
+
+	for i := 0; i < 6*store.DefaultLimit; i++ {
+		seg := cstesting.RandomSegment()
+		mapID := fmt.Sprintf("map%d", i%3)
+		seg.Link.Meta["mapId"] = mapID
+		if i < 3 {
+			segsByMapID[mapID] = make(cs.SegmentSlice, 0, 2*store.DefaultLimit)
+		}
+		segsByMapID[mapID] = append(segsByMapID[mapID], seg)
+		a.SaveSegment(seg)
+	}
+
+	var mapIDs []string
+	var err error
+	if mapIDs, err = b.GetMapIDs(&store.MapFilter{}); err != nil {
+		t.Fatalf("b.GetMapIDs(): err: %s", err)
+	}
+
+	if got, want := len(mapIDs), len(segsByMapID); got != want {
+		t.Fatalf("len(b.GetMapIDs()) = %d want %d", got, want)
+	}
+
+	for _, mapID := range []string{"map42", "map43"} {
+		seg := cstesting.RandomSegment()
+		seg.Link.Meta["mapId"] = mapID
+		b.SaveSegment(seg)
+	}
+	for _, seg := range segsByMapID["map0"] {
+		b.DeleteSegment(seg.GetLinkHash())
+	}
+	for i, seg := range segsByMapID["map1"] {
+		if i == len(segsByMapID["map1"])-1 {
+			break
+		}
+		b.DeleteSegment(seg.GetLinkHash())
+	}
+	for i, seg := range segsByMapID["map2"] {
+		if i == 2 {
+			break
+		}
+		b.DeleteSegment(seg.GetLinkHash())
+	}
+
+	if mapIDs, err = b.GetMapIDs(&store.MapFilter{}); err != nil {
+		t.Fatalf("b.GetMapIDs(): err: %s", err)
+	}
+
+	if got, want := len(mapIDs), len(segsByMapID)+2-1; got != want {
+		t.Errorf("len(b.GetMapIDs()) = %d want %d", got, want)
+	}
+	if got, want := mapIDs, []string{"map1", "map2", "map42", "map43"}; !reflect.DeepEqual(want, got) {
+		t.Fatalf("b.GetMapIDs() = %v want %v", got, want)
 	}
 }
 

@@ -29,9 +29,8 @@ import (
 // Only the Write method must be implemented.
 type Batch struct {
 	originalStore store.Adapter
-	// batchStore    Adapter
-	ValueOps   []ValueOperation
-	SegmentOps []SegmentOperation
+	ValueOps      []ValueOperation
+	SegmentOps    []SegmentOperation
 }
 
 // OpType represents a operation type on the Batch.
@@ -61,15 +60,11 @@ type SegmentOperation struct {
 
 // NewBatch creates a new Batch.
 func NewBatch(a store.Adapter) *Batch {
-	return &Batch{
-		originalStore: a,
-		// batchStore:    dummystore.DummyStore.New(&dummystore.Config),
-	}
+	return &Batch{originalStore: a}
 }
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (b *Batch) SaveValue(key, value []byte) error {
-	// b.batchStore.SaveValue(key, value)
 	b.ValueOps = append(b.ValueOps, ValueOperation{OpTypeSet, key, value})
 	return nil
 }
@@ -173,14 +168,14 @@ func (b *Batch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 	return filter.Pagination.PaginateSegments(segments), nil
 }
 
-func (b *Batch) filterMapIDsBySegmentToDelete(mapIDs map[string]int, linkHashToDel []*types.Bytes32) (map[string]int, error) {
-	if len(linkHashToDel) == 0 {
+func (b *Batch) filterMapIDsBySegmentToDelete(pagination store.Pagination, mapIDs map[string]int, linkHashesToDel []*types.Bytes32) (map[string]int, error) {
+	if len(linkHashesToDel) == 0 {
 		return mapIDs, nil
 	}
 
 	// Group segment to delete per mapId
 	segToDelMap := make(map[string]cs.SegmentSlice)
-	for _, l := range linkHashToDel {
+	for _, l := range linkHashesToDel {
 		s, err := b.originalStore.GetSegment(l)
 		if err == nil && s != nil {
 			mapID := s.Link.Meta["mapId"].(string)
@@ -193,30 +188,20 @@ func (b *Batch) filterMapIDsBySegmentToDelete(mapIDs map[string]int, linkHashToD
 		}
 	}
 
-	// Retrieve all seg from mapIds
-	ids := make([]string, 0, len(segToDelMap))
-	for k := range segToDelMap {
-		ids = append(ids, k)
-	}
-	segs, err := b.originalStore.FindSegments(&store.SegmentFilter{MapIDs: ids})
-	if err != nil {
-		return nil, fmt.Errorf("cannot find segments from mapIds to delete (%s)", err)
-	}
-
-	// Count retrieved segment per mapId
-	for _, s := range segs {
-		mapID := s.Link.Meta["mapId"].(string)
-		mapIDs[mapID]++
-	}
-
-	// Filter deleted mapIds
+	// Retrieve segments per mapId and delete from results
 	for mapID, segsToDel := range segToDelMap {
-		nbSeg, exist := mapIDs[mapID]
-		if !exist || len(segsToDel) >= nbSeg {
+		segs, err := b.originalStore.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{Limit: len(segsToDel) + 1},
+			MapIDs:     []string{mapID},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("cannot find segments from mapId '%s' to delete (%s)", mapID, err)
+		}
+		if len(segsToDel) >= len(segs) {
 			delete(mapIDs, mapID)
 		}
 	}
-	return mapIDs, err
+	return mapIDs, nil
 }
 
 // GetMapIDs delegates the call to the store
@@ -231,7 +216,7 @@ func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	}
 
 	// Apply uncommited segments
-	var linkHashToDel []*types.Bytes32
+	var linkHashesToDel []*types.Bytes32
 	for _, sOp := range b.SegmentOps {
 		switch sOp.OpType {
 		case OpTypeSet:
@@ -240,11 +225,11 @@ func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 				mapIDs[mapID]++
 			}
 		case OpTypeDelete:
-			linkHashToDel = append(linkHashToDel, sOp.LinkHash)
+			linkHashesToDel = append(linkHashesToDel, sOp.LinkHash)
 		}
 	}
 
-	mapIDs, err = b.filterMapIDsBySegmentToDelete(mapIDs, linkHashToDel)
+	mapIDs, err = b.filterMapIDsBySegmentToDelete(filter.Pagination, mapIDs, linkHashesToDel)
 
 	ids := make([]string, 0, len(mapIDs))
 	for k := range mapIDs {

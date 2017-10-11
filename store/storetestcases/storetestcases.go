@@ -41,6 +41,8 @@ func (f Factory) RunTests(t *testing.T) {
 	t.Run("AddDidSaveChannel", f.TestAddDidSaveChannel)
 	t.Run("BatchDeleteSegment", f.TestBatchDeleteSegment)
 	t.Run("BatchDeleteValue", f.TestBatchDeleteValue)
+	t.Run("TestBatchFindSegments", f.TestBatchFindSegments)
+	t.Run("TestBatchGetMapIDs", f.TestBatchGetMapIDs)
 	t.Run("BatchSaveSegment", f.TestBatchSaveSegment)
 	t.Run("BatchSaveValue", f.TestBatchSaveValue)
 	t.Run("BatchWriteDeleteValue", f.TestBatchWriteDeleteValue)
