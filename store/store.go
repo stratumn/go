@@ -106,6 +106,9 @@ type SegmentFilter struct {
 	Process string `json:"process"`
 
 	// A previous link hash the segments must have.
+	EmptyPrevLinkHash bool `json:"emptyPrevLinkHash"`
+
+	// A previous link hash the segments must have.
 	PrevLinkHash *types.Bytes32 `json:"prevLinkHash"`
 
 	// A slice of tags the segments must all contain.
@@ -161,8 +164,13 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 	if segment == nil {
 		return false
 	}
-	if filter.PrevLinkHash != nil {
-		prevLinkHash := segment.Link.GetPrevLinkHash()
+
+	prevLinkHash := segment.Link.GetPrevLinkHash()
+	if filter.EmptyPrevLinkHash {
+		if prevLinkHash != nil {
+			return false
+		}
+	} else if filter.PrevLinkHash != nil {
 		if prevLinkHash == nil || *filter.PrevLinkHash != *prevLinkHash {
 			return false
 		}

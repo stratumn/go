@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
 )
 
 func saveSegment(adapter *store.Adapter, segment *cs.Segment, f func(s *cs.Segment)) *cs.Segment {
@@ -341,6 +342,66 @@ func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
 	}
 
 	if got, want := len(slice), 0; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestFindSegmentsEmptyPrevLinkHash tests whan happens when you search for an
+// existing previous link hash.
+func (f Factory) TestFindSegmentsEmptyPrevLinkHash(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	s := saveNewSegment(&a, func(s *cs.Segment) {
+		delete(s.Link.Meta, "prevLinkHash")
+	})
+
+	for i := 0; i < store.DefaultLimit; i++ {
+		saveNewBranch(&a, s, nil)
+	}
+
+	slice, err := a.FindSegments(&store.SegmentFilter{EmptyPrevLinkHash: true})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nil want cs.SegmentSlice")
+	}
+	if got, want := len(slice), 1; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestFindSegmentsEmptyPrevLinkHashAndPrevLinkHash tests whan happens when you search for an
+// existing previous link hash.
+func (f Factory) TestFindSegmentsEmptyPrevLinkHashAndPrevLinkHash(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	var unusedPrevLinkHash *types.Bytes32
+	s := saveNewSegment(&a, func(s *cs.Segment) {
+		delete(s.Link.Meta, "prevLinkHash")
+	})
+
+	for i := 0; i < store.DefaultLimit; i++ {
+		saveNewBranch(&a, s, func(s *cs.Segment) {
+			unusedPrevLinkHash = s.Link.GetPrevLinkHash()
+		})
+	}
+
+	slice, err := a.FindSegments(&store.SegmentFilter{
+		EmptyPrevLinkHash: true,
+		PrevLinkHash:      unusedPrevLinkHash,
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nil want cs.SegmentSlice")
+	}
+	if got, want := len(slice), 1; got != want {
 		t.Errorf("len(slice) = %d want %d", got, want)
 	}
 }

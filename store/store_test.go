@@ -68,13 +68,20 @@ func defaultTestingSegment() *cs.Segment {
 	}
 }
 
+func emptyPrevLinkHashTestingSegment() *cs.Segment {
+	seg := defaultTestingSegment()
+	delete(seg.Link.Meta, "prevLinkHash")
+	return seg
+}
+
 func TestSegmentFilter_Match(t *testing.T) {
 	type fields struct {
-		Pagination   Pagination
-		MapIDs       []string
-		Process      string
-		PrevLinkHash *types.Bytes32
-		Tags         []string
+		Pagination        Pagination
+		MapIDs            []string
+		Process           string
+		EmptyPrevLinkHash bool
+		PrevLinkHash      *types.Bytes32
+		Tags              []string
 	}
 	type args struct {
 		segment *cs.Segment
@@ -140,6 +147,24 @@ func TestSegmentFilter_Match(t *testing.T) {
 			want:   false,
 		},
 		{
+			name:   "Empty prevLinkHash ko",
+			fields: fields{EmptyPrevLinkHash: true},
+			args:   args{defaultTestingSegment()},
+			want:   false,
+		},
+		{
+			name:   "Empty prevLinkHash ok",
+			fields: fields{EmptyPrevLinkHash: true},
+			args:   args{emptyPrevLinkHashTestingSegment()},
+			want:   true,
+		},
+		{
+			name:   "Empty prevLinkHash and good prevLinkHash",
+			fields: fields{EmptyPrevLinkHash: true, PrevLinkHash: prevLinkHashTestingValue},
+			args:   args{defaultTestingSegment()},
+			want:   false,
+		},
+		{
 			name:   "One tag",
 			fields: fields{Tags: []string{"Foo"}},
 			args:   args{defaultTestingSegment()},
@@ -167,11 +192,12 @@ func TestSegmentFilter_Match(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := SegmentFilter{
-				Pagination:   tt.fields.Pagination,
-				MapIDs:       tt.fields.MapIDs,
-				Process:      tt.fields.Process,
-				PrevLinkHash: tt.fields.PrevLinkHash,
-				Tags:         tt.fields.Tags,
+				Pagination:        tt.fields.Pagination,
+				MapIDs:            tt.fields.MapIDs,
+				Process:           tt.fields.Process,
+				EmptyPrevLinkHash: tt.fields.EmptyPrevLinkHash,
+				PrevLinkHash:      tt.fields.PrevLinkHash,
+				Tags:              tt.fields.Tags,
 			}
 			if got := filter.Match(tt.args.segment); got != tt.want {
 				t.Errorf("SegmentFilter.Match() = %v, want %v", got, tt.want)
