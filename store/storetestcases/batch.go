@@ -356,8 +356,18 @@ func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 	if got, want := len(mapIDs), len(segsByMapID)+2-1; got != want {
 		t.Errorf("len(b.GetMapIDs()) = %d want %d", got, want)
 	}
-	if got, want := mapIDs, []string{"map1", "map2", "map42", "map43"}; !reflect.DeepEqual(want, got) {
-		t.Fatalf("b.GetMapIDs() = %v want %v", got, want)
+	want := map[string]interface{}{"map1": nil, "map2": nil, "map42": nil, "map43": nil}
+	got := make(map[string]interface{}, len(mapIDs))
+	for _, mapID := range mapIDs {
+		got[mapID] = nil
+	}
+	if len(got) != len(want) {
+		t.Errorf("len(b.GetMapIDs()) = %d want %d", len(got), len(want))
+	}
+	for mapID := range got {
+		if _, exist := want[mapID]; !exist {
+			t.Fatalf("b.GetMapIDs(): Missing value = %s", mapID)
+		}
 	}
 }
 
