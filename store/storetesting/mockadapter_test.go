@@ -171,7 +171,8 @@ func TestMockAdapter_FindSegments(t *testing.T) {
 
 	s := cstesting.RandomSegment()
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return cs.SegmentSlice{s}, nil }
-	f := store.SegmentFilter{PrevLinkHash: testutil.RandomHash()}
+	prevLinkHash := testutil.RandomHash().String()
+	f := store.SegmentFilter{PrevLinkHash: &prevLinkHash}
 	s1, err := a.FindSegments(&f)
 	if err != nil {
 		t.Fatalf("a.FindSegments(): err: %s", err)

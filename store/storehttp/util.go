@@ -28,19 +28,24 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 		return nil, err
 	}
 
+	const prevLinkHashKey = "prevLinkHash"
+
 	var (
 		q               = r.URL.Query()
 		mapIDs          = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
 		process         = q.Get("process")
-		prevLinkHashStr = q.Get("prevLinkHash")
+		prevLinkHashStr = q.Get(prevLinkHashKey)
 		tags            = append(q["tags[]"], q["tags%5B%5D"]...)
-		prevLinkHash    *types.Bytes32
+		prevLinkHash    *string
 	)
 
-	if prevLinkHashStr != "" {
-		prevLinkHash, err = types.NewBytes32FromString(prevLinkHashStr)
-		if err != nil {
-			return nil, newErrPrevLinkHash("")
+	if _, exists := q[prevLinkHashKey]; exists {
+		prevLinkHash = &prevLinkHashStr
+		if *prevLinkHash != "" {
+			_, err := types.NewBytes32FromString(*prevLinkHash)
+			if err != nil {
+				return nil, newErrPrevLinkHash("")
+			}
 		}
 	}
 

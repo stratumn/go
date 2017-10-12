@@ -358,7 +358,9 @@ func TestFindSegments(t *testing.T) {
 	} else if got, want := f.MapIDs[0], "123"; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
 	}
-	if got, want := f.PrevLinkHash.String(), zeros; got != want {
+	if got := f.PrevLinkHash; got == nil {
+		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q is nil", got)
+	} else if got, want := *f.PrevLinkHash, zeros; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
 	}
 	if got, want := f.Tags, []string{"one", "two"}; !reflect.DeepEqual(got, want) {
@@ -406,7 +408,9 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 	} else if got, want := f.MapIDs[1], "456"; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
 	}
-	if got, want := f.PrevLinkHash.String(), zeros; got != want {
+	if got := f.PrevLinkHash; got == nil {
+		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q is nil", got)
+	} else if got, want := *f.PrevLinkHash, zeros; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
 	}
 	if got, want := f.Tags, []string{"one", "two"}; !reflect.DeepEqual(got, want) {
@@ -452,7 +456,9 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 	} else if got, want := f.MapIDs[0], "123"; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
 	}
-	if got, want := f.PrevLinkHash.String(), zeros; got != want {
+	if got := f.PrevLinkHash; got == nil {
+		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q is nil", got)
+	} else if got, want := *f.PrevLinkHash, zeros; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
 	}
 	if got, want := f.Tags, []string{"one", "two"}; !reflect.DeepEqual(got, want) {

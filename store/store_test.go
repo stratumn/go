@@ -22,7 +22,6 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
 )
 
 const (
@@ -30,18 +29,19 @@ const (
 )
 
 var (
-	prevLinkHashTestingValue *types.Bytes32
-	linkHashTestingValue     *types.Bytes32
-	badLinkHashTestingValue  *types.Bytes32
+	prevLinkHashTestingValue      string
+	linkHashTestingValue          string
+	badLinkHashTestingValue       string
+	emptyPrevLinkHashTestingValue = ""
 
 	segmentSlice cs.SegmentSlice
 	stringSlice  []string
 )
 
 func init() {
-	prevLinkHashTestingValue = testutil.RandomHash()
-	linkHashTestingValue = testutil.RandomHash()
-	badLinkHashTestingValue = testutil.RandomHash()
+	prevLinkHashTestingValue = testutil.RandomHash().String()
+	linkHashTestingValue = testutil.RandomHash().String()
+	badLinkHashTestingValue = testutil.RandomHash().String()
 
 	segmentSlice = make(cs.SegmentSlice, sliceSize)
 	stringSlice = make([]string, sliceSize)
@@ -55,7 +55,7 @@ func defaultTestingSegment() *cs.Segment {
 	return &cs.Segment{
 		Link: cs.Link{
 			Meta: map[string]interface{}{
-				"prevLinkHash": prevLinkHashTestingValue.String(),
+				"prevLinkHash": prevLinkHashTestingValue,
 				"process":      "TheProcess",
 				"mapId":        "TheMapId",
 				"tags":         []interface{}{"Foo", "Bar"},
@@ -63,7 +63,7 @@ func defaultTestingSegment() *cs.Segment {
 			},
 		},
 		Meta: map[string]interface{}{
-			"linkHash": linkHashTestingValue.String(),
+			"linkHash": linkHashTestingValue,
 		},
 	}
 }
@@ -76,12 +76,11 @@ func emptyPrevLinkHashTestingSegment() *cs.Segment {
 
 func TestSegmentFilter_Match(t *testing.T) {
 	type fields struct {
-		Pagination        Pagination
-		MapIDs            []string
-		Process           string
-		EmptyPrevLinkHash bool
-		PrevLinkHash      *types.Bytes32
-		Tags              []string
+		Pagination   Pagination
+		MapIDs       []string
+		Process      string
+		PrevLinkHash *string
+		Tags         []string
 	}
 	type args struct {
 		segment *cs.Segment
@@ -135,32 +134,26 @@ func TestSegmentFilter_Match(t *testing.T) {
 			want:   false,
 		},
 		{
-			name:   "Good prevLinkHash",
-			fields: fields{PrevLinkHash: prevLinkHashTestingValue},
-			args:   args{defaultTestingSegment()},
-			want:   true,
-		},
-		{
-			name:   "Bad prevLinkHash",
-			fields: fields{PrevLinkHash: badLinkHashTestingValue},
-			args:   args{defaultTestingSegment()},
-			want:   false,
-		},
-		{
 			name:   "Empty prevLinkHash ko",
-			fields: fields{EmptyPrevLinkHash: true},
+			fields: fields{PrevLinkHash: &emptyPrevLinkHashTestingValue},
 			args:   args{defaultTestingSegment()},
 			want:   false,
 		},
 		{
 			name:   "Empty prevLinkHash ok",
-			fields: fields{EmptyPrevLinkHash: true},
+			fields: fields{PrevLinkHash: &emptyPrevLinkHashTestingValue},
 			args:   args{emptyPrevLinkHashTestingSegment()},
 			want:   true,
 		},
 		{
-			name:   "Empty prevLinkHash and good prevLinkHash",
-			fields: fields{EmptyPrevLinkHash: true, PrevLinkHash: prevLinkHashTestingValue},
+			name:   "Good prevLinkHash",
+			fields: fields{PrevLinkHash: &prevLinkHashTestingValue},
+			args:   args{defaultTestingSegment()},
+			want:   true,
+		},
+		{
+			name:   "Bad prevLinkHash",
+			fields: fields{PrevLinkHash: &badLinkHashTestingValue},
 			args:   args{defaultTestingSegment()},
 			want:   false,
 		},
@@ -192,12 +185,11 @@ func TestSegmentFilter_Match(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := SegmentFilter{
-				Pagination:        tt.fields.Pagination,
-				MapIDs:            tt.fields.MapIDs,
-				Process:           tt.fields.Process,
-				EmptyPrevLinkHash: tt.fields.EmptyPrevLinkHash,
-				PrevLinkHash:      tt.fields.PrevLinkHash,
-				Tags:              tt.fields.Tags,
+				Pagination:   tt.fields.Pagination,
+				MapIDs:       tt.fields.MapIDs,
+				Process:      tt.fields.Process,
+				PrevLinkHash: tt.fields.PrevLinkHash,
+				Tags:         tt.fields.Tags,
 			}
 			if got := filter.Match(tt.args.segment); got != tt.want {
 				t.Errorf("SegmentFilter.Match() = %v, want %v", got, tt.want)

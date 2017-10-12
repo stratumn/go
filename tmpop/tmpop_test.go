@@ -183,12 +183,13 @@ func TestQuery(t *testing.T) {
 	t.Run("FindSegments()", func(t *testing.T) {
 		want := commitMockTx(t, h)
 
+		wantedPrevLinkHashStr := want.Link.GetPrevLinkHashString()
 		args := &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: store.DefaultLimit,
 			},
 			MapIDs:       []string{want.Link.GetMapID()},
-			PrevLinkHash: want.Link.GetPrevLinkHash(),
+			PrevLinkHash: &wantedPrevLinkHashStr,
 			Tags:         want.Link.GetTags(),
 		}
 		gots := cs.SegmentSlice{}
