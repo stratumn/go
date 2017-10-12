@@ -1,0 +1,14 @@
+USER root
+
+ENV DATA_ROOT /data/tendermint
+
+RUN mkdir -p $DATA_ROOT \
+  && chown -R stratumn:stratumn $DATA_ROOT
+
+USER stratumn
+
+ENV TMHOME $DATA_ROOT
+
+VOLUME $DATA_ROOT
+
+EXPOSE 46656 46657 
