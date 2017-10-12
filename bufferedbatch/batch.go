@@ -144,7 +144,7 @@ func (b *Batch) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err er
 	return b.originalStore.GetSegment(linkHash)
 }
 
-// FindSegments return the union of segments in the store and not commited yet
+// FindSegments returns the union of segments in the store and not commited yet
 func (b *Batch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	segments, err := b.originalStore.FindSegments(filter)
 	if err != nil {
@@ -174,37 +174,31 @@ func (b *Batch) filterMapIDsBySegmentToDelete(pagination store.Pagination, mapID
 	}
 
 	// Group segment to delete per mapId
-	segToDelMap := make(map[string]cs.SegmentSlice)
+	segToDelMap := make(map[string]int)
 	for _, l := range linkHashesToDel {
 		s, err := b.originalStore.GetSegment(l)
 		if err == nil && s != nil {
-			mapID := s.Link.Meta["mapId"].(string)
-			segs, ok := segToDelMap[mapID]
-			if !ok {
-				segs = make(cs.SegmentSlice, 0)
-			}
-			segs = append(segs, s)
-			segToDelMap[mapID] = segs
+			segToDelMap[s.Link.Meta["mapId"].(string)]++
 		}
 	}
 
 	// Retrieve segments per mapId and delete from results
-	for mapID, segsToDel := range segToDelMap {
+	for mapID, nbSegsToDel := range segToDelMap {
 		segs, err := b.originalStore.FindSegments(&store.SegmentFilter{
-			Pagination: store.Pagination{Limit: len(segsToDel) + 1},
+			Pagination: store.Pagination{Limit: nbSegsToDel + 1},
 			MapIDs:     []string{mapID},
 		})
 		if err != nil {
 			return nil, fmt.Errorf("cannot find segments from mapId '%s' to delete (%s)", mapID, err)
 		}
-		if len(segsToDel) >= len(segs) {
+		if nbSegsToDel >= len(segs) {
 			delete(mapIDs, mapID)
 		}
 	}
 	return mapIDs, nil
 }
 
-// GetMapIDs delegates the call to the store
+// GetMapIDs returns the union of mapIds in the store and not commited yet
 func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	tmpMapIDs, err := b.originalStore.GetMapIDs(filter)
 	if err != nil {
