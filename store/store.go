@@ -107,7 +107,7 @@ type SegmentFilter struct {
 
 	// A previous link hash the segments must have.
 	// nil makes this attribute as optional
-	// empty string is to search Segment without parent
+	// empty string is to search Segments without parent
 	PrevLinkHash *string `json:"prevLinkHash"`
 
 	// A slice of tags the segments must all contain.
