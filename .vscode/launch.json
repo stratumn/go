@@ -39,6 +39,24 @@
             "args": []
         },
         {
+            "name": "Launch fabric chaincode test function",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceRoot}/fabricstore/chaincode/pop",
+            "env": {},
+            "args": []
+        },
+        {
+            "name": "Launch fabricstore test function",
+            "type": "go",
+            "request": "launch",
+            "mode": "test",
+            "program": "${workspaceRoot}/fabricstore",
+            "env": {},
+            "args": []
+        },
+        {
             "name": "Launch filestore test function",
             "type": "go",
             "request": "launch",
