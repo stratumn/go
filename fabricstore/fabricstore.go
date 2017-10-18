@@ -14,7 +14,6 @@
 
 // Package fabricstore implements a store that saves all the segments in a
 // Hyperledger Fabric distributed ledger
-
 package fabricstore
 
 import (
