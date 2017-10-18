@@ -345,6 +345,338 @@ n: no (default)
 	}
 }
 
+func TestStringSelectMultiSet(t *testing.T) {
+	in := StringSelectMulti{
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set("y"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := in.values, []string{"y"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %q want %q", got, want)
+	}
+}
+func TestStringSelectMultiSet_multi(t *testing.T) {
+	in := StringSelectMulti{
+		Separator: ",",
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "1",
+				Value: "1",
+				Text:  "one",
+			},
+			StringSelectOption{
+				Input: "2",
+				Value: "2",
+				Text:  "two",
+			},
+		},
+	}
+	if err := in.Set("1,2"); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := in.values, []string{"1", "2"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiSet_default(t *testing.T) {
+	in := StringSelectMulti{
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+		Default: "y",
+	}
+	if err := in.Set(""); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := in.values, []string{"y"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiSet_notString(t *testing.T) {
+	in := StringSelectMulti{
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set(3); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSelectMultiSet_invalid(t *testing.T) {
+	in := StringSelectMulti{
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set("hello"); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSelectMultiSet_requiredNoDefault(t *testing.T) {
+	in := StringSelectMulti{
+		IsRequired: true,
+		Separator:  ",",
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set(""); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSelectMultiSet_requiredDefault(t *testing.T) {
+	in := StringSelectMulti{
+		IsRequired: true,
+		Default:    "1,2",
+		Separator:  ",",
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "1",
+				Value: "1",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "2",
+				Value: "2",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set(""); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := in.values, []string{"1", "2"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.values: got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiSet_noSeparator(t *testing.T) {
+	in := StringSelectMulti{
+		IsRequired: true,
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "1",
+				Value: "1",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "2",
+				Value: "2",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set("1,2"); err == nil {
+		t.Error("err: err = nil want Error")
+	}
+}
+
+func TestStringSelectMultiSet_notRequired(t *testing.T) {
+	in := StringSelectMulti{
+		IsRequired: false,
+		Separator:  ",",
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "1",
+				Value: "1",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "2",
+				Value: "2",
+				Text:  "no",
+			},
+		},
+	}
+	if err := in.Set(""); err != nil {
+		t.Fatalf("err: in.Set(): %s", err)
+	}
+	if got, want := len(in.values), 0; got != want {
+		t.Errorf("err: len(in.values): got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiGet(t *testing.T) {
+	in := StringSelectMulti{
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+		Default: "y",
+		values:  []string{"n"},
+	}
+	if got, want := in.Get(), []string{"n"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.Get(): got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiGet_default(t *testing.T) {
+	in := StringSelectMulti{
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+		Separator: ",",
+		Default:   "y,n",
+	}
+	if got, want := in.Get(), []string{"y", "n"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("err: in.Get(): got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiMsg(t *testing.T) {
+	in := StringSelectMulti{
+		InputShared: InputShared{
+			Prompt: "value:",
+		},
+		Separator: ",",
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "1",
+				Value: "1",
+				Text:  "one",
+			},
+			StringSelectOption{
+				Input: "2",
+				Value: "2",
+				Text:  "two",
+			},
+		},
+	}
+	want := `value: (separator ",") (default: None)
+1: one
+2: two
+`
+	if got := in.Msg(); got != want {
+		t.Errorf("err: in.Msg(): got %q want %q", got, want)
+	}
+}
+func TestStringSelectMultiMsg_required(t *testing.T) {
+	in := StringSelectMulti{
+		InputShared: InputShared{
+			Prompt: "value:",
+		},
+		Separator:  ",",
+		IsRequired: true,
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "1",
+				Value: "1",
+				Text:  "one",
+			},
+			StringSelectOption{
+				Input: "2",
+				Value: "2",
+				Text:  "two",
+			},
+		},
+	}
+	want := `value: (separator ",")
+1: one
+2: two
+`
+	if got := in.Msg(); got != want {
+		t.Errorf("err: in.Msg(): got %q want %q", got, want)
+	}
+}
+
+func TestStringSelectMultiMsg_default(t *testing.T) {
+	in := StringSelectMulti{
+		InputShared: InputShared{
+			Prompt: "value:",
+		},
+		Options: []StringSelectOption{
+			StringSelectOption{
+				Input: "y",
+				Value: "y",
+				Text:  "yes",
+			},
+			StringSelectOption{
+				Input: "n",
+				Value: "n",
+				Text:  "no",
+			},
+		},
+		Default: "n",
+	}
+	want := `value: (separator "")
+y: yes
+n: no (default)
+`
+	if got := in.Msg(); got != want {
+		t.Errorf("err: in.Msg(): got %q want %q", got, want)
+	}
+}
+
 func TestStringSliceSet_one(t *testing.T) {
 	in := StringSlice{Separator: ","}
 	if err := in.Set("hello"); err != nil {

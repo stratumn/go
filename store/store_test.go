@@ -62,8 +62,8 @@ func defaultTestingSegment() *cs.Segment {
 				"priority":     42,
 			},
 		},
-		Meta: map[string]interface{}{
-			"linkHash": linkHashTestingValue,
+		Meta: cs.SegmentMeta{
+			LinkHash: linkHashTestingValue,
 		},
 	}
 }

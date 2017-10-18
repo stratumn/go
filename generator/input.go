@@ -30,6 +30,9 @@ const (
 	// StringSelectID is the string identifying a string select.
 	StringSelectID = "select:string"
 
+	// StringSelectMultiID is the string identifying a string select with multiple choices.
+	StringSelectMultiID = "selectmulti:string"
+
 	// StringSliceID is a slice of string for mutiple entries.
 	StringSliceID = "slice:string"
 )
@@ -86,6 +89,12 @@ func UnmarshalJSONInput(data []byte) (Input, error) {
 		return &in, nil
 	case StringSelectID:
 		var in StringSelect
+		if err := json.Unmarshal(data, &in); err != nil {
+			return nil, err
+		}
+		return &in, nil
+	case StringSelectMultiID:
+		var in StringSelectMulti
 		if err := json.Unmarshal(data, &in); err != nil {
 			return nil, err
 		}
@@ -229,6 +238,83 @@ type StringSelectOption struct {
 
 	// Text will be displayed when presenting this option to the user.
 	Text string `json:"text"`
+}
+
+// StringSelectMulti contains properties for multiple select inputs.
+type StringSelectMulti struct {
+	InputShared
+
+	// Default is the default value.
+	Default string `json:"default"`
+
+	// Options is an array of possible values.
+	Options []StringSelectOption `json:"options"`
+
+	// IsRequired is a bool indicating wether an input is needed.
+	IsRequired bool `json:"isRequired"`
+
+	// Separator is a string used to split the input to list.
+	Separator string `json:"separator"`
+
+	values []string
+}
+
+// Set implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSelectMulti) Set(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return fmt.Errorf("value must be a string, got %q", val)
+	}
+
+	if str == "" && in.Default != noValue && in.Default != "" {
+		str = in.Default
+	} else if str == "" && !in.IsRequired {
+		return nil
+	}
+
+PARSE_LOOP:
+	for _, value := range strings.Split(str, in.Separator) {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			in.values = nil
+			return fmt.Errorf("Value format should match [[1-%d][,[1-%d]]*]?", len(in.Options), len(in.Options))
+		}
+		for _, opt := range in.Options {
+			if opt.Input == value {
+				in.values = append(in.values, opt.Value)
+				continue PARSE_LOOP
+			}
+		}
+		in.values = nil
+		return fmt.Errorf("invalid value %q", str)
+	}
+
+	return nil
+}
+
+// Get implements github.com/stratumn/sdk/generator.Input.
+func (in StringSelectMulti) Get() interface{} {
+	if len(in.values) == 0 && in.Default != noValue && in.Default != "" && in.Separator != "" {
+		return strings.Split(in.Default, in.Separator)
+	}
+	return in.values
+}
+
+// Msg implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSelectMulti) Msg() string {
+	p := fmt.Sprintf("%s (separator %q)", in.Prompt, in.Separator)
+	if in.Default == "" && in.IsRequired == false {
+		p += " (default: None)"
+	}
+	p += "\n"
+	for _, v := range in.Options {
+		if in.Default == v.Value && in.Default != noValue {
+			p += v.Input + ": " + v.Text + " (default)\n"
+		} else {
+			p += v.Input + ": " + v.Text + "\n"
+		}
+	}
+	return p
 }
 
 // StringSlice contains properties for string inputs.

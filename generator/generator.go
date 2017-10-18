@@ -197,6 +197,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 //	  and variables (path relative to `partials` directory)
 // 	- secret(length int) (string, error): returns a random secret string
 // 	- uid() int: returns the system user id (UID)
+// 	- add(i, j int) int: returns i + j
 func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
@@ -208,6 +209,7 @@ func (gen *Generator) StdTmplFuncs() template.FuncMap {
 		"partial": gen.partial,
 		"secret":  secret,
 		"uid":     os.Geteuid,
+		"add":     add,
 	}
 }
 
@@ -450,6 +452,10 @@ func walkTmpl(base, dir string, tmpl *template.Template) error {
 		}
 	}
 	return nil
+}
+
+func add(i, j int) int {
+	return i + j
 }
 
 func now(format string) string {
