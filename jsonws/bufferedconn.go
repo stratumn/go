@@ -17,7 +17,7 @@ package jsonws
 import (
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // BufferedConn wraps a connection so that writes are buffered and not blocking

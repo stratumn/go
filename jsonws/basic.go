@@ -17,8 +17,8 @@ package jsonws
 import (
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
+	log "github.com/sirupsen/logrus"
 )
 
 // Basic implements basic web socket server meant to be used in conjuction with

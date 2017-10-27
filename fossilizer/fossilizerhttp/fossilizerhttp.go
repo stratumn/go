@@ -35,8 +35,8 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/jsonhttp"

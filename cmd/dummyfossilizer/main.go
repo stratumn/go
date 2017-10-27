@@ -19,7 +19,7 @@ package main
 import (
 	"flag"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/dummyfossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"

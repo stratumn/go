@@ -17,7 +17,7 @@ package tmpop
 import (
 	"runtime"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tendermint"

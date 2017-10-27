@@ -10,7 +10,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type rootValidator struct {

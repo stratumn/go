@@ -18,7 +18,7 @@ package main
 import (
 	"flag"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/store/storehttp"
 	"github.com/stratumn/sdk/tmstore"
 )

@@ -21,7 +21,7 @@ import (
 
 	"github.com/tendermint/tmlibs/merkle"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // Commit represents a committed state of the blockchain.

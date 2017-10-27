@@ -14,7 +14,7 @@
 
 package jsonws
 
-import log "github.com/Sirupsen/logrus"
+import log "github.com/sirupsen/logrus"
 
 // Hub manages a list of web socket connections.
 // Messages can be broadcasted in JSON form to the list of connections.
