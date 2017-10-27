@@ -28,7 +28,7 @@
 
 [[constraint]]
   name = "github.com/spf13/viper"
-  version = "1.0.0"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/tendermint/abci"
@@ -61,15 +61,3 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/oauth2"
-
-[[constraint]]
-  branch = "release"
-  name = "github.com/hyperledger/fabric"
-
-[[override]]
-  branch = "master"
-  name = "github.com/op/go-logging"
-
-[[override]]
-  name = "github.com/fsouza/go-dockerclient"
-  revision = "d433254bb83b41d7072ce470e312ea3cee257882"

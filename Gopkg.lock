@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  name = "github.com/Microsoft/go-winio"
-  packages = ["."]
-  revision = "78439966b38d69bf38227fbf57ac8a6fee70f69a"
-  version = "v0.4.5"
-
-[[projects]]
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
@@ -21,30 +15,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/cloudflare/cfssl"
-  packages = ["api","auth","certdb","config","crypto/pkcs7","csr","errors","helpers","helpers/derhelpers","info","log","ocsp/config","signer"]
-  revision = "7d88da830aad9d533c2fb8532da23f6a75331b52"
-
-[[projects]]
-  name = "github.com/docker/docker"
-  packages = ["api/types","api/types/blkiodev","api/types/container","api/types/filters","api/types/mount","api/types/network","api/types/registry","api/types/strslice","api/types/swarm","api/types/versions","opts","pkg/archive","pkg/fileutils","pkg/homedir","pkg/idtools","pkg/ioutils","pkg/longpath","pkg/pools","pkg/promise","pkg/stdcopy","pkg/system"]
-  revision = "092cba3727bb9b4a2f0e922cd6c0f93ea270e363"
-  version = "v1.13.1"
-
-[[projects]]
-  name = "github.com/docker/go-connections"
-  packages = ["nat"]
-  revision = "3ede32e2033de7505e6500d6c868c2b9ed9f169d"
-  version = "v0.3.0"
-
-[[projects]]
-  name = "github.com/docker/go-units"
-  packages = ["."]
-  revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
-  version = "v0.3.2"
-
-[[projects]]
-  branch = "master"
   name = "github.com/ebuchman/fail-test"
   packages = ["."]
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
@@ -54,11 +24,6 @@
   packages = ["."]
   revision = "629574ca2a5df945712d3079857300b5e4da0236"
   version = "v1.4.2"
-
-[[projects]]
-  name = "github.com/fsouza/go-dockerclient"
-  packages = ["."]
-  revision = "d433254bb83b41d7072ce470e312ea3cee257882"
 
 [[projects]]
   name = "github.com/go-kit/kit"
@@ -93,7 +58,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/empty","ptypes/timestamp"]
+  packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
@@ -101,12 +66,6 @@
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "553a641470496b2327abcac10b36396bd98e45c9"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/google/certificate-transparency-go"
-  packages = [".","asn1","tls","x509","x509/pkix"]
-  revision = "8d47cb132abe6e2b81230d92080768f9fb0852c8"
 
 [[projects]]
   branch = "master"
@@ -128,27 +87,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/hashicorp/go-cleanhttp"
-  packages = ["."]
-  revision = "3573b8b52aa7b37b9358d966a898feb387f62437"
-
-[[projects]]
-  branch = "master"
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "68e816d1c783414e79bc65b3994d9ab6b0a722ab"
-
-[[projects]]
-  branch = "release"
-  name = "github.com/hyperledger/fabric"
-  packages = ["bccsp","bccsp/factory","bccsp/pkcs11","bccsp/signer","bccsp/sw","bccsp/utils","common/crypto","common/errors","common/flogging","common/ledger","common/metadata","common/util","core/chaincode/platforms","core/chaincode/platforms/car","core/chaincode/platforms/golang","core/chaincode/platforms/java","core/chaincode/platforms/util","core/chaincode/shim","core/comm","core/config","core/container/util","msp","protos/common","protos/ledger/queryresult","protos/msp","protos/peer","protos/utils"]
-  revision = "522618871492f71d7e2ad499a153af65002ae36a"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/hyperledger/fabric-sdk-go"
-  packages = ["api/apiconfig","api/apifabca","api/apifabclient","api/apilogging","api/apitxn","def/fabapi","def/fabapi/context","def/fabapi/context/defprovider","def/fabapi/opt","internal/github.com/hyperledger/fabric-ca/api","internal/github.com/hyperledger/fabric-ca/lib","internal/github.com/hyperledger/fabric-ca/lib/tls","internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge","internal/github.com/hyperledger/fabric-ca/util","internal/github.com/hyperledger/fabric/common/channelconfig","internal/github.com/hyperledger/fabric/common/crypto","internal/github.com/hyperledger/fabric/common/util","internal/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil","internal/github.com/hyperledger/fabric/core/ledger/util","internal/github.com/hyperledger/fabric/events/consumer","internal/github.com/hyperledger/fabric/msp","internal/github.com/hyperledger/fabric/protos/orderer","internal/github.com/hyperledger/fabric/protos/utils","internal/github.com/hyperledger/fabric/sdkpatch/logbridge","pkg/config","pkg/config/urlutil","pkg/errors","pkg/fabric-ca-client","pkg/fabric-client","pkg/fabric-client/channel","pkg/fabric-client/credentialmgr","pkg/fabric-client/events","pkg/fabric-client/events/consumer","pkg/fabric-client/identity","pkg/fabric-client/internal","pkg/fabric-client/internal/txnproc","pkg/fabric-client/keyvaluestore","pkg/fabric-client/mocks","pkg/fabric-client/orderer","pkg/fabric-client/packager","pkg/fabric-client/peer","pkg/fabric-client/signingmgr","pkg/fabric-txn/chclient","pkg/fabric-txn/discovery","pkg/fabric-txn/internal","pkg/logging","third_party/github.com/hyperledger/fabric/bccsp","third_party/github.com/hyperledger/fabric/bccsp/factory","third_party/github.com/hyperledger/fabric/bccsp/pkcs11","third_party/github.com/hyperledger/fabric/bccsp/signer","third_party/github.com/hyperledger/fabric/bccsp/sw","third_party/github.com/hyperledger/fabric/bccsp/utils","third_party/github.com/hyperledger/fabric/protos/common","third_party/github.com/hyperledger/fabric/protos/ledger/rwset","third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset","third_party/github.com/hyperledger/fabric/protos/msp","third_party/github.com/hyperledger/fabric/protos/orderer","third_party/github.com/hyperledger/fabric/protos/peer"]
-  revision = "1fd5f3648966fb8cbf8b457299a322ad2efb9de0"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -181,22 +122,10 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/looplab/fsm"
-  packages = ["."]
-  revision = "bcc3636384ce80a109a6039432b30ff5b82476ee"
-
-[[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
   revision = "be5ece7dd465ab0765a9682137865547526d1dfb"
   version = "v1.7.3"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/miekg/pkcs11"
-  packages = ["."]
-  revision = "eda1d775a087f2a96fec7c7876ea94dea43e6027"
 
 [[projects]]
   branch = "master"
@@ -209,18 +138,6 @@
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "d0303fe809921458f417bcf828397a65db30a7e4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/op/go-logging"
-  packages = ["."]
-  revision = "970db520ece77730c7e4724c61121037378659d9"
-
-[[projects]]
-  name = "github.com/opencontainers/runc"
-  packages = ["libcontainer/system","libcontainer/user"]
-  revision = "baf6536d6259209c3edfa2b22237af82942d3dfa"
-  version = "v0.1.1"
 
 [[projects]]
   name = "github.com/pelletier/go-buffruneio"
@@ -277,10 +194,10 @@
   version = "v1.0.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/spf13/viper"
   packages = ["."]
-  revision = "25b30aa063fc18e48662b86996252eabdcf2f0c7"
-  version = "v1.0.0"
+  revision = "8ef37cbca71638bf32f3d5e194117d4cb46da163"
 
 [[projects]]
   branch = "master"
@@ -351,7 +268,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["cast5","curve25519","nacl/box","nacl/secretbox","ocsp","openpgp","openpgp/armor","openpgp/elgamal","openpgp/errors","openpgp/packet","openpgp/s2k","pkcs12","pkcs12/internal/rc2","poly1305","ripemd160","salsa20/salsa","sha3","ssh/terminal"]
+  packages = ["cast5","curve25519","nacl/box","nacl/secretbox","openpgp","openpgp/armor","openpgp/elgamal","openpgp/errors","openpgp/packet","openpgp/s2k","poly1305","ripemd160","salsa20/salsa","ssh/terminal"]
   revision = "76eec36fa14229c4b25bb894c2d0e591527af429"
 
 [[projects]]
@@ -365,12 +282,6 @@
   name = "golang.org/x/oauth2"
   packages = [".","internal"]
   revision = "bb50c06baba3d0c76f9d125c0719093e315b5b44"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/sync"
-  packages = ["syncmap"]
-  revision = "8e0aa688b654ef28caa72506fa5ec8dba9fc7690"
 
 [[projects]]
   branch = "master"
@@ -417,6 +328,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2dcba70ea32ca9f16562c823f16e5d580d1c54b6bb759bebcef9075366845db1"
+  inputs-digest = "de791a044dc3bcc7e86ac6f176d795a7688c4d9a26cf90e9983c08da380506a4"
   solver-name = "gps-cdcl"
   solver-version = 1
