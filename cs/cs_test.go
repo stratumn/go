@@ -312,6 +312,15 @@ func TestLinkGetTagMap(t *testing.T) {
 	}
 }
 
+func TestLinkGetProcess(t *testing.T) {
+	s := cstesting.RandomSegment()
+	want := "hello"
+	s.Link.Meta["process"] = want
+	if got := s.Link.GetProcess(); got != want {
+		t.Errorf("s.Link.GetProcess() = %q want %q", got, want)
+	}
+}
+
 func TestAddEvidence(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Meta.AddEvidence(TestEvidence)
@@ -415,4 +424,14 @@ func TestMergeMeta(t *testing.T) {
 			t.Errorf("Segment.MergeMeta(): should have failed")
 		}
 	})
+}
+
+func TestEmptySegment(t *testing.T) {
+	if got, want := cstesting.RandomSegment().IsEmpty(), false; got != want {
+		t.Errorf("IsEmpty = %t want %t", got, want)
+	}
+	s := cs.Segment{}
+	if got, want := s.IsEmpty(), true; got != want {
+		t.Errorf("IsEmpty = %t want %t", got, want)
+	}
 }
