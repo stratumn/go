@@ -15,6 +15,7 @@
 package cs_test
 
 import (
+	"errors"
 	"math"
 	"reflect"
 	"sort"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
 )
 
@@ -62,7 +64,7 @@ func TestSegmentSetLinkHash(t *testing.T) {
 
 func TestSegmentValidate_valid(t *testing.T) {
 	s := cstesting.RandomSegment()
-	if err := s.Validate(); err != nil {
+	if err := s.Validate(nil); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}
 }
@@ -70,50 +72,54 @@ func TestSegmentValidate_valid(t *testing.T) {
 func TestSegmentValidate_linkHashEmpty(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Meta.LinkHash = ""
-	testSegmentValidateError(t, s, "meta.linkHash should be a non empty string")
+	if err := s.Validate(nil); err == nil {
+		t.Error("s.Validate() = nil want Error")
+	} else if got, want := err.Error(), "meta.linkHash should be a non empty string"; got != want {
+		t.Errorf("s.Validate() = %q want %q", got, want)
+	}
 }
 
 func TestSegmentValidate_processNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "process")
-	testSegmentValidateError(t, s, "link.meta.process should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.process should be a non empty string")
 }
 
 func TestSegmentValidate_processEmpty(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["process"] = ""
-	testSegmentValidateError(t, s, "link.meta.process should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.process should be a non empty string")
 }
 
 func TestSegmentValidate_processWrongType(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["process"] = true
-	testSegmentValidateError(t, s, "link.meta.process should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.process should be a non empty string")
 }
 
 func TestSegmentValidate_mapIDNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "mapId")
-	testSegmentValidateError(t, s, "link.meta.mapId should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.mapId should be a non empty string")
 }
 
 func TestSegmentValidate_mapIDEmpty(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["mapId"] = ""
-	testSegmentValidateError(t, s, "link.meta.mapId should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.mapId should be a non empty string")
 }
 
 func TestSegmentValidate_mapIDWrongType(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["mapId"] = true
-	testSegmentValidateError(t, s, "link.meta.mapId should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.mapId should be a non empty string")
 }
 
 func TestSegmentValidate_prevLinkHashNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "prevLinkHash")
 	s.SetLinkHash()
-	if err := s.Validate(); err != nil {
+	if err := s.Validate(nil); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}
 }
@@ -121,20 +127,20 @@ func TestSegmentValidate_prevLinkHashNil(t *testing.T) {
 func TestSegmentValidate_prevLinkHashEmpty(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["prevLinkHash"] = ""
-	testSegmentValidateError(t, s, "link.meta.prevLinkHash should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.prevLinkHash should be a non empty string")
 }
 
 func TestSegmentValidate_prevLinkHashWrongType(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["prevLinkHash"] = []string{}
-	testSegmentValidateError(t, s, "link.meta.prevLinkHash should be a non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.prevLinkHash should be a non empty string")
 }
 
 func TestSegmentValidate_tagsNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "tags")
 	s.SetLinkHash()
-	if err := s.Validate(); err != nil {
+	if err := s.Validate(nil); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}
 }
@@ -142,26 +148,26 @@ func TestSegmentValidate_tagsNil(t *testing.T) {
 func TestSegmentValidate_tagsWrongType(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["tags"] = 2.4
-	testSegmentValidateError(t, s, "link.meta.tags should be an array of non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.tags should be an array of non empty string")
 }
 
 func TestSegmentValidate_tagsWrongElementType(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["tags"] = []interface{}{1, true, 3}
-	testSegmentValidateError(t, s, "link.meta.tags should be an array of non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.tags should be an array of non empty string")
 }
 
 func TestSegmentValidate_tagsEmpty(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["tags"] = []interface{}{"test", ""}
-	testSegmentValidateError(t, s, "link.meta.tags should be an array of non empty string")
+	testSegmentValidateError(t, s, nil, "link.meta.tags should be an array of non empty string")
 }
 
 func TestSegmentValidate_priorityNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "priority")
 	s.SetLinkHash()
-	if err := s.Validate(); err != nil {
+	if err := s.Validate(nil); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}
 }
@@ -169,7 +175,93 @@ func TestSegmentValidate_priorityNil(t *testing.T) {
 func TestSegmentValidate_priorityWrongType(t *testing.T) {
 	s := cstesting.RandomSegment()
 	s.Link.Meta["priority"] = false
-	testSegmentValidateError(t, s, "link.meta.priority should be a float64")
+	testSegmentValidateError(t, s, nil, "link.meta.priority should be a float64")
+}
+
+func TestSegmentValidate_refBadType(t *testing.T) {
+	s := cstesting.RandomSegment()
+	s.Link.Meta["refs"] = []interface{}{"foo", "bar"}
+	testSegmentValidateError(t, s, nil, "link.meta.refs[0] should be a map")
+}
+
+func TestSegmentValidate_refGoodSegment(t *testing.T) {
+	s := cstesting.RandomSegment()
+	ref := cstesting.RandomSegment()
+	appendRefSegment(s, ref)
+	s.SetLinkHash()
+	if err := s.Validate(nil); err != nil {
+		t.Errorf("s.Validate() = %q want nil", err)
+	}
+}
+
+func TestSegmentValidate_refBadSegment(t *testing.T) {
+	s := cstesting.RandomSegment()
+	ref := cstesting.RandomSegment()
+	ref.Link.Meta["process"] = ""
+	appendRefSegment(s, ref)
+	testSegmentValidateErrorWrapper(t, s, nil, "invalid link.meta.refs[0].segment")
+}
+
+func TestSegmentValidate_refBadSegmentFormat(t *testing.T) {
+	s := cstesting.RandomSegment()
+	ref := cstesting.RandomSegment()
+	appendRefSegment(s, ref)
+	s.Link.Meta["refs"] = append(s.Link.Meta["refs"].([]interface{}), map[string]interface{}{"segment": "foobar"})
+	testSegmentValidateError(t, s, nil, "link.meta.refs[1].segment should be a valid json segment")
+}
+
+func TestSegmentValidate_refMissingProcess(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, "", testutil.RandomHash().String())
+	testSegmentValidateError(t, s, nil, "link.meta.refs[0].process should be a non empty string")
+}
+
+func TestSegmentValidate_refMissingLinkHash(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, testutil.RandomString(24), "")
+	testSegmentValidateError(t, s, nil, "link.meta.refs[0].linkHash should be a non empty string")
+}
+
+func TestSegmentValidate_refLinkHashBadType(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, testutil.RandomString(24), "FooBar")
+	testSegmentValidateError(t, s, nil, "link.meta.refs[0].linkHash should be a bytes32 field")
+}
+
+func TestSegmentValidate_refGoodLinkNotChecked(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, s.Link.Meta["process"].(string), testutil.RandomHash().String())
+	s.SetLinkHash()
+	if err := s.Validate(nil); err != nil {
+		t.Errorf("s.Validate() = %q want nil", err)
+	}
+}
+
+func TestSegmentValidate_refGoodLinkChecked(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, s.Link.Meta["process"].(string), testutil.RandomHash().String())
+	s.SetLinkHash()
+	if err := s.Validate(func(linkHash *types.Bytes32) (*cs.Segment, error) {
+		return cstesting.RandomSegment(), nil
+	}); err != nil {
+		t.Errorf("s.Validate() = %q want nil", err)
+	}
+}
+
+func TestSegmentValidate_refGoodLinkNotFound(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, s.Link.Meta["process"].(string), testutil.RandomHash().String())
+	testSegmentValidateErrorWrapper(t, s, func(linkHash *types.Bytes32) (*cs.Segment, error) {
+		return nil, errors.New("Bad mood")
+	}, "Bad mood")
+}
+
+func TestSegmentValidate_refGoodNilLink(t *testing.T) {
+	s := cstesting.RandomSegment()
+	appendRefLink(s, s.Link.Meta["process"].(string), testutil.RandomHash().String())
+	testSegmentValidateError(t, s, func(linkHash *types.Bytes32) (*cs.Segment, error) {
+		return nil, nil
+	}, "link.meta.refs[0] segment is nil")
 }
 
 func TestSegmentSliceSort_priority(t *testing.T) {

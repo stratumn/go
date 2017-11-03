@@ -403,7 +403,7 @@ func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
 }
 
 func (t *TMPop) checkSegment(snapshot *Snapshot, segment *cs.Segment) abci.Result {
-	err := segment.Validate()
+	err := segment.Validate(snapshot.segments.GetSegment)
 	if err != nil {
 		return abci.NewError(
 			CodeTypeValidation,

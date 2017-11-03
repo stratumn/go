@@ -92,7 +92,7 @@ func (b *Batch) DeleteValue(key []byte) (value []byte, err error) {
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (b *Batch) SaveSegment(segment *cs.Segment) error {
-	if err := segment.Validate(); err != nil {
+	if err := segment.Validate(b.GetSegment); err != nil {
 		return err
 	}
 	b.SegmentOps = append(b.SegmentOps, SegmentOperation{OpTypeSet, segment.GetLinkHash(), segment})
