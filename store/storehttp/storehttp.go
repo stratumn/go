@@ -225,7 +225,7 @@ func (s *Server) saveSegment(w http.ResponseWriter, r *http.Request, _ httproute
 	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
-	if err := seg.Validate(); err != nil {
+	if err := seg.Validate(s.adapter.GetSegment); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
 	if err := s.adapter.SaveSegment(&seg); err != nil {
