@@ -16,11 +16,14 @@
 package cs
 
 import (
-	"errors"
+	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 
 	"reflect"
+
+	"github.com/pkg/errors"
 
 	"github.com/stratumn/sdk/types"
 )
@@ -43,14 +46,11 @@ func (s *Segment) GetLinkHashString() string {
 	return s.Meta.GetLinkHashString()
 }
 
-// GetLinkHashString returns the link ID as a string.
-// It assumes the segment is valid.
-// func (s *Segment) GetLinkHashString() string {
-// 	return s.Meta["linkHash"].(string)
-// }
+// GetSegmentFunc is the function signature to retrieve a Segment
+type GetSegmentFunc func(linkHash *types.Bytes32) (*Segment, error)
 
 // Validate checks for errors in a segment.
-func (s *Segment) Validate() error {
+func (s *Segment) Validate(getSegment GetSegmentFunc) error {
 	if s.Meta.LinkHash == "" {
 		return errors.New("meta.linkHash should be a non empty string")
 	}
@@ -83,7 +83,49 @@ func (s *Segment) Validate() error {
 			return errors.New("link.meta.priority should be a float64")
 		}
 	}
+	return s.validateReferences(getSegment)
+}
 
+func (s *Segment) validateReferences(getSegment GetSegmentFunc) error {
+	if refs, ok := s.Link.Meta["refs"].([]interface{}); ok {
+		for refIdx, refChild := range refs {
+			ref, ok := refChild.(map[string]interface{})
+			if !ok {
+				return errors.Errorf("link.meta.refs[%d] should be a map", refIdx)
+			}
+			if jsonSeg, ok := ref["segment"].(string); ok {
+				var seg Segment
+				decoder := json.NewDecoder(strings.NewReader(jsonSeg))
+				if err := decoder.Decode(&seg); err != nil {
+					return errors.Errorf("link.meta.refs[%d].segment should be a valid json segment", refIdx)
+				}
+				if err := seg.Validate(getSegment); err != nil {
+					return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
+				}
+			} else {
+				process, ok := ref["process"].(string)
+				if !ok || process == "" {
+					return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
+				}
+				linkHashStr, ok := ref["linkHash"].(string)
+				if !ok || linkHashStr == "" {
+					return errors.Errorf("link.meta.refs[%d].linkHash should be a non empty string", refIdx)
+				}
+				linkHash, err := types.NewBytes32FromString(linkHashStr)
+				if err != nil {
+					return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
+				}
+				if s.Link.Meta["process"].(string) == process && getSegment != nil {
+					if seg, err := getSegment(linkHash); err != nil {
+						return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
+					} else if seg == nil {
+						return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
+					}
+				}
+				// Segment from another process is not retrieved because it should be in another store
+			}
+		}
+	}
 	return nil
 }
 
