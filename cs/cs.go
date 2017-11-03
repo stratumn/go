@@ -234,10 +234,7 @@ func (l *Link) GetTagMap() map[string]struct{} {
 // GetProcess returns the process name as a string.
 // It assumes the link is valid.
 func (l *Link) GetProcess() string {
-	if str, ok := l.Meta["process"].(string); ok {
-		return str
-	}
-	return ""
+	return l.Meta["process"].(string)
 }
 
 // SegmentSlice is a slice of segment pointers.
