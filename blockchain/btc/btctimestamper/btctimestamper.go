@@ -107,7 +107,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 	for _, output := range outputs {
 		prevPKScripts = append(prevPKScripts, output.PKScript)
 		out := wire.NewOutPoint((*chainhash.Hash)(&output.TXHash), uint32(output.Index))
-		tx.AddTxIn(wire.NewTxIn(out, nil))
+		tx.AddTxIn(wire.NewTxIn(out, nil, nil))
 	}
 
 	payToAddrOut, err := ts.createPayToAddrTxOut(total - ts.config.Fee)
@@ -188,7 +188,7 @@ const validateTxEngineFlags = txscript.ScriptBip16 | txscript.ScriptVerifyDERSig
 
 func (ts *Timestamper) validateTx(tx *wire.MsgTx, prevPKScripts [][]byte) error {
 	for _, PKScript := range prevPKScripts {
-		vm, err := txscript.NewEngine(PKScript, tx, 0, validateTxEngineFlags, nil)
+		vm, err := txscript.NewEngine(PKScript, tx, 0, validateTxEngineFlags, nil, nil, 0)
 		if err != nil {
 			return err
 		}
