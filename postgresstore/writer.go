@@ -36,7 +36,7 @@ func (a *writer) SaveSegment(segment *cs.Segment) error {
 	}
 
 	if prevLinkHash == nil {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, nil, pq.Array(tags), string(data), process)
+		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, []byte{}, pq.Array(tags), string(data), process)
 	} else {
 		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data), process)
 	}
