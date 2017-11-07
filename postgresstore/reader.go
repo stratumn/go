@@ -52,16 +52,21 @@ func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
 func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var (
-		rows     *sql.Rows
-		err      error
-		limit    = filter.Limit
-		offset   = filter.Offset
-		segments = make(cs.SegmentSlice, 0, limit)
-		process  = filter.Process
+		rows         *sql.Rows
+		err          error
+		limit        = filter.Limit
+		offset       = filter.Offset
+		segments     = make(cs.SegmentSlice, 0, limit)
+		process      = filter.Process
+		prevLinkHash []byte
 	)
 
 	if filter.PrevLinkHash != nil {
-		prevLinkHash := filter.PrevLinkHash[:]
+
+		if prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash); prevLinkHashBytes != nil && err == nil {
+			prevLinkHash = prevLinkHashBytes[:]
+		}
+
 		if len(filter.MapIDs) > 0 {
 			mapIDs := pq.Array(filter.MapIDs)
 			if len(filter.Tags) > 0 {
