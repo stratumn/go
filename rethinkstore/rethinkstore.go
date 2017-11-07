@@ -14,7 +14,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
-	rethink "gopkg.in/dancannon/gorethink.v2"
+	rethink "gopkg.in/dancannon/gorethink.v3"
 )
 
 func init() {
@@ -214,14 +214,19 @@ func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
 func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+	var prevLinkHash []byte
 	q := a.segments
 
-	if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil {
+	if filter.PrevLinkHash != nil {
+
+		if prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash); prevLinkHash != nil && err == nil {
+			prevLinkHash = prevLinkHashBytes[:]
+		}
 		q = q.Between([]interface{}{
-			prevLinkHash[:],
+			prevLinkHash,
 			rethink.MinVal,
 		}, []interface{}{
-			prevLinkHash[:],
+			prevLinkHash,
 			rethink.MaxVal,
 		}, rethink.BetweenOpts{
 			Index:      "prevLinkHashOrder",
@@ -259,11 +264,7 @@ func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 
 	q = q.Field("content")
 
-	if skip := filter.Offset; skip > 0 {
-		q = q.Skip(filter.Offset)
-	}
-
-	cur, err := q.Limit(filter.Limit).Run(a.session)
+	cur, err := q.Skip(filter.Offset).Limit(filter.Limit).Run(a.session)
 	if err != nil {
 		return nil, err
 	}
@@ -305,9 +306,8 @@ func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 			OrderBy(rethink.OrderByOpts{Index: "mapId"}).
 			Distinct(rethink.DistinctOpts{Index: "mapId"})
 	}
-	cur, err := q.Skip(filter.Pagination.Offset).
-		Limit(filter.Pagination.Limit).
-		Run(a.session)
+
+	cur, err := q.Skip(filter.Pagination.Offset).Limit(filter.Limit).Run(a.session)
 	if err != nil {
 		return nil, err
 	}
