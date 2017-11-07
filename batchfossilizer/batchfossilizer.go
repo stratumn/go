@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/evidences"
