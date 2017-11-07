@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
 	"github.com/stratumn/sdk/jsonhttp"

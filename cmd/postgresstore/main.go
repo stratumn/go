@@ -8,7 +8,7 @@ package main
 import (
 	"flag"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/goprivate/postgresstore"
 	"github.com/stratumn/sdk/store/storehttp"
