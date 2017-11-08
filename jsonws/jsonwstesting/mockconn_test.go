@@ -133,7 +133,7 @@ func TestMockConn_SetReadDeadline(t *testing.T) {
 		t.Errorf("a.MockSetReadDeadline.CalledWith = %q want %q", got, want)
 	}
 	if got, want := a.MockSetReadDeadline.LastCalledWith, v; got != want {
-		t.Errorf("a.MockSetReadDeadline.LastCalledWith = %d want %d", got, want)
+		t.Errorf("a.MockSetReadDeadline.LastCalledWith = %v want %v", got, want)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestMockConn_SetWriteDeadline(t *testing.T) {
 		t.Errorf("a.MockSetWriteDeadline.CalledWith = %q want %q", got, want)
 	}
 	if got, want := a.MockSetWriteDeadline.LastCalledWith, v; got != want {
-		t.Errorf("a.MockSetWriteDeadline.LastCalledWith = %d want %d", got, want)
+		t.Errorf("a.MockSetWriteDeadline.LastCalledWith = %v want %v", got, want)
 	}
 }
 
