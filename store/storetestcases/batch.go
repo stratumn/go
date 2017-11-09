@@ -276,7 +276,7 @@ func (f Factory) TestBatchFindSegments(t *testing.T) {
 
 	var segs cs.SegmentSlice
 	var err error
-	if segs, err = b.FindSegments(&store.SegmentFilter{}); err != nil {
+	if segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
 		t.Fatalf("b.FindSegments(): err: %s", err)
 	}
 
@@ -289,7 +289,7 @@ func (f Factory) TestBatchFindSegments(t *testing.T) {
 	b.SaveSegment(cstesting.RandomSegment())
 	b.DeleteSegment(seg.GetLinkHash())
 
-	if segs, err = b.FindSegments(&store.SegmentFilter{}); err != nil {
+	if segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
 		t.Fatalf("b.FindSegments(): err: %s", err)
 	}
 
@@ -318,7 +318,7 @@ func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 
 	var mapIDs []string
 	var err error
-	if mapIDs, err = b.GetMapIDs(&store.MapFilter{}); err != nil {
+	if mapIDs, err = b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
 		t.Fatalf("b.GetMapIDs(): err: %s", err)
 	}
 
@@ -347,7 +347,7 @@ func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 		b.DeleteSegment(seg.GetLinkHash())
 	}
 
-	if mapIDs, err = b.GetMapIDs(&store.MapFilter{}); err != nil {
+	if mapIDs, err = b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
 		t.Fatalf("b.GetMapIDs(): err: %s", err)
 	}
 

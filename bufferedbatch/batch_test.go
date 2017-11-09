@@ -285,7 +285,7 @@ func TestBatch_FindSegments(t *testing.T) {
 	var segments cs.SegmentSlice
 	var err error
 
-	segments, err = batch.FindSegments(&store.SegmentFilter{Process: "Foo"})
+	segments, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})
 	if err != nil {
 		t.Fatalf("batch.FindSegments(): err: %s", err)
 	}
@@ -293,7 +293,7 @@ func TestBatch_FindSegments(t *testing.T) {
 		t.Errorf("segment slice length = %d want %d", got, want)
 	}
 
-	segments, err = batch.FindSegments(&store.SegmentFilter{Process: "Bar"})
+	segments, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Bar"})
 	if err != nil {
 		t.Fatalf("batch.FindSegments(): err: %s", err)
 	}
@@ -301,7 +301,7 @@ func TestBatch_FindSegments(t *testing.T) {
 		t.Errorf("segment slice length = %d want %d", got, want)
 	}
 
-	segments, err = batch.FindSegments(&store.SegmentFilter{Process: "NotFound"})
+	segments, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
 	if got, want := err, notFoundErr; got != want {
 		t.Errorf("FindSegments should return an error: %s want %s", got, want)
 	}
@@ -387,7 +387,7 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	var mapIDs []string
 	var err error
 
-	mapIDs, err = batch.GetMapIDs(&store.MapFilter{})
+	mapIDs, err = batch.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 	if err != nil {
 		t.Fatalf("batch.GetMapIDs(): err: %s", err)
 	}
@@ -399,7 +399,7 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	batch.DeleteSegment(s3.GetLinkHash())
 	batch.DeleteSegment(sc.GetLinkHash())
 
-	mapIDs, err = batch.GetMapIDs(&store.MapFilter{})
+	mapIDs, err = batch.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 	if err != nil {
 		t.Fatalf("batch.GetMapIDs(): err: %s", err)
 	}
@@ -460,7 +460,7 @@ func TestBatch_GetMapIDsWithStoreReturningAnErrorOnFindSegments(t *testing.T) {
 		return nil, notFoundErr
 	}
 
-	if _, err := batch.GetMapIDs(&store.MapFilter{}); err == nil {
+	if _, err := batch.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err == nil {
 		t.Fatalf("batch.GetMapIDs() should return an error")
 	}
 }

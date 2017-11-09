@@ -361,7 +361,7 @@ func (f Factory) TestFindSegmentsEmptyPrevLinkHash(t *testing.T) {
 		saveNewBranch(&a, s, nil)
 	}
 
-	slice, err := a.FindSegments(&store.SegmentFilter{PrevLinkHash: &emptyPrevLinkHash})
+	slice, err := a.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, PrevLinkHash: &emptyPrevLinkHash})
 	if err != nil {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
