@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
 )
 
 var emptyPrevLinkHash = ""
@@ -347,7 +348,66 @@ func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
 	}
 }
 
-// TestFindSegmentsEmptyPrevLinkHash tests whan happens when you search for an
+// TestFindSegmentsLinkHashesMultiMatch tests searching for segments by a slice of
+// linkHashes with multiple matches.
+func (f Factory) TestFindSegmentsLinkHashesMultiMatch(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	segment1 := saveNewSegment(&a, nil)
+	segment2 := saveNewSegment(&a, nil)
+	for j := 0; j < store.DefaultLimit; j++ {
+		saveNewSegment(&a, nil)
+	}
+
+	slice, err := a.FindSegments(&store.SegmentFilter{
+		LinkHashes: []*types.Bytes32{
+			segment1.GetLinkHash(),
+			testutil.RandomHash(),
+			segment2.GetLinkHash(),
+		},
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nit want cs.SegmentSlice")
+	}
+	if got, want := len(slice), 2; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestFindSegmentsLinkHashesNoMatch tests searching for segments by a slice of
+// linkHashes will return emtpy slice when there are no matches.
+func (f Factory) TestFindSegmentsLinkHashesNoMatch(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	for j := 0; j < store.DefaultLimit; j++ {
+		saveNewSegment(&a, nil)
+	}
+
+	slice, err := a.FindSegments(&store.SegmentFilter{
+		LinkHashes: []*types.Bytes32{
+			testutil.RandomHash(),
+			testutil.RandomHash(),
+		},
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nit want cs.SegmentSlice")
+	}
+	if got, want := len(slice), 0; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestFindSegmentsEmptyPrevLinkHash tests what happens when you search for an
 // existing previous link hash.
 func (f Factory) TestFindSegmentsEmptyPrevLinkHash(t *testing.T) {
 	a := f.initAdapter(t)

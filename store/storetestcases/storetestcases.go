@@ -68,6 +68,8 @@ func (f Factory) RunTests(t *testing.T) {
 	t.Run("FindSegmentsPrevLinkHashGoodMapID", f.TestFindSegmentsPrevLinkHashGoodMapID)
 	t.Run("FindSegmentsPrevLinkHashBadMapID", f.TestFindSegmentsPrevLinkHashBadMapID)
 	t.Run("FindSegmentsPrevLinkHashNotFound", f.TestFindSegmentsPrevLinkHashNotFound)
+	t.Run("FindSegmentsLinkHashesMultiMatch", f.TestFindSegmentsLinkHashesMultiMatch)
+	t.Run("FindSegmentsLinkHashesNoMatch", f.TestFindSegmentsLinkHashesNoMatch)
 	t.Run("TestFindSegmentWithGoodProcess", f.TestFindSegmentWithGoodProcess)
 	t.Run("TestFindSegmentWithBadProcess", f.TestFindSegmentWithBadProcess)
 	t.Run("GetInfo", f.TestGetInfo)

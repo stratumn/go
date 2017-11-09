@@ -110,6 +110,10 @@ type SegmentFilter struct {
 	// empty string is to search Segments without parent
 	PrevLinkHash *string `json:"prevLinkHash"`
 
+	// A slice of linkHashes to search Segments.
+	// This attribute is optional.
+	LinkHashes []*types.Bytes32 `json:"linkHashes"`
+
 	// A slice of tags the segments must all contain.
 	Tags []string `json:"tags"`
 }
@@ -176,6 +180,15 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 				return false
 			}
 		}
+	}
+
+	if len(filter.LinkHashes) > 0 {
+		for _, linkHash := range filter.LinkHashes {
+			if linkHash.Compare(segment.GetLinkHash()) == 0 {
+				return true
+			}
+		}
+		return false
 	}
 
 	if filter.Process != "" && filter.Process != segment.Link.GetProcess() {

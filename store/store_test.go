@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/types"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/testutil"
@@ -80,11 +81,14 @@ func TestSegmentFilter_Match(t *testing.T) {
 		MapIDs       []string
 		Process      string
 		PrevLinkHash *string
+		LinkHashes   []*types.Bytes32
 		Tags         []string
 	}
 	type args struct {
 		segment *cs.Segment
 	}
+	linkHashesSegment := defaultTestingSegment()
+	linkHashesSegmentHash := linkHashesSegment.GetLinkHash()
 	tests := []struct {
 		name   string
 		fields fields
@@ -158,6 +162,18 @@ func TestSegmentFilter_Match(t *testing.T) {
 			want:   false,
 		},
 		{
+			name:   "LinkHashes ok",
+			fields: fields{LinkHashes: []*types.Bytes32{testutil.RandomHash(), linkHashesSegmentHash}},
+			args:   args{linkHashesSegment},
+			want:   true,
+		},
+		{
+			name:   "LinkHashes ko",
+			fields: fields{LinkHashes: []*types.Bytes32{testutil.RandomHash()}},
+			args:   args{defaultTestingSegment()},
+			want:   false,
+		},
+		{
 			name:   "One tag",
 			fields: fields{Tags: []string{"Foo"}},
 			args:   args{defaultTestingSegment()},
@@ -188,6 +204,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 				Pagination:   tt.fields.Pagination,
 				MapIDs:       tt.fields.MapIDs,
 				Process:      tt.fields.Process,
+				LinkHashes:   tt.fields.LinkHashes,
 				PrevLinkHash: tt.fields.PrevLinkHash,
 				Tags:         tt.fields.Tags,
 			}
