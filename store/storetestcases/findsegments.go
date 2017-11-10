@@ -379,7 +379,7 @@ func (f Factory) TestFindSegmentsLinkHashesMultiMatch(t *testing.T) {
 	}
 }
 
-// TestFindSegmentsLinkHashesBadProcess tests matching a linkHash will fail
+// TestFindSegmentsLinkHashesWithProcess tests matching a linkHash will fail
 // if the provided process attribute does not match.
 func (f Factory) TestFindSegmentsLinkHashesWithProcess(t *testing.T) {
 	a := f.initAdapter(t)
