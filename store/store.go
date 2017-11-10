@@ -183,12 +183,16 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 	}
 
 	if len(filter.LinkHashes) > 0 {
+		var match bool
 		for _, linkHash := range filter.LinkHashes {
 			if linkHash.Compare(segment.GetLinkHash()) == 0 {
-				return true
+				match = true
+				break
 			}
 		}
-		return false
+		if !match {
+			return false
+		}
 	}
 
 	if filter.Process != "" && filter.Process != segment.Link.GetProcess() {

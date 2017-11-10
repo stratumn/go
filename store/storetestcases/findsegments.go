@@ -379,6 +379,39 @@ func (f Factory) TestFindSegmentsLinkHashesMultiMatch(t *testing.T) {
 	}
 }
 
+// TestFindSegmentsLinkHashesBadProcess tests matching a linkHash will fail
+// if the provided process attribute does not match.
+func (f Factory) TestFindSegmentsLinkHashesWithProcess(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	segment1 := saveNewSegment(&a, nil)
+	segment2 := saveNewSegment(&a, func(s *cs.Segment) {
+		s.Link.Meta["process"] = "Baz"
+	})
+	for j := 0; j < store.DefaultLimit; j++ {
+		saveNewSegment(&a, nil)
+	}
+
+	slice, err := a.FindSegments(&store.SegmentFilter{
+		LinkHashes: []*types.Bytes32{
+			segment1.GetLinkHash(),
+			segment2.GetLinkHash(),
+		},
+		Process: "Baz",
+	})
+	if err != nil {
+		t.Fatalf("a.FindSegments(): err: %s", err)
+	}
+
+	if got := slice; got == nil {
+		t.Fatal("slice = nit want cs.SegmentSlice")
+	}
+	if got, want := len(slice), 1; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
 // TestFindSegmentsLinkHashesNoMatch tests searching for segments by a slice of
 // linkHashes will return emtpy slice when there are no matches.
 func (f Factory) TestFindSegmentsLinkHashesNoMatch(t *testing.T) {
