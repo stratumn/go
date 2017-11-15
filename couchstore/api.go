@@ -16,7 +16,6 @@ package couchstore
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,7 +23,6 @@ import (
 	"net/http"
 
 	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/types"
 )
 
 const (
@@ -112,14 +110,6 @@ func (c *CouchStore) deleteDatabase(name string) error {
 	}
 
 	return nil
-}
-
-func (c *CouchStore) getSegmentDoc(linkHash *types.Bytes32) (*Document, error) {
-	return c.getDocument(dbSegment, linkHash.String())
-}
-
-func (c *CouchStore) getValueDoc(key []byte) (*Document, error) {
-	return c.getDocument(dbValue, hex.EncodeToString(key))
 }
 
 func (c *CouchStore) saveSegment(segment *cs.Segment) error {
@@ -228,12 +218,7 @@ func (c *CouchStore) deleteDocument(dbName string, key string) (*Document, error
 }
 
 func (c *CouchStore) get(path string) ([]byte, *CouchResponseStatus, error) {
-	resp, err := http.Get(c.config.Address + path)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return getCouchResponseStatus(resp)
+	return c.doHTTPRequest(http.MethodGet, path, nil)
 }
 
 func (c *CouchStore) post(path string, data []byte) ([]byte, *CouchResponseStatus, error) {
@@ -246,23 +231,16 @@ func (c *CouchStore) post(path string, data []byte) ([]byte, *CouchResponseStatu
 }
 
 func (c *CouchStore) put(path string, data []byte) ([]byte, *CouchResponseStatus, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPut, c.config.Address+path, bytes.NewBuffer(data))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return getCouchResponseStatus(resp)
+	return c.doHTTPRequest(http.MethodPut, path, data)
 }
 
 func (c *CouchStore) delete(path string) ([]byte, *CouchResponseStatus, error) {
+	return c.doHTTPRequest(http.MethodDelete, path, nil)
+}
+
+func (c *CouchStore) doHTTPRequest(method string, path string, data []byte) ([]byte, *CouchResponseStatus, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodDelete, c.config.Address+path, bytes.NewBuffer([]byte{}))
+	req, err := http.NewRequest(method, c.config.Address+path, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -273,6 +251,7 @@ func (c *CouchStore) delete(path string) ([]byte, *CouchResponseStatus, error) {
 	}
 
 	return getCouchResponseStatus(resp)
+
 }
 
 func getCouchResponseStatus(resp *http.Response) ([]byte, *CouchResponseStatus, error) {

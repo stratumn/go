@@ -69,7 +69,7 @@ func New(config *Config) (*CouchStore, error) {
 	}
 	if resp.StatusCode != 200 {
 		fmt.Println(resp)
-		return nil, errors.New("CouchDB dit not return 200")
+		return nil, fmt.Errorf(fmt.Sprintf("CouchDB returned status code %v, expected 200", resp.StatusCode))
 	}
 
 	couchstore := &CouchStore{
@@ -205,7 +205,8 @@ func (c *CouchStore) NewBatch() (store.Batch, error) {
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (c *CouchStore) SaveValue(key, value []byte) error {
-	valueDoc, err := c.getValueDoc(key)
+	hexKey := hex.EncodeToString(key)
+	valueDoc, err := c.getDocument(dbValue, hexKey)
 	if err != nil {
 		return err
 	}
@@ -218,7 +219,6 @@ func (c *CouchStore) SaveValue(key, value []byte) error {
 		newValueDoc.Revision = valueDoc.Revision
 	}
 
-	hexKey := hex.EncodeToString(key)
 	return c.saveDocument(dbValue, hexKey, newValueDoc)
 }
 
