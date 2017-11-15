@@ -88,6 +88,11 @@ func (a *DBAdapter) Iterator() db.Iterator {
 	return nil
 }
 
+// IteratorPrefix implements github.com/tendermint/tmlibs/db/db.DB.Iterator. IteratorPrefix is for debugging.
+func (a *DBAdapter) IteratorPrefix([]byte) db.Iterator {
+	return nil
+}
+
 // Stats implements github.com/tendermint/tmlibs/db/db.DB.Stats. Stats is for debugging.
 func (a *DBAdapter) Stats() map[string]string {
 	return nil

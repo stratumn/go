@@ -350,7 +350,7 @@ func (t *TMStore) sendQuery(name string, args interface{}) (res *abci.ResultQuer
 		return
 	}
 
-	result, err := t.tmClient.ABCIQuery(name, query, true)
+	result, err := t.tmClient.ABCIQuery(name, query)
 	if err != nil {
 		return
 	}
