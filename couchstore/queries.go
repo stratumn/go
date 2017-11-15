@@ -73,7 +73,7 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	if len(filter.MapIDs) > 0 {
 		segmentSelector.MapIds = &MapIdsIn{filter.MapIDs}
 	} else {
-		segmentSelector.Tags = nil
+		segmentSelector.MapIds = nil
 	}
 	if len(filter.Tags) > 0 {
 		segmentSelector.Tags = &TagsAll{filter.Tags}
