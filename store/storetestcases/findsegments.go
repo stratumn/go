@@ -366,6 +366,9 @@ func (f Factory) TestFindSegmentsLinkHashesMultiMatch(t *testing.T) {
 			testutil.RandomHash(),
 			segment2.GetLinkHash(),
 		},
+		Pagination: store.Pagination{
+			Limit: store.DefaultLimit,
+		},
 	})
 	if err != nil {
 		t.Fatalf("a.FindSegments(): err: %s", err)
@@ -399,6 +402,9 @@ func (f Factory) TestFindSegmentsLinkHashesWithProcess(t *testing.T) {
 			segment2.GetLinkHash(),
 		},
 		Process: "Baz",
+		Pagination: store.Pagination{
+			Limit: store.DefaultLimit,
+		},
 	})
 	if err != nil {
 		t.Fatalf("a.FindSegments(): err: %s", err)
@@ -426,6 +432,9 @@ func (f Factory) TestFindSegmentsLinkHashesNoMatch(t *testing.T) {
 		LinkHashes: []*types.Bytes32{
 			testutil.RandomHash(),
 			testutil.RandomHash(),
+		},
+		Pagination: store.Pagination{
+			Limit: store.DefaultLimit,
 		},
 	})
 	if err != nil {
