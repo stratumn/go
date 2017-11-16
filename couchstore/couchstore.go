@@ -17,10 +17,9 @@ package couchstore
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
@@ -63,20 +62,24 @@ type Info struct {
 
 // New creates an instance of a CouchStore.
 func New(config *Config) (*CouchStore, error) {
-	resp, err := http.Get(config.Address)
-	if err != nil {
-		return nil, errors.New("No CouchDB running on " + config.Address)
-	}
-	if resp.StatusCode != 200 {
-		fmt.Println(resp)
-		return nil, fmt.Errorf(fmt.Sprintf("CouchDB returned status code %v, expected 200", resp.StatusCode))
-	}
-
 	couchstore := &CouchStore{
 		config: config,
 	}
-	couchstore.createDatabase(dbSegment)
-	couchstore.createDatabase(dbValue)
+	_, couchResponseStatus, err := couchstore.get("/")
+	if err != nil {
+		return nil, errors.Errorf("No CouchDB running on %v", config.Address)
+
+	}
+	if couchResponseStatus.Ok == false {
+		return nil, errors.New(couchResponseStatus.error())
+	}
+
+	if err := couchstore.createDatabase(dbSegment); err != nil {
+		return nil, err
+	}
+	if err := couchstore.createDatabase(dbValue); err != nil {
+		return nil, err
+	}
 
 	return couchstore, nil
 }
@@ -152,7 +155,7 @@ func (c *CouchStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	}
 
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.Error)
+		return nil, errors.New(couchResponseStatus.error())
 	}
 
 	couchFindResponse := &CouchFindResponse{}
@@ -182,7 +185,7 @@ func (c *CouchStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	}
 
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.Error)
+		return nil, errors.New(couchResponseStatus.error())
 	}
 
 	couchFindResponse := &CouchFindResponse{}

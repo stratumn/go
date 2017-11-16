@@ -15,7 +15,7 @@
 package couchstore
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/stratumn/sdk/bufferedbatch"
 )
@@ -39,7 +39,7 @@ func (b *Batch) Write() (err error) {
 		case bufferedbatch.OpTypeDelete:
 			_, err = b.originalCouchStore.DeleteValue(op.Key)
 		default:
-			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			err = errors.Errorf("Invalid Batch operation type: %v", op.OpType)
 		}
 	}
 
@@ -54,7 +54,7 @@ func (b *Batch) Write() (err error) {
 		case bufferedbatch.OpTypeDelete:
 			_, err = b.originalCouchStore.DeleteSegment(op.LinkHash)
 		default:
-			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			err = errors.Errorf("Invalid Batch operation type: %v", op.OpType)
 		}
 	}
 

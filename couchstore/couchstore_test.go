@@ -52,7 +52,4 @@ func freeTestCouchStore(a store.Adapter) {
 	if err := myCouchstore.deleteDatabase(dbSegment); err != nil {
 		test.Fatal(err)
 	}
-	if err := myCouchstore.createDatabase(dbSegment); err != nil {
-		test.Fatal(err)
-	}
 }

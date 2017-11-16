@@ -17,11 +17,11 @@ package couchstore
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs"
 )
 
@@ -47,19 +47,23 @@ type CouchResponseStatus struct {
 	Reason     string `json:"reason;omitempty"`
 }
 
+func (c *CouchResponseStatus) error() string {
+	return fmt.Sprintf("Status code: %v, error: %v, reason: %v", c.StatusCode, c.Error, c.Reason)
+}
+
 // Document is the type used in couchdb
 type Document struct {
 	ID         string `json:"_id,omitempty"`
 	Revision   string `json:"_rev,omitempty"`
 	ObjectType string `json:"docType,omitempty"`
 
-	// Segment specific
+	// The following fields are used when querying couchdb for segment documents.
 	Segment *cs.Segment `json:"segment,omitempty"`
 
-	// MapID specific
+	// The following fields are used when querying couchdb for map documents
 	Process string `json:"process,omitempty"`
 
-	// Value specific
+	// The following fields are used when querying couchdb for values stored via key/value.
 	Value []byte `json:"value,omitempty"`
 }
 
@@ -90,7 +94,7 @@ func (c *CouchStore) createDatabase(name string) error {
 
 	if couchResponseStatus.Ok == false {
 		if couchResponseStatus.StatusCode != statusDBExists {
-			return errors.New(couchResponseStatus.Reason)
+			return errors.New(couchResponseStatus.error())
 		}
 	}
 
@@ -104,8 +108,8 @@ func (c *CouchStore) deleteDatabase(name string) error {
 	}
 
 	if couchResponseStatus.Ok == false {
-		if couchResponseStatus.StatusCode != statusDBExists {
-			return errors.New(couchResponseStatus.Error)
+		if couchResponseStatus.StatusCode != statusDBMissing {
+			return errors.New(couchResponseStatus.error())
 		}
 	}
 
@@ -165,7 +169,7 @@ func (c *CouchStore) saveDocument(dbName string, key string, doc Document) error
 		return err
 	}
 	if couchResponseStatus.Ok == false {
-		return errors.New(couchResponseStatus.Reason)
+		return errors.New(couchResponseStatus.error())
 	}
 
 	return nil
@@ -184,7 +188,7 @@ func (c *CouchStore) getDocument(dbName string, key string) (*Document, error) {
 	}
 
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.Reason)
+		return nil, errors.New(couchResponseStatus.error())
 	}
 
 	if err := json.Unmarshal(docBytes, doc); err != nil {
