@@ -225,7 +225,7 @@ func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 
 	if filter.PrevLinkHash != nil {
 
-		if prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash); prevLinkHash != nil && err == nil {
+		if prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash); prevLinkHashBytes != nil && err == nil {
 			prevLinkHash = prevLinkHashBytes[:]
 		}
 		q = q.Between([]interface{}{
