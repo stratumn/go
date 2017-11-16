@@ -38,6 +38,37 @@ const (
 		ORDER BY priority DESC, created_at DESC
 		OFFSET $1 LIMIT $2
 	`
+	sqlFindSegmentsWithLinkHashes = `
+		SELECT data FROM segments
+		WHERE link_hash = any($1::bytea[])
+		AND (length($4) = 0 OR process = $4)
+		ORDER BY priority DESC, created_at DESC
+		OFFSET $2 LIMIT $3
+	`
+	sqlFindSegmentsWithLinkHashesAndMapIDs = `
+		SELECT data FROM segments
+		WHERE link_hash = any($1::bytea[])
+		AND map_id = any($2::text[])
+		AND (length($5) = 0 OR process = $5)
+		ORDER BY priority DESC, created_at DESC
+		OFFSET $3 LIMIT $4
+	`
+	sqlFindSegmentsWithLinkHashesAndTags = `
+		SELECT data FROM segments
+		WHERE link_hash = any($1::bytea[])
+		AND tags @> $2
+		AND (length($5) = 0 OR process = $5)
+		ORDER BY priority DESC, created_at DESC
+		OFFSET $3 LIMIT $4
+	`
+	sqlFindSegmentsWithLinkHashesAndMapIDsAndTags = `
+		SELECT data FROM segments
+		WHERE link_hash = any($1::bytea[])
+		AND map_id = any($2::text[]) AND tags @> $3
+		AND (length($6) = 0 OR process = $6)
+		ORDER BY priority DESC, created_at DESC
+		OFFSET $4 LIMIT $5
+	`
 	sqlFindSegmentsWithMapIDs = `
 		SELECT data FROM segments
 		WHERE map_id = any($1::text[])
@@ -190,6 +221,10 @@ type readStmts struct {
 	FindSegmentsWithMapIDs                       *sql.Stmt
 	FindSegmentsWithPrevLinkHash                 *sql.Stmt
 	FindSegmentsWithTags                         *sql.Stmt
+	FindSegmentsWithLinkHashes                   *sql.Stmt
+	FindSegmentsWithLinkHashesAndMapIDs          *sql.Stmt
+	FindSegmentsWithLinkHashesAndTags            *sql.Stmt
+	FindSegmentsWithLinkHashesAndMapIDsAndTags   *sql.Stmt
 	FindSegmentsWithTagsAndLimit                 *sql.Stmt
 	FindSegmentsWithMapIDsAndTags                *sql.Stmt
 	FindSegmentsWithPrevLinkHashAndTags          *sql.Stmt
@@ -225,6 +260,12 @@ func newStmts(db *sql.DB) (*stmts, error) {
 	s.FindSegmentsWithMapIDs = prepare(sqlFindSegmentsWithMapIDs)
 	s.FindSegmentsWithPrevLinkHash = prepare(sqlFindSegmentsWithPrevLinkHash)
 	s.FindSegmentsWithTags = prepare(sqlFindSegmentsWithTags)
+
+	s.FindSegmentsWithLinkHashes = prepare(sqlFindSegmentsWithLinkHashes)
+	s.FindSegmentsWithLinkHashesAndMapIDs = prepare(sqlFindSegmentsWithLinkHashesAndMapIDs)
+	s.FindSegmentsWithLinkHashesAndTags = prepare(sqlFindSegmentsWithLinkHashesAndTags)
+	s.FindSegmentsWithLinkHashesAndMapIDsAndTags = prepare(sqlFindSegmentsWithLinkHashesAndMapIDsAndTags)
+
 	s.FindSegmentsWithMapIDsAndTags = prepare(sqlFindSegmentsWithMapIDsAndTags)
 	s.FindSegmentsWithPrevLinkHashAndTags = prepare(sqlFindSegmentsWithPrevLinkHashAndTags)
 	s.FindSegmentsWithPrevLinkHashAndMapIDs = prepare(sqlFindSegmentsWithPrevLinkHashAndMapIDs)
