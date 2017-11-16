@@ -245,3 +245,8 @@ func (b *Batch) GetValue(key []byte) (value []byte, err error) {
 
 	return b.originalStore.GetValue(key)
 }
+
+// Write must be overriden by batches that use the BufferedBatch
+func (b *Batch) Write() error {
+	return nil
+}

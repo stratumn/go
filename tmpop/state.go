@@ -15,6 +15,7 @@
 package tmpop
 
 import (
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/store"
 	"github.com/tendermint/tmlibs/merkle"
 )
@@ -37,7 +38,9 @@ func NewState(tree merkle.Tree, a store.Adapter) (*State, error) {
 	if err != nil {
 		return nil, err
 	}
-	checkedSegments, err := a.NewBatch()
+	// With transactional databases we cannot really use two transactions as they'd lock each other
+	// (more exactly, checkedSegments would lock out deliveredSegments)
+	checkedSegments := bufferedbatch.NewBatch(a)
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +84,7 @@ func (s *State) Commit() ([]byte, error) {
 	}
 	s.deliveredSegments = deliveredSegments
 
-	checkedSegments, err := s.segments.NewBatch()
-	if err != nil {
-		return nil, err
-	}
-	s.checkedSegments = checkedSegments
+	s.checkedSegments = bufferedbatch.NewBatch(s.segments)
 
 	var hash []byte
 	hash = s.deliverTx.Save()
