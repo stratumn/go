@@ -15,6 +15,7 @@
 package bufferedbatch
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"testing"
@@ -502,5 +503,151 @@ func TestBatch_GetValue(t *testing.T) {
 	}
 	if got, want := a.MockGetValue.CalledCount, 1; got != want {
 		t.Errorf("a.MockGetValue.CalledCount = %v want %v", got, want)
+	}
+}
+
+// TestBatch_WriteSegment tests what happens when saving and deleting a segment
+func TestBatch_WriteSegment(t *testing.T) {
+	a := &storetesting.MockAdapter{}
+
+	s := cstesting.RandomSegment()
+	lh := testutil.RandomHash()
+
+	batch := NewBatch(a)
+
+	err := batch.SaveSegment(s)
+	if err != nil {
+		t.Fatalf("batch.SaveSegment(): err: %s", err)
+	}
+
+	_, err = batch.DeleteSegment(lh)
+	if err != nil {
+		t.Fatalf("batch.DeleteSegment(): err: %s", err)
+	}
+
+	err = batch.Write()
+	if err != nil {
+		t.Fatalf("batch.Write(): err: %s", err)
+	}
+
+	if got, want := a.MockSaveSegment.CalledCount, 1; got != want {
+		t.Errorf("batch.Write(): expected to have called SaveSegment %d time, got %d", want, got)
+	}
+
+	if got, want := a.MockSaveSegment.LastCalledWith, s; got != want {
+		t.Errorf("batch.Write(): expected to have called SaveSegment with %v, got %v", want, got)
+	}
+
+	if got, want := a.MockDeleteSegment.CalledCount, 1; got != want {
+		t.Errorf("batch.Write(): expected to have called DeleteSegment %d time, got %d", want, got)
+	}
+
+	if got, want := a.MockDeleteSegment.LastCalledWith, lh; got != want {
+		t.Errorf("batch.Write(): expected to have called DeleteSegment with %v, got %v", want, got)
+	}
+}
+
+// TestBatch_WriteValue tests what happens when saving and deleting a value
+func TestBatch_WriteValue(t *testing.T) {
+	a := &storetesting.MockAdapter{}
+
+	k := testutil.RandomKey()
+	v := testutil.RandomValue()
+	k2 := testutil.RandomKey()
+
+	batch := NewBatch(a)
+
+	err := batch.SaveValue(k, v)
+	if err != nil {
+		t.Fatalf("batch.SaveValue(): err: %s", err)
+	}
+
+	_, err = batch.DeleteValue(k2)
+	if err != nil {
+		t.Fatalf("batch.DeleteValue(): err: %s", err)
+	}
+
+	err = batch.Write()
+	if err != nil {
+		t.Fatalf("batch.Write(): err: %s", err)
+	}
+
+	if got, want := a.MockSaveValue.CalledCount, 1; got != want {
+		t.Errorf("batch.Write(): expected to have called SaveSegment %d time, got %d", want, got)
+	}
+
+	got := a.MockSaveValue.LastCalledWith
+	if !bytes.Equal(got[0], k) || !bytes.Equal(got[1], v) {
+		t.Errorf("batch.Write(): expected to have called SaveValue with %v, got %v", [][]byte{k, v}, got)
+	}
+
+	if got, want := a.MockDeleteValue.CalledCount, 1; got != want {
+		t.Errorf("batch.Write(): expected to have called DeleteValue %d time, got %d", want, got)
+	}
+
+	if got, want := a.MockDeleteValue.LastCalledWith, k2; !bytes.Equal(got, want) {
+		t.Errorf("batch.Write(): expected to have called DeleteValue with %v, got %v", k2, got)
+	}
+}
+
+// TestBatch_WriteSegmentWithFailure tests what happens when a write fails
+func TestBatch_WriteSegmentWithFailure(t *testing.T) {
+	a := &storetesting.MockAdapter{}
+	mockError := errors.New("Error")
+
+	sa := cstesting.RandomSegment()
+	sb := cstesting.RandomSegment()
+
+	a.MockSaveSegment.Fn = func(s *cs.Segment) error {
+		if s == sa {
+			return mockError
+		}
+		return nil
+	}
+	batch := NewBatch(a)
+
+	err := batch.SaveSegment(sa)
+	if err != nil {
+		t.Fatalf("batch.SaveSegment(): err: %s", err)
+	}
+
+	err = batch.SaveSegment(sb)
+	if err != nil {
+		t.Fatalf("batch.SaveSegment(): err: %s", err)
+	}
+
+	if got, want := batch.Write(), mockError; got != want {
+		t.Errorf("batch.Write returned %v want %v", got, want)
+	}
+}
+
+func TestBatch_WriteValueWithFailure(t *testing.T) {
+	a := &storetesting.MockAdapter{}
+	mockError := errors.New("Error")
+
+	k := testutil.RandomKey()
+	va := testutil.RandomValue()
+	vb := testutil.RandomValue()
+
+	a.MockSaveValue.Fn = func(key, value []byte) error {
+		if bytes.Equal(value, va) {
+			return mockError
+		}
+		return nil
+	}
+	batch := NewBatch(a)
+
+	err := batch.SaveValue(k, va)
+	if err != nil {
+		t.Fatalf("batch.SaveValue(): err: %s", err)
+	}
+
+	err = batch.SaveValue(k, vb)
+	if err != nil {
+		t.Fatalf("batch.SaveValue(): err: %s", err)
+	}
+
+	if got, want := batch.Write(), mockError; got != want {
+		t.Errorf("batch.Write returned %v want %v", got, want)
 	}
 }
