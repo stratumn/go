@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tmpop"
@@ -278,7 +279,7 @@ func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (t *TMStore) NewBatch() (store.Batch, error) {
-	return NewBatch(t), nil
+	return bufferedbatch.NewBatch(t), nil
 }
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
