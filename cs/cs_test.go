@@ -45,6 +45,21 @@ func TestSegmentGetLinkHashString(t *testing.T) {
 	}
 }
 
+func TestSegmentHashLink(t *testing.T) {
+	s := cstesting.RandomSegment()
+	_, err := s.HashLink()
+	if err != nil {
+		t.Errorf("s.HashLink() = %q want nil", err)
+	}
+}
+
+func TestSegmentSetLinkHash(t *testing.T) {
+	s := cstesting.RandomSegment()
+	if err := s.SetLinkHash(); err != nil {
+		t.Errorf("s.SetLinkHash() = %q want nil", err)
+	}
+}
+
 func TestSegmentValidate_valid(t *testing.T) {
 	s := cstesting.RandomSegment()
 	if err := s.Validate(); err != nil {
@@ -97,6 +112,7 @@ func TestSegmentValidate_mapIDWrongType(t *testing.T) {
 func TestSegmentValidate_prevLinkHashNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "prevLinkHash")
+	s.SetLinkHash()
 	if err := s.Validate(); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}
@@ -117,6 +133,7 @@ func TestSegmentValidate_prevLinkHashWrongType(t *testing.T) {
 func TestSegmentValidate_tagsNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "tags")
+	s.SetLinkHash()
 	if err := s.Validate(); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}
@@ -143,6 +160,7 @@ func TestSegmentValidate_tagsEmpty(t *testing.T) {
 func TestSegmentValidate_priorityNil(t *testing.T) {
 	s := cstesting.RandomSegment()
 	delete(s.Link.Meta, "priority")
+	s.SetLinkHash()
 	if err := s.Validate(); err != nil {
 		t.Errorf("s.Validate() = %q want nil", err)
 	}

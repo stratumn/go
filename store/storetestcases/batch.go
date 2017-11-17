@@ -309,6 +309,7 @@ func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 		seg := cstesting.RandomSegment()
 		mapID := fmt.Sprintf("map%d", i%3)
 		seg.Link.Meta["mapId"] = mapID
+		seg.SetLinkHash()
 		if i < 3 {
 			segsByMapID[mapID] = make(cs.SegmentSlice, 0, 2*store.DefaultLimit)
 		}
@@ -329,6 +330,7 @@ func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 	for _, mapID := range []string{"map42", "map43"} {
 		seg := cstesting.RandomSegment()
 		seg.Link.Meta["mapId"] = mapID
+		seg.SetLinkHash()
 		b.SaveSegment(seg)
 	}
 	for _, seg := range segsByMapID["map0"] {

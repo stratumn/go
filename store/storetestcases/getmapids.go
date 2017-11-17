@@ -36,6 +36,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 		for j := 0; j < store.DefaultLimit; j++ {
 			s := cstesting.RandomSegment()
 			s.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
+			s.SetLinkHash()
 			a.SaveSegment(s)
 		}
 	}
@@ -67,6 +68,7 @@ func (f Factory) TestGetMapIDsPagination(t *testing.T) {
 		for j := 0; j < 10; j++ {
 			segment := cstesting.RandomSegment()
 			segment.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
+			segment.SetLinkHash()
 			a.SaveSegment(segment)
 		}
 	}
@@ -107,6 +109,7 @@ func (f Factory) TestGetMapIDsByProcess(t *testing.T) {
 			s := cstesting.RandomSegment()
 			s.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
 			s.Link.Meta["process"] = processNames[i%2]
+			s.SetLinkHash()
 			a.SaveSegment(s)
 		}
 	}

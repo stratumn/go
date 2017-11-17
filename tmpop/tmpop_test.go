@@ -538,6 +538,7 @@ func TestValidation(t *testing.T) {
 	s.Link.Meta["process"] = "testProcess"
 	s.Link.Meta["action"] = "init"
 	s.Link.State["string"] = "test"
+	s.SetLinkHash()
 	tx := makeSaveSegmentTxFromSegment(t, s)
 
 	h.BeginBlock(requestBeginBlock)
@@ -551,6 +552,7 @@ func TestValidation(t *testing.T) {
 	s.Link.Meta["process"] = "testProcess"
 	s.Link.Meta["action"] = "init"
 	s.Link.State["string"] = 42
+	s.SetLinkHash()
 	tx = makeSaveSegmentTxFromSegment(t, s)
 
 	h.BeginBlock(requestBeginBlock)

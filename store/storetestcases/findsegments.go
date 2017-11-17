@@ -147,12 +147,14 @@ func (f Factory) TestFindSegmentsSingleTag(t *testing.T) {
 	for i := 0; i < store.DefaultLimit; i++ {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
 	for i := 0; i < store.DefaultLimit; i++ {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{tag1, tag2, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
@@ -187,12 +189,14 @@ func (f Factory) TestFindSegmentsMultipleTags(t *testing.T) {
 	for i := 0; i < store.DefaultLimit; i++ {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
 	for i := 0; i < store.DefaultLimit; i++ {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{tag1, tag2, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
@@ -225,6 +229,7 @@ func (f Factory) TestFindSegmentsMapID(t *testing.T) {
 		for j := 0; j < store.DefaultLimit; j++ {
 			saveNewSegment(&a, func(s *cs.Segment) {
 				s.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
+				s.SetLinkHash()
 			})
 		}
 	}
@@ -257,6 +262,7 @@ func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
 		for j := 0; j < store.DefaultLimit; j++ {
 			saveNewSegment(&a, func(s *cs.Segment) {
 				s.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
+				s.SetLinkHash()
 			})
 		}
 	}
@@ -291,6 +297,7 @@ func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["mapId"] = "map1"
 			s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
@@ -298,6 +305,7 @@ func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["mapId"] = "map1"
 			s.Link.Meta["tags"] = []interface{}{testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
@@ -305,6 +313,7 @@ func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["mapId"] = "map2"
 			s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
@@ -391,6 +400,7 @@ func (f Factory) TestFindSegmentsLinkHashesWithProcess(t *testing.T) {
 	segment1 := saveNewSegment(&a, nil)
 	segment2 := saveNewSegment(&a, func(s *cs.Segment) {
 		s.Link.Meta["process"] = "Baz"
+		s.SetLinkHash()
 	})
 	for j := 0; j < store.DefaultLimit; j++ {
 		saveNewSegment(&a, nil)
@@ -457,6 +467,7 @@ func (f Factory) TestFindSegmentsEmptyPrevLinkHash(t *testing.T) {
 
 	s := saveNewSegment(&a, func(s *cs.Segment) {
 		delete(s.Link.Meta, "prevLinkHash")
+		s.SetLinkHash()
 	})
 
 	for i := 0; i < store.DefaultLimit; i++ {
@@ -519,18 +530,21 @@ func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
 	for j := 0; j < store.DefaultLimit; j++ {
 		saveNewBranch(&a, s1, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
 	for j := 0; j < store.DefaultLimit; j++ {
 		saveNewBranch(&a, s1, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
 	for j := 0; j < store.DefaultLimit; j++ {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+			s.SetLinkHash()
 		})
 	}
 
@@ -670,6 +684,7 @@ func (f Factory) TestFindSegmentWithGoodProcess(t *testing.T) {
 	for i := 0; i < store.DefaultLimit; i++ {
 		saveNewSegment(&a, func(s *cs.Segment) {
 			s.Link.Meta["process"] = processNames[i%len(processNames)]
+			s.SetLinkHash()
 		})
 	}
 

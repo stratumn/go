@@ -251,12 +251,16 @@ func TestBatch_FindSegments(t *testing.T) {
 
 	sa := cstesting.RandomSegment()
 	sa.Link.Meta["process"] = "Foo"
+	sa.SetLinkHash()
 	sb := cstesting.RandomSegment()
 	sb.Link.Meta["process"] = "Bar"
+	sb.SetLinkHash()
 	s1 := cstesting.RandomSegment()
 	s1.Link.Meta["process"] = "Foo"
+	s1.SetLinkHash()
 	s2 := cstesting.RandomSegment()
 	s2.Link.Meta["process"] = "Bar"
+	s2.SetLinkHash()
 
 	batch.SaveSegment(s1)
 	batch.SaveSegment(s2)
@@ -315,24 +319,31 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	sa := cstesting.RandomSegment()
 	sa.Link.Meta["mapId"] = "Foo"
 	sa.Link.Meta["process"] = "FooProcess"
+	sa.SetLinkHash()
 	sb := cstesting.RandomSegment()
 	sb.Link.Meta["mapId"] = "Bar"
 	sb.Link.Meta["process"] = "BarProcess"
+	sb.SetLinkHash()
 	sc := cstesting.RandomSegment()
 	sc.Link.Meta["mapId"] = "Yin"
 	sc.Link.Meta["process"] = "YinProcess"
+	sc.SetLinkHash()
 	s1 := cstesting.RandomSegment()
 	s1.Link.Meta["mapId"] = "Foo"
 	s1.Link.Meta["process"] = "FooProcess"
+	s1.SetLinkHash()
 	s2 := cstesting.RandomSegment()
 	s2.Link.Meta["mapId"] = "Bar"
 	s2.Link.Meta["process"] = "BarProcess"
+	s2.SetLinkHash()
 	s3 := cstesting.RandomSegment()
 	s3.Link.Meta["mapId"] = "Yin"
 	s3.Link.Meta["process"] = "YinProcess"
+	s3.SetLinkHash()
 	s4 := cstesting.RandomSegment()
 	s4.Link.Meta["mapId"] = "Yang"
 	s4.Link.Meta["process"] = "YangProcess"
+	s4.SetLinkHash()
 
 	batch.SaveSegment(s1)
 	batch.SaveSegment(s2)
