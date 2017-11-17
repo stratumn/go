@@ -39,7 +39,7 @@ func NewBatch(a *FileStore) *Batch {
 }
 
 // Write implements github.com/stratumn/sdk/store.Batch.Write
-func (b *Batch) Write() error {
+func (b *Batch) Write() (err error) {
 	b.originalBatch.Write()
 
 	b.originalFileStore.mutex.Lock()
@@ -48,11 +48,14 @@ func (b *Batch) Write() error {
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
 		case bufferedbatch.OpTypeSet:
-			b.originalFileStore.saveSegment(op.Segment)
+			err = b.originalFileStore.saveSegment(op.Segment)
 		case bufferedbatch.OpTypeDelete:
-			b.originalFileStore.deleteSegment(op.LinkHash)
+			_, err = b.originalFileStore.deleteSegment(op.LinkHash)
 		default:
-			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+		}
+		if err != nil {
+			return
 		}
 	}
 

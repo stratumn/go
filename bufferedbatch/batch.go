@@ -257,6 +257,9 @@ func (b *Batch) Write() (err error) {
 		default:
 			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
 		}
+		if err != nil {
+			break
+		}
 	}
 
 	if err != nil {
@@ -271,6 +274,9 @@ func (b *Batch) Write() (err error) {
 			_, err = b.originalStore.DeleteSegment(op.LinkHash)
 		default:
 			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+		}
+		if err != nil {
+			break
 		}
 	}
 

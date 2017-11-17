@@ -32,29 +32,35 @@ func NewBatch(a *DummyStore) *Batch {
 }
 
 // Write implements github.com/stratumn/sdk/store.Adapter.Write.
-func (b *Batch) Write() error {
+func (b *Batch) Write() (err error) {
 	b.originalDummyStore.mutex.Lock()
 	defer b.originalDummyStore.mutex.Unlock()
 
 	for _, op := range b.ValueOps {
 		switch op.OpType {
 		case bufferedbatch.OpTypeSet:
-			b.originalDummyStore.saveValue(op.Key, op.Value)
+			err = b.originalDummyStore.saveValue(op.Key, op.Value)
 		case bufferedbatch.OpTypeDelete:
-			b.originalDummyStore.deleteValue(op.Key)
+			_, err = b.originalDummyStore.deleteValue(op.Key)
 		default:
-			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+		}
+		if err != nil {
+			return
 		}
 	}
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
 		case bufferedbatch.OpTypeSet:
-			b.originalDummyStore.saveSegment(op.Segment)
+			err = b.originalDummyStore.saveSegment(op.Segment)
 		case bufferedbatch.OpTypeDelete:
-			b.originalDummyStore.deleteSegment(op.LinkHash)
+			_, err = b.originalDummyStore.deleteSegment(op.LinkHash)
 		default:
 			return fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
 		}
+		if err != nil {
+			return
+		}
 	}
-	return nil
+	return
 }
