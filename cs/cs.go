@@ -16,6 +16,8 @@
 package cs
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"math"
 	"strings"
@@ -23,6 +25,8 @@ import (
 	"reflect"
 
 	"github.com/stratumn/sdk/types"
+
+	cj "github.com/gibson042/canonicaljson-go"
 )
 
 // Segment contains a link and meta data about the link.
@@ -43,11 +47,26 @@ func (s *Segment) GetLinkHashString() string {
 	return s.Meta.GetLinkHashString()
 }
 
-// GetLinkHashString returns the link ID as a string.
-// It assumes the segment is valid.
-// func (s *Segment) GetLinkHashString() string {
-// 	return s.Meta["linkHash"].(string)
-// }
+// HashLink hashes the segment link and stores it into the Meta
+func (s *Segment) HashLink() (string, error) {
+	jsonLink, err := cj.Marshal(s.Link)
+	if err != nil {
+		return "", err
+	}
+	byteLinkHash := sha256.Sum256(jsonLink)
+	return hex.EncodeToString(byteLinkHash[:sha256.Size]), nil
+}
+
+// SetLinkHash overwrites the segment LinkHash using HashLink()
+func (s *Segment) SetLinkHash() error {
+	linkHash, err := s.HashLink()
+	if err != nil {
+		return err
+	}
+
+	s.Meta.LinkHash = linkHash
+	return nil
+}
 
 // Validate checks for errors in a segment.
 func (s *Segment) Validate() error {
@@ -82,6 +101,14 @@ func (s *Segment) Validate() error {
 		if _, ok := v.(float64); !ok {
 			return errors.New("link.meta.priority should be a float64")
 		}
+	}
+
+	want, err := s.HashLink()
+	if err != nil {
+		return err
+	}
+	if got := s.GetLinkHashString(); want != got {
+		return errors.New("meta.linkHash is not in sync with link")
 	}
 
 	return nil

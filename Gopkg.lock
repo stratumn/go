@@ -20,6 +20,12 @@
   version = "v1.4.2"
 
 [[projects]]
+  name = "github.com/gibson042/canonicaljson-go"
+  packages = ["."]
+  revision = "81f5327eb8367be6f106cd62f136b6f25b4c1678"
+  version = "v1.0.3"
+
+[[projects]]
   name = "github.com/go-kit/kit"
   packages = ["log","log/level","log/term"]
   revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
@@ -334,6 +340,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b46bc17065eadab02a7fa4346f87769a04e8769068df7e61a94b3976a8aec415"
+  inputs-digest = "42d6b99567364f3e4a994f7cac652f60cc429a02aa38285c919b410d5691cc40"
   solver-name = "gps-cdcl"
   solver-version = 1

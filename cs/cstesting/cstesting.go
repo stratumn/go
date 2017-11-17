@@ -24,7 +24,7 @@ import (
 )
 
 // CreateSegment creates a minimal segment.
-func CreateSegment(process, linkHash, mapID, prevLinkHash string, tags []interface{}, priority float64) *cs.Segment {
+func CreateSegment(process, mapID, prevLinkHash string, tags []interface{}, priority float64) *cs.Segment {
 	linkMeta := map[string]interface{}{
 		"process":  process,
 		"mapId":    mapID,
@@ -40,7 +40,7 @@ func CreateSegment(process, linkHash, mapID, prevLinkHash string, tags []interfa
 		linkMeta["tags"] = tags
 	}
 
-	return &cs.Segment{
+	segment := &cs.Segment{
 		Link: cs.Link{
 			State: map[string]interface{}{
 				"random": testutil.RandomString(12),
@@ -48,15 +48,17 @@ func CreateSegment(process, linkHash, mapID, prevLinkHash string, tags []interfa
 			Meta: linkMeta,
 		},
 		Meta: cs.SegmentMeta{
-			LinkHash: linkHash,
-			Data:     map[string]interface{}{"random": "random"},
+			Data: map[string]interface{}{"random": "random"},
 		},
 	}
+	segment.SetLinkHash()
+
+	return segment
 }
 
 // RandomSegment creates a random segment.
 func RandomSegment() *cs.Segment {
-	return CreateSegment(testutil.RandomString(24), testutil.RandomHash().String(), testutil.RandomString(24),
+	return CreateSegment(testutil.RandomString(24), testutil.RandomString(24),
 		testutil.RandomHash().String(), RandomTags(), rand.Float64())
 }
 
@@ -64,6 +66,7 @@ func RandomSegment() *cs.Segment {
 func ChangeSegmentState(s *cs.Segment) *cs.Segment {
 	clone := CloneSegment(s)
 	clone.Link.State["random"] = testutil.RandomString(12)
+	clone.SetLinkHash()
 	return clone
 }
 
@@ -71,14 +74,16 @@ func ChangeSegmentState(s *cs.Segment) *cs.Segment {
 func ChangeSegmentMapID(s *cs.Segment) *cs.Segment {
 	clone := CloneSegment(s)
 	clone.Link.Meta["mapId"] = testutil.RandomString(24)
+	clone.SetLinkHash()
 	return clone
 }
 
 // RandomBranch appends a random segment to a segment.
 func RandomBranch(s *cs.Segment) *cs.Segment {
-	branch := CreateSegment(testutil.RandomString(24), testutil.RandomHash().String(), testutil.RandomString(24),
+	branch := CreateSegment(testutil.RandomString(24), testutil.RandomString(24),
 		s.Meta.LinkHash, RandomTags(), rand.Float64())
 	branch.Link.Meta["mapId"] = s.Link.Meta["mapId"]
+	branch.SetLinkHash()
 	return branch
 }
 
