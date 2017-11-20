@@ -101,10 +101,6 @@ func (c *CouchStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (c *CouchStore) SaveSegment(segment *cs.Segment) (err error) {
-	if err = segment.Validate(); err != nil {
-		return
-	}
-
 	if err := c.saveSegment(segment); err != nil {
 		return err
 	}
