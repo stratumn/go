@@ -71,7 +71,7 @@ func New(config *Config) (*CouchStore, error) {
 
 	}
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.error())
+		return nil, couchResponseStatus.error()
 	}
 
 	if err := couchstore.createDatabase(dbSegment); err != nil {
@@ -155,7 +155,7 @@ func (c *CouchStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	}
 
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.error())
+		return nil, couchResponseStatus.error()
 	}
 
 	couchFindResponse := &CouchFindResponse{}
@@ -185,7 +185,7 @@ func (c *CouchStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	}
 
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.error())
+		return nil, couchResponseStatus.error()
 	}
 
 	couchFindResponse := &CouchFindResponse{}

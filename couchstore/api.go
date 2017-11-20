@@ -47,8 +47,8 @@ type CouchResponseStatus struct {
 	Reason     string `json:"reason;omitempty"`
 }
 
-func (c *CouchResponseStatus) error() string {
-	return fmt.Sprintf("Status code: %v, error: %v, reason: %v", c.StatusCode, c.Error, c.Reason)
+func (c *CouchResponseStatus) error() error {
+	return errors.Errorf("Status code: %v, error: %v, reason: %v", c.StatusCode, c.Error, c.Reason)
 }
 
 // Document is the type used in couchdb
@@ -94,7 +94,7 @@ func (c *CouchStore) createDatabase(name string) error {
 
 	if couchResponseStatus.Ok == false {
 		if couchResponseStatus.StatusCode != statusDBExists {
-			return errors.New(couchResponseStatus.error())
+			return couchResponseStatus.error()
 		}
 	}
 
@@ -109,7 +109,7 @@ func (c *CouchStore) deleteDatabase(name string) error {
 
 	if couchResponseStatus.Ok == false {
 		if couchResponseStatus.StatusCode != statusDBMissing {
-			return errors.New(couchResponseStatus.error())
+			return couchResponseStatus.error()
 		}
 	}
 
@@ -169,7 +169,7 @@ func (c *CouchStore) saveDocument(dbName string, key string, doc Document) error
 		return err
 	}
 	if couchResponseStatus.Ok == false {
-		return errors.New(couchResponseStatus.error())
+		return couchResponseStatus.error()
 	}
 
 	return nil
@@ -188,7 +188,7 @@ func (c *CouchStore) getDocument(dbName string, key string) (*Document, error) {
 	}
 
 	if couchResponseStatus.Ok == false {
-		return nil, errors.New(couchResponseStatus.error())
+		return nil, couchResponseStatus.error()
 	}
 
 	if err := json.Unmarshal(docBytes, doc); err != nil {
