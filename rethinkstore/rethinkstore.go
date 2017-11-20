@@ -8,6 +8,7 @@ package rethinkstore
 
 import (
 	"encoding/json"
+	"math"
 	"strings"
 	"time"
 
@@ -151,6 +152,11 @@ func (a *Store) SaveSegment(segment *cs.Segment) error {
 
 	if prevLinkHash != nil {
 		w.PrevLinkHash = prevLinkHash[:]
+	}
+
+	// rethink does not handle -Inf
+	if w.Priority == math.Inf(-1) {
+		w.Priority = -math.MaxFloat64
 	}
 
 	if err := a.segments.Get(linkHash).Replace(&w).Exec(a.session); err != nil {
