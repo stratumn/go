@@ -35,6 +35,20 @@ func (f Factory) TestSaveSegment(t *testing.T) {
 	}
 }
 
+// TestSaveSegmentNoPriority tests what happens when you save a new segment with no priority.
+func (f Factory) TestSaveSegmentNoPriority(t *testing.T) {
+	a := f.initAdapter(t)
+	defer f.free(a)
+
+	s := cstesting.RandomSegment()
+	delete(s.Link.Meta, "priority")
+	s.SetLinkHash()
+
+	if err := a.SaveSegment(s); err != nil {
+		t.Fatalf("a.SaveSegment(): err: %s", err)
+	}
+}
+
 // TestSaveSegmentUpdatedState tests what happens when you update the state of a
 // segment.
 func (f Factory) TestSaveSegmentUpdatedState(t *testing.T) {

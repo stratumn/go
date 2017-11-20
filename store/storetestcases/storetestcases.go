@@ -86,6 +86,7 @@ func (f Factory) RunTests(t *testing.T) {
 	t.Run("GetValue", f.TestGetValue)
 	t.Run("GetValueNotFound", f.TestGetValueNotFound)
 	t.Run("SaveSegment", f.TestSaveSegment)
+	t.Run("SaveSegmentNoPriority", f.TestSaveSegmentNoPriority)
 	t.Run("SaveValue", f.TestSaveValue)
 	t.Run("SaveSegmentUpdatedState", f.TestSaveSegmentUpdatedState)
 	t.Run("SaveSegmentUpdatedMapID", f.TestSaveSegmentUpdatedMapID)
