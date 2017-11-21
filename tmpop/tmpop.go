@@ -33,8 +33,8 @@ import (
 // tmpopLastBlockKey is the database key where last block information are saved.
 var tmpopLastBlockKey = []byte("tmpop:lastblock")
 
-// lastBlock saves the information of the last block commited for Core/App Handshake on crash/restart.
-type lastBlock struct {
+// LastBlock saves the information of the last block commited for Core/App Handshake on crash/restart.
+type LastBlock struct {
 	AppHash    []byte
 	Height     uint64
 	LastHeader *abci.Header
@@ -71,7 +71,7 @@ type TMPop struct {
 
 	state                *State
 	adapter              store.Adapter
-	lastBlock            *lastBlock
+	lastBlock            *LastBlock
 	config               *Config
 	header               *abci.Header
 	currentBlockSegments []*types.Bytes32
@@ -107,7 +107,7 @@ func New(a store.Adapter, config *Config) (*TMPop, error) {
 
 	if initalized == nil {
 		log.Debug("No existing db, creating new db")
-		saveLastBlock(a, lastBlock{
+		saveLastBlock(a, LastBlock{
 			AppHash: tree.Save(),
 			Height:  0,
 		})
@@ -115,7 +115,7 @@ func New(a store.Adapter, config *Config) (*TMPop, error) {
 		log.Debug("Loading existing db")
 	}
 
-	lastBlock, err := readLastBlock(a)
+	lastBlock, err := ReadLastBlock(a)
 	if err != nil {
 		return nil, err
 	}
@@ -440,13 +440,14 @@ func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
 	return tx, abci.NewResultOK([]byte{}, "ok")
 }
 
-func readLastBlock(a store.Adapter) (*lastBlock, error) {
+// ReadLastBlock returns the last block saved by TMPop
+func ReadLastBlock(a store.Adapter) (*LastBlock, error) {
 	lBytes, err := a.GetValue(tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
 	}
 
-	var l lastBlock
+	var l LastBlock
 	if lBytes == nil {
 		return &l, nil
 	}
@@ -458,7 +459,7 @@ func readLastBlock(a store.Adapter) (*lastBlock, error) {
 	return &l, nil
 }
 
-func saveLastBlock(a store.Adapter, l lastBlock) {
+func saveLastBlock(a store.Adapter, l LastBlock) {
 	a.SaveValue(tmpopLastBlockKey, wire.BinaryBytes(l))
 }
 
@@ -512,6 +513,11 @@ func (t *TMPop) addCurrentProof(s *cs.Segment, proof []byte) error {
 	}
 
 	return nil
+}
+
+// GetHeader returns the current block header
+func (t *TMPop) GetHeader() *abci.Header {
+	return t.header
 }
 
 // init needs to define a way to deserialize a TendermintProof

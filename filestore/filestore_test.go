@@ -20,10 +20,23 @@ import (
 
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
 )
 
 func TestFilestore(t *testing.T) {
 	storetestcases.Factory{
+		New: func() (store.Adapter, error) {
+			return createAdapter(t), nil
+		},
+		Free: func(s store.Adapter) {
+			a := s.(*FileStore)
+			defer os.RemoveAll(a.config.Path)
+		},
+	}.RunTests(t)
+}
+
+func TestFileTMPop(t *testing.T) {
+	tmpoptestcases.Factory{
 		New: func() (store.Adapter, error) {
 			return createAdapter(t), nil
 		},
