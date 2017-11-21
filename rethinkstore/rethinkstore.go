@@ -8,13 +8,16 @@ package rethinkstore
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/sdk/utils"
 	rethink "gopkg.in/dancannon/gorethink.v3"
 )
 
@@ -37,6 +40,9 @@ const (
 
 	// DefaultHard is whether to use hard durability by default.
 	DefaultHard = true
+
+	connectAttempts = 12
+	connectTimeout  = 10 * time.Second
 )
 
 // Config contains configuration options for the store.
@@ -95,10 +101,25 @@ type valueWrapper struct {
 // New creates an instance of a Store.
 func New(config *Config) (*Store, error) {
 	opts := rethink.ConnectOpts{Addresses: strings.Split(config.URL, ",")}
-	session, err := rethink.Connect(opts)
+
+	var session *rethink.Session
+	err := utils.Retry(func(attempt int) (bool, error) {
+		var err error
+		session, err = rethink.Connect(opts)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"attempt": attempt,
+				"max":     connectAttempts,
+			}).Warn(fmt.Sprintf("Unable to connect to RethinkDB, retrying in %v", connectTimeout))
+			time.Sleep(connectTimeout)
+		}
+		return false, err
+	}, connectAttempts)
+
 	if err != nil {
 		return nil, err
 	}
+
 	db := rethink.DB(config.DB)
 	return &Store{
 		config:   config,
