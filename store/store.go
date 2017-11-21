@@ -84,6 +84,105 @@ type Adapter interface {
 	NewBatch() (Batch, error)
 }
 
+/* Updated store interfaces.
+ * Existing stores should migrate to these interfaces.
+ * New stores should implement only this interface.
+ */
+
+// SegmentReader is the interface for reading Segments from a store.
+type SegmentReader interface {
+	// Get a segment by link hash. Returns nil if no match is found.
+	// Will return link and evidences (if there are some in that store).
+	GetSegment(linkHash *types.Bytes32) (*cs.Segment, error)
+
+	// Find segments. Returns an empty slice if there are no results.
+	// Will return links and evidences (if there are some).
+	FindSegments(filter *SegmentFilter) (cs.SegmentSlice, error)
+
+	// Get all the existing map IDs.
+	GetMapIDs(filter *MapFilter) ([]string, error)
+}
+
+// LinkWriter is the interface for writing links to a store.
+// Links are immutable and cannot be deleted.
+type LinkWriter interface {
+	// Create the immutable part of a segment.
+	// The input link is expected to be valid.
+	// Returns the link hash or an error.
+	CreateLink(link *cs.Link) (*types.Bytes32, error)
+}
+
+// EvidenceReader is the interface for reading segment evidence from a store.
+type EvidenceReader interface {
+	// Get the evidences for a segment.
+	// Can return a nil error with an empty evidence slice if
+	// the segment currently doesn't have evidence.
+	GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error)
+}
+
+// EvidenceWriter is the interface for adding evidence to a segment in a store.
+type EvidenceWriter interface {
+	// Add an evidence to a segment.
+	AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) (*types.Bytes32, error)
+}
+
+// EvidenceStore is the interface for storing and reading segment evidence.
+type EvidenceStore interface {
+	EvidenceReader
+	EvidenceWriter
+}
+
+// BatchV2 represents a database transaction.
+// It will be renamed to Batch when the old interface will be removed.
+type BatchV2 interface {
+	SegmentReader
+	LinkWriter
+	EvidenceStore
+
+	// Write definitely writes the content of the Batch
+	Write() error
+}
+
+// AdapterV2 is the new store interface. Once all stores are migrated
+// it will be renamed to Adapter and the old interface will be removed.
+type AdapterV2 interface {
+	SegmentReader
+	LinkWriter
+	EvidenceStore
+
+	// Returns arbitrary information about the adapter.
+	GetInfo() (interface{}, error)
+
+	// Adds a channel that receives segment links whenever they are saved.
+	AddDidSaveLinkChannel(chan *cs.Link)
+
+	// Adds a channel that receives segment evidences whenever they are saved.
+	AddDidSaveEvidenceChannel(chan *cs.Evidence)
+
+	// Creates a new Batch
+	NewBatch() (BatchV2, error)
+}
+
+// KeyValueReader is the interface for reading key-value pairs.
+type KeyValueReader interface {
+	GetValue(key []byte) ([]byte, error)
+}
+
+// KeyValueWriter is the interface for writing key-value pairs.
+type KeyValueWriter interface {
+	SetValue(key []byte, value []byte) error
+	DeleteValue(key []byte) ([]byte, error)
+}
+
+// KeyValueStore is the interface for a key-value store.
+// Some store adapters will implement this interface, but not all.
+type KeyValueStore interface {
+	KeyValueReader
+	KeyValueWriter
+}
+
+/* End of updated store interfaces. */
+
 // Pagination contains pagination options.
 type Pagination struct {
 	// Index of the first entry.
