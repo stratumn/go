@@ -20,9 +20,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/utils"
+)
+
+var (
+	dbName string
 )
 
 const (
@@ -87,6 +93,7 @@ func (c *CouchStore) getDatabases() ([]string, error) {
 }
 
 func (c *CouchStore) createDatabase(name string) error {
+	dbName = name
 	_, couchResponseStatus, err := c.put("/"+name, nil)
 	if err != nil {
 		return err
@@ -98,7 +105,17 @@ func (c *CouchStore) createDatabase(name string) error {
 		}
 	}
 
-	return nil
+	return utils.Retry(c.pingDatabase, 10)
+}
+
+func (c *CouchStore) pingDatabase(attempt int) (bool, error) {
+	path := fmt.Sprintf("/%s", dbName)
+	_, couchResponseStatus, err := c.doHTTPRequest(http.MethodGet, path, nil)
+	if err != nil || couchResponseStatus.Ok == false {
+		time.Sleep(200 * time.Millisecond)
+		return true, err
+	}
+	return false, err
 }
 
 func (c *CouchStore) deleteDatabase(name string) error {
