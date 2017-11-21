@@ -137,7 +137,6 @@ type EvidenceStore interface {
 type BatchV2 interface {
 	SegmentReader
 	LinkWriter
-	EvidenceStore
 
 	// Write definitely writes the content of the Batch
 	Write() error
