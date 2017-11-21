@@ -53,6 +53,7 @@ const (
 type FileStore struct {
 	config       *Config
 	didSaveChans []chan *cs.Segment
+	eventChans   []chan *store.Event
 	mutex        sync.RWMutex // simple global mutex
 	kvDB         db.DB
 }
@@ -84,8 +85,10 @@ func New(config *Config) (*FileStore, error) {
 		return nil, err
 	}
 
-	return &FileStore{config, nil, sync.RWMutex{}, db}, nil
+	return &FileStore{config, nil, nil, sync.RWMutex{}, db}, nil
 }
+
+/********** github.com/stratumn/sdk/store.Adapter implementation **********/
 
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
 func (a *FileStore) GetInfo() (interface{}, error) {
@@ -98,10 +101,23 @@ func (a *FileStore) GetInfo() (interface{}, error) {
 }
 
 // AddDidSaveChannel implements
-// github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
+// github.com/stratumn/sdk/store.Adapter.AddDidSaveChannel.
 func (a *FileStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
 	a.didSaveChans = append(a.didSaveChans, saveChan)
 }
+
+// AddStoreEventChannel implements
+// github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+func (a *FileStore) AddStoreEventChannel(eventChan chan *store.Event) {
+	a.eventChans = append(a.eventChans, eventChan)
+}
+
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (a *FileStore) NewBatch() (store.Batch, error) {
+	return NewBatch(a), nil
+}
+
+/********** github.com/stratumn/sdk/store.Adapter.Writer implementation **********/
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (a *FileStore) SaveSegment(segment *cs.Segment) error {
@@ -144,14 +160,6 @@ func (a *FileStore) saveSegment(segment *cs.Segment) (err error) {
 	return nil
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
-func (a *FileStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	a.mutex.RLock()
-	defer a.mutex.RUnlock()
-
-	return a.getSegment(linkHash)
-}
-
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (a *FileStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.Lock()
@@ -171,6 +179,16 @@ func (a *FileStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) 
 	}
 
 	return segment, err
+}
+
+/********** github.com/stratumn/sdk/store.Adapter.Reader implementation **********/
+
+// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+func (a *FileStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return a.getSegment(linkHash)
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
@@ -214,24 +232,27 @@ func (a *FileStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return filter.Pagination.PaginateStrings(mapIDs), nil
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (a *FileStore) NewBatch() (store.Batch, error) {
-	return NewBatch(a), nil
-}
+/********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (a *FileStore) SaveValue(key []byte, value []byte) error {
-	a.kvDB.Set(key, value)
+	return a.SetValue(key, value)
+}
 
+// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+func (a *FileStore) SetValue(key []byte, value []byte) error {
+	a.kvDB.Set(key, value)
 	return nil
 }
 
-// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue
+// and github.com/stratumn/sdk/store.KeyValueStore.GetValue.
 func (a *FileStore) GetValue(key []byte) ([]byte, error) {
 	return a.kvDB.Get(key), nil
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue
+// and github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
 func (a *FileStore) DeleteValue(key []byte) ([]byte, error) {
 	v := a.kvDB.Get(key)
 
@@ -239,7 +260,19 @@ func (a *FileStore) DeleteValue(key []byte) ([]byte, error) {
 		a.kvDB.Delete(key)
 		return v, nil
 	}
+
 	return nil, nil
+}
+
+/********** Utilities **********/
+
+func (a *FileStore) initDir() error {
+	if err := os.MkdirAll(a.config.Path, 0755); err != nil {
+		if !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
@@ -259,15 +292,6 @@ func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	}
 
 	return &segment, nil
-}
-
-func (a *FileStore) initDir() error {
-	if err := os.MkdirAll(a.config.Path, 0755); err != nil {
-		if !os.IsExist(err) {
-			return err
-		}
-	}
-	return nil
 }
 
 func (a *FileStore) getSegmentPath(linkHash string) string {
