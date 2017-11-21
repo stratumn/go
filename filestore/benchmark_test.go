@@ -15,21 +15,14 @@
 package filestore
 
 import (
-	"os"
 	"testing"
 
-	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
 )
 
 func BenchmarkFilestore(b *testing.B) {
 	storetestcases.Factory{
-		New: func() (store.Adapter, error) {
-			return createAdapter(b), nil
-		},
-		Free: func(s store.Adapter) {
-			a := s.(*FileStore)
-			defer os.RemoveAll(a.config.Path)
-		},
+		New:  createAdapter,
+		Free: freeAdapter,
 	}.RunBenchmarks(b)
 }

@@ -19,10 +19,19 @@ import (
 
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
 )
 
 func TestDummystore(t *testing.T) {
 	storetestcases.Factory{
+		New: func() (store.Adapter, error) {
+			return New(&Config{}), nil
+		},
+	}.RunTests(t)
+}
+
+func TestDummyTMPop(t *testing.T) {
+	tmpoptestcases.Factory{
 		New: func() (store.Adapter, error) {
 			return New(&Config{}), nil
 		},

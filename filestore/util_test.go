@@ -16,17 +16,24 @@ package filestore
 
 import (
 	"io/ioutil"
-	"testing"
+	"os"
+
+	"github.com/stratumn/sdk/store"
 )
 
-func createAdapter(tb testing.TB) *FileStore {
+func createAdapter() (store.Adapter, error) {
 	path, err := ioutil.TempDir("", "filestore")
 	if err != nil {
-		tb.Fatalf("ioutil.TempDir(): err: %s", err)
+		return nil, err
 	}
 	fs, err := New(&Config{Path: path})
 	if err != nil {
-		tb.Fatalf("New(): err: %s", err)
+		return nil, err
 	}
-	return fs
+	return fs, nil
+}
+
+func freeAdapter(s store.Adapter) {
+	a := s.(*FileStore)
+	defer os.RemoveAll(a.config.Path)
 }
