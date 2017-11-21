@@ -21,12 +21,12 @@ import (
 	"github.com/stratumn/sdk/store"
 
 	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
 )
 
 var (
-	myCouchstore *CouchStore
-	test         *testing.T
-	integration  = flag.Bool("integration", false, "Run integration tests")
+	test        *testing.T
+	integration = flag.Bool("integration", false, "Run integration tests")
 )
 
 func TestCouchStore(t *testing.T) {
@@ -34,6 +34,15 @@ func TestCouchStore(t *testing.T) {
 	test = t
 	if *integration {
 		storetestcases.Factory{
+			New:  newTestCouchStore,
+			Free: freeTestCouchStore,
+		}.RunTests(t)
+	}
+}
+
+func TestCouchTMPop(t *testing.T) {
+	if *integration {
+		tmpoptestcases.Factory{
 			New:  newTestCouchStore,
 			Free: freeTestCouchStore,
 		}.RunTests(t)
@@ -48,7 +57,7 @@ func newTestCouchStore() (store.Adapter, error) {
 }
 
 func freeTestCouchStore(a store.Adapter) {
-	if err := myCouchstore.deleteDatabase(dbSegment); err != nil {
+	if err := a.(*CouchStore).deleteDatabase(dbSegment); err != nil {
 		test.Fatal(err)
 	}
 }

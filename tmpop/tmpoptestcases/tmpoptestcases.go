@@ -91,10 +91,14 @@ func (f *Factory) initTMPop(t *testing.T, config *tmpop.Config) *tmpop.TMPop {
 	}
 
 	// reset header
+	lastBlock, _ := tmpop.ReadLastBlock(f.adapter)
+	if lastBlock.LastHeader == nil {
+		lastBlock.LastHeader = &abci.Header{ChainId: chainID}
+	}
 	requestBeginBlock.Header = &abci.Header{
 		Height:  height,
-		ChainId: chainID,
-		AppHash: []byte{},
+		ChainId: lastBlock.LastHeader.ChainId,
+		AppHash: lastBlock.AppHash,
 	}
 
 	return h
@@ -103,6 +107,7 @@ func (f *Factory) initTMPop(t *testing.T, config *tmpop.Config) *tmpop.TMPop {
 // TestNew tests what happens when tmpop is stopped and restarted with the same adapter
 func (f Factory) TestNew(t *testing.T) {
 	h1 := f.initTMPop(t, nil)
+	defer f.free()
 
 	want := commitMockTx(t, h1)
 	commitMockTx(t, h1)
@@ -127,7 +132,6 @@ func (f Factory) TestNew(t *testing.T) {
 		t.Errorf("a.New(): expected new TMPop to start on the last block height, got %v, expected %v",
 			gotLastBlock.Height, 1)
 	}
-
 }
 
 func makeQuery(h *tmpop.TMPop, name string, args interface{}, res interface{}) error {

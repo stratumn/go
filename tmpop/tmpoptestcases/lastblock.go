@@ -24,6 +24,7 @@ import (
 // TestBeginBlockSavesLastBlockInfo tests if tmpop correctly stored informations about the previous block
 func (f Factory) TestBeginBlockSavesLastBlockInfo(t *testing.T) {
 	h := f.initTMPop(t, nil)
+	defer f.free()
 
 	height := uint64(2)
 

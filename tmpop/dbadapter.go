@@ -48,7 +48,11 @@ func (a *DBAdapter) Set(key, value []byte) {
 
 // SetSync implements github.com/tendermint/tmlibs/db/db.DB.SetSync
 func (a *DBAdapter) SetSync(key, value []byte) {
-	a.Set(key, value)
+	// this condition is needed because the old (and unmaintained) version of IAVLTree we're using
+	// calls SetSync(nil, nil) when saving the tree (this has been changed in the new IAVLTree release).
+	if key != nil {
+		a.Set(key, value)
+	}
 }
 
 // Delete implements github.com/tendermint/tmlibs/db/db.DB.Delete
