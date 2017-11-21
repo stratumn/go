@@ -41,16 +41,10 @@ func TestCouchStore(t *testing.T) {
 }
 
 func newTestCouchStore() (store.Adapter, error) {
-	var err error
 	config := &Config{
 		Address: "http://localhost:5984",
 	}
-	myCouchstore, err = New(config)
-	if err != nil {
-		test.Logf(err.Error())
-		test.FailNow()
-	}
-	return myCouchstore, nil
+	return New(config)
 }
 
 func freeTestCouchStore(a store.Adapter) {
