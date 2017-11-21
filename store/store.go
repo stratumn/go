@@ -142,20 +142,21 @@ type BatchV2 interface {
 	Write() error
 }
 
-// DidSaveEventType lets you know what kind of object was saved to the store.
-type DidSaveEventType int
+// EventType lets you know the kind of event received.
+// A client should ignore events it doesn't care about or doesn't understand.
+type EventType int
 
 const (
-	// Link means that a segment link was saved.
-	Link DidSaveEventType = iota
-	// Evidence means that a segment evidence was saved.
-	Evidence
+	// SavedLink means that a segment link was saved.
+	SavedLink EventType = iota
+	// SavedEvidence means that a segment evidence was saved.
+	SavedEvidence
 )
 
-// DidSaveEvent is the event sent to a channel to notify when objects are saved to the store.
-type DidSaveEvent struct {
-	Type  DidSaveEventType
-	Value interface{}
+// Event is the object stores send to notify of important events.
+type Event struct {
+	EventType EventType
+	Details   interface{}
 }
 
 // AdapterV2 is the new store interface. Once all stores are migrated
@@ -168,8 +169,8 @@ type AdapterV2 interface {
 	// Returns arbitrary information about the adapter.
 	GetInfo() (interface{}, error)
 
-	// Adds a channel that receives events whenever content is saved to the store.
-	AddDidSaveChannel(chan *DidSaveEvent)
+	// Adds a channel that receives events from the store.
+	AddStoreEventChannel(chan *Event)
 
 	// Creates a new Batch
 	NewBatch() (BatchV2, error)
