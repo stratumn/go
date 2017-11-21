@@ -123,7 +123,7 @@ type EvidenceReader interface {
 // EvidenceWriter is the interface for adding evidence to a segment in a store.
 type EvidenceWriter interface {
 	// Add an evidence to a segment.
-	AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) (*types.Bytes32, error)
+	AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error
 }
 
 // EvidenceStore is the interface for storing and reading segment evidence.
