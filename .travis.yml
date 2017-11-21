@@ -14,7 +14,6 @@ install:
   - go get -u github.com/golang/lint/golint
   - dep ensure
 script:
-  - docker run -p 5984:5984 -d couchdb
   - make coverage && make lint
 after_success:
   - bash <(curl -s https://codecov.io/bash)

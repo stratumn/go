@@ -15,6 +15,7 @@
 package couchstore
 
 import (
+	"flag"
 	"testing"
 
 	"github.com/stratumn/sdk/store"
@@ -25,14 +26,18 @@ import (
 var (
 	myCouchstore *CouchStore
 	test         *testing.T
+	integration  = flag.Bool("integration", false, "Run integration tests")
 )
 
 func TestCouchStore(t *testing.T) {
+	flag.Parse()
 	test = t
-	storetestcases.Factory{
-		New:  newTestCouchStore,
-		Free: freeTestCouchStore,
-	}.RunTests(t)
+	if *integration {
+		storetestcases.Factory{
+			New:  newTestCouchStore,
+			Free: freeTestCouchStore,
+		}.RunTests(t)
+	}
 }
 
 func newTestCouchStore() (store.Adapter, error) {
