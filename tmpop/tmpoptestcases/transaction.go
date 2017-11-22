@@ -62,7 +62,6 @@ func (f Factory) TestTx(t *testing.T) {
 
 	t.Run("WriteDoubleSaveSegment()", func(t *testing.T) {
 		s := cstesting.RandomSegment()
-		s.Meta.Data["test"] = "test"
 		tx := makeSaveSegmentTxFromSegment(t, s)
 		h.BeginBlock(requestBeginBlock)
 
@@ -78,11 +77,9 @@ func (f Factory) TestTx(t *testing.T) {
 		if ev.State != cs.PendingEvidence {
 			t.Errorf("h.DeliverTx(): wrong evidence state after saving segment, got %s, want %s", ev.State, cs.PendingEvidence)
 		}
-		if got.Meta.Data["test"] != "test" {
-			t.Errorf("h.DeliverTx(): wrong segment.Meta.Data after saving, got %s, want %s", got.Meta.Data, s.Meta.Data)
-		}
+
 		// We try to save a segment with the same link (and linkHash)
-		// but with new evidences and meta data
+		// but with new evidences
 		newRequest := requestBeginBlock
 		newRequest.Header.AppHash = res.Data.Bytes()
 
@@ -97,8 +94,6 @@ func (f Factory) TestTx(t *testing.T) {
 			Backend:  "TMPop",
 			Proof:    nil,
 		})
-		s.Meta.Data["random"] = nil
-		s.Meta.Data["test"] = "random"
 		tx = makeSaveSegmentTxFromSegment(t, s)
 		h.DeliverTx(tx)
 		h.Commit()
@@ -114,9 +109,6 @@ func (f Factory) TestTx(t *testing.T) {
 		}
 		if len(got.Meta.Evidences) != 3 {
 			t.Errorf("h.DeliverTx(): wrong length of segment.Meta.Evidences, got %d want %d", len(got.Meta.Evidences), 3)
-		}
-		if got.Meta.Data["test"] != "random" || got.Meta.Data["random"] != nil {
-			t.Errorf("h.DeliverTx(): wrong segment.Meta.Data after saving, got %s, want %s", got.Meta.Data, s.Meta.Data)
 		}
 	})
 

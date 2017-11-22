@@ -167,7 +167,18 @@ func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) 
 		return err
 	}
 
-	if err = currentEvidences.AddEvidence(*evidence); err != nil {
+	// If we already have an evidence for that provider, it means
+	// we're in the case where we go from a PENDING evidence to a
+	// COMPLETE one. This won't be necessary after the store interface
+	// update, but meanwhile we need to correctly update the existing
+	// evidence.
+	previousEvidence := currentEvidences.GetEvidence(evidence.Provider)
+	if previousEvidence != nil {
+		if previousEvidence.State == cs.PendingEvidence {
+			previousEvidence.State = evidence.State
+			previousEvidence.Proof = evidence.Proof
+		}
+	} else if err = currentEvidences.AddEvidence(*evidence); err != nil {
 		return err
 	}
 
