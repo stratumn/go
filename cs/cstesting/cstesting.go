@@ -47,9 +47,7 @@ func CreateSegment(process, mapID, prevLinkHash string, tags []interface{}, prio
 			},
 			Meta: linkMeta,
 		},
-		Meta: cs.SegmentMeta{
-			Data: map[string]interface{}{"random": "random"},
-		},
+		Meta: cs.SegmentMeta{},
 	}
 	segment.SetLinkHash()
 
