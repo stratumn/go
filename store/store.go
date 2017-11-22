@@ -139,7 +139,7 @@ type BatchV2 interface {
 	LinkWriter
 
 	// Write definitely writes the content of the Batch
-	Write() error
+	WriteV2() error
 }
 
 // EventType lets you know the kind of event received.
@@ -173,7 +173,7 @@ type AdapterV2 interface {
 	AddStoreEventChannel(chan *Event)
 
 	// Creates a new Batch
-	NewBatch() (BatchV2, error)
+	NewBatchV2() (BatchV2, error)
 }
 
 // KeyValueReader is the interface for reading key-value pairs.
