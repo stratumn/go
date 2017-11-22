@@ -494,11 +494,9 @@ func TestMergeMeta(t *testing.T) {
 	s1 := cstesting.RandomSegment()
 	e1 := TestEvidence
 	e1.State = cs.PendingEvidence
-	s1.Meta.Data["test"] = "test"
 	s1.Meta.AddEvidence(e1)
 
 	s2 := cstesting.RandomSegment()
-	s2.Meta.Data["test"] = "update"
 	s2.Meta.LinkHash = s1.Meta.LinkHash
 	e2 := TestEvidence
 	e2.Provider = "xyz"
@@ -519,9 +517,6 @@ func TestMergeMeta(t *testing.T) {
 		}
 		if len(s1.Meta.Evidences) != 2 {
 			t.Errorf("Segment.MergeMeta(): len(s1.Meta.Evidences) = %d, want %d", len(s1.Meta.Evidences), 2)
-		}
-		if s1.Meta.Data["test"] != "update" {
-			t.Errorf(`Segment.MergeMeta(): s1.Meta.Data["test"] = %s, want %s`, s1.Meta.Data["test"], "update")
 		}
 		if s1.Meta.GetEvidence(e1.Provider).State == cs.PendingEvidence {
 			t.Errorf("Segment.MergeMeta(): Evidence state is %s, want %s", cs.PendingEvidence, cs.CompleteEvidence)
