@@ -118,6 +118,11 @@ func (a *FileStore) NewBatch() (store.Batch, error) {
 	return NewBatch(a), nil
 }
 
+// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
+func (a *FileStore) NewBatchV2() (store.BatchV2, error) {
+	return nil, nil
+}
+
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.

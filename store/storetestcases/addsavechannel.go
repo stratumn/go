@@ -21,6 +21,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/store"
 )
 
 // TestAddDidSaveChannel tests that AddDidSaveChannel functions properly.
@@ -38,7 +39,67 @@ func (f Factory) TestAddDidSaveChannel(t *testing.T) {
 
 	if got, want := <-c, s; !reflect.DeepEqual(want, got) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(got, "", "  ")
+		wantJS, _ := json.MarshalIndent(want, "", "  ")
+		t.Errorf("<- c = %s\n want%s", gotJS, wantJS)
+	}
+}
+
+// TestLinkSavedChannel tests that the store correctly notifies listeners when a link is created.
+func (f Factory) TestLinkSavedChannel(t *testing.T) {
+	a := f.initAdapterV2(t)
+	defer f.freeV2(a)
+
+	c := make(chan *store.Event, 1)
+	a.AddStoreEventChannel(c)
+
+	link := cstesting.RandomLink()
+	if _, err := a.CreateLink(link); err != nil {
+		t.Fatalf("a.CreateLink(); err: %s", err)
+	}
+
+	got := <-c
+	if got.EventType != store.SavedLink {
+		t.Errorf("Expected saved link event, got %v", got)
+	}
+
+	if !reflect.DeepEqual(link, got.Details) {
+		gotJS, _ := json.MarshalIndent(got.Details, "", "  ")
+		wantJS, _ := json.MarshalIndent(link, "", "  ")
+		t.Errorf("<- c = %s\n want%s", gotJS, wantJS)
+	}
+}
+
+// TestEvidenceAddedChannel tests that the store correctly notifies listeners when some evidence is added.
+func (f Factory) TestEvidenceAddedChannel(t *testing.T) {
+	a := f.initAdapterV2(t)
+	defer f.freeV2(a)
+
+	c := make(chan *store.Event, 1)
+	a.AddStoreEventChannel(c)
+
+	link := cstesting.RandomLink()
+	linkHash, err := a.CreateLink(link)
+	if err != nil {
+		t.Fatalf("a.CreateLink(); err: %s", err)
+	}
+
+	// Ignore the link saved event
+	got := <-c
+
+	evidence := cstesting.RandomEvidence()
+	if err = a.AddEvidence(linkHash, evidence); err != nil {
+		t.Fatalf("a.AddEvidence(); err: %s", err)
+	}
+
+	got = <-c
+
+	if got.EventType != store.SavedEvidence {
+		t.Errorf("Expected saved evidence event, got %v", got)
+	}
+
+	if !reflect.DeepEqual(evidence, got.Details) {
+		gotJS, _ := json.MarshalIndent(got.Details, "", "  ")
+		wantJS, _ := json.MarshalIndent(evidence, "", "  ")
 		t.Errorf("<- c = %s\n want%s", gotJS, wantJS)
 	}
 }

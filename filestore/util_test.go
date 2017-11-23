@@ -33,7 +33,24 @@ func createAdapter() (store.Adapter, error) {
 	return fs, nil
 }
 
+func createAdapterV2() (store.AdapterV2, error) {
+	path, err := ioutil.TempDir("", "filestore")
+	if err != nil {
+		return nil, err
+	}
+	fs, err := New(&Config{Path: path})
+	if err != nil {
+		return nil, err
+	}
+	return fs, nil
+}
+
 func freeAdapter(s store.Adapter) {
+	a := s.(*FileStore)
+	defer os.RemoveAll(a.config.Path)
+}
+
+func freeAdapterV2(s store.AdapterV2) {
 	a := s.(*FileStore)
 	defer os.RemoveAll(a.config.Path)
 }

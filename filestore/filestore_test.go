@@ -28,6 +28,13 @@ func TestFilestore(t *testing.T) {
 	}.RunTests(t)
 }
 
+func TestFilestoreV2(t *testing.T) {
+	storetestcases.Factory{
+		NewV2:  createAdapterV2,
+		FreeV2: freeAdapterV2,
+	}.RunTestsV2(t)
+}
+
 func TestFileTMPop(t *testing.T) {
 	tmpoptestcases.Factory{
 		New:  createAdapter,

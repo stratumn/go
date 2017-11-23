@@ -32,8 +32,14 @@ type Factory struct {
 	// New creates an adapter.
 	New func() (store.Adapter, error)
 
+	// NewV2 creates an adapter.
+	NewV2 func() (store.AdapterV2, error)
+
 	// Free is an optional function to free an adapter.
 	Free func(adapter store.Adapter)
+
+	// FreeV2 is an optional function to free an adapter.
+	FreeV2 func(adapter store.AdapterV2)
 }
 
 // RunTests runs all the tests.
@@ -92,6 +98,12 @@ func (f Factory) RunTests(t *testing.T) {
 	t.Run("SaveSegmentUpdatedMapID", f.TestSaveSegmentUpdatedMapID)
 	t.Run("SaveSegmentWithEvidences", f.TestSaveSegmentWithEvidences)
 	t.Run("SaveSegmentBranch", f.TestSaveSegmentBranch)
+}
+
+// RunTestsV2 runs all the tests for the new store interface.
+func (f Factory) RunTestsV2(t *testing.T) {
+	t.Run("TestLinkSavedChannel", f.TestLinkSavedChannel)
+	t.Run("TestEvidenceAddedChannel", f.TestEvidenceAddedChannel)
 }
 
 // RunBenchmarks runs all the benchmarks.
@@ -162,9 +174,20 @@ func (f Factory) RunBenchmarks(b *testing.B) {
 	b.Run("SaveValueParallel", f.BenchmarkSaveValueParallel)
 }
 
+// RunBenchmarksV2 runs all the benchmarks for the new store interface.
+func (f Factory) RunBenchmarksV2(b *testing.B) {
+	b.Run("Benchmarks missing for v2", func(b *testing.B) {})
+}
+
 func (f Factory) free(adapter store.Adapter) {
 	if f.Free != nil {
 		f.Free(adapter)
+	}
+}
+
+func (f Factory) freeV2(adapter store.AdapterV2) {
+	if f.FreeV2 != nil {
+		f.FreeV2(adapter)
 	}
 }
 
@@ -348,6 +371,17 @@ func (f Factory) initAdapter(t *testing.T) store.Adapter {
 	return a
 }
 
+func (f Factory) initAdapterV2(t *testing.T) store.AdapterV2 {
+	a, err := f.NewV2()
+	if err != nil {
+		t.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		t.Fatal("a = nil want store.AdapterV2")
+	}
+	return a
+}
+
 func (f Factory) initAdapterB(b *testing.B) store.Adapter {
 	a, err := f.New()
 	if err != nil {
@@ -355,6 +389,17 @@ func (f Factory) initAdapterB(b *testing.B) store.Adapter {
 	}
 	if a == nil {
 		b.Fatal("a = nil want store.Adapter")
+	}
+	return a
+}
+
+func (f Factory) initAdapterV2B(b *testing.B) store.AdapterV2 {
+	a, err := f.NewV2()
+	if err != nil {
+		b.Fatalf("f.New(): err: %s", err)
+	}
+	if a == nil {
+		b.Fatal("a = nil want store.AdapterV2")
 	}
 	return a
 }
