@@ -33,9 +33,9 @@ import (
 	"sync"
 
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/leveldbstore"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
-	"github.com/tendermint/tmlibs/db"
 )
 
 const (
@@ -55,7 +55,7 @@ type FileStore struct {
 	didSaveChans []chan *cs.Segment
 	eventChans   []chan *store.Event
 	mutex        sync.RWMutex // simple global mutex
-	kvDB         db.DB
+	kvDB         *leveldbstore.LevelDBStore
 }
 
 // Config contains configuration options for the store.
@@ -80,7 +80,10 @@ type Info struct {
 
 // New creates an instance of a FileStore.
 func New(config *Config) (*FileStore, error) {
-	db, err := db.NewGoLevelDB("keyvalue-store", config.Path)
+	kvStoreConfig := &leveldbstore.Config{
+		Path: config.Path,
+	}
+	db, err := leveldbstore.New(kvStoreConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -359,32 +362,24 @@ func (a *FileStore) getLink(linkHash *types.Bytes32) (*cs.Link, error) {
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (a *FileStore) SaveValue(key []byte, value []byte) error {
-	return a.SetValue(key, value)
+	return a.kvDB.SetValue(key, value)
 }
 
 // SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
 func (a *FileStore) SetValue(key []byte, value []byte) error {
-	a.kvDB.Set(key, value)
-	return nil
+	return a.kvDB.SetValue(key, value)
 }
 
 // GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue
 // and github.com/stratumn/sdk/store.KeyValueStore.GetValue.
 func (a *FileStore) GetValue(key []byte) ([]byte, error) {
-	return a.kvDB.Get(key), nil
+	return a.kvDB.GetValue(key)
 }
 
 // DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue
 // and github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
 func (a *FileStore) DeleteValue(key []byte) ([]byte, error) {
-	v := a.kvDB.Get(key)
-
-	if v != nil {
-		a.kvDB.Delete(key)
-		return v, nil
-	}
-
-	return nil, nil
+	return a.kvDB.DeleteValue(key)
 }
 
 /********** Utilities **********/

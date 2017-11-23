@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/stratumn/sdk/bufferedbatch"
-	"github.com/tendermint/tmlibs/db"
 )
 
 // Batch is the type that implements github.com/stratumn/sdk/store.Batch.
@@ -26,7 +25,6 @@ type Batch struct {
 	*bufferedbatch.Batch
 
 	originalFileStore *FileStore
-	originalBatch     db.Batch
 }
 
 // NewBatch creates a new Batch
@@ -34,14 +32,11 @@ func NewBatch(a *FileStore) *Batch {
 	return &Batch{
 		Batch:             bufferedbatch.NewBatch(a),
 		originalFileStore: a,
-		originalBatch:     a.kvDB.NewBatch(),
 	}
 }
 
 // Write implements github.com/stratumn/sdk/store.Batch.Write
 func (b *Batch) Write() (err error) {
-	b.originalBatch.Write()
-
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()
 
@@ -59,24 +54,19 @@ func (b *Batch) Write() (err error) {
 		}
 	}
 
-	return nil
-}
-
-// SaveValue implements github.com/stratumn/sdk/store.Batch.SaveValue
-func (b *Batch) SaveValue(key, value []byte) error {
-	b.originalBatch.Set(key, value)
-
-	return nil
-}
-
-// DeleteValue implements github.com/stratumn/sdk/store.Batch.DeleteValue
-func (b *Batch) DeleteValue(key []byte) ([]byte, error) {
-	v, err := b.originalFileStore.GetValue(key)
-	if err != nil {
-		return nil, err
+	for _, op := range b.ValueOps {
+		switch op.OpType {
+		case bufferedbatch.OpTypeSet:
+			err = b.originalFileStore.SaveValue(op.Key, op.Value)
+		case bufferedbatch.OpTypeDelete:
+			_, err = b.originalFileStore.DeleteValue(op.Key)
+		default:
+			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
+		}
+		if err != nil {
+			return
+		}
 	}
 
-	b.originalBatch.Delete(key)
-
-	return v, nil
+	return nil
 }
