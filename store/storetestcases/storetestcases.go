@@ -105,6 +105,26 @@ func (f Factory) RunTestsV2(t *testing.T) {
 	t.Run("TestLinkSavedChannel", f.TestLinkSavedChannel)
 	t.Run("TestEvidenceAddedChannel", f.TestEvidenceAddedChannel)
 	t.Run("GetInfo", f.TestGetInfoV2)
+	t.Run("TestFindSegmentsV2", f.TestFindSegmentsV2)
+	t.Run("TestFindSegmentsPaginationV2", f.TestFindSegmentsPaginationV2)
+	t.Run("TestFindSegmentEmptyV2", f.TestFindSegmentEmptyV2)
+	t.Run("TestFindSegmentsSingleTagV2", f.TestFindSegmentsSingleTagV2)
+	t.Run("TestFindSegmentsMultipleTagsV2", f.TestFindSegmentsMultipleTagsV2)
+	t.Run("TestFindSegmentsMapIDV2", f.TestFindSegmentsMapIDV2)
+	t.Run("TestFindSegmentsMapIDsV2", f.TestFindSegmentsMapIDsV2)
+	t.Run("TestFindSegmentsMapIDTagsV2", f.TestFindSegmentsMapIDTagsV2)
+	t.Run("TestFindSegmentsMapIDNotFoundV2", f.TestFindSegmentsMapIDNotFoundV2)
+	t.Run("TestFindSegmentsLinkHashesMultiMatchV2", f.TestFindSegmentsLinkHashesMultiMatchV2)
+	t.Run("TestFindSegmentsLinkHashesWithProcessV2", f.TestFindSegmentsLinkHashesWithProcessV2)
+	t.Run("TestFindSegmentsLinkHashesNoMatchV2", f.TestFindSegmentsLinkHashesNoMatchV2)
+	t.Run("TestFindSegmentsEmptyPrevLinkHashV2", f.TestFindSegmentsEmptyPrevLinkHashV2)
+	t.Run("TestFindSegmentsPrevLinkHashV2", f.TestFindSegmentsPrevLinkHashV2)
+	t.Run("TestFindSegmentsPrevLinkHashTagsV2", f.TestFindSegmentsPrevLinkHashTagsV2)
+	t.Run("TestFindSegmentsPrevLinkHashGoodMapIDV2", f.TestFindSegmentsPrevLinkHashGoodMapIDV2)
+	t.Run("TestFindSegmentsPrevLinkHashBadMapIDV2", f.TestFindSegmentsPrevLinkHashBadMapIDV2)
+	t.Run("TestFindSegmentsPrevLinkHashNotFoundV2", f.TestFindSegmentsPrevLinkHashNotFoundV2)
+	t.Run("TestFindSegmentWithGoodProcessV2", f.TestFindSegmentWithGoodProcessV2)
+	t.Run("TestFindSegmentWithBadProcessV2", f.TestFindSegmentWithBadProcessV2)
 }
 
 // RunBenchmarks runs all the benchmarks.
@@ -173,11 +193,6 @@ func (f Factory) RunBenchmarks(b *testing.B) {
 	b.Run("SaveSegmentUpdatedMapIDParallel", f.BenchmarkSaveSegmentUpdatedMapIDParallel)
 	b.Run("SaveValue", f.BenchmarkSaveValue)
 	b.Run("SaveValueParallel", f.BenchmarkSaveValueParallel)
-}
-
-// RunBenchmarksV2 runs all the benchmarks for the new store interface.
-func (f Factory) RunBenchmarksV2(b *testing.B) {
-	b.Run("Benchmarks missing for v2", func(b *testing.B) {})
 }
 
 func (f Factory) free(adapter store.Adapter) {

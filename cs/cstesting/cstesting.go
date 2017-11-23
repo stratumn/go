@@ -109,6 +109,15 @@ func RandomBranch(s *cs.Segment) *cs.Segment {
 	return branch
 }
 
+// RandomLinkBranch appends a random link to a link.
+func RandomLinkBranch(parent *cs.Link) *cs.Link {
+	linkHash, _ := parent.HashString()
+	branch := CreateLink(testutil.RandomString(24), testutil.RandomString(24),
+		linkHash, RandomTags(), rand.Float64())
+	branch.Meta["mapId"] = parent.Meta["mapId"]
+	return branch
+}
+
 // RandomTags creates between zero and four random tags.
 func RandomTags() []interface{} {
 	var tags []interface{}
