@@ -27,10 +27,6 @@ import (
 	"github.com/stratumn/sdk/utils"
 )
 
-var (
-	dbName string
-)
-
 const (
 	statusError           = 400
 	statusDBExists        = 412
@@ -92,9 +88,8 @@ func (c *CouchStore) getDatabases() ([]string, error) {
 	return *databases, nil
 }
 
-func (c *CouchStore) createDatabase(name string) error {
-	dbName = name
-	_, couchResponseStatus, err := c.put("/"+name, nil)
+func (c *CouchStore) createDatabase(dbName string) error {
+	_, couchResponseStatus, err := c.put("/"+dbName, nil)
 	if err != nil {
 		return err
 	}
@@ -105,17 +100,15 @@ func (c *CouchStore) createDatabase(name string) error {
 		}
 	}
 
-	return utils.Retry(c.pingDatabase, 10)
-}
-
-func (c *CouchStore) pingDatabase(attempt int) (bool, error) {
-	path := fmt.Sprintf("/%s", dbName)
-	_, couchResponseStatus, err := c.doHTTPRequest(http.MethodGet, path, nil)
-	if err != nil || couchResponseStatus.Ok == false {
-		time.Sleep(200 * time.Millisecond)
-		return true, err
-	}
-	return false, err
+	return utils.Retry(func(attempt int) (bool, error) {
+		path := fmt.Sprintf("/%s", dbName)
+		_, couchResponseStatus, err := c.doHTTPRequest(http.MethodGet, path, nil)
+		if err != nil || couchResponseStatus.Ok == false {
+			time.Sleep(200 * time.Millisecond)
+			return true, err
+		}
+		return false, err
+	}, 10)
 }
 
 func (c *CouchStore) deleteDatabase(name string) error {
