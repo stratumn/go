@@ -18,6 +18,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -38,9 +39,8 @@ const (
 	port   = "5984"
 )
 
-func TestCouchStore(t *testing.T) {
+func TestMain(m *testing.M) {
 	flag.Parse()
-	test = t
 	if *integration {
 		// Couch container configuration.
 		imageName := "couchdb:latest"
@@ -61,27 +61,36 @@ func TestCouchStore(t *testing.T) {
 
 		// Start couchdb container
 		if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
-			t.Logf(err.Error())
-			t.FailNow()
+			fmt.Printf(err.Error())
+			os.Exit(1)
 		}
 
 		// Retry until container is ready.
 		if err := utils.Retry(pingCouchContainer, 10); err != nil {
-			t.Logf(err.Error())
-			t.FailNow()
+			fmt.Printf(err.Error())
+			os.Exit(1)
 		}
 
 		// Run tests.
+		testResult := m.Run()
+
+		// Stop couchdb container.
+		if err := utils.KillContainer(containerName); err != nil {
+			fmt.Printf(err.Error())
+			os.Exit(1)
+		}
+
+		os.Exit(testResult)
+	}
+}
+
+func TestCouchStore(t *testing.T) {
+	test = t
+	if *integration {
 		storetestcases.Factory{
 			New:  newTestCouchStore,
 			Free: freeTestCouchStore,
 		}.RunTests(t)
-
-		// Stop couchdb container.
-		if err := utils.KillContainer(containerName); err != nil {
-			t.Logf(err.Error())
-			t.FailNow()
-		}
 	}
 }
 
