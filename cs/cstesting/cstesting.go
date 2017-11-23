@@ -92,11 +92,25 @@ func ChangeSegmentState(s *cs.Segment) *cs.Segment {
 	return clone
 }
 
+// ChangeLinkState clones a link and randomly changes its state.
+func ChangeLinkState(l *cs.Link) *cs.Link {
+	clone := CloneLink(l)
+	clone.State["random"] = testutil.RandomString(12)
+	return clone
+}
+
 // ChangeSegmentMapID clones a segment and randomly changes its map ID.
 func ChangeSegmentMapID(s *cs.Segment) *cs.Segment {
 	clone := CloneSegment(s)
 	clone.Link.Meta["mapId"] = testutil.RandomString(24)
 	clone.SetLinkHash()
+	return clone
+}
+
+// ChangeLinkMapID clones a link and randomly changes its map ID.
+func ChangeLinkMapID(l *cs.Link) *cs.Link {
+	clone := CloneLink(l)
+	clone.Meta["mapId"] = testutil.RandomString(24)
 	return clone
 }
 
@@ -132,6 +146,22 @@ func CloneSegment(s *cs.Segment) *cs.Segment {
 	var clone cs.Segment
 
 	js, err := json.Marshal(s)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := json.Unmarshal(js, &clone); err != nil {
+		panic(err)
+	}
+
+	return &clone
+}
+
+// CloneLink clones a link.
+func CloneLink(l *cs.Link) *cs.Link {
+	var clone cs.Link
+
+	js, err := json.Marshal(l)
 	if err != nil {
 		panic(err)
 	}

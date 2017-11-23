@@ -133,6 +133,12 @@ func (f Factory) RunTestsV2(t *testing.T) {
 	t.Run("TestGetMapIDsPaginationV2", f.TestGetMapIDsPaginationV2)
 	t.Run("TestGetMapIDsEmptyV2", f.TestGetMapIDsEmptyV2)
 	t.Run("TestGetMapIDsByProcessV2", f.TestGetMapIDsByProcessV2)
+	// Get segment
+	t.Run("TestGetSegmentV2", f.TestGetSegmentV2)
+	t.Run("TestGetSegmentUpdatedStateV2", f.TestGetSegmentUpdatedStateV2)
+	t.Run("TestGetSegmentUpdatedMapIDV2", f.TestGetSegmentUpdatedMapIDV2)
+	t.Run("TestGetSegmentWithEvidencesV2", f.TestGetSegmentWithEvidencesV2)
+	t.Run("TestGetSegmentNotFoundV2", f.TestGetSegmentNotFoundV2)
 }
 
 // RunBenchmarks runs all the benchmarks.
