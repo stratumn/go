@@ -39,7 +39,7 @@ func (b *Batch) Write() (err error) {
 	for _, op := range b.ValueOps {
 		switch op.OpType {
 		case bufferedbatch.OpTypeSet:
-			err = b.originalDummyStore.saveValue(op.Key, op.Value)
+			err = b.originalDummyStore.setValue(op.Key, op.Value)
 		case bufferedbatch.OpTypeDelete:
 			_, err = b.originalDummyStore.deleteValue(op.Key)
 		default:

@@ -57,6 +57,7 @@ type Info struct {
 type DummyStore struct {
 	config       *Config
 	didSaveChans []chan *cs.Segment
+	eventChans   []chan *store.Event
 	segments     segmentMap   // maps link hashes to segments
 	values       valueMap     // maps keys to values
 	maps         hashSetMap   // maps chains IDs to sets of link hashes
@@ -72,6 +73,7 @@ type valueMap map[string][]byte
 func New(config *Config) *DummyStore {
 	return &DummyStore{
 		config,
+		nil,
 		nil,
 		segmentMap{},
 		valueMap{},
@@ -94,6 +96,23 @@ func (a *DummyStore) GetInfo() (interface{}, error) {
 // github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
 func (a *DummyStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
 	a.didSaveChans = append(a.didSaveChans, saveChan)
+}
+
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
+	a.eventChans = append(a.eventChans, eventChan)
+}
+
+/********** Store writer implementation **********/
+
+// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+func (a *DummyStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	return nil, nil
+}
+
+// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+func (a *DummyStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	return nil
 }
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
@@ -130,14 +149,6 @@ func (a *DummyStore) saveSegment(segment *cs.Segment) (err error) {
 	return nil
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
-func (a *DummyStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	a.mutex.RLock()
-	defer a.mutex.RUnlock()
-
-	return a.segments[linkHash.String()], nil
-}
-
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (a *DummyStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.Lock()
@@ -160,6 +171,16 @@ func (a *DummyStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 	}
 
 	return segment, nil
+}
+
+/********** Store reader implementation **********/
+
+// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+func (a *DummyStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return a.segments[linkHash.String()], nil
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
@@ -206,7 +227,14 @@ func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return filter.Pagination.PaginateStrings(mapIDs), nil
 }
 
-// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+func (a *DummyStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+	return nil, nil
+}
+
+/********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
+
+// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
 func (a *DummyStore) GetValue(key []byte) ([]byte, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -214,22 +242,27 @@ func (a *DummyStore) GetValue(key []byte) ([]byte, error) {
 	return a.values[createKey(key)], nil
 }
 
-// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
-func (a *DummyStore) SaveValue(key, value []byte) error {
+// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+func (a *DummyStore) SetValue(key, value []byte) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	return a.saveValue(key, value)
+	return a.setValue(key, value)
 }
 
-func (a *DummyStore) saveValue(key, value []byte) error {
+// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
+func (a *DummyStore) SaveValue(key, value []byte) error {
+	return a.SetValue(key, value)
+}
+
+func (a *DummyStore) setValue(key, value []byte) error {
 	k := createKey(key)
 	a.values[k] = value
 
 	return nil
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
+// DeleteValue implements github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
 func (a *DummyStore) DeleteValue(key []byte) ([]byte, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -250,10 +283,19 @@ func (a *DummyStore) deleteValue(key []byte) ([]byte, error) {
 	return value, nil
 }
 
+/********** github.com/stratumn/sdk/store.Batch implementation **********/
+
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (a *DummyStore) NewBatch() (store.Batch, error) {
 	return NewBatch(a), nil
 }
+
+// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
+func (a *DummyStore) NewBatchV2() (store.BatchV2, error) {
+	return nil, nil
+}
+
+/********** Utilities **********/
 
 func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var segments cs.SegmentSlice
