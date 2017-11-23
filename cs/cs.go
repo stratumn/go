@@ -17,7 +17,6 @@ package cs
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -251,12 +250,12 @@ func (l *Link) Hash() (*types.Bytes32, error) {
 
 // HashString hashes the link and returns a string
 func (l *Link) HashString() (string, error) {
-	jsonLink, err := cj.Marshal(l)
+	hash, err := l.Hash()
 	if err != nil {
 		return "", err
 	}
-	byteLinkHash := sha256.Sum256(jsonLink)
-	return hex.EncodeToString(byteLinkHash[:sha256.Size]), nil
+
+	return hash.String(), nil
 }
 
 // GetPriority returns the priority as a float64
