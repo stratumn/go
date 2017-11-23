@@ -139,6 +139,15 @@ func (f Factory) RunTestsV2(t *testing.T) {
 	t.Run("TestGetSegmentUpdatedMapIDV2", f.TestGetSegmentUpdatedMapIDV2)
 	t.Run("TestGetSegmentWithEvidencesV2", f.TestGetSegmentWithEvidencesV2)
 	t.Run("TestGetSegmentNotFoundV2", f.TestGetSegmentNotFoundV2)
+	// Create link
+	t.Run("TestCreateLink", f.TestCreateLink)
+	t.Run("TestCreateLinkNoPriority", f.TestCreateLinkNoPriority)
+	t.Run("TestCreateLinkUpdatedState", f.TestCreateLinkUpdatedState)
+	t.Run("TestCreateLinkUpdatedMapID", f.TestCreateLinkUpdatedMapID)
+	t.Run("TestCreateLinkBranch", f.TestCreateLinkBranch)
+	// Add evidence
+	t.Run("TestAddEvidences", f.TestAddEvidences)
+	t.Run("TestAddDuplicateEvidences", f.TestAddDuplicateEvidences)
 }
 
 // RunBenchmarks runs all the benchmarks.
