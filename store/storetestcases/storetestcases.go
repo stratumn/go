@@ -104,6 +104,7 @@ func (f Factory) RunTests(t *testing.T) {
 func (f Factory) RunTestsV2(t *testing.T) {
 	t.Run("TestLinkSavedChannel", f.TestLinkSavedChannel)
 	t.Run("TestEvidenceAddedChannel", f.TestEvidenceAddedChannel)
+	t.Run("GetInfo", f.TestGetInfoV2)
 }
 
 // RunBenchmarks runs all the benchmarks.
