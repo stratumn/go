@@ -327,12 +327,23 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 	return true
 }
 
-// Match check if segment matches with filter
+// Match checks if segment matches with filter
 func (filter MapFilter) Match(segment *cs.Segment) bool {
 	if segment == nil {
 		return false
 	}
 	if filter.Process != "" && filter.Process != segment.Link.GetProcess() {
+		return false
+	}
+	return true
+}
+
+// MatchLink checks if link matches with filter
+func (filter MapFilter) MatchLink(link *cs.Link) bool {
+	if link == nil {
+		return false
+	}
+	if filter.Process != "" && filter.Process != link.GetProcess() {
 		return false
 	}
 	return true

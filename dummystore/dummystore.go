@@ -58,13 +58,15 @@ type DummyStore struct {
 	config       *Config
 	didSaveChans []chan *cs.Segment
 	eventChans   []chan *store.Event
-	segments     segmentMap   // maps link hashes to segments
+	links        linkMap      // maps link hashes to segments
+	evidences    evidenceMap  // maps link hashes to evidences
 	values       valueMap     // maps keys to values
 	maps         hashSetMap   // maps chains IDs to sets of link hashes
 	mutex        sync.RWMutex // simple global mutex
 }
 
-type segmentMap map[string]*cs.Segment
+type linkMap map[string]*cs.Link
+type evidenceMap map[string]*cs.Evidences
 type hashSet map[string]struct{}
 type hashSetMap map[string]hashSet
 type valueMap map[string][]byte
@@ -75,7 +77,8 @@ func New(config *Config) *DummyStore {
 		config,
 		nil,
 		nil,
-		segmentMap{},
+		linkMap{},
+		evidenceMap{},
 		valueMap{},
 		hashSetMap{},
 		sync.RWMutex{},
@@ -107,11 +110,77 @@ func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
 
 // CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
 func (a *DummyStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	return nil, nil
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.createLink(link)
+}
+
+func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
+	linkHash, err := link.Hash()
+	if err != nil {
+		return nil, err
+	}
+
+	linkHashStr := linkHash.String()
+	a.links[linkHashStr] = link
+
+	mapID := link.GetMapID()
+	_, exists := a.maps[mapID]
+	if !exists {
+		a.maps[mapID] = hashSet{}
+	}
+
+	a.maps[mapID][linkHashStr] = struct{}{}
+
+	for _, c := range a.eventChans {
+		c <- &store.Event{
+			EventType: store.SavedLink,
+			Details:   link,
+		}
+	}
+
+	return linkHash, nil
 }
 
 // AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
 func (a *DummyStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.addEvidence(linkHash.String(), evidence)
+}
+
+func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
+	currentEvidences := a.evidences[linkHash]
+	if currentEvidences == nil {
+		currentEvidences = &cs.Evidences{}
+	}
+
+	// If we already have an evidence for that provider, it means
+	// we're in the case where we go from a PENDING evidence to a
+	// COMPLETE one. This won't be necessary after the store interface
+	// update, but meanwhile we need to correctly update the existing
+	// evidence.
+	previousEvidence := currentEvidences.GetEvidence(evidence.Provider)
+	if previousEvidence != nil {
+		if previousEvidence.State == cs.PendingEvidence {
+			previousEvidence.State = evidence.State
+			previousEvidence.Proof = evidence.Proof
+		}
+	} else if err := currentEvidences.AddEvidence(*evidence); err != nil {
+		return err
+	}
+
+	a.evidences[linkHash] = currentEvidences
+
+	for _, c := range a.eventChans {
+		c <- &store.Event{
+			EventType: store.SavedEvidence,
+			Details:   evidence,
+		}
+	}
+
 	return nil
 }
 
@@ -123,24 +192,17 @@ func (a *DummyStore) SaveSegment(segment *cs.Segment) error {
 	return a.saveSegment(segment)
 }
 
-func (a *DummyStore) saveSegment(segment *cs.Segment) (err error) {
-	linkHashStr := segment.GetLinkHashString()
-	curr := a.segments[linkHashStr]
-	mapID := segment.Link.GetMapID()
+func (a *DummyStore) saveSegment(segment *cs.Segment) error {
+	linkHash, err := a.createLink(&segment.Link)
+	if err != nil {
+		return err
+	}
 
-	if curr != nil {
-		if segment, err = curr.MergeMeta(segment); err != nil {
+	for _, evidence := range segment.Meta.Evidences {
+		if err := a.addEvidence(linkHash.String(), evidence); err != nil {
 			return err
 		}
 	}
-
-	_, exists := a.maps[mapID]
-	if !exists {
-		a.maps[mapID] = hashSet{}
-	}
-
-	a.segments[linkHashStr] = segment
-	a.maps[mapID][linkHashStr] = struct{}{}
 
 	for _, c := range a.didSaveChans {
 		c <- segment
@@ -159,15 +221,24 @@ func (a *DummyStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 
 func (a *DummyStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	linkHashStr := linkHash.String()
-	segment, exists := a.segments[linkHashStr]
-	if !exists {
+	segment, err := a.getSegment(linkHashStr)
+	if err != nil {
+		return nil, err
+	}
+	if segment == nil {
 		return nil, nil
 	}
 
-	delete(a.segments, linkHashStr)
-	delete(a.maps[segment.Link.GetMapID()], linkHashStr)
-	if len(a.maps[segment.Link.GetMapID()]) == 0 {
-		delete(a.maps, segment.Link.GetMapID())
+	delete(a.links, linkHashStr)
+	_, exists := a.evidences[linkHashStr]
+	if exists {
+		delete(a.evidences, linkHashStr)
+	}
+
+	mapID := segment.Link.GetMapID()
+	delete(a.maps[mapID], linkHashStr)
+	if len(a.maps[mapID]) == 0 {
+		delete(a.maps, mapID)
 	}
 
 	return segment, nil
@@ -180,7 +251,30 @@ func (a *DummyStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	return a.segments[linkHash.String()], nil
+	return a.getSegment(linkHash.String())
+}
+
+// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+func (a *DummyStore) getSegment(linkHash string) (*cs.Segment, error) {
+	link, exists := a.links[linkHash]
+	if !exists {
+		return nil, nil
+	}
+
+	segment := &cs.Segment{
+		Link: *link,
+		Meta: cs.SegmentMeta{
+			Evidences: cs.Evidences{},
+			LinkHash:  linkHash,
+		},
+	}
+
+	evidences, exists := a.evidences[linkHash]
+	if exists {
+		segment.Meta.Evidences = *evidences
+	}
+
+	return segment, nil
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
@@ -191,7 +285,7 @@ func (a *DummyStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	var linkHashes = hashSet{}
 
 	if len(filter.MapIDs) == 0 || filter.PrevLinkHash != nil {
-		for linkHash := range a.segments {
+		for linkHash := range a.links {
 			linkHashes[linkHash] = struct{}{}
 		}
 	} else {
@@ -216,7 +310,7 @@ func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	mapIDs := make([]string, 0, len(a.maps))
 	for mapID, linkHashes := range a.maps {
 		for linkHash := range linkHashes {
-			if segment, exist := a.segments[linkHash]; exist && filter.Match(segment) {
+			if link, exists := a.links[linkHash]; exists && filter.MatchLink(link) {
 				mapIDs = append(mapIDs, mapID)
 				break
 			}
@@ -229,7 +323,8 @@ func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 
 // GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
 func (a *DummyStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
-	return nil, nil
+	evidences, _ := a.evidences[linkHash.String()]
+	return evidences, nil
 }
 
 /********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
@@ -301,7 +396,11 @@ func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.Segmen
 	var segments cs.SegmentSlice
 
 	for linkHash := range linkHashes {
-		segment := a.segments[linkHash]
+		segment, err := a.getSegment(linkHash)
+		if err != nil {
+			return nil, err
+		}
+
 		if filter.Match(segment) {
 			segments = append(segments, segment)
 		}
