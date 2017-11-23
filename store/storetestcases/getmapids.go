@@ -58,6 +58,37 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	}
 }
 
+// TestGetMapIDsV2 tests what happens when you get map IDs with default
+// pagination.
+func (f Factory) TestGetMapIDsV2(t *testing.T) {
+	a := f.initAdapterV2(t)
+	defer f.freeV2(a)
+
+	for i := 0; i < store.DefaultLimit; i++ {
+		for j := 0; j < store.DefaultLimit; j++ {
+			l := cstesting.RandomLink()
+			l.Meta["mapId"] = fmt.Sprintf("map%d", i)
+			a.CreateLink(l)
+		}
+	}
+
+	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit * store.DefaultLimit}})
+	if err != nil {
+		t.Fatalf("a.GetMapIDs(): err: %s", err)
+	}
+
+	if got, want := len(slice), store.DefaultLimit; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+
+	for i := 0; i < store.DefaultLimit; i++ {
+		mapID := fmt.Sprintf("map%d", i)
+		if !testutil.ContainsString(slice, mapID) {
+			t.Errorf("slice does not contain %q", mapID)
+		}
+	}
+}
+
 // TestGetMapIDsPagination tests what happens when you get map IDs with
 // pagination.
 func (f Factory) TestGetMapIDsPagination(t *testing.T) {
@@ -70,6 +101,30 @@ func (f Factory) TestGetMapIDsPagination(t *testing.T) {
 			segment.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
 			segment.SetLinkHash()
 			a.SaveSegment(segment)
+		}
+	}
+
+	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 3, Limit: 5}})
+	if err != nil {
+		t.Fatalf("a.GetMapIDs(): err: %s", err)
+	}
+
+	if got, want := len(slice), 5; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
+// TestGetMapIDsPaginationV2 tests what happens when you get map IDs with
+// pagination.
+func (f Factory) TestGetMapIDsPaginationV2(t *testing.T) {
+	a := f.initAdapterV2(t)
+	defer f.freeV2(a)
+
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
+			link := cstesting.RandomLink()
+			link.Meta["mapId"] = fmt.Sprintf("map%d", i)
+			a.CreateLink(link)
 		}
 	}
 
@@ -98,6 +153,21 @@ func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
 	}
 }
 
+// TestGetMapIDsEmptyV2 tests what happens when you should get no map IDs.
+func (f Factory) TestGetMapIDsEmptyV2(t *testing.T) {
+	a := f.initAdapterV2(t)
+	defer f.freeV2(a)
+
+	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 100000, Limit: 5}})
+	if err != nil {
+		t.Fatalf("a.GetMapIDs(): err: %s", err)
+	}
+
+	if got, want := len(slice), 0; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+}
+
 // TestGetMapIDsByProcess tests what happens when you get map IDs filtered by process name.
 func (f Factory) TestGetMapIDsByProcess(t *testing.T) {
 	var processNames = [2]string{"Foo", "Bar"}
@@ -111,6 +181,38 @@ func (f Factory) TestGetMapIDsByProcess(t *testing.T) {
 			s.Link.Meta["process"] = processNames[i%2]
 			s.SetLinkHash()
 			a.SaveSegment(s)
+		}
+	}
+
+	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit * store.DefaultLimit}, Process: processNames[0]})
+	if err != nil {
+		t.Fatalf("a.GetMapIDsByProcess(): err: %s", err)
+	}
+
+	if got, want := len(slice), store.DefaultLimit/2; got != want {
+		t.Errorf("len(slice) = %d want %d", got, want)
+	}
+
+	for i := 0; i < store.DefaultLimit; i += 2 {
+		mapID := fmt.Sprintf("map%d", i)
+		if !testutil.ContainsString(slice, mapID) {
+			t.Errorf("slice does not contain %q", mapID)
+		}
+	}
+}
+
+// TestGetMapIDsByProcessV2 tests what happens when you get map IDs filtered by process name.
+func (f Factory) TestGetMapIDsByProcessV2(t *testing.T) {
+	var processNames = [2]string{"Foo", "Bar"}
+	a := f.initAdapterV2(t)
+	defer f.freeV2(a)
+
+	for i := 0; i < store.DefaultLimit; i++ {
+		for j := 0; j < store.DefaultLimit; j++ {
+			l := cstesting.RandomLink()
+			l.Meta["mapId"] = fmt.Sprintf("map%d", i)
+			l.Meta["process"] = processNames[i%2]
+			a.CreateLink(l)
 		}
 	}
 

@@ -102,9 +102,12 @@ func (f Factory) RunTests(t *testing.T) {
 
 // RunTestsV2 runs all the tests for the new store interface.
 func (f Factory) RunTestsV2(t *testing.T) {
+	// Notifications
 	t.Run("TestLinkSavedChannel", f.TestLinkSavedChannel)
 	t.Run("TestEvidenceAddedChannel", f.TestEvidenceAddedChannel)
+	// Store info
 	t.Run("GetInfo", f.TestGetInfoV2)
+	// Find segments
 	t.Run("TestFindSegmentsV2", f.TestFindSegmentsV2)
 	t.Run("TestFindSegmentsPaginationV2", f.TestFindSegmentsPaginationV2)
 	t.Run("TestFindSegmentEmptyV2", f.TestFindSegmentEmptyV2)
@@ -125,6 +128,11 @@ func (f Factory) RunTestsV2(t *testing.T) {
 	t.Run("TestFindSegmentsPrevLinkHashNotFoundV2", f.TestFindSegmentsPrevLinkHashNotFoundV2)
 	t.Run("TestFindSegmentWithGoodProcessV2", f.TestFindSegmentWithGoodProcessV2)
 	t.Run("TestFindSegmentWithBadProcessV2", f.TestFindSegmentWithBadProcessV2)
+	// Map ids
+	t.Run("TestGetMapIDsV2", f.TestGetMapIDsV2)
+	t.Run("TestGetMapIDsPaginationV2", f.TestGetMapIDsPaginationV2)
+	t.Run("TestGetMapIDsEmptyV2", f.TestGetMapIDsEmptyV2)
+	t.Run("TestGetMapIDsByProcessV2", f.TestGetMapIDsByProcessV2)
 }
 
 // RunBenchmarks runs all the benchmarks.
