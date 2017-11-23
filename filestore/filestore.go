@@ -119,15 +119,13 @@ func (a *FileStore) NewBatch() (store.Batch, error) {
 
 // CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
 func (a *FileStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	return a.createLink(link, true)
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.createLink(link)
 }
 
-func (a *FileStore) createLink(link *cs.Link, lock bool) (*types.Bytes32, error) {
-	if lock {
-		a.mutex.Lock()
-		defer a.mutex.Unlock()
-	}
-
+func (a *FileStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return nil, err
@@ -202,16 +200,14 @@ func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) 
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (a *FileStore) SaveSegment(segment *cs.Segment) error {
-	return a.saveSegment(segment, true)
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.saveSegment(segment)
 }
 
-func (a *FileStore) saveSegment(segment *cs.Segment, lock bool) error {
-	if lock {
-		a.mutex.Lock()
-		defer a.mutex.Unlock()
-	}
-
-	linkHash, err := a.createLink(&segment.Link, false)
+func (a *FileStore) saveSegment(segment *cs.Segment) error {
+	linkHash, err := a.createLink(&segment.Link)
 	if err != nil {
 		return err
 	}
@@ -231,16 +227,14 @@ func (a *FileStore) saveSegment(segment *cs.Segment, lock bool) error {
 
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (a *FileStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	return a.deleteSegment(linkHash, true)
+	a.mutex.Lock()
+	defer a.mutex.Unlock()
+
+	return a.deleteSegment(linkHash)
 }
 
-func (a *FileStore) deleteSegment(linkHash *types.Bytes32, lock bool) (*cs.Segment, error) {
-	if lock {
-		a.mutex.Lock()
-		defer a.mutex.Unlock()
-	}
-
-	segment, err := a.getSegment(linkHash, false)
+func (a *FileStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	segment, err := a.getSegment(linkHash)
 	if segment == nil {
 		return segment, err
 	}
@@ -257,11 +251,14 @@ func (a *FileStore) deleteSegment(linkHash *types.Bytes32, lock bool) (*cs.Segme
 // GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment
 // and github.com/stratumn/sdk/store.SegmentReader.GetSegment.
 func (a *FileStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	return a.getSegment(linkHash, true)
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
+	return a.getSegment(linkHash)
 }
 
-func (a *FileStore) getSegment(linkHash *types.Bytes32, lock bool) (*cs.Segment, error) {
-	link, err := a.getLink(linkHash, lock)
+func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	link, err := a.getLink(linkHash)
 	if err != nil || link == nil {
 		return nil, err
 	}
@@ -339,12 +336,7 @@ func getEvidenceKey(linkHash *types.Bytes32) []byte {
 	return []byte("evidences:" + linkHash.String())
 }
 
-func (a *FileStore) getLink(linkHash *types.Bytes32, lock bool) (*cs.Link, error) {
-	if lock {
-		a.mutex.RLock()
-		defer a.mutex.RUnlock()
-	}
-
+func (a *FileStore) getLink(linkHash *types.Bytes32) (*cs.Link, error) {
 	file, err := os.Open(a.getLinkPath(linkHash))
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -433,7 +425,7 @@ func (a *FileStore) forEach(fn func(*cs.Segment) error) error {
 				return err
 			}
 
-			segment, err := a.getSegment(linkHash, false)
+			segment, err := a.getSegment(linkHash)
 			if err != nil {
 				return err
 			}

@@ -48,9 +48,9 @@ func (b *Batch) Write() (err error) {
 	for _, op := range b.SegmentOps {
 		switch op.OpType {
 		case bufferedbatch.OpTypeSet:
-			err = b.originalFileStore.saveSegment(op.Segment, false)
+			err = b.originalFileStore.saveSegment(op.Segment)
 		case bufferedbatch.OpTypeDelete:
-			_, err = b.originalFileStore.deleteSegment(op.LinkHash, false)
+			_, err = b.originalFileStore.deleteSegment(op.LinkHash)
 		default:
 			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
 		}
