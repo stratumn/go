@@ -52,7 +52,7 @@ func (s *Segment) GetLinkHashString() string {
 
 // HashLink hashes the segment link and stores it into the Meta
 func (s *Segment) HashLink() (string, error) {
-	return s.Link.Hash()
+	return s.Link.HashString()
 }
 
 // SetLinkHash overwrites the segment LinkHash using HashLink()
@@ -239,7 +239,18 @@ type Link struct {
 }
 
 // Hash hashes the link
-func (l *Link) Hash() (string, error) {
+func (l *Link) Hash() (*types.Bytes32, error) {
+	jsonLink, err := cj.Marshal(l)
+	if err != nil {
+		return nil, err
+	}
+	byteLinkHash := sha256.Sum256(jsonLink)
+	linkHash := types.Bytes32(byteLinkHash)
+	return &linkHash, nil
+}
+
+// HashString hashes the link and returns a string
+func (l *Link) HashString() (string, error) {
 	jsonLink, err := cj.Marshal(l)
 	if err != nil {
 		return "", err

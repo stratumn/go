@@ -128,12 +128,10 @@ func (a *FileStore) createLink(link *cs.Link, lock bool) (*types.Bytes32, error)
 		defer a.mutex.Unlock()
 	}
 
-	linkHashStr, err := link.Hash()
+	linkHash, err := link.Hash()
 	if err != nil {
 		return nil, err
 	}
-
-	linkHash, _ := types.NewBytes32FromString(linkHashStr)
 
 	if err = a.initDir(); err != nil {
 		return nil, err
@@ -144,7 +142,7 @@ func (a *FileStore) createLink(link *cs.Link, lock bool) (*types.Bytes32, error)
 		return nil, err
 	}
 
-	linkPath := a.getLinkPath(linkHashStr)
+	linkPath := a.getLinkPath(linkHash)
 
 	if err := ioutil.WriteFile(linkPath, js, 0644); err != nil {
 		return nil, err
@@ -247,7 +245,7 @@ func (a *FileStore) deleteSegment(linkHash *types.Bytes32, lock bool) (*cs.Segme
 		return segment, err
 	}
 
-	if err = os.Remove(a.getLinkPath(linkHash.String())); err != nil {
+	if err = os.Remove(a.getLinkPath(linkHash)); err != nil {
 		return nil, err
 	}
 
@@ -347,8 +345,7 @@ func (a *FileStore) getLink(linkHash *types.Bytes32, lock bool) (*cs.Link, error
 		defer a.mutex.RUnlock()
 	}
 
-	linkHashStr := linkHash.String()
-	file, err := os.Open(a.getLinkPath(linkHashStr))
+	file, err := os.Open(a.getLinkPath(linkHash))
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -409,8 +406,8 @@ func (a *FileStore) initDir() error {
 	return nil
 }
 
-func (a *FileStore) getLinkPath(linkHash string) string {
-	return path.Join(a.config.Path, linkHash+".json")
+func (a *FileStore) getLinkPath(linkHash *types.Bytes32) string {
+	return path.Join(a.config.Path, linkHash.String()+".json")
 }
 
 var linkFileRegex = regexp.MustCompile("(.*)\\.json$")
