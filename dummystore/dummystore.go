@@ -222,11 +222,8 @@ func (a *DummyStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
 func (a *DummyStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	linkHashStr := linkHash.String()
 	segment, err := a.getSegment(linkHashStr)
-	if err != nil {
+	if err != nil || segment == nil {
 		return nil, err
-	}
-	if segment == nil {
-		return nil, nil
 	}
 
 	delete(a.links, linkHashStr)

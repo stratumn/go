@@ -332,10 +332,8 @@ func (filter MapFilter) Match(segment *cs.Segment) bool {
 	if segment == nil {
 		return false
 	}
-	if filter.Process != "" && filter.Process != segment.Link.GetProcess() {
-		return false
-	}
-	return true
+
+	return filter.MatchLink(&segment.Link)
 }
 
 // MatchLink checks if link matches with filter
