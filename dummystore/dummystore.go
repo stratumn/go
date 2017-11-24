@@ -320,6 +320,9 @@ func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 
 // GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
 func (a *DummyStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
 	evidences, _ := a.evidences[linkHash.String()]
 	return evidences, nil
 }
