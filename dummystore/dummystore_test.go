@@ -30,6 +30,14 @@ func TestDummystore(t *testing.T) {
 	}.RunTests(t)
 }
 
+func TestDummystoreV2(t *testing.T) {
+	storetestcases.Factory{
+		NewV2: func() (store.AdapterV2, error) {
+			return New(&Config{}), nil
+		},
+	}.RunTestsV2(t)
+}
+
 func TestDummyTMPop(t *testing.T) {
 	tmpoptestcases.Factory{
 		New: func() (store.Adapter, error) {
