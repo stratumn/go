@@ -58,7 +58,6 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 		offset       = filter.Offset
 		segments     = make(cs.SegmentSlice, 0, limit)
 		process      = filter.Process
-		linkHashes   = make([][]byte, len(filter.LinkHashes))
 		prevLinkHash []byte
 	)
 
@@ -85,10 +84,7 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 			}
 		}
 	} else if len(filter.LinkHashes) > 0 {
-		for i, linkHash := range filter.LinkHashes {
-			linkHashes[i] = linkHash[:]
-		}
-		linkHashesArray := pq.Array(linkHashes)
+		linkHashesArray := pq.Array(filter.LinkHashes)
 		if len(filter.MapIDs) > 0 {
 			mapIDs := pq.Array(filter.MapIDs)
 			if len(filter.Tags) > 0 {
