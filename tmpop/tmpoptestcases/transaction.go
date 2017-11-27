@@ -15,117 +15,125 @@
 package tmpoptestcases
 
 import (
-	"encoding/json"
-	"reflect"
+	"bytes"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/tmpop"
+
 	"github.com/stratumn/sdk/cs/cstesting"
 )
 
 // TestCheckTx tests what happens when the ABCI method CheckTx() is called
 func (f Factory) TestCheckTx(t *testing.T) {
-	h := f.initTMPop(t, nil)
+	h, _ := f.newTMPop(t, nil)
 	defer f.free()
 
-	_, tx := makeSaveSegmentTx(t)
+	t.Run("Check valid link returns ok", func(t *testing.T) {
+		_, tx := makeCreateRandomLinkTx(t)
+		res := h.CheckTx(tx)
 
-	res := h.CheckTx(tx)
+		if !res.IsOK() {
+			t.Errorf("Expected CheckTx to return an OK result, got %v", res)
+		}
+	})
 
-	if !res.IsOK() {
-		t.Errorf("Expected CheckTx to return an OK result, got %v", res)
-	}
+	t.Run("Check link with invalid reference returns not-ok", func(t *testing.T) {
+		link := cstesting.RandomLink()
+		link.Meta["refs"] = []interface{}{map[string]interface{}{
+			"process":  "proc",
+			"linkHash": "invalidLinkHash",
+		}}
+		tx := makeCreateLinkTx(t, link)
+
+		res := h.CheckTx(tx)
+
+		if res.Code != tmpop.CodeTypeValidation {
+			t.Errorf("Expected CheckTx to return an error, got %v", res)
+		}
+	})
+
+	t.Run("Check link with uncommitted but checked reference returns ok", func(t *testing.T) {
+		link, tx := makeCreateRandomLinkTx(t)
+		linkHash, _ := link.Hash()
+		res := h.CheckTx(tx)
+
+		linkWithRef := cstesting.RandomLink()
+		linkWithRef.Meta["process"] = link.GetProcess()
+		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
+			"process":  link.GetProcess(),
+			"linkHash": linkHash,
+		}}
+		tx = makeCreateLinkTx(t, linkWithRef)
+
+		res = h.CheckTx(tx)
+
+		if !res.IsOK() {
+			t.Errorf("Expected CheckTx to return an OK result, got %v", res)
+		}
+	})
 }
 
-// TestTx tests each transaction type processed by doTx()
-func (f Factory) TestTx(t *testing.T) {
-	h := f.initTMPop(t, nil)
+// TestDeliverTx tests what happens when the ABCI method DeliverTx() is called
+func (f Factory) TestDeliverTx(t *testing.T) {
+	h, req := f.newTMPop(t, nil)
 	defer f.free()
 
-	t.Run("WriteSaveSegment()", func(t *testing.T) {
-		want := commitMockTx(t, h)
+	h.BeginBlock(req)
 
-		got, err := f.adapter.GetSegment(want.GetLinkHash())
-		if err != nil {
-			t.Fatal(err)
-		}
+	t.Run("Deliver valid link returns ok", func(t *testing.T) {
+		_, tx := makeCreateRandomLinkTx(t)
+		res := h.DeliverTx(tx)
 
-		ev := got.Meta.GetEvidence(h.GetHeader().GetChainId())
-		got.Meta.Evidences = nil
-		if !reflect.DeepEqual(want, got) {
-			gotJS, _ := json.MarshalIndent(got, "", "  ")
-			wantJS, _ := json.MarshalIndent(want, "", "  ")
-			t.Errorf("h.Commit(): expected to return %s, got %s", wantJS, gotJS)
+		if !res.IsOK() {
+			t.Errorf("Expected DeliverTx to return an OK result, got %v", res)
 		}
-		got.Meta.AddEvidence(*ev)
 	})
 
-	t.Run("WriteDoubleSaveSegment()", func(t *testing.T) {
-		s := cstesting.RandomSegment()
-		tx := makeSaveSegmentTxFromSegment(t, s)
-		h.BeginBlock(requestBeginBlock)
+	t.Run("Deliver link referencing a checked but not delivered link returns an error", func(t *testing.T) {
+		link, tx := makeCreateRandomLinkTx(t)
+		linkHash, _ := link.Hash()
+		res := h.CheckTx(tx)
 
+		linkWithRef := cstesting.RandomLink()
+		linkWithRef.Meta["process"] = link.GetProcess()
+		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
+			"process":  link.GetProcess(),
+			"linkHash": linkHash,
+		}}
+		tx = makeCreateLinkTx(t, linkWithRef)
+		res = h.DeliverTx(tx)
+
+		if res.Code != tmpop.CodeTypeValidation {
+			t.Errorf("Expected DeliverTx to return an error, got %v", res)
+		}
+	})
+}
+
+// TestCommitTx tests what happens when the ABCI method CommitTx() is called
+func (f Factory) TestCommitTx(t *testing.T) {
+	h, req := f.newTMPop(t, nil)
+	defer f.free()
+
+	t.Run("Commit correctly saves links and updates app hash", func(t *testing.T) {
+		previousAppHash := req.Header.AppHash
+		h.BeginBlock(req)
+
+		link1, tx := makeCreateRandomLinkTx(t)
 		h.DeliverTx(tx)
+
+		link2, tx := makeCreateRandomLinkTx(t)
+		h.DeliverTx(tx)
+
 		res := h.Commit()
-
-		got, err := f.adapter.GetSegment(s.GetLinkHash())
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		ev := got.Meta.GetEvidence(h.GetHeader().GetChainId())
-		if ev.State != cs.PendingEvidence {
-			t.Errorf("h.DeliverTx(): wrong evidence state after saving segment, got %s, want %s", ev.State, cs.PendingEvidence)
+		if !res.IsOK() {
+			t.Fatalf("Commit failed: %v", res)
 		}
 
-		// We try to save a segment with the same link (and linkHash)
-		// but with new evidences
-		newRequest := requestBeginBlock
-		newRequest.Header.AppHash = res.Data.Bytes()
+		verifyLinkStored(t, h, link1)
+		verifyLinkStored(t, h, link2)
 
-		h.BeginBlock(newRequest)
-		s.Meta.Evidences = nil
-		s.Meta.AddEvidence(cs.Evidence{
-			Provider: "test1",
-			Backend:  "TMPop",
-		})
-		s.Meta.AddEvidence(cs.Evidence{
-			Provider: "test2",
-			Backend:  "TMPop",
-			Proof:    nil,
-		})
-		tx = makeSaveSegmentTxFromSegment(t, s)
-		h.DeliverTx(tx)
-		h.Commit()
-
-		got, err = f.adapter.GetSegment(s.GetLinkHash())
-
-		if err != nil {
-			t.Fatal(err)
-		}
-		ev = got.Meta.GetEvidence(h.GetHeader().GetChainId())
-		if ev.State != cs.CompleteEvidence {
-			t.Errorf("h.DeliverTx(): wrong evidence state after saving segment, got %s, want %s", ev.State, cs.CompleteEvidence)
-		}
-		if len(got.Meta.Evidences) != 3 {
-			t.Errorf("h.DeliverTx(): wrong length of segment.Meta.Evidences, got %d want %d", len(got.Meta.Evidences), 3)
-		}
-	})
-
-	t.Run("WriteDeleteSegment", func(t *testing.T) {
-		segment := commitMockTx(t, h)
-
-		tx := makeDeleteSegmentTx(t, segment)
-		commitTx(t, h, tx)
-
-		got, err := f.adapter.GetSegment(segment.GetLinkHash())
-
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if got != nil {
-			t.Errorf("h.GetSegment(): expected to return nil, got %s", got)
+		if bytes.Compare(previousAppHash, res.Data) == 0 {
+			t.Errorf("Committed app hash is the same as the previous app hash")
 		}
 	})
 }

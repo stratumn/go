@@ -18,11 +18,13 @@ import "encoding/json"
 
 // Query types.
 const (
-	GetInfo      = "GetInfo"
-	GetSegment   = "GetSegment"
-	FindSegments = "FindSegments"
-	GetMapIDs    = "GetMapIDs"
-	GetValue     = "GetValue"
+	AddEvidence             = "AddEvidence"
+	FindSegments            = "FindSegments"
+	GetEvidences            = "GetEvidences"
+	GetInfo                 = "GetInfo"
+	GetMapIDs               = "GetMapIDs"
+	GetPendingNotifications = "GetPendingNotifications"
+	GetSegment              = "GetSegment"
 )
 
 // BuildQueryBinary outputs the marshalled Query.

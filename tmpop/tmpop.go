@@ -21,19 +21,19 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/cs"
+	// We need to import this to deserialize evidence properly
+	_ "github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-wire"
-	merkle "github.com/tendermint/merkleeyes/iavl"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
 var tmpopLastBlockKey = []byte("tmpop:lastblock")
 
-// LastBlock saves the information of the last block commited for Core/App Handshake on crash/restart.
+// LastBlock saves the information of the last block committed for Core/App Handshake on crash/restart.
 type LastBlock struct {
 	AppHash    []byte
 	Height     uint64
@@ -57,9 +57,6 @@ type Config struct {
 	// A git commit hash that will be set in the store's information.
 	Commit string
 
-	// The DB cache size.
-	CacheSize int
-
 	// JSON schema rules definition
 	ValidatorFilename string
 }
@@ -69,12 +66,12 @@ type Config struct {
 type TMPop struct {
 	abci.BaseApplication
 
-	state                *State
-	adapter              store.Adapter
-	lastBlock            *LastBlock
-	config               *Config
-	header               *abci.Header
-	currentBlockSegments []*types.Bytes32
+	state         *State
+	adapter       store.AdapterV2
+	kvDB          store.KeyValueStore
+	lastBlock     *LastBlock
+	config        *Config
+	currentHeader *abci.Header
 }
 
 const (
@@ -83,9 +80,6 @@ const (
 
 	// Description of this Tendermint Application.
 	Description = "Agent Store in a Blockchain"
-
-	// DefaultCacheSize is the default size of the DB cache.
-	DefaultCacheSize = 0
 )
 
 const (
@@ -94,48 +88,38 @@ const (
 )
 
 // New creates a new instance of a TMPop.
-func New(a store.Adapter, config *Config) (*TMPop, error) {
-	db := NewDBAdapter(a)
-
-	initalized, err := a.GetValue(tmpopLastBlockKey)
+func New(a store.AdapterV2, kv store.KeyValueStore, config *Config) (*TMPop, error) {
+	initalized, err := kv.GetValue(tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
 	}
-
-	// Load Tree
-	tree := merkle.NewIAVLTree(config.CacheSize, db)
-
 	if initalized == nil {
 		log.Debug("No existing db, creating new db")
-		saveLastBlock(a, LastBlock{
-			AppHash: tree.Save(),
+		saveLastBlock(kv, LastBlock{
+			AppHash: []byte{},
 			Height:  0,
 		})
 	} else {
 		log.Debug("Loading existing db")
 	}
 
-	lastBlock, err := ReadLastBlock(a)
+	lastBlock, err := ReadLastBlock(kv)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: At this point we might want to clean segments whose evidence is not complete
-	// since we cannot be certain they will be delivered again, for instance if +2/3 nodes crashed
-	// during the commit phase, and the transactions are not in the memory pool of anybody.
-	tree.Load(lastBlock.AppHash)
-
-	s, err := NewState(tree, a)
+	s, err := NewState(a)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TMPop{
-		state:     s,
-		adapter:   a,
-		lastBlock: lastBlock,
-		config:    config,
-		header:    lastBlock.LastHeader,
+		state:         s,
+		adapter:       a,
+		kvDB:          kv,
+		lastBlock:     lastBlock,
+		config:        config,
+		currentHeader: lastBlock.LastHeader,
 	}, nil
 }
 
@@ -156,49 +140,43 @@ func (t *TMPop) SetOption(key string, value string) (log string) {
 
 // BeginBlock implements github.com/tendermint/abci/types.Application.BeginBlock.
 func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
-	t.header = req.GetHeader()
-	if t.header == nil {
+	t.currentHeader = req.GetHeader()
+	if t.currentHeader == nil {
 		log.Error("Cannot begin block without header")
 		return
 	}
 
-	// If the AppHash is present in this block, consensus has been formed around
-	// it. Even though the current block might not get Committed in the end, that
-	// would only be du to the transactions it contains. This AppHash will never be
-	// denied in a future Block.
-	if bytes.Compare(t.state.Committed().Hash(), t.header.AppHash) == 0 {
-		for _, lh := range t.currentBlockSegments {
-			err := t.addOriginalEvidence(lh)
-			if err != nil {
-				log.Warnf("Unexpected error while adding evidence to segment %x: %v", lh, err)
-			}
-		}
+	// If the AppHash of the previous block is present in this block's header,
+	// consensus has been formed around it.
+	// This AppHash will never be denied in a future block so we can add
+	// evidence to the links that were added in the previous blocks.
+	if bytes.Compare(t.lastBlock.AppHash, t.currentHeader.AppHash) == 0 {
+		// TODO: get previous block from TMCore
+		// Add TM evidence to local store for each of the valid
+		// links added in that previous block
+		// Notify the TMStore channel that evidence was added
 	} else {
-		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x", t.header.AppHash, t.lastBlock.AppHash)
+		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x", t.currentHeader.AppHash, t.lastBlock.AppHash)
 	}
 
-	// We have been waiting for the BeginBlock callback to save the new LastBlockHeight and
-	// LastBlockAppHeight to be absolutely sure that App has not saved a State it has
-	// not communicated to Core. That would prevent the Handshake to succeed.
-	t.lastBlock.Height = t.header.Height - 1
-	t.lastBlock.AppHash = t.state.Committed().Hash()
-	t.lastBlock.LastHeader = t.header
+	// TODO: we don't need to re-load the file for each block, it's expensive.
+	// We should improve this and only reload when a config update was committed.
+	if t.config.ValidatorFilename != "" {
+		rootValidator := validator.NewRootValidator(t.config.ValidatorFilename, true)
+		t.state.validator = &rootValidator
+	}
 
-	saveLastBlock(t.adapter, *t.lastBlock)
-
-	t.currentBlockSegments = nil
+	t.state.previousAppHash = t.currentHeader.AppHash
 }
 
 // DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx.
 func (t *TMPop) DeliverTx(tx []byte) abci.Result {
-	snapshot := t.state.Append()
-	return t.doTx(snapshot, tx)
+	return t.doTx(t.state.Deliver, tx)
 }
 
 // CheckTx implements github.com/tendermint/abci/types.Application.CheckTx.
 func (t *TMPop) CheckTx(tx []byte) abci.Result {
-	snapshot := t.state.Check()
-	return t.doTx(snapshot, tx)
+	return t.doTx(t.state.Check, tx)
 }
 
 // Commit implements github.com/tendermint/abci/types.Application.Commit.
@@ -209,16 +187,15 @@ func (t *TMPop) Commit() abci.Result {
 		return abci.NewError(abci.CodeType_InternalError, err.Error())
 	}
 
-	if t.state.Committed().Size() == 0 {
-		return abci.NewResultOK(nil, "Empty hash for empty tree")
-	}
+	t.lastBlock.Height = t.currentHeader.Height
+	t.lastBlock.AppHash = appHash
+	saveLastBlock(t.kvDB, *t.lastBlock)
+
 	return abci.NewResultOK(appHash, "")
 }
 
 // Query implements github.com/tendermint/abci/types.Application.Query.
 func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) {
-	commit := t.state.Committed()
-
 	if reqQuery.Height != 0 {
 		resQuery.Code = abci.CodeType_InternalError
 		resQuery.Log = "tmpop only supports queries on latest commit"
@@ -243,66 +220,51 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
 			break
 		}
-		var value *cs.Segment
-		var proof []byte
-		value, proof, err = commit.GetSegment(linkHash)
 
-		t.addCurrentProof(value, proof)
+		result, err = t.adapter.GetSegment(linkHash)
 
-		var valueByte []byte
-		valueByte, err = json.Marshal(value)
-		if err != nil {
+	case GetEvidences:
+		linkHash := &types.Bytes32{}
+		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
 			break
 		}
 
-		resQuery.Value = valueByte
-		resQuery.Proof = proof
+		result, err = t.adapter.GetEvidences(linkHash)
+
+	case AddEvidence:
+		evidence := &struct {
+			LinkHash *types.Bytes32
+			Evidence *cs.Evidence
+		}{}
+		if err = json.Unmarshal(reqQuery.Data, evidence); err != nil {
+			break
+		}
+
+		if err = t.adapter.AddEvidence(evidence.LinkHash, evidence.Evidence); err != nil {
+			break
+		}
+
+		result = evidence.LinkHash
 
 	case FindSegments:
 		filter := &store.SegmentFilter{}
-		if err := json.Unmarshal(reqQuery.Data, filter); err != nil {
-			break
-		}
-		var values cs.SegmentSlice
-		var proofs [][]byte
-		values, proofs, err = commit.FindSegments(filter)
-
-		for i, s := range values {
-			t.addCurrentProof(s, proofs[i])
-		}
-
-		var valuesByte []byte
-		valuesByte, err = json.Marshal(values)
-		if err != nil {
-			break
-		}
-		resQuery.Value = valuesByte
-
-		var proofsByte []byte
-		proofsByte, err = json.Marshal(proofs)
-		if err != nil {
+		if err = json.Unmarshal(reqQuery.Data, filter); err != nil {
 			break
 		}
 
-		resQuery.Proof = proofsByte
+		result, err = t.adapter.FindSegments(filter)
 
 	case GetMapIDs:
 		filter := &store.MapFilter{}
-		if err := json.Unmarshal(reqQuery.Data, filter); err != nil {
-			break
-		}
-		result, err = commit.GetMapIDs(filter)
-
-	case GetValue:
-		var key []byte
-		if err := json.Unmarshal(reqQuery.Data, &key); err != nil {
+		if err = json.Unmarshal(reqQuery.Data, filter); err != nil {
 			break
 		}
 
-		value, proof, _ := commit.Proof(key)
+		result, err = t.adapter.GetMapIDs(filter)
 
-		resQuery.Value = value
-		resQuery.Proof = proof
+	case GetPendingNotifications:
+		result = t.state.DeliverNotifications()
+
 	default:
 		resQuery.Code = abci.CodeType_UnknownRequest
 		resQuery.Log = fmt.Sprintf("Unexpected Query path: %v", reqQuery.Path)
@@ -316,7 +278,6 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	}
 	if result != nil {
 		resBytes, err := json.Marshal(result)
-
 		if err != nil {
 			resQuery.Code = abci.CodeType_InternalError
 			resQuery.Log = err.Error()
@@ -328,106 +289,22 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	return
 }
 
-func (t *TMPop) doTx(snapshot *Snapshot, txBytes []byte) (result abci.Result) {
+func (t *TMPop) doTx(createLink func(*cs.Link) abci.Result, txBytes []byte) abci.Result {
 	if len(txBytes) == 0 {
 		return abci.ErrEncodingError.SetLog("Tx length cannot be zero")
 	}
+
 	tx, res := unmarshallTx(txBytes)
-	var err error
+	if res.IsErr() {
+		return res
+	}
 
 	switch tx.TxType {
-	case SaveSegment:
-		if res.IsErr() {
-			return res
-		}
-		if res = t.checkSegment(snapshot, tx.Segment); res.IsErr() {
-			return res
-		}
-		// if the segment already exists in the tree, it shouldn't be updated
-		// with a new originalEvidence, therefore we do not append it to currentBlockSegments.
-		// However, we still set the segment in the snapshot so it's updated in the db.
-		existing, _, _ := t.state.Committed().GetSegment(tx.Segment.GetLinkHash())
-		if existing != nil {
-			if tx.Segment, err = existing.MergeMeta(tx.Segment); err != nil {
-				break
-			}
-		} else {
-			t.currentBlockSegments = append(t.currentBlockSegments, tx.Segment.GetLinkHash())
-
-			if t.header != nil {
-				tx.Segment.Meta.AddEvidence(
-					cs.Evidence{
-						State:    cs.PendingEvidence,
-						Backend:  Name,
-						Provider: t.header.ChainId,
-						Proof: &TendermintFullProof{
-							Original: TendermintProof{BlockHeight: t.header.Height},
-						},
-					})
-			}
-
-		}
-		err = snapshot.SetSegment(tx.Segment)
-	case DeleteSegment:
-		var segment *cs.Segment
-		var found bool
-		segment, found, err = snapshot.DeleteSegment(tx.LinkHash)
-		var valueByte []byte
-		valueByte, err = json.Marshal(segment)
-		if err != nil {
-			break
-		}
-		if found == true {
-			result.Data = valueByte
-		}
-	case SaveValue:
-		snapshot.SaveValue(tx.Key, tx.Value)
-	case DeleteValue:
-		value, found := snapshot.DeleteValue(tx.Key)
-		if found == true {
-			result.Data = value
-		}
+	case CreateLink:
+		return createLink(tx.Link)
 	default:
 		return abci.ErrUnknownRequest.SetLog(fmt.Sprintf("Unexpected Tx type byte %X", tx.TxType))
 	}
-
-	if err != nil {
-		result.Code = abci.CodeType_InternalError
-		result.Log = err.Error()
-		return
-	}
-
-	result.Code = abci.CodeType_OK
-	return
-
-}
-
-func (t *TMPop) checkSegment(snapshot *Snapshot, segment *cs.Segment) abci.Result {
-	err := segment.Validate(snapshot.segments.GetSegment)
-	if err != nil {
-		return abci.NewError(
-			CodeTypeValidation,
-			fmt.Sprintf("Segment validation failed %v: %v", segment, err),
-		)
-	}
-
-	// TODO: in production do not reload validation rules each time a new segment is created
-	// Use instead notification mechanisms
-	if t.config.ValidatorFilename != "" {
-		rootValidator := validator.NewRootValidator(t.config.ValidatorFilename, true)
-		err = rootValidator.Validate(snapshot.segments, segment)
-
-		if err != nil {
-			return abci.NewError(
-				CodeTypeValidation,
-				fmt.Sprintf("Segment validation failed %v: %v", segment, err),
-			)
-		}
-	} else {
-		log.Debug("No custom validation configured")
-	}
-
-	return abci.OK
 }
 
 func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
@@ -441,8 +318,8 @@ func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
 }
 
 // ReadLastBlock returns the last block saved by TMPop
-func ReadLastBlock(a store.Adapter) (*LastBlock, error) {
-	lBytes, err := a.GetValue(tmpopLastBlockKey)
+func ReadLastBlock(kv store.KeyValueReader) (*LastBlock, error) {
+	lBytes, err := kv.GetValue(tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
 	}
@@ -459,130 +336,11 @@ func ReadLastBlock(a store.Adapter) (*LastBlock, error) {
 	return &l, nil
 }
 
-func saveLastBlock(a store.Adapter, l LastBlock) {
-	a.SaveValue(tmpopLastBlockKey, wire.BinaryBytes(l))
+func saveLastBlock(a store.KeyValueWriter, l LastBlock) {
+	a.SetValue(tmpopLastBlockKey, wire.BinaryBytes(l))
 }
 
-// addOriginalEvidence adds the Evidence to the segment.
-// It should only be called when the header with the signed AppHash that includes
-// this segment is available.
-func (t *TMPop) addOriginalEvidence(lh *types.Bytes32) error {
-	s, err := t.adapter.GetSegment(lh)
-	if err != nil {
-		return err
-	}
-	if s == nil {
-		log.Debug("No segment found with linkHash %v", lh)
-		return nil
-	}
-	_, proof, err := t.state.Committed().GetSegment(s.GetLinkHash())
-	if err != nil {
-		return err
-	}
-
-	iavlProof, err := merkle.ReadProof(proof)
-	if err != nil {
-		return err
-	}
-	e := s.Meta.GetEvidence(t.header.ChainId)
-
-	e.State = cs.CompleteEvidence
-	e.Proof = &TendermintFullProof{
-		Original: TendermintProof{
-			BlockHeight: t.header.Height - 1,
-			Header:      *t.header,
-			MerkleProof: *iavlProof,
-		},
-		Current: TendermintProof{},
-	}
-
-	return t.adapter.SaveSegment(s)
-}
-
-func (t *TMPop) addCurrentProof(s *cs.Segment, proof []byte) error {
-	iavlProof, err := merkle.ReadProof(proof)
-	if err != nil {
-		return err
-	}
-	e := s.Meta.GetEvidence(t.header.ChainId)
-
-	e.Proof.(*TendermintFullProof).Current = TendermintProof{
-		BlockHeight: t.header.Height - 1,
-		Header:      *t.header,
-		MerkleProof: *iavlProof,
-	}
-
-	return nil
-}
-
-// GetHeader returns the current block header
-func (t *TMPop) GetHeader() *abci.Header {
-	return t.header
-}
-
-// init needs to define a way to deserialize a TendermintProof
-func init() {
-	cs.DeserializeMethods[Name] = func(rawProof json.RawMessage) (cs.Proof, error) {
-		p := TendermintFullProof{}
-		if err := json.Unmarshal(rawProof, &p); err != nil {
-			return nil, err
-		}
-		return &p, nil
-	}
-}
-
-// TendermintProof implements the Proof interface
-type TendermintProof struct {
-	BlockHeight uint64           `json:"blockHeight"`
-	Header      abci.Header      `json:"header"`
-	MerkleProof merkle.IAVLProof `json:"merkleProof"`
-	Signatures  []tmtypes.Vote   `json:"signatures"`
-}
-
-// Time returns the timestamp from the block header
-func (p *TendermintProof) Time() uint64 {
-	return p.Header.GetTime()
-}
-
-// FullProof returns a JSON formatted proof
-func (p *TendermintProof) FullProof() []byte {
-	bytes, err := json.MarshalIndent(p, "", "   ")
-	if err != nil {
-		return nil
-	}
-	return bytes
-}
-
-// Verify returns true if the proof of a given linkHash is correct
-func (p *TendermintProof) Verify(linkHash interface{}) bool {
-	checkedLinkHash, exists := linkHash.(*types.Bytes32)
-	if exists != true {
-		return false
-	}
-	return p.MerkleProof.Verify(checkedLinkHash[:], nil, p.Header.AppHash)
-}
-
-// TendermintFullProof implements the Proof interface
-type TendermintFullProof struct {
-	Original TendermintProof `json:"original"`
-	Current  TendermintProof `json:"current"`
-}
-
-// Time returns the timestamp from the block header
-func (p *TendermintFullProof) Time() uint64 {
-	return p.Original.Time()
-}
-
-// FullProof returns a JSON formatted proof
-func (p *TendermintFullProof) FullProof() []byte {
-	bytes, err := json.MarshalIndent(p, "", "   ")
-	if err != nil {
-		return nil
-	}
-	return bytes
-}
-
-// Verify returns true if the proof of a given linkHash is correct
-func (p *TendermintFullProof) Verify(linkHash interface{}) bool {
-	return p.Original.Verify(linkHash) && p.Current.Verify(linkHash)
+// GetCurrentHeader returns the current block header
+func (t *TMPop) GetCurrentHeader() *abci.Header {
+	return t.currentHeader
 }

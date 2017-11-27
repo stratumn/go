@@ -40,8 +40,9 @@ func TestDummystoreV2(t *testing.T) {
 
 func TestDummyTMPop(t *testing.T) {
 	tmpoptestcases.Factory{
-		New: func() (store.Adapter, error) {
-			return New(&Config{}), nil
+		New: func() (store.AdapterV2, store.KeyValueStore, error) {
+			dummyStore := New(&Config{})
+			return dummyStore, dummyStore, nil
 		},
 	}.RunTests(t)
 }

@@ -16,6 +16,8 @@
 package store
 
 import (
+	"encoding/json"
+
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/types"
 )
@@ -355,4 +357,36 @@ func (filter MapFilter) MatchLink(link *cs.Link) bool {
 		return false
 	}
 	return true
+}
+
+// UnmarshalJSON does custom deserialization to correctly
+// type the Details field
+func (event *Event) UnmarshalJSON(b []byte) error {
+	partial := struct {
+		EventType EventType
+		Details   json.RawMessage
+	}{}
+
+	if err := json.Unmarshal(b, &partial); err != nil {
+		return err
+	}
+
+	var details interface{}
+	switch partial.EventType {
+	case SavedLink:
+		details = new(cs.Link)
+	case SavedEvidence:
+		details = new(cs.Evidence)
+	}
+
+	if err := json.Unmarshal(partial.Details, &details); err != nil {
+		return err
+	}
+
+	*event = Event{
+		EventType: partial.EventType,
+		Details:   details,
+	}
+
+	return nil
 }

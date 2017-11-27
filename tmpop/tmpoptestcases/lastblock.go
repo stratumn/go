@@ -21,30 +21,40 @@ import (
 	"github.com/stratumn/sdk/tmpop"
 )
 
-// TestBeginBlockSavesLastBlockInfo tests if tmpop correctly stored informations about the previous block
-func (f Factory) TestBeginBlockSavesLastBlockInfo(t *testing.T) {
-	h := f.initTMPop(t, nil)
+// TestLastBlock tests if tmpop correctly stores information
+// about the previous block and previous history when committing.
+func (f Factory) TestLastBlock(t *testing.T) {
+	h, req := f.newTMPop(t, nil)
 	defer f.free()
 
-	height := uint64(2)
+	link1, req := commitRandomLink(t, h, req)
+	link2, req := commitRandomLink(t, h, req)
+	lastAppHash := req.Header.AppHash
 
-	req := requestBeginBlock
-	req.Header.Height = height
-	hash := req.GetHeader().GetAppHash()
+	t.Run("Commit stores last block information", func(t *testing.T) {
+		got, err := tmpop.ReadLastBlock(f.kv)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	h.BeginBlock(req)
+		if got.Height != 2 {
+			t.Errorf("a.Commit(): expected commit to save the last block height, got %v, expected %v",
+				got.Height, 2)
+		}
 
-	got, err := tmpop.ReadLastBlock(f.adapter)
-	if err != nil {
-		t.Fatal(err)
-	}
+		if bytes.Compare(got.AppHash, lastAppHash) != 0 {
+			t.Errorf("a.Commit(): expected commit to save the last app hash, expected %v, got %v",
+				lastAppHash, got.AppHash)
+		}
+	})
 
-	if got.Height != (height - 1) {
-		t.Errorf("a.Commit(): expected BeginBlock to save the last block height, got %v, expected %v",
-			got.Height, height-1)
-	}
+	t.Run("Restart with existing history", func(t *testing.T) {
+		h2, err := tmpop.New(f.adapter, f.kv, &tmpop.Config{})
+		if err != nil {
+			t.Fatalf("Couldn't start tmpop with existing store: %s", err)
+		}
 
-	if bytes.Compare(got.AppHash, hash) != 0 {
-		t.Errorf("a.Commit(): expected BeginBlock to save the last app hash, expected %v, got %v", hash, got.AppHash)
-	}
+		verifyLinkStored(t, h2, link1)
+		verifyLinkStored(t, h2, link2)
+	})
 }

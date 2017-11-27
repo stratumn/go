@@ -23,7 +23,6 @@ import (
 	// This package imports every package defining its own implementation of the cs.Proof interface
 	// The init() function of each package gets called hence providing a way for cs.Evidence.UnmarshalJSON to deserialize any kind of proof
 	_ "github.com/stratumn/sdk/dummyfossilizer"
-	_ "github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/types"
 )
 

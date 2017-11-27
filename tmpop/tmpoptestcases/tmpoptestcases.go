@@ -28,110 +28,61 @@ import (
 )
 
 const (
-	height = uint64(1)
-
 	chainID = "testChain"
 )
-
-var requestBeginBlock = abci.RequestBeginBlock{
-	Hash: []byte{},
-	Header: &abci.Header{
-		Height:  height,
-		ChainId: chainID,
-		AppHash: []byte{},
-	},
-}
 
 // Factory wraps functions to allocate and free an adapter, and is used to run
 // the tests on tmpop using this adapter.
 type Factory struct {
-	// New creates an adapter.
-	New func() (store.Adapter, error)
+	// New creates an adapter and a key-value store.
+	New func() (store.AdapterV2, store.KeyValueStore, error)
 
-	// Free is an optional function to free an adapter.
-	Free func(adapter store.Adapter)
+	// Free is an optional function to free the adapter and key-value store.
+	Free func(adapter store.AdapterV2, kv store.KeyValueStore)
 
-	adapter store.Adapter
+	adapter store.AdapterV2
+	kv      store.KeyValueStore
 }
 
 // RunTests runs all the tests.
 func (f Factory) RunTests(t *testing.T) {
-	t.Run("New", f.TestNew)
-	t.Run("TestBeginBlockSavesLastBlockInfo", f.TestBeginBlockSavesLastBlockInfo)
-	t.Run("TestCheckTx", f.TestCheckTx)
-	t.Run("TestTx", f.TestTx)
-	t.Run("TestEvidence", f.TestEvidence)
+	t.Run("TestLastBlock", f.TestLastBlock)
+	t.Run("TestTendermintEvidence", f.TestTendermintEvidence)
 	t.Run("TestQuery", f.TestQuery)
+	t.Run("TestCheckTx", f.TestCheckTx)
+	t.Run("TestDeliverTx", f.TestDeliverTx)
+	t.Run("TestCommitTx", f.TestCommitTx)
 	t.Run("TestValidation", f.TestValidation)
-
 }
 
 func (f Factory) free() {
 	if f.Free != nil {
-		f.Free(f.adapter)
+		f.Free(f.adapter, f.kv)
 	}
 }
 
-func (f *Factory) initTMPop(t *testing.T, config *tmpop.Config) *tmpop.TMPop {
-	if f.adapter == nil {
-		var err error
-		if f.adapter, err = f.New(); err != nil {
-			t.Fatalf("f.New(): err: %s", err)
-		}
-		if f.adapter == nil {
-			t.Fatal("a = nil want store.Adapter")
-		}
+// newTMPop creates a new TMPoP from scratch (no previous history)
+func (f *Factory) newTMPop(t *testing.T, config *tmpop.Config) (*tmpop.TMPop, abci.RequestBeginBlock) {
+	var err error
+	if f.adapter, f.kv, err = f.New(); err != nil {
+		t.Fatalf("f.New(): err: %s", err)
 	}
+	if f.adapter == nil {
+		t.Fatal("a = nil want store.Adapter")
+	}
+	if f.kv == nil {
+		t.Fatalf("kv = nil want store.KeyValueStore")
+	}
+
 	if config == nil {
 		config = &tmpop.Config{}
 	}
-	h, err := tmpop.New(f.adapter, config)
+	h, err := tmpop.New(f.adapter, f.kv, config)
 	if err != nil {
 		t.Fatalf("tmpop.New(): err: %s", err)
 	}
 
-	// reset header
-	lastBlock, _ := tmpop.ReadLastBlock(f.adapter)
-	if lastBlock.LastHeader == nil {
-		lastBlock.LastHeader = &abci.Header{ChainId: chainID}
-	}
-	requestBeginBlock.Header = &abci.Header{
-		Height:  height,
-		ChainId: lastBlock.LastHeader.ChainId,
-		AppHash: lastBlock.AppHash,
-	}
-
-	return h
-}
-
-// TestNew tests what happens when tmpop is stopped and restarted with the same adapter
-func (f Factory) TestNew(t *testing.T) {
-	h1 := f.initTMPop(t, nil)
-	defer f.free()
-
-	want := commitMockTx(t, h1)
-	commitMockTx(t, h1)
-
-	h2 := f.initTMPop(t, nil)
-
-	got := &cs.Segment{}
-	err := makeQuery(h2, tmpop.GetSegment, want.GetLinkHash(), got)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got.Meta.Evidences = nil
-	if !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("New(): expected new TMPop to have access to existing segment %s, got:\n %s", wantJS, gotJS)
-	}
-
-	gotLastBlock, _ := tmpop.ReadLastBlock(f.adapter)
-	if gotLastBlock.Height != 1 {
-		t.Errorf("a.New(): expected new TMPop to start on the last block height, got %v, expected %v",
-			gotLastBlock.Height, 1)
-	}
+	return h, makeBeginBlock([]byte{}, uint64(1))
 }
 
 func makeQuery(h *tmpop.TMPop, name string, args interface{}, res interface{}) error {
@@ -148,15 +99,15 @@ func makeQuery(h *tmpop.TMPop, name string, args interface{}, res interface{}) e
 	return json.Unmarshal(q.Value, &res)
 }
 
-func makeSaveSegmentTx(t *testing.T) (*cs.Segment, []byte) {
-	s := cstesting.RandomSegment()
-	return s, makeSaveSegmentTxFromSegment(t, s)
+func makeCreateRandomLinkTx(t *testing.T) (*cs.Link, []byte) {
+	l := cstesting.RandomLink()
+	return l, makeCreateLinkTx(t, l)
 }
 
-func makeSaveSegmentTxFromSegment(t *testing.T, s *cs.Segment) []byte {
+func makeCreateLinkTx(t *testing.T, l *cs.Link) []byte {
 	tx := tmpop.Tx{
-		TxType:  tmpop.SaveSegment,
-		Segment: s,
+		TxType: tmpop.CreateLink,
+		Link:   l,
 	}
 	res, err := json.Marshal(tx)
 	if err != nil {
@@ -165,34 +116,53 @@ func makeSaveSegmentTxFromSegment(t *testing.T, s *cs.Segment) []byte {
 	return res
 }
 
-func makeDeleteSegmentTx(t *testing.T, s *cs.Segment) []byte {
-	tx := tmpop.Tx{
-		TxType:   tmpop.DeleteSegment,
-		LinkHash: s.GetLinkHash(),
+func makeBeginBlock(appHash []byte, height uint64) abci.RequestBeginBlock {
+	return abci.RequestBeginBlock{
+		Hash: []byte{},
+		Header: &abci.Header{
+			Height:  height,
+			ChainId: chainID,
+			AppHash: appHash,
+		},
 	}
-	res, err := json.Marshal(tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return res
 }
 
-func commitMockTx(t *testing.T, h *tmpop.TMPop) *cs.Segment {
-	s, tx := makeSaveSegmentTx(t)
-
-	commitTx(t, h, tx)
-	return s
+func commitLink(t *testing.T, h *tmpop.TMPop, l *cs.Link, requestBeginBlock abci.RequestBeginBlock) abci.RequestBeginBlock {
+	tx := makeCreateLinkTx(t, l)
+	nextBeginBlock := commitTx(t, h, requestBeginBlock, tx)
+	return nextBeginBlock
 }
 
-func commitTx(t *testing.T, h *tmpop.TMPop, tx []byte) {
+func commitRandomLink(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock) (*cs.Link, abci.RequestBeginBlock) {
+	l, tx := makeCreateRandomLinkTx(t)
+	nextBeginBlock := commitTx(t, h, requestBeginBlock, tx)
+	return l, nextBeginBlock
+}
+
+func commitTx(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock, tx []byte) abci.RequestBeginBlock {
 	h.BeginBlock(requestBeginBlock)
-
 	h.DeliverTx(tx)
 
 	commitResult := h.Commit()
 	if commitResult.IsErr() {
 		t.Errorf("a.Commit(): failed: %v", commitResult.Log)
 	}
-	requestBeginBlock.Header.AppHash = commitResult.Data
-	requestBeginBlock.Header.Height++
+
+	return makeBeginBlock(commitResult.Data, requestBeginBlock.Header.Height+1)
+}
+
+func verifyLinkStored(t *testing.T, h *tmpop.TMPop, link *cs.Link) {
+	linkHash, _ := link.Hash()
+
+	got := &cs.Segment{}
+	err := makeQuery(h, tmpop.GetSegment, linkHash, got)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := *link, got.Link; !reflect.DeepEqual(want, got) {
+		gotJS, _ := json.MarshalIndent(got, "", "  ")
+		wantJS, _ := json.MarshalIndent(want, "", "  ")
+		t.Errorf("h.Commit(): expected to return %s, got %s", wantJS, gotJS)
+	}
 }

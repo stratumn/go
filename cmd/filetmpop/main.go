@@ -28,7 +28,6 @@ import (
 
 var (
 	path              = flag.String("path", filestore.DefaultPath, "Path to directory where files are stored")
-	cacheSize         = flag.Int("cache_size", tmpop.DefaultCacheSize, "Size of the cache of the storage tree")
 	validatorFilename = flag.String("rules_filename", validator.DefaultFilename, "Path to filename containing validation rules")
 	version           = "0.1.0"
 	commit            = "00000000000000000000000000000000"
@@ -46,6 +45,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, CacheSize: *cacheSize, ValidatorFilename: *validatorFilename}
-	tmpop.Run(a, tmpopConfig)
+	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, ValidatorFilename: *validatorFilename}
+	tmpop.Run(a, a, tmpopConfig)
 }

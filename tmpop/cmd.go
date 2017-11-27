@@ -24,13 +24,13 @@ import (
 )
 
 // Run launches a TMPop Tendermint App
-func Run(a store.Adapter, config *Config) {
+func Run(a store.AdapterV2, kv store.KeyValueStore, config *Config) {
 	adapterInfo, err := a.GetInfo()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tmpop, err := New(a, config)
+	tmpop, err := New(a, kv, config)
 	if err != nil {
 		log.Fatal(err)
 	}

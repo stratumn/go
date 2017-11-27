@@ -23,6 +23,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
@@ -387,7 +388,7 @@ func (a *DummyStore) NewBatch() (store.Batch, error) {
 
 // NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
 func (a *DummyStore) NewBatchV2() (store.BatchV2, error) {
-	return nil, nil
+	return bufferedbatch.NewBatchV2(a), nil
 }
 
 /********** Utilities **********/

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tmpop"
@@ -48,17 +47,17 @@ const (
 	// DefaultEndpoint is the default Tendermint endpoint.
 	DefaultEndpoint = "tcp://127.0.0.1:46657"
 
-	// DefaultWsRetryInterval is the default interval between Tendermint Wbesocket connection tries.
+	// DefaultWsRetryInterval is the default interval between Tendermint Websocket connection attempts.
 	DefaultWsRetryInterval = 5 * time.Second
 )
 
-// TMStore is the type that implements github.com/stratumn/sdk/store.Adapter.
+// TMStore is the type that implements github.com/stratumn/sdk/store.AdapterV2.
 type TMStore struct {
-	config        *Config
-	didSaveChans  []chan *cs.Segment
-	tmClient      client.Client
-	stoppingWS    bool
-	clientFactory func(endpoint string) client.Client
+	config          *Config
+	storeEventChans []chan *store.Event
+	tmClient        client.Client
+	stoppingWS      bool
+	clientFactory   func(endpoint string) client.Client
 }
 
 // Config contains configuration options for the store.
@@ -100,12 +99,14 @@ func (t *TMStore) StartWebsocket() error {
 	if _, err := t.tmClient.Start(); err != nil {
 		return err
 	}
-	eventType := tmtypes.EventStringNewBlock()
-	t.tmClient.AddListenerForEvent("TMStore", eventType, func(msg events.EventData) {
-		if err := t.notifyDidSaveChans(msg); err != nil {
+
+	// We notify listeners after each block creation
+	t.tmClient.AddListenerForEvent("TMStore", tmtypes.EventStringNewBlock(), func(_ events.EventData) {
+		if err := t.notifyStoreChans(); err != nil {
 			log.Error(err)
 		}
 	})
+
 	log.Info("Connected to TMPoP")
 	return nil
 }
@@ -132,42 +133,28 @@ func (t *TMStore) StopWebsocket() {
 	t.tmClient.Stop()
 }
 
-func (t *TMStore) notifyDidSaveChans(evt events.EventData) error {
-	if evt == nil {
-		log.Debug("Received empty websocket message")
-		return nil
+func (t *TMStore) notifyStoreChans() error {
+	eventsToNotify, err := t.getPendingNotifications()
+	if err != nil {
+		log.Debug("Could not get notifications from TMPoP")
+		return err
 	}
 
-	tmevt, ok := evt.(tmtypes.TMEventData)
-	if !ok {
-		log.Debug("Received wrong websocket message")
-		return nil
-	}
-
-	newBlock, ok := tmevt.Unwrap().(tmtypes.EventDataNewBlock)
-
-	for _, txBytes := range newBlock.Block.Data.Txs {
-		tx := &tmpop.Tx{}
-
-		if err := json.Unmarshal(txBytes, tx); err != nil {
-			return err
-		}
-
-		for _, c := range t.didSaveChans {
-			c <- tx.Segment
+	for _, event := range eventsToNotify {
+		for _, c := range t.storeEventChans {
+			c <- event
 		}
 	}
 
 	return nil
 }
 
-// AddDidSaveChannel implements
-// github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
-func (t *TMStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
-	t.didSaveChans = append(t.didSaveChans, saveChan)
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel.
+func (t *TMStore) AddStoreEventChannel(storeChan chan *store.Event) {
+	t.storeEventChans = append(t.storeEventChans, storeChan)
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/sdk/store.AdapterV2.GetInfo.
 func (t *TMStore) GetInfo() (interface{}, error) {
 	response, err := t.sendQuery(tmpop.GetInfo, nil)
 	if err != nil {
@@ -189,18 +176,71 @@ func (t *TMStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (t *TMStore) SaveSegment(segment *cs.Segment) error {
-	tx := &tmpop.Tx{
-		TxType:  tmpop.SaveSegment,
-		Segment: segment,
+// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+func (t *TMStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	linkHash, err := link.Hash()
+	if err != nil {
+		return linkHash, err
 	}
-	_, err := t.broadcastTx(tx)
 
-	return err
+	tx := &tmpop.Tx{
+		TxType: tmpop.CreateLink,
+		Link:   link,
+	}
+	_, err = t.broadcastTx(tx)
+
+	return linkHash, err
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+func (t *TMStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	// Adding an external evidence does not require consensus
+	// So it will not go through a blockchain transaction, but will rather
+	// be stored in TMPoP's store directly
+	_, err := t.sendQuery(
+		tmpop.AddEvidence,
+		struct {
+			LinkHash *types.Bytes32
+			Evidence *cs.Evidence
+		}{
+			linkHash,
+			evidence,
+		})
+
+	if err != nil {
+		return err
+	}
+
+	for _, c := range t.storeEventChans {
+		c <- &store.Event{
+			EventType: store.SavedEvidence,
+			Details:   evidence,
+		}
+	}
+
+	return nil
+}
+
+// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+func (t *TMStore) GetEvidences(linkHash *types.Bytes32) (evidences *cs.Evidences, err error) {
+	evidences = &cs.Evidences{}
+	response, err := t.sendQuery(tmpop.GetEvidences, linkHash)
+	if err != nil {
+		return
+	}
+	if response.Value == nil {
+		return
+	}
+
+	err = json.Unmarshal(response.Value, evidences)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+// GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
 func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
 	response, err := t.sendQuery(tmpop.GetSegment, linkHash)
 	if err != nil {
@@ -223,29 +263,7 @@ func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err 
 	return
 }
 
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (t *TMStore) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
-	tx := &tmpop.Tx{
-		TxType:   tmpop.DeleteSegment,
-		LinkHash: linkHash,
-	}
-	val, err := t.broadcastTx(tx)
-	if err != nil {
-		return nil, err
-	}
-
-	if val != nil && val.DeliverTx.Data != nil {
-		segment = &cs.Segment{}
-		err = json.Unmarshal(val.DeliverTx.Data, segment)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return
-}
-
-// FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
 func (t *TMStore) FindSegments(filter *store.SegmentFilter) (segmentSlice cs.SegmentSlice, err error) {
 	response, err := t.sendQuery(tmpop.FindSegments, filter)
 	if err != nil {
@@ -257,16 +275,10 @@ func (t *TMStore) FindSegments(filter *store.SegmentFilter) (segmentSlice cs.Seg
 		return
 	}
 
-	var proofSlice [][]byte
-	err = json.Unmarshal(response.Proof, &proofSlice)
-	if err != nil {
-		return
-	}
-
 	return
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
 func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 	response, err := t.sendQuery(tmpop.GetMapIDs, filter)
 	err = json.Unmarshal(response.Value, &ids)
@@ -277,47 +289,27 @@ func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 	return
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (t *TMStore) NewBatch() (store.Batch, error) {
-	return bufferedbatch.NewBatch(t), nil
-}
-
-// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
-func (t *TMStore) SaveValue(key, value []byte) error {
-	tx := &tmpop.Tx{
-		TxType: tmpop.SaveValue,
-		Key:    key,
-		Value:  value,
-	}
-	_, err := t.broadcastTx(tx)
-	return err
-}
-
-// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
-func (t *TMStore) GetValue(key []byte) (value []byte, err error) {
-	response, err := t.sendQuery(tmpop.GetValue, key)
+// getPendingNotifications queries TMPoP for notifications to deliver
+func (t *TMStore) getPendingNotifications() ([]*store.Event, error) {
+	response, err := t.sendQuery(tmpop.GetPendingNotifications, nil)
 	if err != nil {
 		return nil, err
 	}
-	return response.Value, nil
+
+	eventsToNotify := []*store.Event{}
+	if response.Value != nil && len(response.Value) > 0 {
+		err = json.Unmarshal(response.Value, &eventsToNotify)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return eventsToNotify, nil
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
-func (t *TMStore) DeleteValue(key []byte) (value []byte, err error) {
-	tx := &tmpop.Tx{
-		TxType: tmpop.DeleteValue,
-		Key:    key,
-	}
-
-	val, err := t.broadcastTx(tx)
-	if err != nil {
-		return
-	}
-	if val != nil && val.DeliverTx.Data != nil {
-		value = val.DeliverTx.Data
-	}
-
-	return
+// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
+func (t *TMStore) NewBatchV2() (store.BatchV2, error) {
+	return nil, nil
 }
 
 func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {

@@ -35,37 +35,32 @@ func getTestFile(t *testing.T) string {
 // TestValidation tests what happens when validating a segment from a json-schema based validation file
 func (f Factory) TestValidation(t *testing.T) {
 	testFilename := getTestFile(t)
-	h := f.initTMPop(t, &tmpop.Config{ValidatorFilename: testFilename})
+	h, req := f.newTMPop(t, &tmpop.Config{ValidatorFilename: testFilename})
 	defer f.free()
 
-	s := cstesting.RandomSegment()
-	s.Link.Meta["process"] = "testProcess"
-	s.Link.Meta["action"] = "init"
-	s.Link.State["string"] = "test"
-	s.SetLinkHash()
-	tx := makeSaveSegmentTxFromSegment(t, s)
+	h.BeginBlock(req)
 
-	h.BeginBlock(requestBeginBlock)
+	l := cstesting.RandomLink()
+	l.Meta["process"] = "testProcess"
+	l.Meta["action"] = "init"
+	l.State["string"] = "test"
+	tx := makeCreateLinkTx(t, l)
 	res := h.DeliverTx(tx)
 
 	if res.IsErr() {
-		t.Errorf("a.Commit(): failed: %v", res.Log)
+		t.Errorf("a.DeliverTx(): failed: %v", res.Log)
 	}
 
-	s = cstesting.RandomSegment()
-	s.Link.Meta["process"] = "testProcess"
-	s.Link.Meta["action"] = "init"
-	s.Link.State["string"] = 42
-	s.SetLinkHash()
-	tx = makeSaveSegmentTxFromSegment(t, s)
-
-	h.BeginBlock(requestBeginBlock)
+	l = cstesting.RandomLink()
+	l.Meta["process"] = "testProcess"
+	l.Meta["action"] = "init"
+	l.State["string"] = 42
+	tx = makeCreateLinkTx(t, l)
 	res = h.DeliverTx(tx)
 
 	if !res.IsErr() {
 		t.Error("a.DeliverTx(): want error")
 	}
-
 	if res.Code != tmpop.CodeTypeValidation {
 		t.Errorf("res.Code = got %d want %d", res.Code, tmpop.CodeTypeValidation)
 	}

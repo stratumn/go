@@ -15,82 +15,166 @@
 package tmpop
 
 import (
+	"crypto/sha256"
+	"fmt"
+	"sync"
+
 	"github.com/stratumn/sdk/bufferedbatch"
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
-	"github.com/tendermint/tmlibs/merkle"
+	"github.com/stratumn/sdk/validator"
+	abci "github.com/tendermint/abci/types"
 )
 
-// State represents the app states, separating the commited state (for queries)
-// from the working state (for CheckTx and AppendTx).
+// State represents the app states, separating the committed state (for queries)
+// from the working state (for CheckTx and DeliverTx).
 type State struct {
-	committed merkle.Tree
-	deliverTx merkle.Tree
-	checkTx   merkle.Tree
+	previousAppHash []byte
+	// The same validator is used for a whole commit
+	// When beginning a new block, the validator can
+	// be updated.
+	validator *validator.Validator
 
-	segments          store.Adapter
-	deliveredSegments store.Batch
-	checkedSegments   store.Batch
+	adapter            store.AdapterV2
+	deliveredLinks     store.BatchV2
+	deliveredLinksList []*cs.Link
+	checkedLinks       store.BatchV2
+
+	notificationLock     sync.Mutex
+	pendingNotifications []*store.Event
 }
 
 // NewState creates a new State.
-func NewState(tree merkle.Tree, a store.Adapter) (*State, error) {
-	deliveredSegments, err := a.NewBatch()
-	if err != nil {
-		return nil, err
-	}
-	// With transactional databases we cannot really use two transactions as they'd lock each other
-	// (more exactly, checkedSegments would lock out deliveredSegments)
-	checkedSegments := bufferedbatch.NewBatch(a)
+func NewState(a store.AdapterV2) (*State, error) {
+	deliveredLinks, err := a.NewBatchV2()
 	if err != nil {
 		return nil, err
 	}
 
+	// With transactional databases we cannot really use two transactions as they'd lock each other
+	// (more exactly, checkedSegments would lock out deliveredSegments)
+	checkedLinks := bufferedbatch.NewBatchV2(a)
+
 	return &State{
-		committed:         tree,
-		deliverTx:         tree.Copy(),
-		checkTx:           tree.Copy(),
-		segments:          a,
-		deliveredSegments: deliveredSegments,
-		checkedSegments:   checkedSegments,
+		adapter:          a,
+		deliveredLinks:   deliveredLinks,
+		checkedLinks:     checkedLinks,
+		notificationLock: sync.Mutex{},
 	}, nil
 }
 
-// Committed returns the committed state.
-func (s State) Committed() *Commit {
-	return &Commit{s.committed, s.segments}
+// Check checks if creating this link is a valid operation
+func (s *State) Check(link *cs.Link) abci.Result {
+	return s.checkLinkAndAddToBatch(link, s.checkedLinks)
 }
 
-// Append returns the version of the state affected by appended transaction from the current block.
-func (s State) Append() *Snapshot {
-	return &Snapshot{s.deliverTx, s.deliveredSegments}
+// Deliver adds a link to the list of links to be committed
+func (s *State) Deliver(link *cs.Link) abci.Result {
+	res := s.checkLinkAndAddToBatch(link, s.deliveredLinks)
+	if res.IsOK() {
+		s.deliveredLinksList = append(s.deliveredLinksList, link)
+	}
+	return res
 }
 
-// Check returns the version of the state affected by checked transaction from the memory pool.
-func (s State) Check() *Snapshot {
-	return &Snapshot{s.checkTx, s.checkedSegments}
+func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.BatchV2) abci.Result {
+	err := link.Segmentify().Validate(batch.GetSegment)
+	if err != nil {
+		return abci.NewError(
+			CodeTypeValidation,
+			fmt.Sprintf("Link validation failed %v: %v", link, err),
+		)
+	}
+
+	if s.validator != nil {
+		err = (*s.validator).ValidateLink(batch, link)
+		if err != nil {
+			return abci.NewError(
+				CodeTypeValidation,
+				fmt.Sprintf("Link validation rules failed %v: %v", link, err),
+			)
+		}
+	}
+
+	if _, err := batch.CreateLink(link); err != nil {
+		return abci.NewError(abci.CodeType_InternalError, err.Error())
+	}
+
+	return abci.OK
 }
 
-// Commit stores the current Append() state as committed
-// starts new Append/Check state, and
-// returns the hash for the commit.
+// Commit commits the delivered links,
+// resets delivered and checked state,
+// and returns the hash for the commit.
 func (s *State) Commit() ([]byte, error) {
-	err := s.deliveredSegments.Write()
+	if err := s.deliveredLinks.WriteV2(); err != nil {
+		return nil, err
+	}
+
+	deliveredLinks, err := s.adapter.NewBatchV2()
 	if err != nil {
 		return nil, err
 	}
-	deliveredSegments, err := s.segments.NewBatch()
+	s.deliveredLinks = deliveredLinks
+	s.checkedLinks = bufferedbatch.NewBatchV2(s.adapter)
+
+	appHash, err := s.computeAppHash()
 	if err != nil {
 		return nil, err
 	}
-	s.deliveredSegments = deliveredSegments
 
-	s.checkedSegments = bufferedbatch.NewBatch(s.segments)
+	// Store created links for client notification
+	s.notificationLock.Lock()
+	defer s.notificationLock.Unlock()
 
-	var hash []byte
-	hash = s.deliverTx.Save()
+	for _, link := range s.deliveredLinksList {
+		s.pendingNotifications = append(s.pendingNotifications, &store.Event{
+			EventType: store.SavedLink,
+			Details:   link,
+		})
+	}
 
-	s.committed = s.deliverTx
-	s.deliverTx = s.committed.Copy()
-	s.checkTx = s.committed.Copy()
-	return hash, nil
+	s.deliveredLinksList = nil
+
+	return appHash, nil
+}
+
+func (s *State) computeAppHash() ([]byte, error) {
+	hash := sha256.New()
+
+	if _, err := hash.Write(s.previousAppHash); err != nil {
+		return nil, err
+	}
+
+	if s.validator != nil {
+		if _, err := hash.Write((*s.validator).Hash()[:]); err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO: hash the content of s.deliveredLinksList in a merkle tree
+	if len(s.deliveredLinksList) > 0 {
+		for _, link := range s.deliveredLinksList {
+			linkHash, _ := link.Hash()
+			if _, err := hash.Write(linkHash[:]); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	appHash := hash.Sum(nil)
+	return appHash, nil
+}
+
+// DeliverNotifications delivers pending notifications and flushes them
+func (s *State) DeliverNotifications() []*store.Event {
+	s.notificationLock.Lock()
+	defer s.notificationLock.Unlock()
+
+	notifications := make([]*store.Event, len(s.pendingNotifications))
+	copy(notifications, s.pendingNotifications)
+
+	s.pendingNotifications = nil
+
+	return notifications
 }

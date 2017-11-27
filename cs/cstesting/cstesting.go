@@ -80,7 +80,7 @@ func RandomEvidence() *cs.Evidence {
 	return &cs.Evidence{
 		State:    cs.CompleteEvidence,
 		Provider: testutil.RandomString(12),
-		Backend:  "test",
+		Backend:  "generic",
 	}
 }
 
