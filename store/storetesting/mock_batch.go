@@ -22,10 +22,14 @@ import (
 
 // MockBatch is used to mock a batch.
 //
-// It implements github.com/stratumn/sdk/store.Batch.
+// It implements github.com/stratumn/sdk/store.Batch
+// and github.com/stratumn/sdk/store.BatchV2.
 type MockBatch struct {
 	// The mock for the SaveSegment function.
 	MockSaveSegment MockBatchSaveSegment
+
+	// The mock for the CreateLink function.
+	MockCreateLink MockBatchCreateLink
 
 	// The mock for the SaveValue function.
 	MockSaveValue MockBatchSaveValue
@@ -65,6 +69,21 @@ type MockBatchSaveSegment struct {
 
 	// An optional implementation of the function.
 	Fn func(*cs.Segment) error
+}
+
+// MockBatchCreateLink mocks the CreateLink function.
+type MockBatchCreateLink struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The link that was passed to each call.
+	CalledWith []*cs.Link
+
+	// The last link that was passed.
+	LastCalledWith *cs.Link
+
+	// An optional implementation of the function.
+	Fn func(*cs.Link) (*types.Bytes32, error)
 }
 
 // MockBatchSaveValue mocks the SaveValue function.
@@ -170,6 +189,19 @@ func (a *MockBatch) SaveSegment(segment *cs.Segment) error {
 	return nil
 }
 
+// CreateLink implements github.com/stratumn/sdk/store.BatchV2.CreateLink.
+func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	a.MockCreateLink.CalledCount++
+	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
+	a.MockCreateLink.LastCalledWith = link
+
+	if a.MockCreateLink.Fn != nil {
+		return a.MockCreateLink.Fn(link)
+	}
+
+	return nil, nil
+}
+
 // SaveValue implements github.com/stratumn/sdk/store.Batch.SaveValue.
 func (a *MockBatch) SaveValue(key, value []byte) error {
 	a.MockSaveValue.CalledCount++
@@ -212,6 +244,16 @@ func (a *MockBatch) DeleteValue(key []byte) ([]byte, error) {
 
 // Write implements github.com/stratumn/sdk/store.Batch.Write.
 func (a *MockBatch) Write() error {
+	a.MockWrite.CalledCount++
+
+	if a.MockWrite.Fn != nil {
+		return a.MockWrite.Fn()
+	}
+	return nil
+}
+
+// WriteV2 implements github.com/stratumn/sdk/store.BatchV2.WriteV2.
+func (a *MockBatch) WriteV2() error {
 	a.MockWrite.CalledCount++
 
 	if a.MockWrite.Fn != nil {
