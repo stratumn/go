@@ -327,6 +327,18 @@ func (l *Link) GetProcess() string {
 	return l.Meta["process"].(string)
 }
 
+// Segmentify returns a segment from a link,
+// filling the link hash and appropriate meta.
+func (l *Link) Segmentify() *Segment {
+	linkHash, _ := l.HashString()
+	return &Segment{
+		Link: *l,
+		Meta: SegmentMeta{
+			LinkHash: linkHash,
+		},
+	}
+}
+
 // SegmentSlice is a slice of segment pointers.
 type SegmentSlice []*Segment
 
