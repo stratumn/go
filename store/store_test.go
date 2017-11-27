@@ -41,7 +41,6 @@ var (
 
 func init() {
 	prevLinkHashTestingValue = testutil.RandomHash().String()
-	linkHashTestingValue = testutil.RandomHash().String()
 	badLinkHashTestingValue = testutil.RandomHash().String()
 
 	segmentSlice = make(cs.SegmentSlice, sliceSize)
@@ -53,20 +52,16 @@ func init() {
 }
 
 func defaultTestingSegment() *cs.Segment {
-	return &cs.Segment{
-		Link: cs.Link{
-			Meta: map[string]interface{}{
-				"prevLinkHash": prevLinkHashTestingValue,
-				"process":      "TheProcess",
-				"mapId":        "TheMapId",
-				"tags":         []interface{}{"Foo", "Bar"},
-				"priority":     42,
-			},
-		},
-		Meta: cs.SegmentMeta{
-			LinkHash: linkHashTestingValue,
+	link := &cs.Link{
+		Meta: map[string]interface{}{
+			"prevLinkHash": prevLinkHashTestingValue,
+			"process":      "TheProcess",
+			"mapId":        "TheMapId",
+			"tags":         []interface{}{"Foo", "Bar"},
+			"priority":     42,
 		},
 	}
+	return link.Segmentify()
 }
 
 func emptyPrevLinkHashTestingSegment() *cs.Segment {
