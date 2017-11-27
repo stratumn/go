@@ -17,6 +17,7 @@ package types
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -197,6 +198,11 @@ func (b *Bytes32) Reverse(rb *ReversedBytes32) {
 	for i, v := range b {
 		rb[Bytes32Size-i-1] = v
 	}
+}
+
+// Value implements the database.sql.driver.Valuer interface.
+func (b *Bytes32) Value() (driver.Value, error) {
+	return fmt.Sprintf("\\x%s", b.String()), nil
 }
 
 // ReversedBytes32 is a 32-byte long byte reversed array.
