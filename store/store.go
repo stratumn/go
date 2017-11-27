@@ -268,14 +268,23 @@ func min(a, b int) int {
 	return b
 }
 
-// Match check if segment matches with filter
+// Match checks if segment matches with filter
 func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 	if segment == nil {
 		return false
 	}
 
+	return filter.MatchLink(&segment.Link)
+}
+
+// MatchLink checks if link matches with filter
+func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
+	if link == nil {
+		return false
+	}
+
 	if filter.PrevLinkHash != nil {
-		prevLinkHash := segment.Link.GetPrevLinkHash()
+		prevLinkHash := link.GetPrevLinkHash()
 		if *filter.PrevLinkHash == "" {
 			if prevLinkHash != nil {
 				return false
@@ -289,9 +298,10 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 	}
 
 	if len(filter.LinkHashes) > 0 {
+		lh, _ := link.Hash()
 		var match bool
 		for _, linkHash := range filter.LinkHashes {
-			if linkHash.Compare(segment.GetLinkHash()) == 0 {
+			if linkHash.Compare(lh) == 0 {
 				match = true
 				break
 			}
@@ -301,13 +311,13 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 		}
 	}
 
-	if filter.Process != "" && filter.Process != segment.Link.GetProcess() {
+	if filter.Process != "" && filter.Process != link.GetProcess() {
 		return false
 	}
 
 	if len(filter.MapIDs) > 0 {
 		var match = false
-		mapID := segment.Link.GetMapID()
+		mapID := link.GetMapID()
 		for _, filterMapIDs := range filter.MapIDs {
 			match = match || filterMapIDs == mapID
 		}
@@ -317,7 +327,7 @@ func (filter SegmentFilter) Match(segment *cs.Segment) bool {
 	}
 
 	if len(filter.Tags) > 0 {
-		tags := segment.Link.GetTagMap()
+		tags := link.GetTagMap()
 		for _, tag := range filter.Tags {
 			if _, ok := tags[tag]; !ok {
 				return false
