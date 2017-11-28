@@ -145,7 +145,7 @@ func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	}
 
 	// <<<<<
-	currentLinkDoc, err := c.getDocument(dbLink, linkHash.String())
+	currentLinkDoc, err := c.getDocument(dbLink, linkHashStr)
 	if err != nil {
 		return nil, err
 	}
