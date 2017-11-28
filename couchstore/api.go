@@ -24,6 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/utils"
 )
 
@@ -130,36 +131,49 @@ func (c *CouchStore) deleteDatabase(name string) error {
 	return nil
 }
 
-func (c *CouchStore) createLink(link *cs.Link) error {
+func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	linkHashStr := linkHash.String()
 
 	linkDoc := &Document{
 		ObjectType: objectTypeLink,
 		Link:       link,
-		ID:         linkHash.String(),
+		ID:         linkHashStr,
 	}
 
+	// <<<<<
 	currentLinkDoc, err := c.getDocument(dbLink, linkHash.String())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if currentLinkDoc != nil {
 		linkDoc = currentLinkDoc
 	}
+	// =====
+	// After interface update, this behaviour is better. Link is
+	// immutable so it should not be present in database
+	// tmpoptestcases have to be changed
+	// if currentLinkDoc, err := c.getDocument(dbLink, linkHashStr); currentLinkDoc != nil {
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	return nil, errors.Errorf("Link is immutable, %s already exists", linkHashStr)
+	// }
+	// >>>>>
 
 	docs := []*Document{
 		linkDoc,
-		&Document{
+		{
 			ObjectType: objectTypeMap,
 			ID:         linkDoc.Link.GetMapID(),
 			Process:    linkDoc.Link.GetProcess(),
 		},
 	}
 
-	return c.saveDocuments(dbLink, docs)
+	return linkHash, c.saveDocuments(dbLink, docs)
 }
 
 func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {

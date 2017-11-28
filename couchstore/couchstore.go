@@ -121,11 +121,12 @@ func (c *CouchStore) notifyEvent(eventType store.EventType, details interface{})
 
 // CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
 func (c *CouchStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	if err := c.createLink(link); err != nil {
+	linkHash, err := c.createLink(link)
+	if err != nil {
 		return nil, err
 	}
 	c.notifyEvent(store.SavedLink, link)
-	return link.Hash()
+	return linkHash, nil
 }
 
 // AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
@@ -139,11 +140,7 @@ func (c *CouchStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence)
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (c *CouchStore) SaveSegment(segment *cs.Segment) error {
-	if err := c.createLink(&segment.Link); err != nil {
-		return err
-	}
-
-	linkHash, err := segment.Link.Hash()
+	linkHash, err := c.createLink(&segment.Link)
 	if err != nil {
 		return err
 	}
