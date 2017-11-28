@@ -242,6 +242,9 @@ func TestNewRootValidator(t *testing.T) {
 	if len(fileNotFoundRootValidator.(*rootValidator).ValidatorsByProcess) != 0 {
 		t.Errorf("fail to create root validator: file not found")
 	}
+	if validatorHash := fileNotFoundRootValidator.Hash(); validatorHash != nil {
+		t.Errorf("validator hash should be empty: got %v", validatorHash)
+	}
 }
 
 func TestRootValidator(t *testing.T) {

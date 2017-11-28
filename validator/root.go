@@ -22,7 +22,7 @@ type rootValidator struct {
 }
 
 type selectiveValidator interface {
-	Validator
+	validator
 	Filter(store.Reader, *cs.Segment) bool
 }
 
@@ -48,7 +48,9 @@ func NewRootValidator(filename string, validByDefault bool) Validator {
 		log.Error(err)
 	}
 
-	v.updateHash(data)
+	if data != nil && len(data) > 0 {
+		v.updateHash(data)
+	}
 
 	return &v
 }
