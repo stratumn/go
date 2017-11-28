@@ -9,6 +9,7 @@ package postgresstore
 
 import (
 	"database/sql"
+	"encoding/json"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
@@ -55,10 +56,12 @@ type Store struct {
 	*writer
 	config       *Config
 	didSaveChans []chan *cs.Segment
+	eventChans   []chan *store.Event
 	db           *sql.DB
 	stmts        *stmts
 
-	batches map[*Batch]*sql.Tx
+	batches   map[*Batch]*sql.Tx
+	batchesV2 map[*Batch]*sql.Tx
 }
 
 // New creates an instance of a Store.
@@ -108,31 +111,92 @@ func (a *Store) SaveSegment(segment *cs.Segment) error {
 	return nil
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
-func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	return a.reader.GetSegment(linkHash)
-}
-
-// FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
-func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
-	return a.reader.FindSegments(filter)
-}
-
-// GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
-func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
-	return a.reader.GetMapIDs(filter)
-}
-
-// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
-func (a *Store) GetValue(key []byte) ([]byte, error) {
-	return a.reader.GetValue(key)
-}
-
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (a *Store) NewBatch() (store.Batch, error) {
 	for b := range a.batches {
 		if b.done {
 			delete(a.batches, b)
+		}
+	}
+
+	tx, err := a.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	b, err := NewBatch(tx)
+	if err != nil {
+		return nil, err
+	}
+	a.batches[b] = tx
+
+	return b, nil
+}
+
+// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
+func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	segment, err := a.writer.DeleteSegment(linkHash)
+	if err != nil {
+		return nil, err
+	}
+
+	evidences, err := a.reader.GetEvidences(linkHash)
+	if err != nil {
+		return nil, err
+	}
+
+	segment.Meta.Evidences = *evidences
+
+	return segment, nil
+}
+
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
+	a.eventChans = append(a.eventChans, eventChan)
+}
+
+// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	linkHash, err := a.writer.CreateLink(link)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range a.eventChans {
+		c <- &store.Event{
+			EventType: store.SavedLink,
+			Details:   link,
+		}
+	}
+	return linkHash, nil
+}
+
+// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	data, err := json.Marshal(evidence)
+	if err != nil {
+		return err
+	}
+
+	_, err = a.stmts.AddEvidence.Exec(linkHash[:], evidence.Provider, data)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range a.eventChans {
+		c <- &store.Event{
+			EventType: store.SavedEvidence,
+			Details:   evidence,
+		}
+	}
+
+	return nil
+}
+
+// NewBatchV2 implements github.com/stratumn/sdk/store.Adapter.NewBatchV2.
+func (a *Store) NewBatchV2() (store.BatchV2, error) {
+	for b := range a.batchesV2 {
+		if b.done {
+			delete(a.batchesV2, b)
 		}
 	}
 
@@ -191,4 +255,9 @@ func (a *Store) Drop() error {
 		}
 	}
 	return nil
+}
+
+// Close closes the database connection.
+func (a *Store) Close() error {
+	return a.db.Close()
 }
