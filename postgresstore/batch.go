@@ -30,8 +30,14 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 	}, nil
 }
 
-// Write implements github.com/stratumn/sdk/store.Adapter.Write.
+// Write implements github.com/stratumn/sdk/store.Batch.Write.
 func (b *Batch) Write() error {
+	b.done = true
+	return b.tx.Commit()
+}
+
+// WriteV2 implements github.com/stratumn/sdk/store.BatchV2.Write.
+func (b *Batch) WriteV2() error {
 	b.done = true
 	return b.tx.Commit()
 }
