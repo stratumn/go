@@ -139,6 +139,10 @@ func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 		return nil, err
 	}
 
+	if segment == nil {
+		return nil, nil
+	}
+
 	evidences, err := a.reader.GetEvidences(linkHash)
 	if err != nil {
 		return nil, err
