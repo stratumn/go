@@ -329,10 +329,10 @@ func (l *Link) GetProcess() string {
 
 // Segmentify returns a segment from a link,
 // filling the link hash and appropriate meta.
-func (l *Link) Segmentify() *Segment {
+func (l Link) Segmentify() *Segment {
 	linkHash, _ := l.HashString()
 	return &Segment{
-		Link: *l,
+		Link: l,
 		Meta: SegmentMeta{
 			LinkHash: linkHash,
 		},
