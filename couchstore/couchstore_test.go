@@ -66,7 +66,14 @@ func TestMain(m *testing.M) {
 		}
 
 		// Retry until container is ready.
-		if err := utils.Retry(pingCouchContainer, 10); err != nil {
+		if err := utils.Retry(func(attempt int) (bool, error) {
+			_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
+			if err != nil {
+				time.Sleep(1 * time.Second)
+				return true, err
+			}
+			return false, err
+		}, 10); err != nil {
 			fmt.Printf(err.Error())
 			os.Exit(1)
 		}
@@ -94,6 +101,16 @@ func TestCouchStore(t *testing.T) {
 	}
 }
 
+func TestCouchStoreV2(t *testing.T) {
+	test = t
+	if *integration {
+		storetestcases.Factory{
+			NewV2:  newTestCouchStoreV2,
+			FreeV2: freeTestCouchStoreV2,
+		}.RunTestsV2(t)
+	}
+}
+
 func TestCouchTMPop(t *testing.T) {
 	if *integration {
 		tmpoptestcases.Factory{
@@ -111,16 +128,26 @@ func newTestCouchStore() (store.Adapter, error) {
 }
 
 func freeTestCouchStore(a store.Adapter) {
-	if err := a.(*CouchStore).deleteDatabase(dbSegment); err != nil {
+	if err := a.(*CouchStore).deleteDatabase(dbLink); err != nil {
+		test.Fatal(err)
+	}
+	if err := a.(*CouchStore).deleteDatabase(dbEvidences); err != nil {
 		test.Fatal(err)
 	}
 }
 
-func pingCouchContainer(attempt int) (bool, error) {
-	_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
-	if err != nil {
-		time.Sleep(1 * time.Second)
-		return true, err
+func newTestCouchStoreV2() (store.AdapterV2, error) {
+	config := &Config{
+		Address: fmt.Sprintf("http://%s:%s", domain, port),
 	}
-	return false, err
+	return New(config)
+}
+
+func freeTestCouchStoreV2(a store.AdapterV2) {
+	if err := a.(*CouchStore).deleteDatabase(dbLink); err != nil {
+		test.Fatal(err)
+	}
+	if err := a.(*CouchStore).deleteDatabase(dbEvidences); err != nil {
+		test.Fatal(err)
+	}
 }

@@ -38,6 +38,7 @@ const (
 type CouchStore struct {
 	config       *Config
 	didSaveChans []chan *cs.Segment
+	eventChans   []chan *store.Event
 }
 
 // Config contains configuration options for the store.
@@ -74,7 +75,10 @@ func New(config *Config) (*CouchStore, error) {
 		return nil, couchResponseStatus.error()
 	}
 
-	if err := couchstore.createDatabase(dbSegment); err != nil {
+	if err := couchstore.createDatabase(dbLink); err != nil {
+		return nil, err
+	}
+	if err := couchstore.createDatabase(dbEvidences); err != nil {
 		return nil, err
 	}
 	if err := couchstore.createDatabase(dbValue); err != nil {
@@ -99,43 +103,89 @@ func (c *CouchStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
 	c.didSaveChans = append(c.didSaveChans, saveChan)
 }
 
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+func (c *CouchStore) AddStoreEventChannel(eventChan chan *store.Event) {
+	c.eventChans = append(c.eventChans, eventChan)
+}
+
+func (c *CouchStore) notifyEvent(eventType store.EventType, details interface{}) {
+	for _, c := range c.eventChans {
+		c <- &store.Event{
+			EventType: eventType,
+			Details:   details,
+		}
+	}
+}
+
+/********** Store writer implementation **********/
+
+// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+func (c *CouchStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	if err := c.createLink(link); err != nil {
+		return nil, err
+	}
+	c.notifyEvent(store.SavedLink, link)
+	return link.Hash()
+}
+
+// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+func (c *CouchStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	if err := c.addEvidence(linkHash.String(), evidence); err != nil {
+		return err
+	}
+	c.notifyEvent(store.SavedEvidence, evidence)
+	return nil
+}
+
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (c *CouchStore) SaveSegment(segment *cs.Segment) (err error) {
-	if err := c.saveSegment(segment); err != nil {
+func (c *CouchStore) SaveSegment(segment *cs.Segment) error {
+	if err := c.createLink(&segment.Link); err != nil {
 		return err
 	}
 
-	for _, channel := range c.didSaveChans {
-		channel <- segment
-	}
-
-	return
-}
-
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
-func (c *CouchStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	segmentDoc, err := c.getDocument(dbSegment, linkHash.String())
+	linkHash, err := segment.Link.Hash()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if segmentDoc != nil {
-		return segmentDoc.Segment, nil
+
+	for _, evidence := range segment.Meta.Evidences {
+		if err := c.AddEvidence(linkHash, evidence); err != nil {
+			return err
+		}
 	}
-	return nil, nil
+
+	for _, ch := range c.didSaveChans {
+		ch <- segment
+	}
+
+	return nil
 }
 
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (c *CouchStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	segmentDoc, err := c.deleteDocument(dbSegment, linkHash.String())
-	if err != nil {
+	segment, err := c.GetSegment(linkHash)
+	if err != nil || segment == nil {
 		return nil, err
 	}
 
-	if segmentDoc == nil {
-		return nil, nil
+	_, evidenceErr := c.deleteDocument(dbEvidences, linkHash.String())
+	segmentDoc, err := c.deleteDocument(dbLink, linkHash.String())
+	if err != nil || segmentDoc == nil {
+		return nil, err
 	}
 
-	return segmentDoc.Segment, nil
+	return segment, evidenceErr
+}
+
+/********** Store reader implementation **********/
+
+// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+func (c *CouchStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+	linkDoc, err := c.getDocument(dbLink, linkHash.String())
+	if err != nil || linkDoc == nil {
+		return nil, err
+	}
+	return c.segmentify(linkDoc.Link), nil
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
@@ -145,7 +195,7 @@ func (c *CouchStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 		return nil, err
 	}
 
-	body, couchResponseStatus, err := c.post("/"+dbSegment+"/_find", queryBytes)
+	body, couchResponseStatus, err := c.post("/"+dbLink+"/_find", queryBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +210,8 @@ func (c *CouchStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	}
 
 	segments := cs.SegmentSlice{}
-	for i := range couchFindResponse.Docs {
-		segments = append(segments, couchFindResponse.Docs[i].Segment)
+	for _, doc := range couchFindResponse.Docs {
+		segments = append(segments, c.segmentify(doc.Link))
 	}
 	sort.Sort(segments)
 
@@ -175,7 +225,7 @@ func (c *CouchStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 		return nil, err
 	}
 
-	body, couchResponseStatus, err := c.post("/"+dbMap+"/_find", queryBytes)
+	body, couchResponseStatus, err := c.post("/"+dbLink+"/_find", queryBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -197,10 +247,19 @@ func (c *CouchStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return mapIDs, nil
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
-func (c *CouchStore) NewBatch() (store.Batch, error) {
-	return NewBatch(c), nil
+// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+func (c *CouchStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+	evidencesDoc, err := c.getDocument(dbEvidences, linkHash.String())
+	if err != nil {
+		return nil, err
+	}
+	if evidencesDoc == nil {
+		return &cs.Evidences{}, nil
+	}
+	return evidencesDoc.Evidences, nil
 }
+
+/********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (c *CouchStore) SaveValue(key, value []byte) error {
@@ -249,4 +308,16 @@ func (c *CouchStore) DeleteValue(key []byte) ([]byte, error) {
 	}
 
 	return valueDoc.Value, nil
+}
+
+/********** github.com/stratumn/sdk/store.Batch implementation **********/
+
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (c *CouchStore) NewBatch() (store.Batch, error) {
+	return NewBatch(c), nil
+}
+
+// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
+func (c *CouchStore) NewBatchV2() (store.BatchV2, error) {
+	return nil, nil
 }

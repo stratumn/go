@@ -1,212 +1,215 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-
-        {
-            "name": "Launch bufferedbatch test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/bufferedbatch",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch cs test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/cs",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch dummyfossilizer test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/dummyfossilizer",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch dummystore test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/dummystore",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch filestore test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/filestore",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch fossilizer test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/fossilizer",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch generator test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/generator",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch jsonhttp test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/jsonhttp",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch jsonws test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/jsonws",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch store test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/store",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch storehttp test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/store/storehttp",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch storetesting test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/store/storetesting",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch tmstore test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/tmstore",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "Launch tmpop test function",
-            "type": "go",
-            "request": "launch",
-            "mode": "test",
-            "program": "${workspaceRoot}/tmpop",
-            "env": {},
-            "args": [
-                "-test.run",
-                "TestQuery/Evidence"
-            ]
-        },
-        {
-            "name": "dummyfossilizer debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd/dummyfossilizer",
-            "env": {},
-            "args": [],
-            "showLog": true
-        },
-        {
-            "name": "dummystore debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd/dummystore",
-            "env": {},
-            "args": [],
-            "showLog": true
-        },
-        {
-            "name": "filestore debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd/filestore",
-            "env": {},
-            "args": ["-path", "${workspaceRoot}/segments"],
-            "showLog": true
-        },
-        {
-            "name": "tmstore debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd/tmstore",
-            "env": {},
-            "args": []
-        },
-        {
-            "name": "filetmpop debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd/filetmpop",
-            "env": {},
-            "args": [
-                "-path", "${workspaceRoot}/tmfilestore"
-            ]
-        },
-        {
-            "name": "dummytmpop debug",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "remotePath": "",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd/dummytmpop",
-            "env": {},
-            "args": []
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch bufferedbatch test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/bufferedbatch",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch couchstore test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/couchstore",
+      "env": {},
+      "args": ["-integration"]
+    },
+    {
+      "name": "Launch cs test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/cs",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch dummyfossilizer test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/dummyfossilizer",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch dummystore test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/dummystore",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch filestore test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/filestore",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch fossilizer test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/fossilizer",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch generator test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/generator",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch jsonhttp test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/jsonhttp",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch jsonws test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/jsonws",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch store test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/store",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch storehttp test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/store/storehttp",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch storetesting test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/store/storetesting",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch tmstore test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/tmstore",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch tmpop test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/tmpop",
+      "env": {},
+      "args": ["-test.run", "TestQuery/Evidence"]
+    },
+    {
+      "name": "dummyfossilizer debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/dummyfossilizer",
+      "env": {},
+      "args": [],
+      "showLog": true
+    },
+    {
+      "name": "dummystore debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/dummystore",
+      "env": {},
+      "args": [],
+      "showLog": true
+    },
+    {
+      "name": "filestore debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/filestore",
+      "env": {},
+      "args": ["-path", "${workspaceRoot}/segments"],
+      "showLog": true
+    },
+    {
+      "name": "tmstore debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/tmstore",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "filetmpop debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/filetmpop",
+      "env": {},
+      "args": ["-path", "${workspaceRoot}/tmfilestore"]
+    },
+    {
+      "name": "dummytmpop debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/dummytmpop",
+      "env": {},
+      "args": []
+    }
+  ]
 }
