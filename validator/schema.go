@@ -27,14 +27,18 @@ func newSchemaValidator(segmentType string, data []byte) (*schemaValidator, erro
 }
 
 func (sv schemaValidator) Filter(_ store.Reader, segment *cs.Segment) bool {
+	return sv.FilterLink(nil, &segment.Link)
+}
+
+func (sv schemaValidator) FilterLink(_ store.SegmentReader, link *cs.Link) bool {
 	// TODO: standardise action as string
-	segmentAction, ok := segment.Link.Meta["action"].(string)
+	linkAction, ok := link.Meta["action"].(string)
 	if !ok {
-		log.Debug("No action found in segment %v", segment)
+		log.Debug("No action found in link %v", link)
 		return false
 	}
 
-	if segmentAction != sv.Type {
+	if linkAction != sv.Type {
 		return false
 	}
 
@@ -42,20 +46,24 @@ func (sv schemaValidator) Filter(_ store.Reader, segment *cs.Segment) bool {
 }
 
 func (sv schemaValidator) Validate(_ store.Reader, segment *cs.Segment) error {
-	segmentBytes, err := json.Marshal(segment.Link.State)
+	return sv.ValidateLink(nil, &segment.Link)
+}
+
+func (sv schemaValidator) ValidateLink(_ store.SegmentReader, link *cs.Link) error {
+	stateBytes, err := json.Marshal(link.State)
 	if err != nil {
 		return err
 	}
 
-	segmentData := gojsonschema.NewBytesLoader(segmentBytes)
+	stateData := gojsonschema.NewBytesLoader(stateBytes)
 
-	result, err := sv.Schema.Validate(segmentData)
+	result, err := sv.Schema.Validate(stateData)
 	if err != nil {
 		return err
 	}
 
 	if !result.Valid() {
-		return fmt.Errorf("segment validation failed: %s", result.Errors())
+		return fmt.Errorf("link validation failed: %s", result.Errors())
 	}
 	return nil
 }

@@ -24,6 +24,7 @@ type rootValidator struct {
 type selectiveValidator interface {
 	validator
 	Filter(store.Reader, *cs.Segment) bool
+	FilterLink(store.SegmentReader, *cs.Link) bool
 }
 
 type jsonSchemaData []struct {
@@ -65,6 +66,27 @@ func (rv rootValidator) Validate(store store.Reader, segment *cs.Segment) error 
 	for _, validator := range processValidators {
 		if validator.Filter(store, segment) {
 			if err := validator.Validate(store, segment); err != nil {
+				return err
+			}
+			validByDefault = true
+		}
+	}
+	if !validByDefault {
+		return errors.New("root validation failed")
+	}
+	return nil
+}
+
+func (rv rootValidator) ValidateLink(store store.SegmentReader, link *cs.Link) error {
+	validByDefault := rv.ValidByDefault
+	processValidators, exists := rv.ValidatorsByProcess[link.GetProcess()]
+	if !exists && !validByDefault {
+		return errors.New("root validation failed : process validation not found")
+	}
+
+	for _, validator := range processValidators {
+		if validator.FilterLink(store, link) {
+			if err := validator.ValidateLink(store, link); err != nil {
 				return err
 			}
 			validByDefault = true
