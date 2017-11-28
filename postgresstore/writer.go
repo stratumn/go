@@ -20,29 +20,18 @@ type writer struct {
 
 // SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
 func (a *writer) SaveSegment(segment *cs.Segment) error {
-	var (
-		err          error
-		linkHash     = segment.GetLinkHash()
-		priority     = segment.Link.GetPriority()
-		mapID        = segment.Link.GetMapID()
-		prevLinkHash = segment.Link.GetPrevLinkHash()
-		tags         = segment.Link.GetTags()
-		process      = segment.Link.GetProcess()
-	)
-
-	data, err := json.Marshal(segment)
+	linkHash, err := a.CreateLink(&segment.Link)
 	if err != nil {
 		return err
 	}
 
-	if prevLinkHash == nil {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, []byte{}, pq.Array(tags), string(data), process)
-	} else {
-		_, err = a.stmts.SaveSegment.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data), process)
-	}
+	for _, e := range segment.Meta.Evidences {
+		evidenceData, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+		_, err = a.stmts.AddEvidence.Exec(linkHash[:], e.Provider, string(evidenceData))
 
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -51,22 +40,22 @@ func (a *writer) SaveSegment(segment *cs.Segment) error {
 // DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
 func (a *writer) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	var (
-		data    string
-		segment cs.Segment
+		data string
+		link cs.Link
 	)
 
-	if err := a.stmts.DeleteSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
+	if err := a.stmts.DeleteLink.QueryRow(linkHash[:]).Scan(&data); err != nil {
 		if err.Error() == notFoundError {
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	if err := json.Unmarshal([]byte(data), &segment); err != nil {
+	if err := json.Unmarshal([]byte(data), &link); err != nil {
 		return nil, err
 	}
 
-	return &segment, nil
+	return link.Segmentify(), nil
 }
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
@@ -91,4 +80,33 @@ func (a *writer) DeleteValue(key []byte) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// CreateLink implements github.com/stratumn/sdk/store.AdapterV2.CreateLink.
+func (a *writer) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	var (
+		priority     = link.GetPriority()
+		mapID        = link.GetMapID()
+		prevLinkHash = link.GetPrevLinkHash()
+		tags         = link.GetTags()
+		process      = link.GetProcess()
+	)
+
+	linkHash, err := link.Hash()
+	if err != nil {
+		return linkHash, err
+	}
+
+	data, err := json.Marshal(link)
+	if err != nil {
+		return linkHash, err
+	}
+
+	if prevLinkHash == nil {
+		_, err = a.stmts.CreateLink.Exec(linkHash[:], priority, mapID, []byte{}, pq.Array(tags), string(data), process)
+	} else {
+		_, err = a.stmts.CreateLink.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data), process)
+	}
+
+	return linkHash, err
 }

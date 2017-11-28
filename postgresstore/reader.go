@@ -15,6 +15,7 @@
 package postgresstore
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 
@@ -30,23 +31,22 @@ type reader struct {
 
 // GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
 func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	var (
-		data    string
-		segment cs.Segment
-	)
+	var segments = make(cs.SegmentSlice, 0, 1)
 
-	if err := a.stmts.GetSegment.QueryRow(linkHash[:]).Scan(&data); err != nil {
-		if err.Error() == notFoundError {
-			return nil, nil
-		}
+	rows, err := a.stmts.GetSegment.Query(linkHash[:])
+	if err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal([]byte(data), &segment); err != nil {
+	defer rows.Close()
+	if err = scanLinkAndEvidences(rows, &segments); err != nil {
 		return nil, err
 	}
 
-	return &segment, nil
+	if len(segments) == 0 {
+		return nil, nil
+	}
+	return segments[0], nil
 }
 
 // FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
@@ -122,25 +122,55 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 	}
 
 	defer rows.Close()
+	err = scanLinkAndEvidences(rows, &segments)
+
+	return segments, err
+}
+
+func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
+	var currentSegment *cs.Segment
+	var currentHash []byte
 
 	for rows.Next() {
 		var (
-			data    string
-			segment cs.Segment
+			linkHash     []byte
+			linkData     string
+			link         cs.Link
+			evidenceData sql.NullString
+			evidence     cs.Evidence
 		)
 
-		if err = rows.Scan(&data); err != nil {
-			return nil, err
+		if err := rows.Scan(&linkHash, &linkData, &evidenceData); err != nil {
+			return err
 		}
 
-		if err = json.Unmarshal([]byte(data), &segment); err != nil {
-			return nil, err
+		if bytes.Compare(currentHash, linkHash) != 0 {
+			if err := json.Unmarshal([]byte(linkData), &link); err != nil {
+				return err
+			}
+
+			hash, err := link.Hash()
+			if err != nil {
+				return err
+			}
+			currentHash = hash[:]
+
+			currentSegment = link.Segmentify()
+
+			*segments = append(*segments, currentSegment)
 		}
 
-		segments = append(segments, &segment)
+		if evidenceData.Valid {
+			if err := json.Unmarshal([]byte(evidenceData.String), &evidence); err != nil {
+				return err
+			}
+
+			if err := currentSegment.Meta.AddEvidence(evidence); err != nil {
+				return err
+			}
+		}
 	}
-
-	return segments, nil
+	return nil
 }
 
 // GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
@@ -178,4 +208,32 @@ func (a *reader) GetValue(key []byte) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+func (a *reader) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+	var evidences cs.Evidences
+
+	rows, err := a.stmts.GetEvidences.Query(linkHash[:])
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var (
+			data     string
+			evidence cs.Evidence
+		)
+
+		if err := rows.Scan(&data); err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal([]byte(data), &evidence); err != nil {
+			return nil, err
+		}
+		evidences = append(evidences, &evidence)
+
+	}
+	return &evidences, nil
 }
