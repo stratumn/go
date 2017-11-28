@@ -6,6 +6,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/xeipuuv/gojsonschema"
@@ -57,5 +58,9 @@ func (sv schemaValidator) Validate(_ store.Reader, segment *cs.Segment) error {
 	if !result.Valid() {
 		return fmt.Errorf("segment validation failed: %s", result.Errors())
 	}
+	return nil
+}
+
+func (sv schemaValidator) Hash() *types.Bytes32 {
 	return nil
 }

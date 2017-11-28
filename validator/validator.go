@@ -3,6 +3,7 @@ package validator
 import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 )
 
 const (
@@ -13,4 +14,5 @@ const (
 // Validator defines the interface with single Validate() method
 type Validator interface {
 	Validate(store.Reader, *cs.Segment) error
+	Hash() *types.Bytes32
 }

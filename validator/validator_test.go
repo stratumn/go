@@ -229,6 +229,9 @@ func TestNewRootValidator(t *testing.T) {
 	if len(defaultRootValidator.(*rootValidator).ValidatorsByProcess) != 2 {
 		t.Errorf("fail to load root validator")
 	}
+	if validatorHash := defaultRootValidator.Hash(); validatorHash == nil {
+		t.Errorf("validator hash is empty")
+	}
 
 	if err := tmpfile.Close(); err != nil {
 		t.Error(err)
