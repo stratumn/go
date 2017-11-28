@@ -386,11 +386,16 @@ func checkSig(targetPath, sigPath string) error {
 		return err
 	}
 	defer sig.Close()
-	r := bytes.NewReader([]byte(pubKey))
-	keyring, err := openpgp.ReadArmoredKeyRing(r)
-	if err != nil {
-		return err
+	for _, pubKey := range pubKeys {
+		r := bytes.NewReader([]byte(pubKey))
+		keyring, err := openpgp.ReadArmoredKeyRing(r)
+		if err != nil {
+			return err
+		}
+		_, err = openpgp.CheckArmoredDetachedSignature(keyring, target, sig)
+		if err == nil {
+			break
+		}
 	}
-	_, err = openpgp.CheckArmoredDetachedSignature(keyring, target, sig)
 	return err
 }
