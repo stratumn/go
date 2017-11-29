@@ -14,7 +14,7 @@ import (
 func TestStore(t *testing.T) {
 	storetestcases.Factory{
 		New: func() (store.Adapter, error) {
-			a, err := New(&Config{URL: "postgres://postgres@localhost/goprivate_test?sslmode=disable"})
+			a, err := New(&Config{URL: "postgres://postgres@localhost/sdk_test?sslmode=disable"})
 			if err := a.Create(); err != nil {
 				return nil, err
 			}
@@ -37,7 +37,7 @@ func TestStore(t *testing.T) {
 func TestStoreV2(t *testing.T) {
 	storetestcases.Factory{
 		NewV2: func() (store.AdapterV2, error) {
-			a, err := New(&Config{URL: "postgres://postgres@localhost/goprivate_test?sslmode=disable"})
+			a, err := New(&Config{URL: "postgres://postgres@localhost/sdk_test?sslmode=disable"})
 			if err := a.Create(); err != nil {
 				return nil, err
 			}
