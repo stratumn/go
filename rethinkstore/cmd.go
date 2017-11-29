@@ -8,7 +8,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/stratumn/goprivate/utils"
+	"github.com/stratumn/sdk/utils"
 
 	log "github.com/sirupsen/logrus"
 )
