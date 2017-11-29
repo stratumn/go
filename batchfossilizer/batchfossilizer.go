@@ -22,7 +22,7 @@ import (
 	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
 
-	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/sdk/merkle"
 )
 
 const (
