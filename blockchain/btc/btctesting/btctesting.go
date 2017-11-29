@@ -6,8 +6,8 @@
 package btctesting
 
 import (
+	"github.com/stratumn/sdk/blockchain/btc"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/blockchain/btc"
 )
 
 // Mock is used to mock a UnspentFinder and Broadcaster.
@@ -58,7 +58,7 @@ type MockBroadcast struct {
 }
 
 // FindUnspent implements
-// github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
+// github.com/stratumn/sdk/blockchain/btc.UnspentFinder.FindUnspent.
 func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	a.MockFindUnspent.CalledCount++
 	a.MockFindUnspent.CalledWithAddress = append(a.MockFindUnspent.CalledWithAddress, address)
@@ -74,7 +74,7 @@ func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.
 }
 
 // Broadcast implements
-// github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
+// github.com/stratumn/sdk/blockchain/btc.Broadcaster.Broadcast.
 func (a *Mock) Broadcast(raw []byte) error {
 	a.MockBroadcast.CalledCount++
 	a.MockBroadcast.CalledWith = append(a.MockBroadcast.CalledWith, raw)
