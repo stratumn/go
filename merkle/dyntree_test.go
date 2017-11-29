@@ -9,8 +9,8 @@ import (
 
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/merkle"
-	"github.com/stratumn/goprivate/merkle/treetestcases"
+	"github.com/stratumn/sdk/merkle"
+	"github.com/stratumn/sdk/merkle/treetestcases"
 )
 
 func TestDynTree(t *testing.T) {
