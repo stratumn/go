@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/goprivate/batchfossilizer"
-	"github.com/stratumn/goprivate/blockchain/dummytimestamper"
+	"github.com/stratumn/sdk/batchfossilizer"
+	"github.com/stratumn/sdk/blockchain/dummytimestamper"
 	"github.com/stratumn/sdk/cs/evidences"
 )
 

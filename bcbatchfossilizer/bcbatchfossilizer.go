@@ -16,8 +16,8 @@ import (
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/types"
 
-	"github.com/stratumn/goprivate/batchfossilizer"
-	"github.com/stratumn/goprivate/blockchain"
+	"github.com/stratumn/sdk/batchfossilizer"
+	"github.com/stratumn/sdk/blockchain"
 )
 
 const (

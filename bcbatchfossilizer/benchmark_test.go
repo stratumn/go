@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/goprivate/batchfossilizer"
-	"github.com/stratumn/goprivate/blockchain/dummytimestamper"
+	"github.com/stratumn/sdk/batchfossilizer"
+	"github.com/stratumn/sdk/blockchain/dummytimestamper"
 )
 
 func BenchmarkFossilize_MaxLeaves100(b *testing.B) {
