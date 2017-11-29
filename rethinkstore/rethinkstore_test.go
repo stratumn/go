@@ -31,6 +31,26 @@ func TestStore(t *testing.T) {
 	}.RunTests(t)
 }
 
+func TestStoreV2(t *testing.T) {
+	storetestcases.Factory{
+		NewV2: func() (store.AdapterV2, error) {
+			a, err := New(&Config{URL: "localhost:28015", DB: "test"})
+			if err != nil {
+				return nil, err
+			}
+			if err := a.Create(); err != nil {
+				return nil, err
+			}
+			return a, err
+		},
+		FreeV2: func(a store.AdapterV2) {
+			if err := a.(*Store).Drop(); err != nil {
+				panic(err)
+			}
+		},
+	}.RunTestsV2(t)
+}
+
 func TestExists(t *testing.T) {
 	a, err := New(&Config{URL: "localhost:28015", DB: "test"})
 	if err != nil {
