@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/lib/pq"
 
-	"github.com/stratumn/goprivate/utils"
+	"github.com/stratumn/sdk/utils"
 )
 
 const (
