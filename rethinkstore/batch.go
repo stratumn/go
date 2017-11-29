@@ -44,3 +44,24 @@ func (b *Batch) Write() error {
 	}
 	return nil
 }
+
+// BatchV2 is the type that implements github.com/stratumn/sdk/store.Batch.
+type BatchV2 struct {
+	*bufferedbatch.BatchV2
+	originalRethinkStore *Store
+}
+
+// NewBatchV2 return a new instance of Batch
+func NewBatchV2(a *Store) *BatchV2 {
+	return &BatchV2{bufferedbatch.NewBatchV2(a), a}
+}
+
+func (b *BatchV2) Write() (err error) {
+	for _, link := range b.Links {
+		_, err = b.originalRethinkStore.CreateLink(link)
+		if err != nil {
+			break
+		}
+	}
+	return nil
+}
