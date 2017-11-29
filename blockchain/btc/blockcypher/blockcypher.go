@@ -15,8 +15,8 @@ import (
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/stratumn/sdk/blockchain/btc"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/blockchain/btc"
 )
 
 const (
@@ -72,7 +72,7 @@ func New(c *Config) *Client {
 }
 
 // FindUnspent implements
-// github.com/stratumn/goprivate/blockchain/btc.UnspentFinder.FindUnspent.
+// github.com/stratumn/sdk/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	for _ = range c.limiter {
 		break
@@ -123,7 +123,7 @@ TX_LOOP:
 }
 
 // Broadcast implements
-// github.com/stratumn/goprivate/blockchain/btc.Broadcaster.Broadcast.
+// github.com/stratumn/sdk/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(raw []byte) error {
 	for _ = range c.limiter {
 		break
