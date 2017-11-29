@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/goprivate/batchfossilizer"
+	"github.com/stratumn/sdk/batchfossilizer"
 	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/testutil"
