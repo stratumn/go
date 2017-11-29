@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/sdk/merkle"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
 )

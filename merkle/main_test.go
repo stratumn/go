@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/goprivate/merkle/treetestcases"
+	"github.com/stratumn/sdk/merkle/treetestcases"
 )
 
 func TestMain(m *testing.M) {
