@@ -8,10 +8,10 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/goprivate/blockchain/btc"
 	"github.com/stratumn/goprivate/blockchain/btc/btctesting"
+	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
 )
 
 func TestNetwork_NetworkTest3(t *testing.T) {
@@ -69,6 +69,6 @@ func TestTimestamperTimestampHash(t *testing.T) {
 	}
 
 	if got := mock.MockBroadcast.CalledCount; got != 1 {
-		t.Error("ts.TimestampHash(): Broadcast() called %d time(s) want 1 time", mock.MockBroadcast.CalledCount)
+		t.Errorf("ts.TimestampHash(): Broadcast() called %d time(s) want 1 time", mock.MockBroadcast.CalledCount)
 	}
 }
