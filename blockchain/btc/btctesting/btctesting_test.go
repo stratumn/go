@@ -11,7 +11,7 @@ import (
 
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/goprivate/blockchain/btc"
+	"github.com/stratumn/sdk/blockchain/btc"
 )
 
 func TestMockFindUnspent(t *testing.T) {

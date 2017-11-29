@@ -8,8 +8,8 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stratumn/goprivate/blockchain/btc"
-	"github.com/stratumn/goprivate/blockchain/btc/btctesting"
+	"github.com/stratumn/sdk/blockchain/btc"
+	"github.com/stratumn/sdk/blockchain/btc/btctesting"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
 )
