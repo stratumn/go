@@ -10,7 +10,7 @@ package main
 import (
 	"flag"
 
-	"github.com/stratumn/goprivate/rethinkstore"
+	"github.com/stratumn/sdk/rethinkstore"
 	"github.com/stratumn/sdk/tendermint"
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/validator"

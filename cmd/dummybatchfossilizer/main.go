@@ -16,10 +16,10 @@ import (
 	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
 	"github.com/stratumn/sdk/jsonhttp"
 
-	"github.com/stratumn/goprivate/batchfossilizer"
-	"github.com/stratumn/goprivate/bcbatchfossilizer"
-	"github.com/stratumn/goprivate/blockchain/dummytimestamper"
-	"github.com/stratumn/goprivate/merkle"
+	"github.com/stratumn/sdk/batchfossilizer"
+	"github.com/stratumn/sdk/bcbatchfossilizer"
+	"github.com/stratumn/sdk/blockchain/dummytimestamper"
+	"github.com/stratumn/sdk/merkle"
 )
 
 var (
