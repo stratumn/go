@@ -5,11 +5,11 @@
 package postgresstore
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"math/rand"
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 
@@ -70,9 +70,12 @@ func TestMain(m *testing.M) {
 }
 
 func createDatabase(attempt int) (bool, error) {
-	cmd := exec.Command("psql", "-h", "localhost", "-c", "create database sdk_test;", "-U", "postgres")
-	err := cmd.Run()
+	db, err := sql.Open("postgres", "postgres://postgres@localhost?sslmode=disable")
 	if err != nil {
+		time.Sleep(1 * time.Second)
+		return true, err
+	}
+	if _, err := db.Exec("CREATE DATABASE sdk_test;"); err != nil {
 		time.Sleep(1 * time.Second)
 		return true, err
 	}
