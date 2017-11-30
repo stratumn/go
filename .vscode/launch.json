@@ -210,6 +210,148 @@
       "program": "${workspaceRoot}/cmd/dummytmpop",
       "env": {},
       "args": []
+    },
+    {
+      "name": "Launch batchfossilizer test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/batchfossilizer",
+      "env": {},
+      "args": []
+    },
+
+    {
+      "name": "Launch bcbatchfossilizer test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/bcbatchfossilizer",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch blockchain test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/blockchain",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch blockchain/btc test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/blockchain/btc",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch blockchain/btc/blockcypher test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/blockchain/btc/blockcypher",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch blockchain/btc/btctesting test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/blockchain/btc/btctesting",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch blockchain/btc/btctimestamper test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/blockchain/btc/btctimestamper",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch blockchain/dummytimestamper test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/blockchain/dummytimestamper",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch merkle test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/merkle",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch postgresstore test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/postgresstore",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "Launch rethinkstore test function",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceRoot}/rethinkstore",
+      "env": {},
+      "args": []
+    },
+    {
+      "name": "btcfossilizer debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/btcfossilizer",
+      "env": {},
+      "args": ["-wif", "924v2d7ryXJjnbwB6M9GsZDEjAkfE9aHeQAG1j8muA4UEjozeAJ"],
+      "showLog": true
+    },
+    {
+      "name": "dummybatchfossilizer debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/dummybatchfossilizer",
+      "env": {},
+      "args": [],
+      "showLog": true
+    },
+    {
+      "name": "postgresstore debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "remotePath": "",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "program": "${workspaceRoot}/cmd/postgresstore",
+      "env": {},
+      "args": [
+        "-url",
+        "postgres://postgres@localhost/postgres?sslmode=disable"
+      ],
+      "showLog": true
     }
   ]
 }
