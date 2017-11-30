@@ -12,7 +12,7 @@ import (
 
 	"github.com/stratumn/sdk/store/storehttp"
 
-	"github.com/stratumn/goprivate/rethinkstore"
+	"github.com/stratumn/sdk/rethinkstore"
 )
 
 var (
