@@ -58,6 +58,7 @@ ZIP_FILES=$(NIX_ZIP_FILES) $(WIN_ZIP_FILES)
 DOCKER_FILES=$(foreach command, $(COMMANDS), $(DIST_DIR)/$(command).Dockerfile)
 LICENSED_FILES=$(shell find . -name '*.go' | grep -Ev "vendor|batchfossilizer|bcbatchfossilizer|blockchain|postgresstore|rethinkstore|btcfossilizer|dummybatchfossilizer|postgrestmpop|rethinktmpop")
 
+
 TEST_LIST=$(foreach package, $(TEST_PACKAGES), test_$(package))
 BENCHMARK_LIST=$(foreach package, $(TEST_PACKAGES), benchmark_$(package))
 LINT_LIST=$(foreach package, $(PACKAGES), lint_$(package))

@@ -1,5 +1,5 @@
 // Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by an Apache License 2.0
+// Use of this source code is governed by the license that can be found in the
 // LICENSE file.
 
 // The command rethinkstore starts an HTTP server with a rethinkstore.
