@@ -18,7 +18,7 @@ https://indigoframework.com
 
 ## Run tests
 
-You need Docker to be able to run the tests. The images `rethink:latest` and
+You need Docker to be able to run the tests. The images `couchstore:latest`, `rethink:latest` and
 `postgres:latest` will be run automatically (and pulled from the docker hub if
 you don't already have them locally).
 
