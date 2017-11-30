@@ -14,10 +14,34 @@
   version = "v0.4.5"
 
 [[projects]]
+  name = "github.com/blockcypher/gobcy"
+  packages = ["."]
+  revision = "6eace16b4b81ea8dbdcde5417d6b1cc3828a3d1f"
+  version = "v1.3.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/btcsuite/btcd"
-  packages = ["btcec"]
+  packages = ["btcec","chaincfg","chaincfg/chainhash","txscript","wire"]
   revision = "4803a8291c92a1d2d41041b942a9a9e37deab065"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/btcsuite/btclog"
+  packages = ["."]
+  revision = "84c8d2346e9fc8c7b947e243b9c24e6df9fd206a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/btcsuite/btcutil"
+  packages = [".","base58","bech32"]
+  revision = "501929d3d046174c3d39f0ea54ece471aa17238c"
+
+[[projects]]
+  name = "github.com/cenkalti/backoff"
+  packages = ["."]
+  revision = "61153c768f31ee5f130071d08fc82b85208528de"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/docker/distribution"
@@ -122,6 +146,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hailocab/go-hostpool"
+  packages = ["."]
+  revision = "e80d13ce29ede4452c43dea11e79b9bc8a15b478"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "68e816d1c783414e79bc65b3994d9ab6b0a722ab"
@@ -155,6 +185,12 @@
   name = "github.com/kr/logfmt"
   packages = ["."]
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [".","oid"]
+  revision = "83612a56d3dd153a94a629cd64925371c9adad78"
 
 [[projects]]
   name = "github.com/magiconair/properties"
@@ -327,7 +363,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["cast5","curve25519","nacl/box","nacl/secretbox","openpgp","openpgp/armor","openpgp/elgamal","openpgp/errors","openpgp/packet","openpgp/s2k","poly1305","ripemd160","salsa20/salsa","ssh/terminal"]
+  packages = ["cast5","curve25519","nacl/box","nacl/secretbox","openpgp","openpgp/armor","openpgp/elgamal","openpgp/errors","openpgp/packet","openpgp/s2k","pbkdf2","poly1305","ripemd160","salsa20/salsa","ssh/terminal"]
   revision = "76eec36fa14229c4b25bb894c2d0e591527af429"
 
 [[projects]]
@@ -373,10 +409,28 @@
   version = "v1.6.0"
 
 [[projects]]
+  name = "gopkg.in/dancannon/gorethink.v3"
+  packages = ["."]
+  revision = "7f5bdfd858bb064d80559b2a32b86669c5de5d3b"
+  version = "v3.0.5"
+
+[[projects]]
+  branch = "v2.0.0"
+  name = "gopkg.in/fatih/pool.v2"
+  packages = ["."]
+  revision = "010e0b745d12eaf8426c95f9c3924d81dd0b668f"
+
+[[projects]]
   name = "gopkg.in/go-playground/validator.v9"
   packages = ["."]
   revision = "a021b2ec9a8a8bb970f3f15bc42617cb520e8a64"
   version = "v9.7.0"
+
+[[projects]]
+  name = "gopkg.in/gorethink/gorethink.v3"
+  packages = ["encoding","ql2","types"]
+  revision = "7f5bdfd858bb064d80559b2a32b86669c5de5d3b"
+  version = "v3.0.5"
 
 [[projects]]
   branch = "v2"
@@ -387,6 +441,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "342f1969ff6966c5cb49a77af57e1d1e79059ee607a8ef1381135fe25bcfc971"
+  inputs-digest = "9e745a197667fa8295c39e68bf00ea1b7d4dea4ec12441cfd07fdc9634ab1998"
   solver-name = "gps-cdcl"
   solver-version = 1
