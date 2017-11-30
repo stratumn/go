@@ -65,3 +65,6 @@ License 2.0 found in the LICENSE file.
 
 Third party dependencies included in the vendor directory are distributed under
 their respective licenses.
+
+batchfossilizer, bcbatchfossilizer, blockchain, postgresstore, and rethinkstore
+ARE NOT distributed under the Apache License.
