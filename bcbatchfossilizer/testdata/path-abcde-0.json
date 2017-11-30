@@ -1,0 +1,17 @@
+[
+  {
+    "left": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    "right": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+    "parent": "e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a"
+  },
+  {
+    "left": "e5a01fee14e0ed5c48714f22180f25ad8365b53f9779f79dc4a3d7e93963f94a",
+    "right": "bffe0b34dba16bc6fac17c08bac55d676cded5a4ade41fe2c9924a5dde8f3e5b",
+    "parent": "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7"
+  },
+  {
+    "left": "14ede5e8e97ad9372327728f5099b95604a39593cac3bd38a343ad76205213e7",
+    "right": "3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea",
+    "parent": "d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba"
+  }
+]
