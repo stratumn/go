@@ -5,54 +5,15 @@
 package rethinkstore
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
 )
 
-func TestStore(t *testing.T) {
-	storetestcases.Factory{
-		New: func() (store.Adapter, error) {
-			a, err := New(&Config{URL: "localhost:28015", DB: "test"})
-			if err != nil {
-				return nil, err
-			}
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			return a, err
-		},
-		Free: func(a store.Adapter) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
-		},
-	}.RunTests(t)
-}
-
-func TestStoreV2(t *testing.T) {
-	storetestcases.Factory{
-		NewV2: func() (store.AdapterV2, error) {
-			a, err := New(&Config{URL: "localhost:28015", DB: "test"})
-			if err != nil {
-				return nil, err
-			}
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			return a, err
-		},
-		FreeV2: func(a store.AdapterV2) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
-		},
-	}.RunTestsV2(t)
-}
-
 func TestExists(t *testing.T) {
-	a, err := New(&Config{URL: "localhost:28015", DB: "test"})
+	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})
 	if err != nil {
 		t.Errorf("err: New(): %s", err)
 	}
@@ -73,5 +34,53 @@ func TestExists(t *testing.T) {
 	}
 	if !got {
 		t.Errorf("err: a.Exists(): exists = false want true")
+	}
+}
+
+func TestStore(t *testing.T) {
+	storetestcases.Factory{
+		New:  createAdapter,
+		Free: freeAdapter,
+	}.RunTests(t)
+}
+
+func TestStoreV2(t *testing.T) {
+	storetestcases.Factory{
+		NewV2:  createAdapterV2,
+		FreeV2: freeAdapterV2,
+	}.RunTestsV2(t)
+}
+
+func createAdapter() (store.Adapter, error) {
+	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})
+	if err != nil {
+		return nil, err
+	}
+	if err := a.Create(); err != nil {
+		return nil, err
+	}
+	return a, err
+}
+
+func freeAdapter(a store.Adapter) {
+	if err := a.(*Store).Clean(); err != nil {
+		panic(err)
+	}
+}
+
+func createAdapterV2() (store.AdapterV2, error) {
+	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})
+	if err != nil {
+		return nil, err
+	}
+	if err := a.Create(); err != nil {
+		return nil, err
+	}
+	return a, err
+}
+
+func freeAdapterV2(a store.AdapterV2) {
+	if err := a.(*Store).Clean(); err != nil {
+		panic(err)
 	}
 }
