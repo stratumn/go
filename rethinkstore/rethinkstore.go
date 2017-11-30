@@ -42,7 +42,7 @@ const (
 	DefaultHard = true
 
 	connectAttempts = 12
-	connectTimeout  = 10 * time.Second
+	connectTimeout  = 2 * time.Second
 )
 
 // Config contains configuration options for the store.
@@ -558,6 +558,13 @@ func (a *Store) Create() (err error) {
 		}
 	}
 
+	exists, err := a.Exists()
+	if err != nil {
+		return err
+	} else if exists {
+		return nil
+	}
+
 	tblOpts := rethink.TableCreateOpts{}
 	if !a.config.Hard {
 		tblOpts.Durability = "soft"
@@ -609,6 +616,20 @@ func (a *Store) Drop() (err error) {
 	exec(a.db.TableDrop("links"))
 	exec(a.db.TableDrop("evidences"))
 	exec(a.db.TableDrop("values"))
+
+	return
+}
+
+// Clean removes all documents from the tables.
+func (a *Store) Clean() (err error) {
+	exec := func(term rethink.Term) {
+		if err == nil {
+			err = term.Exec(a.session)
+		}
+	}
+	exec(a.links.Delete())
+	exec(a.evidences.Delete())
+	exec(a.values.Delete())
 
 	return
 }

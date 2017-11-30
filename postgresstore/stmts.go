@@ -256,7 +256,6 @@ type writeStmts struct {
 	SaveValue   *sql.Stmt
 	DeleteValue *sql.Stmt
 	AddEvidence *sql.Stmt
-
 }
 
 type readStmts struct {
