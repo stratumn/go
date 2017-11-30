@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 }
 
 func createDatabase(attempt int) (bool, error) {
-	cmd := exec.Command("psql", "-h", "localhost", "-c", "create database goprivate_test;", "-U", "postgres")
+	cmd := exec.Command("psql", "-h", "localhost", "-c", "create database sdk_test;", "-U", "postgres")
 	err := cmd.Run()
 	if err != nil {
 		time.Sleep(1 * time.Second)
