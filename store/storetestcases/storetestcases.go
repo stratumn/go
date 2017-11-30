@@ -251,7 +251,7 @@ func RandomSegmentMapID(b *testing.B, numSegments, i int) *cs.Segment {
 // The previous link hash will be one of ten possible values.
 func RandomSegmentPrevLinkHash(b *testing.B, numSegments, i int) *cs.Segment {
 	s := cstesting.RandomSegment()
-	s.Link.Meta["prevLinkHash"] = fmt.Sprintf("00000000000000000000000000000000000000000000000000000000000000%2d", i%10)
+	s.Link.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
 	return s
 }
 
@@ -280,7 +280,7 @@ func RandomSegmentMapIDTags(b *testing.B, numSegments, i int) *cs.Segment {
 // The tags will contain one of ten possible values.
 func RandomSegmentPrevLinkHashTags(b *testing.B, numSegments, i int) *cs.Segment {
 	s := cstesting.RandomSegment()
-	s.Link.Meta["prevLinkHash"] = fmt.Sprintf("00000000000000000000000000000000000000000000000000000000000000%2d", i%10)
+	s.Link.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
 	s.Link.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
 	return s
 }
@@ -343,7 +343,7 @@ func RandomFilterOffsetMapIDs(b *testing.B, numSegments, i int) *store.SegmentFi
 // random offset and previous link hash.
 // The previous link hash will be one of ten possible values.
 func RandomFilterOffsetPrevLinkHash(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("00000000000000000000000000000000000000000000000000000000000000%2d", i%10))
+	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
 	prevLinkHashStr := prevLinkHash.String()
 	return &store.SegmentFilter{
 		Pagination: store.Pagination{
@@ -387,7 +387,7 @@ func RandomFilterOffsetMapIDTags(b *testing.B, numSegments, i int) *store.Segmen
 // The previous link hash will be one of ten possible values.
 // The tags will be one of fifty possible combinations.
 func RandomFilterOffsetPrevLinkHashTags(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("00000000000000000000000000000000000000000000000000000000000000%2d", i%10))
+	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
 	prevLinkHashStr := prevLinkHash.String()
 	return &store.SegmentFilter{
 		Pagination: store.Pagination{
