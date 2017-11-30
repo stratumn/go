@@ -9,6 +9,10 @@ env:
   global:
   - COMMIT=${TRAVIS_COMMIT::8}
   - DOCKER_USER=stratumndocker
+
+before_install:
+  - sudo service postgresql stop
+
 install:
   - go get -u github.com/golang/dep/cmd/dep
   - go get -u github.com/golang/lint/golint
