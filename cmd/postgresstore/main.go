@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/goprivate/postgresstore"
+	"github.com/stratumn/sdk/postgresstore"
 	"github.com/stratumn/sdk/store/storehttp"
 )
 
