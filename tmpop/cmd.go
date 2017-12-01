@@ -18,6 +18,7 @@ import (
 	"runtime"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/tendermint/tendermint/rpc/client"
 
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tendermint"
@@ -42,6 +43,7 @@ func Run(a store.AdapterV2, kv store.KeyValueStore, config *Config) {
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	tendermintNode := tendermint.NewNode(tendermint.GetConfig(), tmpop)
-	tmpop.ConnectTendermint(tendermintNode)
+	tendermintClient := client.NewLocal(tendermintNode)
+	tmpop.ConnectTendermint(tendermintClient)
 	tendermintNode.RunForever()
 }

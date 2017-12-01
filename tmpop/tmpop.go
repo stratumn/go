@@ -28,7 +28,6 @@ import (
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-wire"
-	nm "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/rpc/client"
 )
 
@@ -127,8 +126,8 @@ func New(a store.AdapterV2, kv store.KeyValueStore, config *Config) (*TMPop, err
 }
 
 // ConnectTendermint connects TMPoP to a Tendermint node
-func (t *TMPop) ConnectTendermint(node *nm.Node) {
-	t.tmClient = client.NewLocal(node)
+func (t *TMPop) ConnectTendermint(tmClient client.Client) {
+	t.tmClient = tmClient
 	log.Info("TMPoP connected to Tendermint Core")
 }
 
