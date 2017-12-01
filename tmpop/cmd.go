@@ -41,5 +41,7 @@ func Run(a store.AdapterV2, kv store.KeyValueStore, config *Config) {
 	log.Info("Apache License 2.0")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	tendermint.RunNodeForever(tendermint.GetConfig(), tmpop)
+	tendermintNode := tendermint.NewNode(tendermint.GetConfig(), tmpop)
+	tmpop.ConnectTendermint(tendermintNode)
+	tendermintNode.RunForever()
 }

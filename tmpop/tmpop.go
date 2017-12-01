@@ -28,6 +28,8 @@ import (
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-wire"
+	nm "github.com/tendermint/tendermint/node"
+	"github.com/tendermint/tendermint/rpc/client"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -72,6 +74,7 @@ type TMPop struct {
 	lastBlock     *LastBlock
 	config        *Config
 	currentHeader *abci.Header
+	tmClient      client.Client
 }
 
 const (
@@ -123,6 +126,12 @@ func New(a store.AdapterV2, kv store.KeyValueStore, config *Config) (*TMPop, err
 	}, nil
 }
 
+// ConnectTendermint connects TMPoP to a Tendermint node
+func (t *TMPop) ConnectTendermint(node *nm.Node) {
+	t.tmClient = client.NewLocal(node)
+	log.Info("TMPoP connected to Tendermint Core")
+}
+
 // Info implements github.com/tendermint/abci/types.Application.Info.
 func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
 	return abci.ResponseInfo{
@@ -151,10 +160,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
 	// This AppHash will never be denied in a future block so we can add
 	// evidence to the links that were added in the previous blocks.
 	if bytes.Compare(t.lastBlock.AppHash, t.currentHeader.AppHash) == 0 {
-		// TODO: get previous block from TMCore
-		// Add TM evidence to local store for each of the valid
-		// links added in that previous block
-		// Notify the TMStore channel that evidence was added
+		t.addTendermintEvidence(req.Header)
 	} else {
 		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x", t.currentHeader.AppHash, t.lastBlock.AppHash)
 	}
@@ -338,6 +344,45 @@ func ReadLastBlock(kv store.KeyValueReader) (*LastBlock, error) {
 
 func saveLastBlock(a store.KeyValueWriter, l LastBlock) {
 	a.SetValue(tmpopLastBlockKey, wire.BinaryBytes(l))
+}
+
+// addTendermintEvidence computes and stores new evidence
+func (t *TMPop) addTendermintEvidence(header *abci.Header) {
+	if t.tmClient == nil {
+		log.Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
+		return
+	}
+
+	previousHeight := int(header.Height - 1)
+	if previousHeight <= 0 {
+		return
+	}
+
+	// Get enough data about the previous block from Tendermint
+
+	previousBlock, err := t.tmClient.Block(&previousHeight)
+	if err != nil {
+		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
+	}
+
+	previousCommit, err := t.tmClient.Commit(&previousHeight)
+	if err != nil {
+		log.Warnf("Could not get previous commit: %v", err)
+	}
+
+	block, _ := json.MarshalIndent(previousBlock, "", "  ")
+	log.Infof("Previous block: \n%s", block)
+	commit, _ := json.MarshalIndent(previousCommit, "", "  ")
+	log.Infof("Previous commit: \n%s", commit)
+
+	// Create tendermint evidence for links created in the previous block
+	// TODO
+
+	// Add new evidence to local store
+	// TODO
+
+	// Add new evidence to pending notifications
+	// TODO
 }
 
 // GetCurrentHeader returns the current block header
