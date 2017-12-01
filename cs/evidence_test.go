@@ -175,3 +175,8 @@ func TestGenericProof(t *testing.T) {
 		}
 	})
 }
+
+func TestTendermintProof(t *testing.T) {
+	t.Log("Add some tests when Tendermint proof is implemented")
+	t.Fail()
+}

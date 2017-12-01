@@ -24,6 +24,9 @@ import (
 	// The init() function of each package gets called hence providing a way for cs.Evidence.UnmarshalJSON to deserialize any kind of proof
 	_ "github.com/stratumn/sdk/dummyfossilizer"
 	"github.com/stratumn/sdk/types"
+	abci "github.com/tendermint/abci/types"
+	merkle "github.com/tendermint/merkleeyes/iavl"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var (
@@ -31,6 +34,8 @@ var (
 	BatchFossilizerName = "batch"
 	//BcBatchFossilizerName is the name used as the BcBatchProof backend
 	BcBatchFossilizerName = "bcbatch"
+	// TMPopName is the name used as the Tendermint PoP backend
+	TMPopName = "TMPop"
 )
 
 // BatchProof implements the Proof interface
@@ -92,6 +97,47 @@ func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 	return true
 }
 
+// TendermintProof implements the Proof interface
+type TendermintProof struct {
+	BlockHeight     uint64           `json:"blockHeight"`
+	MerkleProof     merkle.IAVLProof `json:"merkleProof"`
+	ValidationsHash []byte           `json:"validationsHash"`
+	Header          abci.Header      `json:"header"`
+	Signatures      []tmtypes.Vote   `json:"signatures"`
+	NextHeader      abci.Header      `json:"nextHeader"`
+	NextSignatures  []tmtypes.Vote   `json:"nextSignatures"`
+}
+
+// Time returns the timestamp from the block header
+func (p *TendermintProof) Time() uint64 {
+	return p.Header.GetTime()
+}
+
+// FullProof returns a JSON formatted proof
+func (p *TendermintProof) FullProof() []byte {
+	bytes, err := json.MarshalIndent(p, "", "   ")
+	if err != nil {
+		return nil
+	}
+	return bytes
+}
+
+// Verify returns true if the proof of a given linkHash is correct
+func (p *TendermintProof) Verify(linkHash interface{}) bool {
+	_, exists := linkHash.(*types.Bytes32)
+	if exists != true {
+		return false
+	}
+
+	// TODO:
+	// * validate signatures of both headers
+	// * verify the merkle proof of the link hash
+	// * re-build app hash from merkle root, Header.AppHash and validations Hash
+	// * verify that this app hash is equal to the one in NextHeader
+
+	return true
+}
+
 func init() {
 	cs.DeserializeMethods[BatchFossilizerName] = func(rawProof json.RawMessage) (cs.Proof, error) {
 		p := BatchProof{}
@@ -102,6 +148,13 @@ func init() {
 	}
 	cs.DeserializeMethods[BcBatchFossilizerName] = func(rawProof json.RawMessage) (cs.Proof, error) {
 		p := BcBatchProof{}
+		if err := json.Unmarshal(rawProof, &p); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+	cs.DeserializeMethods[TMPopName] = func(rawProof json.RawMessage) (cs.Proof, error) {
+		p := TendermintProof{}
 		if err := json.Unmarshal(rawProof, &p); err != nil {
 			return nil, err
 		}

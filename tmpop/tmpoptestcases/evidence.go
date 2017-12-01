@@ -19,6 +19,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/tmpop"
 )
 
@@ -49,9 +50,16 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 			t.Fatalf("Evidence is missing")
 		}
 
-		proof := evidence.Proof.(*tmpop.TendermintFullProof)
+		proof := evidence.Proof.(*evidences.TendermintProof)
 		if proof == nil {
-			t.Fatalf("h.Commit(): expected original proof not to be nil")
+			t.Fatalf("h.Commit(): expected proof not to be nil")
+		}
+		if proof.BlockHeight != 1 {
+			t.Fatalf("Invalid block height in proof: want %d, got %d",
+				1, proof.BlockHeight)
+		}
+		if got, want := proof.Time(), proof.Header.GetTime(); got != want {
+			t.Fatalf("Invalid time in proof: want %d, got %d", want, got)
 		}
 		if !proof.Verify(linkHash1) {
 			t.Errorf("TendermintProof.Verify(): Expected proof %v to be valid", proof.FullProof())
@@ -84,107 +92,4 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 			t.Errorf("Evidence should not be added to invalid link")
 		}
 	})
-}
-
-// TestTendermintProof tests the format and the validity of a tendermint proof.
-func (f Factory) TestTendermintProof(t *testing.T) {
-	// TODO: when the format of tendermint proof is updated, update those tests
-	t.Fail()
-
-	// h := f.initTMPop(t, nil)
-	// defer f.free()
-
-	// t.Run("TestTime()", func(t *testing.T) {
-	// 	s := commitMockTx(t, h)
-
-	// 	queried := &cs.Segment{}
-	// 	err := makeQuery(h, tmpop.GetSegment, s.GetLinkHash(), queried)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-
-	// 	e := queried.Meta.GetEvidence(h.GetHeader().GetChainId())
-	// 	got := e.Proof.Time()
-	// 	if got != 0 {
-	// 		t.Errorf("TendermintProof.Time(): Expected timestamp to be %d, got %d", 0, got)
-	// 	}
-
-	// 	commitMockTx(t, h)
-	// 	err = makeQuery(h, tmpop.GetSegment, s.GetLinkHash(), queried)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-
-	// 	e = queried.Meta.GetEvidence(h.GetHeader().GetChainId())
-	// 	want := h.GetHeader().GetTime()
-	// 	got = e.Proof.Time()
-	// 	if got != want {
-	// 		t.Errorf("TendermintProof.Time(): Expected timestamp to be %d, got %d", want, got)
-	// 	}
-
-	// })
-
-	// t.Run("TestFullProof()", func(t *testing.T) {
-	// 	s := commitMockTx(t, h)
-
-	// 	queried := &cs.Segment{}
-	// 	err := makeQuery(h, tmpop.GetSegment, s.GetLinkHash(), queried)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-
-	// 	e := queried.Meta.GetEvidence(h.GetHeader().GetChainId())
-	// 	got := e.Proof.FullProof()
-	// 	if got == nil {
-	// 		t.Errorf("TendermintProof.FullProof(): Expected proof to be a json-formatted bytes array, got %v", got)
-	// 	}
-
-	// 	commitMockTx(t, h)
-	// 	err = makeQuery(h, tmpop.GetSegment, s.GetLinkHash(), queried)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-
-	// 	e = queried.Meta.GetEvidence(h.GetHeader().GetChainId())
-	// 	wantDifferent := got
-	// 	got = e.Proof.FullProof()
-	// 	if got == nil {
-	// 		t.Errorf("TendermintProof.FullProof(): Expected proof to be a json-formatted bytes array, got %v", got)
-	// 	}
-	// 	if bytes.Compare(got, wantDifferent) == 0 {
-	// 		t.Errorf("TendermintProof.FullProof(): Expected proof after appHash validation to be complete, got %s", string(got))
-	// 	}
-	// 	if err := json.Unmarshal(got, &tmpop.TendermintProof{}); err != nil {
-	// 		t.Errorf("TendermintProof.FullProof(): Could not unmarshal bytes proof, err = %+v", err)
-	// 	}
-
-	// })
-
-	// t.Run("TestVerify()", func(t *testing.T) {
-	// 	s := commitMockTx(t, h)
-
-	// 	queried := &cs.Segment{}
-	// 	err := makeQuery(h, tmpop.GetSegment, s.GetLinkHash(), queried)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-
-	// 	e := queried.Meta.GetEvidence(h.GetHeader().GetChainId())
-	// 	got := e.Proof.Verify(s.GetLinkHash())
-	// 	if got == true {
-	// 		t.Errorf("TendermintProof.Verify(): Expected incomplete original proof to be false, got %v", got)
-	// 	}
-
-	// 	commitMockTx(t, h)
-	// 	if err = makeQuery(h, tmpop.GetSegment, s.GetLinkHash(), queried); err != nil {
-	// 		t.Fatal(err)
-	// 	}
-
-	// 	e = queried.Meta.GetEvidence(h.GetHeader().GetChainId())
-
-	// 	if got = e.Proof.Verify(s.GetLinkHash()); got != true {
-	// 		t.Errorf("TendermintProof.Verify(): Expected original proof to be true, got %v", got)
-	// 	}
-
-	// })
 }
