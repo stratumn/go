@@ -27,10 +27,10 @@ const (
 
 // Tree must be implemented by Merkle tree implementations.
 type Tree interface {
-	// NumLeaves returns the number of leaves.
+	// LeavesLen returns the number of leaves.
 	LeavesLen() int
 
-	// Leaf returns the Merkle root.
+	// Root returns the Merkle root.
 	Root() *types.Bytes32
 
 	// Leaf returns the leaf at the specified index.

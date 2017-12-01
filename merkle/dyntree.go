@@ -70,6 +70,8 @@ func (n *DynTreeNode) rehash(h hash.Hash, a, b *types.Bytes32, rehashParent bool
 }
 
 // DynTree is designed for Merkle trees that can mutate.
+// It supports pausing/resuming the computation of hashes, which is useful
+// when adding a large number of leaves to the tree to gain more performance
 type DynTree struct {
 	nodes  []DynTreeNode
 	root   *DynTreeNode
@@ -89,22 +91,22 @@ func NewDynTree(initialCap int) *DynTree {
 	}
 }
 
-// LeavesLen implements Tree.LeavesLen.
+// LeavesLen returns the number of leaves. Implements Tree.LeavesLen.
 func (t *DynTree) LeavesLen() int {
 	return len(t.leaves)
 }
 
-// Root implements Tree.Root.
+// Root returns the Merkle root. Implements Tree.Root.
 func (t *DynTree) Root() *types.Bytes32 {
 	return t.root.Hash()
 }
 
-// Leaf implements Tree.Leaf.
+// Leaf returns the leaf at the specified index. Implements Tree.Leaf.
 func (t *DynTree) Leaf(index int) *types.Bytes32 {
 	return t.leaves[index].Hash()
 }
 
-// Path implements Tree.Path.
+// Path returns the path of a leaf to the Merkle root. Implements Tree.Path.
 func (t *DynTree) Path(index int) types.Path {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()

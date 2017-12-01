@@ -112,20 +112,31 @@ func (f Factory) free(tree merkle.Tree) {
 // TestNumLeaves tests that the implementation returns the correct number of
 // leaves.
 func (f Factory) TestNumLeaves(t *testing.T) {
-	tree, err := f.New([]types.Bytes32{*testutil.RandomHash(), *testutil.RandomHash(), *testutil.RandomHash()})
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
+	tests := []struct {
+		expected int
+		leaves   []types.Bytes32
+	}{
+		{1, []types.Bytes32{*testutil.RandomHash()}},
+		{2, []types.Bytes32{*testutil.RandomHash(), *testutil.RandomHash()}},
+		{3, []types.Bytes32{*testutil.RandomHash(), *testutil.RandomHash(), *testutil.RandomHash()}},
 	}
-	defer f.free(tree)
 
-	if got, want := tree.LeavesLen(), 3; got != want {
-		t.Errorf("tree.LeavesLen() = %d want %d", got, want)
+	for _, test := range tests {
+		tree, err := f.New(test.leaves)
+		if err != nil {
+			t.Fatalf("f.New(): err: %s", err)
+		}
+		defer f.free(tree)
+
+		if got, want := tree.LeavesLen(), test.expected; got != want {
+			t.Errorf("tree.LeavesLen() = %d want %d", got, want)
+		}
 	}
 }
 
 // TestRoot tests that the implementation computes the root correctly.
 func (f Factory) TestRoot(t *testing.T) {
-	tests := [...]struct {
+	tests := []struct {
 		leaves   []string
 		expected string
 	}{
@@ -182,7 +193,7 @@ func (f Factory) TestLeaf(t *testing.T) {
 
 // TestPath tests that the implementation correctly computes paths.
 func (f Factory) TestPath(t *testing.T) {
-	tests := [...]struct {
+	tests := []struct {
 		leaves   []string
 		expected []types.Path
 	}{

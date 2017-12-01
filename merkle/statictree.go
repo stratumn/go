@@ -62,24 +62,24 @@ func NewStaticTree(leaves []types.Bytes32) (*StaticTree, error) {
 	return tree, nil
 }
 
-// LeavesLen implements Tree.LeavesLen.
+// LeavesLen returns the number of leaves. Implements Tree.LeavesLen.
 func (t *StaticTree) LeavesLen() int {
 	return len(t.rows[len(t.rows)-1])
 }
 
-// Root implements Tree.Root.
+// Root returns the Merkle root. Implements Tree.Root.
 func (t *StaticTree) Root() *types.Bytes32 {
-	r := *&t.buffer[0]
+	r := t.buffer[0]
 	return &r
 }
 
-// Leaf implements Tree.Leaf.
+// Leaf returns the leaf at the specified index. Implements Tree.Leaf.
 func (t *StaticTree) Leaf(index int) *types.Bytes32 {
-	l := *&t.rows[len(t.rows)-1][index]
+	l := t.rows[len(t.rows)-1][index]
 	return &l
 }
 
-// Path implements Tree.Path.
+// Path returns the path of a leaf to the Merkle root. Implements Tree.Path.
 func (t *StaticTree) Path(index int) types.Path {
 	row := len(t.rows) - 1
 	if row < 0 {
@@ -105,7 +105,7 @@ func (t *StaticTree) Path(index int) types.Path {
 // buffer.
 func alloc(numLeaves int) *StaticTree {
 	var (
-		bufl    = staticTreeBufferLen(numLeaves)
+		bufl    = numStaticTreeNodes(numLeaves)
 		buf     = make([]types.Bytes32, bufl)
 		rowsLen = staticTreeRowsLen(numLeaves)
 		depth   = len(rowsLen)
@@ -235,11 +235,6 @@ func (t *StaticTree) dright(row, col int) (int, int) {
 // Returns the number of tree nodes needed for the given number of leaves.
 func numStaticTreeNodes(numLeaves int) int {
 	return numLeaves*2 - 1
-}
-
-// Returns the length of the buffer needed for the given number of leaves.
-func staticTreeBufferLen(numLeaves int) int {
-	return numStaticTreeNodes(numLeaves)
 }
 
 // Returns the length of each tree row needed for the given number of leaves.
