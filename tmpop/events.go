@@ -14,24 +14,18 @@
 
 package tmpop
 
-import "encoding/json"
-
-// Query types.
-const (
-	AddEvidence  = "AddEvidence"
-	FindSegments = "FindSegments"
-	GetEvidences = "GetEvidences"
-	GetInfo      = "GetInfo"
-	GetMapIDs    = "GetMapIDs"
-	GetSegment   = "GetSegment"
+import (
+	"github.com/stratumn/sdk/store"
+	events "github.com/tendermint/tmlibs/events"
 )
 
-// BuildQueryBinary outputs the marshalled Query.
-func BuildQueryBinary(args interface{}) (argsBytes []byte, err error) {
-	if args != nil {
-		if argsBytes, err = json.Marshal(args); err != nil {
-			return
-		}
-	}
-	return
+// Event types.
+const (
+	StoreEvents = "StoreEvents"
+)
+
+// StoreEventsData is the type that contains data sent by TMPoP to listeners
+type StoreEventsData struct {
+	events.EventData
+	StoreEvents []*store.Event
 }

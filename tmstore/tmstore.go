@@ -30,7 +30,6 @@ import (
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/events"
 
 	log "github.com/sirupsen/logrus"
@@ -100,9 +99,9 @@ func (t *TMStore) StartWebsocket() error {
 		return err
 	}
 
-	// We notify listeners after each block creation
-	t.tmClient.AddListenerForEvent("TMStore", tmtypes.EventStringNewBlock(), func(_ events.EventData) {
-		if err := t.notifyStoreChans(); err != nil {
+	// TMPoP notifies us of store events that we forward to clients
+	t.tmClient.AddListenerForEvent("TMStore", tmpop.StoreEvents, func(msg events.EventData) {
+		if err := t.notifyStoreChans(msg); err != nil {
 			log.Error(err)
 		}
 	})
@@ -133,14 +132,13 @@ func (t *TMStore) StopWebsocket() {
 	t.tmClient.Stop()
 }
 
-func (t *TMStore) notifyStoreChans() error {
-	eventsToNotify, err := t.getPendingNotifications()
-	if err != nil {
-		log.Debug("Could not get notifications from TMPoP")
-		return err
+func (t *TMStore) notifyStoreChans(msg events.EventData) error {
+	storeEvents, ok := msg.(tmpop.StoreEventsData)
+	if !ok {
+		log.Debug("Event could not be read as a list of store events")
 	}
 
-	for _, event := range eventsToNotify {
+	for _, event := range storeEvents.StoreEvents {
 		for _, c := range t.storeEventChans {
 			c <- event
 		}
@@ -287,24 +285,6 @@ func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 	}
 
 	return
-}
-
-// getPendingNotifications queries TMPoP for notifications to deliver
-func (t *TMStore) getPendingNotifications() ([]*store.Event, error) {
-	response, err := t.sendQuery(tmpop.GetPendingNotifications, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	eventsToNotify := []*store.Event{}
-	if response.Value != nil && len(response.Value) > 0 {
-		err = json.Unmarshal(response.Value, &eventsToNotify)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return eventsToNotify, nil
 }
 
 // NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.

@@ -95,53 +95,6 @@ func (f Factory) TestQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("GetPendingNotifications() should return notifications once", func(t *testing.T) {
-		pendingNotifications := []*store.Event{}
-		if err := makeQuery(h, tmpop.GetPendingNotifications, nil, &pendingNotifications); err != nil {
-			t.Fatal(err)
-		}
-
-		if got, want := len(pendingNotifications), 3; want != got {
-			t.Fatalf("Invalid number of notifications: want %d, got %d", want, got)
-		}
-
-		verifyEvidenceNotification := func(t *testing.T, notification *store.Event) {
-			if notification.EventType != store.SavedEvidence {
-				t.Fatalf("Invalid event type: %v", notification.EventType)
-			}
-			if backend := notification.Details.(cs.Evidence).Backend; backend != "TMPop" {
-				t.Fatalf("Invalid evidence backend: %s", backend)
-			}
-		}
-
-		verifyLinkNotification := func(t *testing.T, notification *store.Event, want *cs.Link) {
-			if notification.EventType != store.SavedLink {
-				t.Fatalf("Invalid event type: %v", notification.EventType)
-			}
-
-			got, ok := notification.Details.(*cs.Link)
-			if !ok {
-				t.Fatal("Event details is not a link")
-			}
-			if !reflect.DeepEqual(got, want) {
-				t.Fatalf("Invalid link received: got %v, want %v",
-					got, want)
-			}
-		}
-
-		verifyLinkNotification(t, pendingNotifications[0], link1)
-		verifyEvidenceNotification(t, pendingNotifications[1])
-		verifyLinkNotification(t, pendingNotifications[2], link2)
-
-		// Notifications should be delivered only once
-		if err := makeQuery(h, tmpop.GetPendingNotifications, nil, &pendingNotifications); err != nil {
-			t.Fatal(err)
-		}
-		if len(pendingNotifications) != 0 {
-			t.Error("There should be no more notifications")
-		}
-	})
-
 	t.Run("GetSegment()", func(t *testing.T) {
 		verifyLinkStored(t, h, link2)
 	})

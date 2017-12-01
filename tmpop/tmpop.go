@@ -188,7 +188,7 @@ func (t *TMPop) CheckTx(tx []byte) abci.Result {
 // Commit implements github.com/tendermint/abci/types.Application.Commit.
 // It actually commits the current state in the Store.
 func (t *TMPop) Commit() abci.Result {
-	appHash, err := t.state.Commit()
+	appHash, links, err := t.state.Commit()
 	if err != nil {
 		return abci.NewError(abci.CodeType_InternalError, err.Error())
 	}
@@ -196,6 +196,21 @@ func (t *TMPop) Commit() abci.Result {
 	t.lastBlock.Height = t.currentHeader.Height
 	t.lastBlock.AppHash = appHash
 	saveLastBlock(t.kvDB, *t.lastBlock)
+
+	if t.tmClient != nil {
+		if len(links) > 0 {
+			savedEvents := &StoreEventsData{}
+			for _, link := range links {
+				savedEvents.StoreEvents = append(savedEvents.StoreEvents, &store.Event{
+					EventType: store.SavedLink,
+					Details:   link,
+				})
+			}
+			t.tmClient.FireEvent(StoreEvents, *savedEvents)
+		}
+	} else {
+		log.Warn("TMPoP not connected to Tendermint Core. Notifications will not be delivered.")
+	}
 
 	return abci.NewResultOK(appHash, "")
 }
@@ -267,9 +282,6 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		}
 
 		result, err = t.adapter.GetMapIDs(filter)
-
-	case GetPendingNotifications:
-		result = t.state.DeliverNotifications()
 
 	default:
 		resQuery.Code = abci.CodeType_UnknownRequest
@@ -371,9 +383,9 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	}
 
 	block, _ := json.MarshalIndent(previousBlock, "", "  ")
-	log.Infof("Previous block: \n%s", block)
+	log.Debugf("Previous block: \n%s", block)
 	commit, _ := json.MarshalIndent(previousCommit, "", "  ")
-	log.Infof("Previous commit: \n%s", commit)
+	log.Debugf("Previous commit: \n%s", commit)
 
 	// Create tendermint evidence for links created in the previous block
 	// TODO
@@ -381,7 +393,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	// Add new evidence to local store
 	// TODO
 
-	// Add new evidence to pending notifications
+	// Deliver notification about new evidence
 	// TODO
 }
 

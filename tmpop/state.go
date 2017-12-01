@@ -17,7 +17,6 @@ package tmpop
 import (
 	"crypto/sha256"
 	"fmt"
-	"sync"
 
 	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
@@ -39,9 +38,6 @@ type State struct {
 	deliveredLinks     store.BatchV2
 	deliveredLinksList []*cs.Link
 	checkedLinks       store.BatchV2
-
-	notificationLock     sync.Mutex
-	pendingNotifications []*store.Event
 }
 
 // NewState creates a new State.
@@ -56,10 +52,9 @@ func NewState(a store.AdapterV2) (*State, error) {
 	checkedLinks := bufferedbatch.NewBatchV2(a)
 
 	return &State{
-		adapter:          a,
-		deliveredLinks:   deliveredLinks,
-		checkedLinks:     checkedLinks,
-		notificationLock: sync.Mutex{},
+		adapter:        a,
+		deliveredLinks: deliveredLinks,
+		checkedLinks:   checkedLinks,
 	}, nil
 }
 
@@ -105,38 +100,28 @@ func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.BatchV2) abci.
 
 // Commit commits the delivered links,
 // resets delivered and checked state,
-// and returns the hash for the commit.
-func (s *State) Commit() ([]byte, error) {
-	if err := s.deliveredLinks.WriteV2(); err != nil {
-		return nil, err
-	}
-
-	deliveredLinks, err := s.adapter.NewBatchV2()
-	if err != nil {
-		return nil, err
-	}
-	s.deliveredLinks = deliveredLinks
-	s.checkedLinks = bufferedbatch.NewBatchV2(s.adapter)
-
+// and returns the hash for the commit
+// and the list of committed links.
+func (s *State) Commit() ([]byte, []*cs.Link, error) {
 	appHash, err := s.computeAppHash()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// Store created links for client notification
-	s.notificationLock.Lock()
-	defer s.notificationLock.Unlock()
-
-	for _, link := range s.deliveredLinksList {
-		s.pendingNotifications = append(s.pendingNotifications, &store.Event{
-			EventType: store.SavedLink,
-			Details:   link,
-		})
+	if err := s.deliveredLinks.WriteV2(); err != nil {
+		return nil, nil, err
 	}
 
+	if s.deliveredLinks, err = s.adapter.NewBatchV2(); err != nil {
+		return nil, nil, err
+	}
+	s.checkedLinks = bufferedbatch.NewBatchV2(s.adapter)
+
+	committedLinks := make([]*cs.Link, len(s.deliveredLinksList))
+	copy(committedLinks, s.deliveredLinksList)
 	s.deliveredLinksList = nil
 
-	return appHash, nil
+	return appHash, committedLinks, nil
 }
 
 func (s *State) computeAppHash() ([]byte, error) {
@@ -164,17 +149,4 @@ func (s *State) computeAppHash() ([]byte, error) {
 
 	appHash := hash.Sum(nil)
 	return appHash, nil
-}
-
-// DeliverNotifications delivers pending notifications and flushes them
-func (s *State) DeliverNotifications() []*store.Event {
-	s.notificationLock.Lock()
-	defer s.notificationLock.Unlock()
-
-	notifications := make([]*store.Event, len(s.pendingNotifications))
-	copy(notifications, s.pendingNotifications)
-
-	s.pendingNotifications = nil
-
-	return notifications
 }
