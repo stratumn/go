@@ -25,7 +25,6 @@ import (
 )
 
 var (
-	cacheSize         = flag.Int("cacheSize", tmpop.DefaultCacheSize, "size of the cache of the storage tree")
 	validatorFilename = flag.String("rules_filename", validator.DefaultFilename, "Path to filename containing validation rules")
 	version           = "0.1.0"
 	commit            = "00000000000000000000000000000000"
@@ -41,7 +40,7 @@ func main() {
 
 	a := rethinkstore.InitializeWithFlags(version, commit)
 
-	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, CacheSize: *cacheSize, ValidatorFilename: *validatorFilename}
+	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, ValidatorFilename: *validatorFilename}
 
-	tmpop.Run(a, tmpopConfig)
+	tmpop.Run(a, a, tmpopConfig)
 }
