@@ -1,6 +1,16 @@
-// Copyright 2016 Stratumn SAS. All rights reserved.
-// Use of this source code is governed by an Apache License 2.0
-// LICENSE file.
+// Copyright 2017 Stratumn SAS. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package blockcypher
 
@@ -9,9 +19,9 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/stratumn/sdk/blockchain/btc"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/blockchain/btc"
 )
 
 func TestFindUnspent(t *testing.T) {
