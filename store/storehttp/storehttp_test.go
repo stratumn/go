@@ -80,41 +80,41 @@ func TestRoot_err(t *testing.T) {
 	}
 }
 
-func TestSaveSegment(t *testing.T) {
+func TestCreateLink(t *testing.T) {
 	s, a := createServer()
-	a.MockSaveSegment.Fn = func(*cs.Segment) error { return nil }
+	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return l.Hash() }
 
-	s1 := cstesting.RandomSegment()
-	var s2 cs.Segment
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/segments", s1, &s2)
+	l1 := cstesting.RandomLink()
+	var s1 cs.Segment
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &s1)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
 
-	if !reflect.DeepEqual(a.MockSaveSegment.LastCalledWith, s1) {
-		got, _ := json.MarshalIndent(a.MockSaveSegment.LastCalledWith, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("a.MockSaveSegment.LastCalledWith = %s\nwant %s", got, want)
+	if !reflect.DeepEqual(a.MockCreateLink.LastCalledWith, l1) {
+		got, _ := json.MarshalIndent(a.MockCreateLink.LastCalledWith, "", "  ")
+		want, _ := json.MarshalIndent(l1, "", "  ")
+		t.Errorf("a.MockCreateLink.LastCalledWith = %s\nwant %s", got, want)
 	}
 	if got, want := w.Code, http.StatusOK; got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
-	if !reflect.DeepEqual(&s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
+	if !reflect.DeepEqual(&s1.Link, l1) {
+		got, _ := json.MarshalIndent(&s1.Link, "", "  ")
+		want, _ := json.MarshalIndent(l1, "", "  ")
 		t.Errorf("s2 = %s\nwant %s", got, want)
 	}
-	if got, want := a.MockSaveSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockSaveSegment.CalledCount = %d want %d", got, want)
+	if got, want := a.MockCreateLink.CalledCount, 1; got != want {
+		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
 	}
 }
 
-func TestSaveSegment_err(t *testing.T) {
+func TestCreateLink_err(t *testing.T) {
 	s, a := createServer()
-	a.MockSaveSegment.Fn = func(*cs.Segment) error { return errors.New("test") }
+	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("test") }
 
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/segments", cstesting.RandomSegment(), &body)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", cstesting.RandomLink(), &body)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
@@ -125,18 +125,18 @@ func TestSaveSegment_err(t *testing.T) {
 	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
 	}
-	if got, want := a.MockSaveSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockSaveSegment.CalledCount = %d want %d", got, want)
+	if got, want := a.MockCreateLink.CalledCount, 1; got != want {
+		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
 	}
 }
 
-func TestSaveSegment_invalidSegment(t *testing.T) {
+func TestCreateLink_invalidLink(t *testing.T) {
 	s, a := createServer()
 
-	s1 := cstesting.RandomSegment()
-	s1.Meta.LinkHash = ""
+	l1 := cstesting.RandomLink()
+	l1.Meta["process"] = ""
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/segments", s1, &body)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &body)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
@@ -144,19 +144,19 @@ func TestSaveSegment_invalidSegment(t *testing.T) {
 	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
-	if got, want := body["error"].(string), "meta.linkHash should be a non empty string"; got != want {
+	if got, want := body["error"].(string), "link.meta.process should be a non empty string"; got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
 	}
-	if got, want := a.MockSaveSegment.CalledCount, 0; got != want {
-		t.Errorf("a.MockSaveSegment.CalledCount = %d want %d", got, want)
+	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
+		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
 	}
 }
 
-func TestSaveSegment_invalidJSON(t *testing.T) {
+func TestCreateLink_invalidJSON(t *testing.T) {
 	s, a := createServer()
 
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/segments", "azertyuio", &body)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", "azertyuio", &body)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
@@ -164,11 +164,59 @@ func TestSaveSegment_invalidJSON(t *testing.T) {
 	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
-	if got, want := body["error"].(string), "json: cannot unmarshal string into Go value of type cs.Segment"; got != want {
+	if got, want := body["error"].(string), "json: cannot unmarshal string into Go value of type cs.Link"; got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
 	}
-	if got, want := a.MockSaveSegment.CalledCount, 0; got != want {
-		t.Errorf("a.MockSaveSegment.CalledCount = %d want %d", got, want)
+	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
+		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
+	}
+}
+
+func TestAddEvidence(t *testing.T) {
+	s, a := createServer()
+	a.MockAddEvidence.Fn = func(*types.Bytes32, *cs.Evidence) error { return nil }
+
+	link := cstesting.RandomLink()
+	linkHash, _ := link.HashString()
+	e := cstesting.RandomEvidence()
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash, e, &body)
+	if err != nil {
+		t.Fatalf("testutil.RequestJSON(): err: %s", err)
+	}
+
+	if got, want := a.MockAddEvidence.LastCalledWith.Provider, e.Provider; got != want {
+		t.Errorf("a.MockAddEvidence.LastCalledWith = %s\nwant %s", got, want)
+	}
+	if got, want := w.Code, http.StatusOK; got != want {
+		t.Errorf("w.Code = %d want %d", got, want)
+	}
+
+	if got, want := a.MockAddEvidence.CalledCount, 1; got != want {
+		t.Errorf("a.MockAddEvidence.CalledCount = %d want %d", got, want)
+	}
+}
+
+func TestAddEvidence_err(t *testing.T) {
+	s, a := createServer()
+	a.MockAddEvidence.Fn = func(*types.Bytes32, *cs.Evidence) error { return errors.New("test") }
+
+	link := cstesting.RandomLink()
+	linkHash, _ := link.HashString()
+	e := cstesting.RandomEvidence()
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash, e, &body)
+	if err != nil {
+		t.Fatalf("testutil.RequestJSON(): err: %s", err)
+	}
+	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
+		t.Errorf("w.Code = %d want %d", got, want)
+	}
+	if got, want := body["error"].(string), jsonhttp.NewErrBadRequest("test").Error(); got != want {
+		t.Errorf(`body["error"] = %q want %q`, got, want)
+	}
+	if got, want := a.MockAddEvidence.CalledCount, 1; got != want {
+		t.Errorf("a.MockAddEvidence.CalledCount = %d want %d", got, want)
 	}
 }
 
@@ -243,80 +291,6 @@ func TestGetSegment_err(t *testing.T) {
 	}
 	if got, want := a.MockGetSegment.CalledCount, 1; got != want {
 		t.Errorf("a.MockGetSegment.CalledCount = %d want %d", got, want)
-	}
-}
-
-func TestDeleteSegment(t *testing.T) {
-	s, a := createServer()
-	s1 := cstesting.RandomSegment()
-	a.MockDeleteSegment.Fn = func(*types.Bytes32) (*cs.Segment, error) { return s1, nil }
-
-	var s2 cs.Segment
-	w, err := testutil.RequestJSON(s.ServeHTTP, "DELETE", "/segments/"+zeros, nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := a.MockDeleteSegment.LastCalledWith.String(), zeros; got != want {
-		t.Errorf("a.MockDeleteSegment.LastCalledWith = %q\nwant %q", got, want)
-	}
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(&s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockDeleteSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockDeleteSegment.CalledCount = %d want %d", got, want)
-	}
-}
-
-func TestDeleteSegment_notFound(t *testing.T) {
-	s, a := createServer()
-
-	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "DELETE", "/segments/"+zeros, nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := a.MockDeleteSegment.LastCalledWith.String(), zeros; got != want {
-		t.Errorf("a.MockDeleteSegment.LastCalledWith = %q\nwant %q", got, want)
-	}
-	if got, want := w.Code, jsonhttp.NewErrNotFound("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockDeleteSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockDeleteSegment.CalledCount = %d want %d", got, want)
-	}
-}
-
-func TestDeleteSegment_err(t *testing.T) {
-	s, a := createServer()
-	a.MockDeleteSegment.Fn = func(*types.Bytes32) (*cs.Segment, error) { return nil, errors.New("error") }
-
-	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "DELETE", "/segments/"+zeros, nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := a.MockDeleteSegment.LastCalledWith.String(), zeros; got != want {
-		t.Errorf("a.MockDeleteSegment.LastCalledWith = %q\nwant %q", got, want)
-	}
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockDeleteSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockDeleteSegment.CalledCount = %d want %d", got, want)
 	}
 }
 
@@ -637,10 +611,14 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestGetSocket(t *testing.T) {
-	s1 := cstesting.RandomSegment()
+	link := cstesting.RandomLink()
+	event := &store.Event{
+		EventType: store.SavedLink,
+		Details:   link,
+	}
 
-	// Chan that will receive the save channel.
-	sendChan := make(chan chan *cs.Segment)
+	// Chan that will receive the store event channel.
+	sendChan := make(chan chan *store.Event)
 
 	// Chan used to wait for the connection to be ready.
 	readyChan := make(chan struct{})
@@ -662,9 +640,9 @@ func TestGetSocket(t *testing.T) {
 		return &conn, nil
 	}
 
-	// Mock adapter to send the save channel when added.
+	// Mock adapter to send the store event channel when added.
 	a := &storetesting.MockAdapter{}
-	a.MockAddDidSaveChannel.Fn = func(c chan *cs.Segment) {
+	a.MockAddStoreEventChannel.Fn = func(c chan *store.Event) {
 		sendChan <- c
 	}
 
@@ -697,7 +675,7 @@ func TestGetSocket(t *testing.T) {
 		case <-time.After(time.Second):
 			t.Fatalf("connection ready timeout")
 		}
-		c <- s1
+		c <- event
 	case <-time.After(time.Second):
 		t.Fatalf("save channel not added")
 	}
@@ -706,9 +684,9 @@ func TestGetSocket(t *testing.T) {
 	select {
 	case <-doneChan:
 		got := conn.MockWriteJSON.LastCalledWith.(*msg).Data
-		if !reflect.DeepEqual(got, s1) {
+		if !reflect.DeepEqual(got, link) {
 			gotjs, _ := json.MarshalIndent(got, "", "  ")
-			wantjs, _ := json.MarshalIndent(s1, "", "  ")
+			wantjs, _ := json.MarshalIndent(link, "", "  ")
 			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
 		}
 	case <-time.After(2 * time.Second):

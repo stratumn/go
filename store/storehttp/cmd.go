@@ -31,26 +31,26 @@ import (
 )
 
 var (
-	didSaveChanSize int
-	addr            string
-	wsReadBufSize   int
-	wsWriteBufSize  int
-	wsWriteChanSize int
-	wsWriteTimeout  time.Duration
-	wsPongTimeout   time.Duration
-	wsPingInterval  time.Duration
-	wsMaxMsgSize    int64
-	certFile        string
-	keyFile         string
-	readTimeout     time.Duration
-	writeTimeout    time.Duration
-	maxHeaderBytes  int
-	shutdownTimeout time.Duration
+	storeEventsChanSize int
+	addr                string
+	wsReadBufSize       int
+	wsWriteBufSize      int
+	wsWriteChanSize     int
+	wsWriteTimeout      time.Duration
+	wsPongTimeout       time.Duration
+	wsPingInterval      time.Duration
+	wsMaxMsgSize        int64
+	certFile            string
+	keyFile             string
+	readTimeout         time.Duration
+	writeTimeout        time.Duration
+	maxHeaderBytes      int
+	shutdownTimeout     time.Duration
 )
 
 // Run launches a storehttp server.
 func Run(
-	a store.Adapter,
+	a store.AdapterV2,
 	config *Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
@@ -86,7 +86,7 @@ func Run(
 
 // RegisterFlags register the flags used by RunWithFlags.
 func RegisterFlags() {
-	flag.IntVar(&didSaveChanSize, "did_save_chan_size", DefaultDidSaveChanSize, "Size of the DidSave channel")
+	flag.IntVar(&storeEventsChanSize, "store_events_chan_size", DefaultStoreEventsChanSize, "Size of the store events channel")
 	flag.StringVar(&addr, "http", DefaultAddress, "HTTP address")
 	flag.IntVar(&wsReadBufSize, "ws_read_buf_size", DefaultWebSocketReadBufferSize, "Web socket read buffer size")
 	flag.IntVar(&wsWriteBufSize, "ws_write_buf_size", DefaultWebSocketWriteBufferSize, "Web socket write buffer size")
@@ -105,9 +105,9 @@ func RegisterFlags() {
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
 // a storehttp server configured using flag values.
-func RunWithFlags(a store.Adapter) {
+func RunWithFlags(a store.AdapterV2) {
 	config := &Config{
-		DidSaveChanSize: didSaveChanSize,
+		StoreEventsChanSize: storeEventsChanSize,
 	}
 	httpConfig := &jsonhttp.Config{
 		Address:        addr,

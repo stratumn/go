@@ -18,15 +18,16 @@
 //	GET /
 //		Renders information about the store.
 //
-//	POST /segments
-//		Saves then renders a segment.
-//		Body should be a JSON encoded segment.
+//	POST /links
+//		Saves then renders a link.
+//		Body should be a JSON encoded link.
+//
+//	POST /evidences/:linkHash
+//		Adds evidence to a link.
+//		Body should be a JSON encoded evidence.
 //
 //	GET /segments/:linkHash
 //		Renders a segment.
-//
-//	DELETE /segments/:linkHash
-//		Deletes then renders a segment.
 //
 //	GET /segments?[offset=offset]&[limit=limit]&[mapIds[]=id1]&[mapIds[]=id2]&[prevLinkHash=prevLinkHash]&[tags[]=tag1]&[tags[]=tag2]
 //		Finds and renders segments.
@@ -35,8 +36,9 @@
 //		Finds and renders map IDs.
 //
 //	GET /websocket
-//		A web socket that broadcasts messages when a segment is saved:
-//			{ "type": "didSave", "data": [segment] }
+//		A web socket that broadcasts messages from the store:
+//			{ "type": "SavedLink", "data": [link] }
+//			{ "type": "SavedEvidence", "data": [evidence] }
 package storehttp
 
 import (
@@ -57,8 +59,8 @@ import (
 )
 
 const (
-	// DefaultDidSaveChanSize is the default size of the DidSave channel.
-	DefaultDidSaveChanSize = 256
+	// DefaultStoreEventsChanSize is the default size of the store events channel.
+	DefaultStoreEventsChanSize = 256
 
 	// DefaultAddress is the default address of the server.
 	DefaultAddress = ":5000"
@@ -93,23 +95,26 @@ const (
 )
 
 // Web socket message types.
-const (
-	// DidSave means a segment was saved.
-	DidSave = "didSave"
+var (
+	// Store event means the store wants to notify of an event.
+	StoreEventTypes = map[store.EventType]string{
+		store.SavedLink:     "SavedLink",
+		store.SavedEvidence: "SavedEvidence",
+	}
 )
 
 // Server is an HTTP server for stores.
 type Server struct {
 	*jsonhttp.Server
-	adapter     store.Adapter
-	ws          *jsonws.Basic
-	didSaveChan chan *cs.Segment
+	adapter         store.AdapterV2
+	ws              *jsonws.Basic
+	storeEventsChan chan *store.Event
 }
 
 // Config contains configuration options for the server.
 type Config struct {
-	// The size of the DidSave channel.
-	DidSaveChanSize int
+	// The size of the store event channel.
+	StoreEventsChanSize int
 }
 
 // Info is the info returned by the root route.
@@ -125,23 +130,23 @@ type msg struct {
 
 // New create an instance of a server.
 func New(
-	a store.Adapter,
+	a store.AdapterV2,
 	config *Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
 	bufConnConfig *jsonws.BufferedConnConfig,
 ) *Server {
 	s := Server{
-		Server:      jsonhttp.New(httpConfig),
-		adapter:     a,
-		ws:          jsonws.NewBasic(basicConfig, bufConnConfig),
-		didSaveChan: make(chan *cs.Segment, config.DidSaveChanSize),
+		Server:          jsonhttp.New(httpConfig),
+		adapter:         a,
+		ws:              jsonws.NewBasic(basicConfig, bufConnConfig),
+		storeEventsChan: make(chan *store.Event, config.StoreEventsChanSize),
 	}
 
 	s.Get("/", s.root)
-	s.Post("/segments", s.saveSegment)
+	s.Post("/links", s.createLink)
+	s.Post("/evidences/:linkHash", s.addEvidence)
 	s.Get("/segments/:linkHash", s.getSegment)
-	s.Delete("/segments/:linkHash", s.deleteSegment)
 	s.Get("/segments", s.findSegments)
 	s.Get("/maps", s.getMapIDs)
 	s.GetRaw("/websocket", s.getWebSocket)
@@ -172,14 +177,14 @@ func (s *Server) ListenAndServe() (err error) {
 // Shutdown stops the server.
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.ws.Stop()
-	close(s.didSaveChan)
+	close(s.storeEventsChan)
 	return s.Server.Shutdown(ctx)
 }
 
 // Start starts the main loops. You do not need to call this if you call
 // ListenAndServe().
 func (s *Server) Start() {
-	s.adapter.AddDidSaveChannel(s.didSaveChan)
+	s.adapter.AddStoreEventChannel(s.storeEventsChan)
 
 	wg := sync.WaitGroup{}
 	wg.Add(2)
@@ -199,10 +204,10 @@ func (s *Server) Start() {
 
 // Web socket loop.
 func (s *Server) loop() {
-	for seg := range s.didSaveChan {
+	for event := range s.storeEventsChan {
 		s.ws.Broadcast(&msg{
-			Type: DidSave,
-			Data: seg,
+			Type: StoreEventTypes[event.EventType],
+			Data: event.Details,
 		}, nil)
 	}
 }
@@ -218,21 +223,43 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 	}, nil
 }
 
-func (s *Server) saveSegment(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
+func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
 	decoder := json.NewDecoder(r.Body)
 
-	var seg cs.Segment
-	if err := decoder.Decode(&seg); err != nil {
+	var link cs.Link
+	if err := decoder.Decode(&link); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
-	if err := seg.Validate(s.adapter.GetSegment); err != nil {
+
+	segment := link.Segmentify()
+	if err := segment.Validate(s.adapter.GetSegment); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
-	if err := s.adapter.SaveSegment(&seg); err != nil {
+	if _, err := s.adapter.CreateLink(&link); err != nil {
 		return nil, err
 	}
 
-	return seg, nil
+	return segment, nil
+}
+
+func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
+	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	var evidence cs.Evidence
+	if err := decoder.Decode(&evidence); err != nil {
+		return nil, jsonhttp.NewErrBadRequest(err.Error())
+	}
+
+	if err := s.adapter.AddEvidence(linkHash, &evidence); err != nil {
+		return nil, jsonhttp.NewErrBadRequest(err.Error())
+	}
+
+	return nil, nil
 }
 
 func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
@@ -242,23 +269,6 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 	}
 
 	seg, err := s.adapter.GetSegment(linkHash)
-	if err != nil {
-		return nil, err
-	}
-	if seg == nil {
-		return nil, jsonhttp.NewErrNotFound("")
-	}
-
-	return seg, nil
-}
-
-func (s *Server) deleteSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
-	if err != nil {
-		return nil, err
-	}
-
-	seg, err := s.adapter.DeleteSegment(linkHash)
 	if err != nil {
 		return nil, err
 	}

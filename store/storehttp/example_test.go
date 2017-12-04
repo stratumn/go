@@ -36,7 +36,7 @@ func Example() {
 	// Create a dummy adapter.
 	a := dummystore.New(&dummystore.Config{Version: "0.1.0", Commit: "abc"})
 	config := &storehttp.Config{
-		DidSaveChanSize: 8,
+		StoreEventsChanSize: 8,
 	}
 	httpConfig := &jsonhttp.Config{
 		Address: "5555",
