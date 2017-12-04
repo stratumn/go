@@ -9,6 +9,9 @@ env:
   global:
   - COMMIT=${TRAVIS_COMMIT::8}
   - DOCKER_USER=stratumndocker
+cache:
+  directories:
+  - $GOPATH/pkg/dep
 
 before_install:
   - sudo service postgresql stop
