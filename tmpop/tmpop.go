@@ -28,7 +28,6 @@ import (
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-wire"
-	"github.com/tendermint/tendermint/rpc/client"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -73,7 +72,7 @@ type TMPop struct {
 	lastBlock     *LastBlock
 	config        *Config
 	currentHeader *abci.Header
-	tmClient      client.Client
+	tmClient      TendermintClient
 }
 
 const (
@@ -126,7 +125,7 @@ func New(a store.AdapterV2, kv store.KeyValueStore, config *Config) (*TMPop, err
 }
 
 // ConnectTendermint connects TMPoP to a Tendermint node
-func (t *TMPop) ConnectTendermint(tmClient client.Client) {
+func (t *TMPop) ConnectTendermint(tmClient TendermintClient) {
 	t.tmClient = tmClient
 	log.Info("TMPoP connected to Tendermint Core")
 }

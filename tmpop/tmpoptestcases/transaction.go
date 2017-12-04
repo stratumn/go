@@ -18,9 +18,11 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stratumn/sdk/tmpop"
-
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/tmpop"
+	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestCheckTx tests what happens when the ABCI method CheckTx() is called
@@ -114,26 +116,39 @@ func (f Factory) TestCommitTx(t *testing.T) {
 	h, req := f.newTMPop(t, nil)
 	defer f.free()
 
+	tmClientMock := new(tmpoptestcasesmocks.MockedTendermintClient)
+	tmClientMock.On("FireEvent", tmpop.StoreEvents, mock.Anything)
+	h.ConnectTendermint(tmClientMock)
+
+	previousAppHash := req.Header.AppHash
+	h.BeginBlock(req)
+
+	link1, tx := makeCreateRandomLinkTx(t)
+	h.DeliverTx(tx)
+
+	link2, tx := makeCreateRandomLinkTx(t)
+	h.DeliverTx(tx)
+
+	res := h.Commit()
+	if !res.IsOK() {
+		t.Fatalf("Commit failed: %v", res)
+	}
+
 	t.Run("Commit correctly saves links and updates app hash", func(t *testing.T) {
-		previousAppHash := req.Header.AppHash
-		h.BeginBlock(req)
-
-		link1, tx := makeCreateRandomLinkTx(t)
-		h.DeliverTx(tx)
-
-		link2, tx := makeCreateRandomLinkTx(t)
-		h.DeliverTx(tx)
-
-		res := h.Commit()
-		if !res.IsOK() {
-			t.Fatalf("Commit failed: %v", res)
-		}
-
 		verifyLinkStored(t, h, link1)
 		verifyLinkStored(t, h, link2)
 
 		if bytes.Compare(previousAppHash, res.Data) == 0 {
 			t.Errorf("Committed app hash is the same as the previous app hash")
 		}
+	})
+
+	t.Run("Commit fires an event to notify that links were created", func(t *testing.T) {
+		tmClientMock.AssertNumberOfCalls(t, "FireEvent", 1)
+		eventsCall := tmClientMock.Calls[0]
+		events := eventsCall.Arguments.Get(1).(tmpop.StoreEventsData)
+		assert.Exactly(t, 2, len(events.StoreEvents), "Invalid number of events")
+		assert.EqualValues(t, link1, events.StoreEvents[0].Details, "Invalid event details")
+		assert.EqualValues(t, link2, events.StoreEvents[1].Details, "Invalid event details")
 	})
 }
