@@ -22,7 +22,6 @@ import (
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 // TestCheckTx tests what happens when the ABCI method CheckTx() is called
@@ -117,7 +116,8 @@ func (f Factory) TestCommitTx(t *testing.T) {
 	defer f.free()
 
 	tmClientMock := new(tmpoptestcasesmocks.MockedTendermintClient)
-	tmClientMock.On("FireEvent", tmpop.StoreEvents, mock.Anything)
+	tmClientMock.AllowCalls()
+
 	h.ConnectTendermint(tmClientMock)
 
 	previousAppHash := req.Header.AppHash

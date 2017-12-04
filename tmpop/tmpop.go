@@ -21,8 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/cs"
-	// We need to import this to deserialize evidence properly
-	_ "github.com/stratumn/sdk/cs/evidences"
+	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator"
@@ -323,16 +322,6 @@ func (t *TMPop) doTx(createLink func(*cs.Link) abci.Result, txBytes []byte) abci
 	}
 }
 
-func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
-	tx := &Tx{}
-
-	if err := json.Unmarshal(txBytes, tx); err != nil {
-		return nil, abci.NewError(abci.CodeType_InternalError, err.Error())
-	}
-
-	return tx, abci.NewResultOK([]byte{}, "ok")
-}
-
 // ReadLastBlock returns the last block saved by TMPop
 func ReadLastBlock(kv store.KeyValueReader) (*LastBlock, error) {
 	lBytes, err := kv.GetValue(tmpopLastBlockKey)
@@ -368,31 +357,33 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		return
 	}
 
-	// Get enough data about the previous block from Tendermint
+	previousBlock := t.tmClient.Block(previousHeight)
 
-	previousBlock, err := t.tmClient.Block(&previousHeight)
-	if err != nil {
-		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
+	evidenceEvents := &StoreEventsData{}
+	for _, tx := range previousBlock.Txs {
+		// TODO: add missing evidence parts
+		linkHash, _ := tx.Link.Hash()
+		evidence := &cs.Evidence{
+			Backend:  Name,
+			Provider: header.ChainId,
+			Proof: &evidences.TendermintProof{
+				BlockHeight: header.Height - 1,
+			},
+		}
+
+		if err := t.adapter.AddEvidence(linkHash, evidence); err != nil {
+			log.Warnf("Evidence could not be added to local store: %v", err)
+		}
+
+		evidenceEvents.StoreEvents = append(evidenceEvents.StoreEvents, &store.Event{
+			EventType: store.SavedEvidence,
+			Details:   evidence,
+		})
 	}
 
-	previousCommit, err := t.tmClient.Commit(&previousHeight)
-	if err != nil {
-		log.Warnf("Could not get previous commit: %v", err)
+	if len(evidenceEvents.StoreEvents) > 0 {
+		t.tmClient.FireEvent(StoreEvents, *evidenceEvents)
 	}
-
-	block, _ := json.MarshalIndent(previousBlock, "", "  ")
-	log.Debugf("Previous block: \n%s", block)
-	commit, _ := json.MarshalIndent(previousCommit, "", "  ")
-	log.Debugf("Previous commit: \n%s", commit)
-
-	// Create tendermint evidence for links created in the previous block
-	// TODO
-
-	// Add new evidence to local store
-	// TODO
-
-	// Deliver notification about new evidence
-	// TODO
 }
 
 // GetCurrentHeader returns the current block header

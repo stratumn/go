@@ -43,7 +43,7 @@ func Run(a store.AdapterV2, kv store.KeyValueStore, config *Config) {
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	tendermintNode := tendermint.NewNode(tendermint.GetConfig(), tmpop)
-	tendermintClient := client.NewLocal(tendermintNode)
+	tendermintClient := NewTendermintClient(client.NewLocal(tendermintNode))
 	tmpop.ConnectTendermint(tendermintClient)
 	tendermintNode.RunForever()
 }

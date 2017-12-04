@@ -74,7 +74,7 @@ func (f Factory) TestEvidenceAddedChannel(t *testing.T) {
 	a := f.initAdapterV2(t)
 	defer f.freeV2(a)
 
-	c := make(chan *store.Event, 1)
+	c := make(chan *store.Event, 10)
 	a.AddStoreEventChannel(c)
 
 	link := cstesting.RandomLink()
@@ -83,15 +83,26 @@ func (f Factory) TestEvidenceAddedChannel(t *testing.T) {
 		t.Fatalf("a.CreateLink(); err: %s", err)
 	}
 
-	// Ignore the link saved event
-	got := <-c
-
 	evidence := cstesting.RandomEvidence()
 	if err = a.AddEvidence(linkHash, evidence); err != nil {
 		t.Fatalf("a.AddEvidence(); err: %s", err)
 	}
 
-	got = <-c
+	// Ignore the link saved event
+	got := <-c
+
+	// There might be a race between the external evidence added
+	// and an evidence produced by a blockchain store (hence the for loop)
+	for i := 0; i < 3; i++ {
+		got = <-c
+		if got.EventType != store.SavedEvidence {
+			continue
+		}
+
+		if got.Details.(*cs.Evidence).Backend == evidence.Backend {
+			break
+		}
+	}
 
 	if got.EventType != store.SavedEvidence {
 		t.Errorf("Expected saved evidence event, got %v", got)

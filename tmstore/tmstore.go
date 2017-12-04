@@ -101,9 +101,7 @@ func (t *TMStore) StartWebsocket() error {
 
 	// TMPoP notifies us of store events that we forward to clients
 	t.tmClient.AddListenerForEvent("TMStore", tmpop.StoreEvents, func(msg events.EventData) {
-		if err := t.notifyStoreChans(msg); err != nil {
-			log.Error(err)
-		}
+		go t.notifyStoreChans(msg)
 	})
 
 	log.Info("Connected to TMPoP")
@@ -132,7 +130,7 @@ func (t *TMStore) StopWebsocket() {
 	t.tmClient.Stop()
 }
 
-func (t *TMStore) notifyStoreChans(msg events.EventData) error {
+func (t *TMStore) notifyStoreChans(msg events.EventData) {
 	storeEvents, ok := msg.(tmpop.StoreEventsData)
 	if !ok {
 		log.Debug("Event could not be read as a list of store events")
@@ -143,8 +141,6 @@ func (t *TMStore) notifyStoreChans(msg events.EventData) error {
 			c <- event
 		}
 	}
-
-	return nil
 }
 
 // AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel.

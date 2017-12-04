@@ -15,13 +15,56 @@
 package tmpop
 
 import (
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	log "github.com/sirupsen/logrus"
+	"github.com/tendermint/tendermint/rpc/client"
 	events "github.com/tendermint/tmlibs/events"
 )
 
 // TendermintClient is a light interface to query Tendermint Core
 type TendermintClient interface {
 	FireEvent(event string, data events.EventData)
-	Block(height *int) (*ctypes.ResultBlock, error)
-	Commit(height *int) (*ctypes.ResultCommit, error)
+	Block(height int) *Block
+}
+
+// Block contains the parts of a Tendermint block that TMPoP is interested in.
+type Block struct {
+	Txs []*Tx
+}
+
+// TendermintClientWrapper implements TendermintClient
+type TendermintClientWrapper struct {
+	tmClient client.Client
+}
+
+// NewTendermintClient creates a new TendermintClient
+func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
+	return &TendermintClientWrapper{
+		tmClient: tmClient,
+	}
+}
+
+// FireEvent fires an event through Tendermint Core
+func (c *TendermintClientWrapper) FireEvent(event string, data events.EventData) {
+	c.tmClient.FireEvent(event, data)
+}
+
+// Block queries for a block at a specific height
+func (c *TendermintClientWrapper) Block(height int) *Block {
+	previousBlock, err := c.tmClient.Block(&height)
+	if err != nil {
+		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
+	}
+
+	block := &Block{}
+	for _, tx := range previousBlock.Block.Txs {
+		tmTx, err := unmarshallTx(tx)
+		if !err.IsOK() || tmTx.TxType != CreateLink {
+			log.Warn("Could not unmarshall previous block Tx. Evidence will not be created.")
+			continue
+		}
+
+		block.Txs = append(block.Txs, tmTx)
+	}
+
+	return block
 }

@@ -45,7 +45,7 @@ func StartNode() *node.Node {
 	}
 
 	testNode = rpctest.StartTendermint(testTmpop)
-	testClient := client.NewLocal(testNode)
+	testClient := tmpop.NewTendermintClient(client.NewLocal(testNode))
 	testTmpop.ConnectTendermint(testClient)
 
 	return testNode

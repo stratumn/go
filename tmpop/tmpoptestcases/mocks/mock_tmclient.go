@@ -15,8 +15,8 @@
 package tmpoptestcasesmocks
 
 import (
+	"github.com/stratumn/sdk/tmpop"
 	"github.com/stretchr/testify/mock"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	events "github.com/tendermint/tmlibs/events"
 )
 
@@ -25,19 +25,19 @@ type MockedTendermintClient struct {
 	mock.Mock
 }
 
+// AllowCalls allows any call to go through the mock without throwing errors
+func (m *MockedTendermintClient) AllowCalls() {
+	m.On("FireEvent", mock.Anything, mock.Anything)
+	m.On("Block", mock.Anything)
+}
+
 // FireEvent mocks firing an event to Tendermint
 func (m *MockedTendermintClient) FireEvent(event string, data events.EventData) {
 	m.Called(event, data)
 }
 
-// Block gets a block
-func (m *MockedTendermintClient) Block(height *int) (*ctypes.ResultBlock, error) {
-	m.Called(height)
-	return nil, nil
-}
-
-// Commit gets a commit
-func (m *MockedTendermintClient) Commit(height *int) (*ctypes.ResultCommit, error) {
-	m.Called(height)
-	return nil, nil
+// Block returns an empty block
+func (m *MockedTendermintClient) Block(height int) *tmpop.Block {
+	args := m.Called(height)
+	return args.Get(0).(*tmpop.Block)
 }
