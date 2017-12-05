@@ -16,17 +16,18 @@ package tmpop
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/evidences"
+	"github.com/stratumn/sdk/merkle"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
-	"github.com/tendermint/go-wire"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -190,10 +191,25 @@ func (t *TMPop) Commit() abci.Result {
 		return abci.NewError(abci.CodeType_InternalError, err.Error())
 	}
 
-	t.lastBlock.Height = t.currentHeader.Height
+	if err := t.saveValidatorHash(); err != nil {
+		return abci.NewError(abci.CodeType_InternalError, err.Error())
+	}
+
+	if err := t.saveCommitLinkHashes(links); err != nil {
+		return abci.NewError(abci.CodeType_InternalError, err.Error())
+	}
+
+	t.notifyCreatedLinks(links)
+
 	t.lastBlock.AppHash = appHash
+	t.lastBlock.Height = t.currentHeader.Height
+	t.lastBlock.LastHeader = t.currentHeader
 	saveLastBlock(t.kvDB, *t.lastBlock)
 
+	return abci.NewResultOK(appHash, "")
+}
+
+func (t *TMPop) notifyCreatedLinks(links []*cs.Link) {
 	if t.tmClient != nil {
 		if len(links) > 0 {
 			savedEvents := &StoreEventsData{}
@@ -208,8 +224,6 @@ func (t *TMPop) Commit() abci.Result {
 	} else {
 		log.Warn("TMPoP not connected to Tendermint Core. Notifications will not be delivered.")
 	}
-
-	return abci.NewResultOK(appHash, "")
 }
 
 // Query implements github.com/tendermint/abci/types.Application.Query.
@@ -322,71 +336,94 @@ func (t *TMPop) doTx(createLink func(*cs.Link) abci.Result, txBytes []byte) abci
 	}
 }
 
-// ReadLastBlock returns the last block saved by TMPop
-func ReadLastBlock(kv store.KeyValueReader) (*LastBlock, error) {
-	lBytes, err := kv.GetValue(tmpopLastBlockKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var l LastBlock
-	if lBytes == nil {
-		return &l, nil
-	}
-	err = wire.ReadBinaryBytes(lBytes, &l)
-	if err != nil {
-		return nil, err
-	}
-
-	return &l, nil
-}
-
-func saveLastBlock(a store.KeyValueWriter, l LastBlock) {
-	a.SetValue(tmpopLastBlockKey, wire.BinaryBytes(l))
-}
-
 // addTendermintEvidence computes and stores new evidence
 func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	if t.tmClient == nil {
-		log.Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
+		log.Warn("TMPoP not connected to Tendermint Core.\nEvidence will not be generated.")
 		return
 	}
 
-	previousHeight := int(header.Height - 1)
-	if previousHeight <= 0 {
+	height := header.Height - 1
+	if height <= 0 {
 		return
 	}
 
-	previousBlock := t.tmClient.Block(previousHeight)
+	block := t.tmClient.Block(int(height))
+	if block.Header == nil {
+		log.Warn("Could not get block header.\nEvidence will not be generated.")
+		return
+	}
+
+	validatorHash, err := t.getValidatorHash(height)
+	if err != nil {
+		log.Warn("Could not get validator hash for this block.\nEvidence will not be generated.")
+		return
+	}
+
+	previousAppHash := block.Header.AppHash
+	linkHashes, err := t.getCommitLinkHashes(height)
+	if err != nil {
+		log.Warn("Could not get link hashes for this block.\nEvidence will not be generated.")
+		return
+	}
+
+	if len(linkHashes) == 0 {
+		return
+	}
+
+	merkle, err := merkle.NewStaticTree(linkHashes)
+	if err != nil {
+		log.Warn("Could not create merkle tree for this block.\nEvidence will not be generated.")
+		return
+	}
+
+	merkleRoot := merkle.Root()
+
+	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot[:])
+	if bytes.Compare(appHash, header.AppHash) != 0 {
+		log.Warnf("App hash %s doesn't match the header's: %s.\nEvidence will not be generated.",
+			hex.EncodeToString(appHash), hex.EncodeToString(header.AppHash))
+		return
+	}
 
 	evidenceEvents := &StoreEventsData{}
-	for _, tx := range previousBlock.Txs {
-		// TODO: add missing evidence parts
+	for _, tx := range block.Txs {
+		// We only create evidence for valid transactions
 		linkHash, _ := tx.Link.Hash()
-		evidence := &cs.Evidence{
-			Backend:  Name,
-			Provider: header.ChainId,
-			Proof: &evidences.TendermintProof{
-				BlockHeight: header.Height - 1,
-			},
+		index := -1
+		for i, lh := range linkHashes {
+			if linkHash.Compare(&lh) == 0 {
+				index = i
+				break
+			}
 		}
 
-		if err := t.adapter.AddEvidence(linkHash, evidence); err != nil {
-			log.Warnf("Evidence could not be added to local store: %v", err)
-		}
+		if index >= 0 {
+			evidence := &cs.Evidence{
+				Backend:  Name,
+				Provider: header.ChainId,
+				Proof: &evidences.TendermintProof{
+					BlockHeight:     height,
+					Root:            merkleRoot,
+					Path:            merkle.Path(index),
+					ValidationsHash: validatorHash,
+					Header:          *block.Header,
+					NextHeader:      *header,
+				},
+			}
 
-		evidenceEvents.StoreEvents = append(evidenceEvents.StoreEvents, &store.Event{
-			EventType: store.SavedEvidence,
-			Details:   evidence,
-		})
+			if err := t.adapter.AddEvidence(linkHash, evidence); err != nil {
+				log.Warnf("Evidence could not be added to local store: %v", err)
+			}
+
+			evidenceEvents.StoreEvents = append(evidenceEvents.StoreEvents, &store.Event{
+				EventType: store.SavedEvidence,
+				Details:   evidence,
+			})
+		}
 	}
 
 	if len(evidenceEvents.StoreEvents) > 0 {
 		t.tmClient.FireEvent(StoreEvents, *evidenceEvents)
 	}
-}
-
-// GetCurrentHeader returns the current block header
-func (t *TMPop) GetCurrentHeader() *abci.Header {
-	return t.currentHeader
 }

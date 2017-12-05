@@ -20,7 +20,9 @@ import (
 
 	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/merkle"
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator"
 	abci "github.com/tendermint/abci/types"
 )
@@ -125,26 +127,44 @@ func (s *State) Commit() ([]byte, []*cs.Link, error) {
 }
 
 func (s *State) computeAppHash() ([]byte, error) {
+	validatorHash := []byte{}
+	if s.validator != nil {
+		validatorHash = (*s.validator).Hash()[:]
+	}
+
+	merkleRoot := []byte{}
+	if len(s.deliveredLinksList) > 0 {
+		var treeLeaves []types.Bytes32
+		for _, link := range s.deliveredLinksList {
+			linkHash, _ := link.Hash()
+			treeLeaves = append(treeLeaves, *linkHash)
+		}
+
+		merkle, err := merkle.NewStaticTree(treeLeaves)
+		if err != nil {
+			return nil, err
+		}
+
+		merkleRoot = merkle.Root()[:]
+	}
+
+	return ComputeAppHash(s.previousAppHash, validatorHash, merkleRoot)
+}
+
+// ComputeAppHash computes the app hash from its required parts
+func ComputeAppHash(previous []byte, validator []byte, root []byte) ([]byte, error) {
 	hash := sha256.New()
 
-	if _, err := hash.Write(s.previousAppHash); err != nil {
+	if _, err := hash.Write(previous); err != nil {
 		return nil, err
 	}
 
-	if s.validator != nil {
-		if _, err := hash.Write((*s.validator).Hash()[:]); err != nil {
-			return nil, err
-		}
+	if _, err := hash.Write(validator); err != nil {
+		return nil, err
 	}
 
-	// TODO: hash the content of s.deliveredLinksList in a merkle tree
-	if len(s.deliveredLinksList) > 0 {
-		for _, link := range s.deliveredLinksList {
-			linkHash, _ := link.Hash()
-			if _, err := hash.Write(linkHash[:]); err != nil {
-				return nil, err
-			}
-		}
+	if _, err := hash.Write(root); err != nil {
+		return nil, err
 	}
 
 	appHash := hash.Sum(nil)

@@ -17,6 +17,8 @@
 package evidences
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 
 	"github.com/stratumn/sdk/cs"
@@ -24,9 +26,9 @@ import (
 	// The init() function of each package gets called hence providing a way for cs.Evidence.UnmarshalJSON to deserialize any kind of proof
 	_ "github.com/stratumn/sdk/dummyfossilizer"
 	"github.com/stratumn/sdk/types"
+
 	abci "github.com/tendermint/abci/types"
-	merkle "github.com/tendermint/merkleeyes/iavl"
-	tmtypes "github.com/tendermint/tendermint/types"
+	"github.com/tendermint/go-crypto"
 )
 
 var (
@@ -97,15 +99,29 @@ func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 	return true
 }
 
+// TendermintSignature is a signature by one of the Tendermint nodes
+type TendermintSignature struct {
+	PubKey    crypto.PubKey    `json:"pub_key"`
+	Signature crypto.Signature `json:"signature"`
+}
+
 // TendermintProof implements the Proof interface
 type TendermintProof struct {
-	BlockHeight     uint64           `json:"blockHeight"`
-	MerkleProof     merkle.IAVLProof `json:"merkleProof"`
-	ValidationsHash []byte           `json:"validationsHash"`
-	Header          abci.Header      `json:"header"`
-	Signatures      []tmtypes.Vote   `json:"signatures"`
-	NextHeader      abci.Header      `json:"nextHeader"`
-	NextSignatures  []tmtypes.Vote   `json:"nextSignatures"`
+	BlockHeight uint64 `json:"blockHeight"`
+
+	Root            *types.Bytes32 `json:"merkleRoot"`
+	Path            types.Path     `json:"merklePath"`
+	ValidationsHash []byte         `json:"validationsHash"`
+
+	// The header and its signatures are needed to validate the previous
+	// app hash and metadata such as the height and time
+	Header     abci.Header            `json:"header"`
+	Signatures []*TendermintSignature `json:"signatures"`
+
+	// The next header and its signatures are needed to validate the
+	// app hash representing the validations and merkle path
+	NextHeader     abci.Header            `json:"nextHeader"`
+	NextSignatures []*TendermintSignature `json:"nextSignatures"`
 }
 
 // Time returns the timestamp from the block header
@@ -124,16 +140,44 @@ func (p *TendermintProof) FullProof() []byte {
 
 // Verify returns true if the proof of a given linkHash is correct
 func (p *TendermintProof) Verify(linkHash interface{}) bool {
-	_, exists := linkHash.(*types.Bytes32)
+	lh, exists := linkHash.(*types.Bytes32)
 	if exists != true {
 		return false
 	}
 
-	// TODO:
-	// * validate signatures of both headers
-	// * verify the merkle proof of the link hash
-	// * re-build app hash from merkle root, Header.AppHash and validations Hash
-	// * verify that this app hash is equal to the one in NextHeader
+	// We first verify that the app hash is correct
+
+	hash := sha256.New()
+	if _, err := hash.Write(p.Header.AppHash); err != nil {
+		return false
+	}
+	if _, err := hash.Write(p.ValidationsHash); err != nil {
+		return false
+	}
+	if _, err := hash.Write(p.Root[:]); err != nil {
+		return false
+	}
+
+	expectedAppHash := hash.Sum(nil)
+	if bytes.Compare(expectedAppHash, p.NextHeader.AppHash) != 0 {
+		return false
+	}
+
+	// Then we validate the merkle path
+
+	if len(p.Path) == 0 {
+		return false
+	}
+
+	if err := p.Path.Validate(); err != nil {
+		return false
+	}
+
+	// And that the merkle path starts at the given link hash
+
+	if lh.Compare(&p.Path[0].Left) != 0 && lh.Compare(&p.Path[0].Right) != 0 {
+		return false
+	}
 
 	return true
 }

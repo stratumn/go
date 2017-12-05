@@ -15,17 +15,22 @@
 package cs_test
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"testing"
 
 	"github.com/stratumn/sdk/cs"
-	_ "github.com/stratumn/sdk/cs/evidences"
+	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/cs/evidences"
+	"github.com/stratumn/sdk/merkle"
+	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/abci/types"
 )
 
 const (
-	height = uint64(1)
-
+	height      = uint64(1)
 	TestChainId = "testChain"
 )
 
@@ -177,6 +182,76 @@ func TestGenericProof(t *testing.T) {
 }
 
 func TestTendermintProof(t *testing.T) {
-	t.Log("Add some tests when Tendermint proof is implemented")
-	t.Fail()
+	createValidProof := func(t *testing.T) (*types.Bytes32, *evidences.TendermintProof) {
+		link := cstesting.RandomLink()
+		linkHash, _ := link.Hash()
+
+		validationsHash := testutil.RandomHash()[:]
+		previousAppHash := testutil.RandomHash()[:]
+
+		tree, _ := merkle.NewStaticTree([]types.Bytes32{
+			*testutil.RandomHash(),
+			*testutil.RandomHash(),
+			*linkHash,
+			*testutil.RandomHash(),
+			*testutil.RandomHash(),
+		})
+
+		hash := sha256.New()
+		hash.Write(previousAppHash)
+		hash.Write(validationsHash)
+		hash.Write(tree.Root()[:])
+		appHash := hash.Sum(nil)
+
+		e := &evidences.TendermintProof{
+			BlockHeight:     42,
+			Root:            tree.Root(),
+			Path:            tree.Path(2),
+			ValidationsHash: validationsHash,
+			Header:          abci.Header{AppHash: previousAppHash},
+			NextHeader:      abci.Header{AppHash: appHash},
+		}
+
+		assert.True(t, e.Verify(linkHash), "Proof should be verified")
+
+		return linkHash, e
+	}
+
+	t.Run("Time()", func(t *testing.T) {
+		e := &evidences.TendermintProof{
+			Header: abci.Header{Time: uint64(42)},
+		}
+
+		assert.Equal(t, uint64(42), e.Time(), "Invalid proof time")
+	})
+
+	t.Run("FullProof()", func(t *testing.T) {
+		e := &evidences.TendermintProof{
+			BlockHeight:     uint64(42),
+			Header:          abci.Header{Time: uint64(42)},
+			ValidationsHash: []byte("0x42"),
+		}
+
+		fullProof := e.FullProof()
+		assert.NoError(t, json.Unmarshal(fullProof, &evidences.TendermintProof{}),
+			"Could not unmarshal bytes proof")
+	})
+
+	t.Run("Verify() fails if validations hash changed", func(t *testing.T) {
+		linkHash, e := createValidProof(t)
+		e.ValidationsHash = linkHash[:]
+		assert.False(t, e.Verify(linkHash), "Proof should not be correct if validations hash changed")
+	})
+
+	t.Run("Verify() fails if merkle tree is invalid", func(t *testing.T) {
+		linkHash, e := createValidProof(t)
+		e.Root = linkHash
+		assert.False(t, e.Verify(linkHash), "Proof should not be correct if merkle root changed")
+	})
+
+	t.Run("Verify() fails if previous app hash has changed", func(t *testing.T) {
+		linkHash, e := createValidProof(t)
+		e.Header.AppHash = linkHash[:]
+		assert.False(t, e.Verify(linkHash), "Proof should not be correct if previous app hash changed")
+	})
 }

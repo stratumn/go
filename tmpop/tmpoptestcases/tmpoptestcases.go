@@ -140,8 +140,15 @@ func commitRandomLink(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.Reque
 }
 
 func commitTx(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock, tx []byte) abci.RequestBeginBlock {
+	return commitTxs(t, h, requestBeginBlock, [][]byte{tx})
+}
+
+func commitTxs(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock, txs [][]byte) abci.RequestBeginBlock {
 	h.BeginBlock(requestBeginBlock)
-	h.DeliverTx(tx)
+
+	for _, tx := range txs {
+		h.DeliverTx(tx)
+	}
 
 	commitResult := h.Commit()
 	if commitResult.IsErr() {

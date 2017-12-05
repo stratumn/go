@@ -16,6 +16,7 @@ package tmpop
 
 import (
 	log "github.com/sirupsen/logrus"
+	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
 	events "github.com/tendermint/tmlibs/events"
 )
@@ -28,7 +29,8 @@ type TendermintClient interface {
 
 // Block contains the parts of a Tendermint block that TMPoP is interested in.
 type Block struct {
-	Txs []*Tx
+	Header *abci.Header
+	Txs    []*Tx
 }
 
 // TendermintClientWrapper implements TendermintClient
@@ -55,7 +57,16 @@ func (c *TendermintClientWrapper) Block(height int) *Block {
 		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
 	}
 
-	block := &Block{}
+	block := &Block{
+		Header: &abci.Header{
+			ChainId:        previousBlock.BlockMeta.Header.ChainID,
+			Height:         uint64(previousBlock.BlockMeta.Header.Height),
+			Time:           uint64(previousBlock.BlockMeta.Header.Time.Unix()),
+			LastCommitHash: previousBlock.BlockMeta.Header.LastCommitHash,
+			DataHash:       previousBlock.BlockMeta.Header.DataHash,
+			AppHash:        previousBlock.BlockMeta.Header.AppHash,
+		},
+	}
 	for _, tx := range previousBlock.Block.Txs {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {

@@ -20,11 +20,14 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/cs/evidences"
+	"github.com/stratumn/sdk/merkle"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
+	"github.com/stratumn/sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	abci "github.com/tendermint/abci/types"
 )
 
 // TestTendermintEvidence tests that evidence is correctly added.
@@ -37,21 +40,40 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	h.ConnectTendermint(tmClientMock)
 
+	// First block contains an invalid link
 	invalidLink := cstesting.RandomLink()
 	invalidLink.Meta["mapId"] = nil
 	invalidLinkHash, _ := invalidLink.Hash()
 	req = commitLink(t, h, invalidLink, req)
-	tmClientMock.On("Block", 1).Return(&tmpop.Block{})
+	previousAppHash := req.Header.AppHash
+	tmClientMock.On("Block", 1).Return(&tmpop.Block{
+		Header: &abci.Header{Height: uint64(1)},
+	})
 
+	// Second block contains two valid links
 	link1 := cstesting.RandomLink()
-	req = commitLink(t, h, link1, req)
 	linkHash1, _ := link1.Hash()
-	expectedTx := &tmpop.Tx{TxType: tmpop.CreateLink, Link: link1}
-	expectedBlock := &tmpop.Block{Txs: []*tmpop.Tx{expectedTx}}
+
+	link2 := cstesting.RandomLink()
+	linkHash2, _ := link2.Hash()
+
+	req = commitTxs(t, h, req, [][]byte{makeCreateLinkTx(t, link1), makeCreateLinkTx(t, link2)})
+	appHash := req.Header.AppHash
+
+	expectedTx1 := &tmpop.Tx{TxType: tmpop.CreateLink, Link: link1}
+	expectedTx2 := &tmpop.Tx{TxType: tmpop.CreateLink, Link: link2}
+	expectedBlock := &tmpop.Block{
+		Header: &abci.Header{
+			Height:  uint64(2),
+			AppHash: previousAppHash,
+		},
+		Txs: []*tmpop.Tx{expectedTx1, expectedTx2},
+	}
 	tmClientMock.On("Block", 2).Return(expectedBlock)
 
-	link2, req := commitRandomLink(t, h, req)
-	linkHash2, _ := link2.Hash()
+	// Third block contains one valid link
+	link3, req := commitRandomLink(t, h, req)
+	linkHash3, _ := link3.Hash()
 
 	t.Run("Adds evidence when block is signed", func(t *testing.T) {
 		got := &cs.Segment{}
@@ -65,14 +87,22 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		assert.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
 		assert.Equal(t, uint64(2), proof.BlockHeight, "Invalid block height in proof")
 
+		tree, _ := merkle.NewStaticTree([]types.Bytes32{*linkHash1, *linkHash2})
+		assert.EqualValues(t, tree.Root(), proof.Root, "Invalid proof merkle root")
+		assert.EqualValues(t, tree.Path(0), proof.Path, "Invalid proof merkle path")
+
+		expectedAppHash, _ := tmpop.ComputeAppHash(previousAppHash, []byte{}, tree.Root()[:])
+		assert.EqualValues(t, expectedAppHash, appHash, "Invalid app hash generated")
+
 		evidenceEventFired := false
 		for _, tmClientCall := range tmClientMock.Calls {
 			if tmClientCall.Method != "FireEvent" {
 				continue
 			}
 
-			storeEvent := tmClientCall.Arguments.Get(1).(tmpop.StoreEventsData).StoreEvents[0]
-			if storeEvent.EventType == store.SavedEvidence {
+			storeEvents := tmClientCall.Arguments.Get(1).(tmpop.StoreEventsData).StoreEvents
+			if storeEvents[0].EventType == store.SavedEvidence {
+				assert.Equal(t, 2, len(storeEvents), "Two evidences should have been notified")
 				evidenceEventFired = true
 			}
 		}
@@ -81,7 +111,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	t.Run("Does not add evidence right after commit", func(t *testing.T) {
 		got := &cs.Segment{}
-		err := makeQuery(h, tmpop.GetSegment, linkHash2, got)
+		err := makeQuery(h, tmpop.GetSegment, linkHash3, got)
 		assert.NoError(t, err)
 		assert.Zero(t, len(got.Meta.Evidences),
 			"Link should not have evidence before the next block signs the committed state")
@@ -94,6 +124,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &cs.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, invalidLinkHash, got)
 		assert.NoError(t, err)
+		assert.Zero(t, got.Link, "Link should not be found")
 		assert.Zero(t, len(got.Meta.Evidences), "Evidence should not be added to invalid link")
 	})
 }
