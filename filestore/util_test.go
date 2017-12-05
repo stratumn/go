@@ -45,6 +45,12 @@ func createAdapterV2() (store.AdapterV2, error) {
 	return fs, nil
 }
 
+func createAdapterTMPop() (store.AdapterV2, store.KeyValueStore, error) {
+	a, err := createAdapterV2()
+	kv := a.(*FileStore)
+	return a, kv, err
+}
+
 func freeAdapter(s store.Adapter) {
 	a := s.(*FileStore)
 	defer os.RemoveAll(a.config.Path)
@@ -53,4 +59,8 @@ func freeAdapter(s store.Adapter) {
 func freeAdapterV2(s store.AdapterV2) {
 	a := s.(*FileStore)
 	defer os.RemoveAll(a.config.Path)
+}
+
+func freeAdapterTMPop(a store.AdapterV2, _ store.KeyValueStore) {
+	freeAdapterV2(a)
 }

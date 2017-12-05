@@ -37,7 +37,7 @@ func TestFilestoreV2(t *testing.T) {
 
 func TestFileTMPop(t *testing.T) {
 	tmpoptestcases.Factory{
-		New:  createAdapter,
-		Free: freeAdapter,
+		New:  createAdapterTMPop,
+		Free: freeAdapterTMPop,
 	}.RunTests(t)
 }

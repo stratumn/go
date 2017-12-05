@@ -32,6 +32,7 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/leveldbstore"
 	"github.com/stratumn/sdk/store"
@@ -120,7 +121,7 @@ func (a *FileStore) NewBatch() (store.Batch, error) {
 
 // NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
 func (a *FileStore) NewBatchV2() (store.BatchV2, error) {
-	return nil, nil
+	return bufferedbatch.NewBatchV2(a), nil
 }
 
 /********** Store writer implementation **********/
