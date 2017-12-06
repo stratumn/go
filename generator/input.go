@@ -17,12 +17,12 @@ package generator
 // Input must be implemented by all input types.
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/manifoldco/promptui"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -113,7 +113,7 @@ func UnmarshalJSONInput(data []byte) (Input, error) {
 		}
 		return &in, nil
 	default:
-		return nil, fmt.Errorf("invalid input type %q", shared.Type)
+		return nil, errors.Errorf("invalid input type %q", shared.Type)
 	}
 }
 
@@ -155,7 +155,7 @@ func (in *StringInput) Set(val interface{}) error {
 			return err
 		}
 		if !ok {
-			return fmt.Errorf("value must have format %q", in.Format)
+			return errors.Errorf("value must have format %q", in.Format)
 		}
 	}
 	in.value = str
@@ -188,7 +188,7 @@ func createStringPrompt(label, format, defaultValue string) promptui.Prompt {
 					return err
 				}
 				if !ok {
-					return fmt.Errorf("value must have format %q", format)
+					return errors.Errorf("value must have format %q", format)
 				}
 			}
 			return nil
@@ -223,7 +223,7 @@ type StringSelect struct {
 func (in *StringSelect) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
-		return fmt.Errorf("value must be a string, got %q", val)
+		return errors.Errorf("value must be a string, got %q", val)
 	}
 	if str == "" && in.Default != noValue {
 		for _, opt := range in.Options {
@@ -239,7 +239,7 @@ func (in *StringSelect) Set(val interface{}) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("invalid value %q", str)
+	return errors.Errorf("invalid value %q", str)
 }
 
 // Get implements github.com/stratumn/sdk/generator.Input.
@@ -325,7 +325,7 @@ type StringSelectMulti struct {
 func (in *StringSelectMulti) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
-		return fmt.Errorf("value must be a string, got %q", val)
+		return errors.Errorf("value must be a string, got %q", val)
 	}
 
 	if str == "" && in.Default != noValue && in.Default != "" {
@@ -339,7 +339,7 @@ PARSE_LOOP:
 		value = strings.TrimSpace(value)
 		if value == "" {
 			in.values = nil
-			return fmt.Errorf("Value format should match [[1-%d][,[1-%d]]*]?", len(in.Options), len(in.Options))
+			return errors.Errorf("Value format should match [[1-%d][,[1-%d]]*]?", len(in.Options), len(in.Options))
 		}
 		for _, opt := range in.Options {
 			if opt.Input == value {
@@ -348,7 +348,7 @@ PARSE_LOOP:
 			}
 		}
 		in.values = nil
-		return fmt.Errorf("invalid value %q", str)
+		return errors.Errorf("invalid value %q", str)
 	}
 
 	return nil
@@ -448,7 +448,7 @@ func (in *StringSlice) Set(val interface{}) error {
 		str = in.Default
 	}
 	if str == "" {
-		return fmt.Errorf("list must be non empty")
+		return errors.Errorf("list must be non empty")
 	}
 
 	for _, value := range strings.Split(str, in.Separator) {
@@ -456,7 +456,7 @@ func (in *StringSlice) Set(val interface{}) error {
 		if in.Format != "" {
 			ok, err := regexp.MatchString(in.Format, value)
 			if !ok {
-				err = fmt.Errorf("value %q must have format %q", value, in.Format)
+				err = errors.Errorf("value %q must have format %q", value, in.Format)
 			}
 			if err != nil {
 				in.values = nil
