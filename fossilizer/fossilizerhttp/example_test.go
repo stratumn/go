@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/sdk/dummyfossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
 	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/sdk/jsonws"
 )
 
 // This example shows how to create a server from a dummyfossilizer.
@@ -39,9 +40,17 @@ func Example() {
 	httpConfig := &jsonhttp.Config{
 		Address: ":6000",
 	}
+	basicConfig := &jsonws.BasicConfig{}
+	bufConfig := &jsonws.BufferedConnConfig{
+		Size:         256,
+		WriteTimeout: 10 * time.Second,
+		PongTimeout:  70 * time.Second,
+		PingInterval: time.Minute,
+		MaxMsgSize:   1024,
+	}
 
 	// Create a server.
-	s := fossilizerhttp.New(a, config, httpConfig)
+	s := fossilizerhttp.New(a, config, httpConfig, basicConfig, bufConfig)
 	go s.Start()
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer s.Shutdown(ctx)

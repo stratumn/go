@@ -16,11 +16,13 @@ package fossilizerhttp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
@@ -28,6 +30,8 @@ import (
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizertesting"
 	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/sdk/jsonws"
+	"github.com/stratumn/sdk/jsonws/jsonwstesting"
 	"github.com/stratumn/sdk/testutil"
 )
 
@@ -94,10 +98,12 @@ func TestFossilize(t *testing.T) {
 		return nil
 	}
 
-	s := New(a, &Config{
+	config := &Config{
 		MinDataLen: 2,
 		MaxDataLen: 16,
-	}, &jsonhttp.Config{})
+	}
+
+	s := New(a, config, &jsonhttp.Config{}, &jsonws.BasicConfig{}, &jsonws.BufferedConnConfig{})
 
 	go s.Start()
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -244,5 +250,94 @@ func TestNotFound(t *testing.T) {
 	}
 	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
+	}
+}
+
+func TestGetSocket(t *testing.T) {
+	// Chan that will receive the event channel.
+	sendChan := make(chan chan *fossilizer.Event)
+
+	// Chan used to wait for the connection to be ready.
+	readyChan := make(chan struct{})
+
+	// Chan used to wait for web socket message.
+	doneChan := make(chan struct{})
+
+	conn := jsonwstesting.MockConn{}
+	conn.MockReadJSON.Fn = func(interface{}) error {
+		readyChan <- struct{}{}
+		return nil
+	}
+	conn.MockWriteJSON.Fn = func(interface{}) error {
+		doneChan <- struct{}{}
+		return nil
+	}
+
+	upgradeHandle := func(w http.ResponseWriter, r *http.Request, h http.Header) (jsonws.PingableConn, error) {
+		return &conn, nil
+	}
+
+	// Mock fossilize to publish result to channel.
+	a := &fossilizertesting.MockAdapter{}
+	a.MockAddFossilizerEventChan.Fn = func(c chan *fossilizer.Event) {
+		sendChan <- c
+	}
+
+	config := &Config{
+		MinDataLen: 2,
+		MaxDataLen: 16,
+	}
+
+	basicConfig := &jsonws.BasicConfig{UpgradeHandle: upgradeHandle}
+	bufConfig := &jsonws.BufferedConnConfig{
+		Size:         256,
+		WriteTimeout: 10 * time.Second,
+		PongTimeout:  70 * time.Second,
+		PingInterval: time.Minute,
+		MaxMsgSize:   1024,
+	}
+
+	s := New(a, config, &jsonhttp.Config{}, basicConfig, bufConfig)
+
+	go s.Start()
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer s.Shutdown(ctx)
+	defer cancel()
+
+	// Register web socket connection.
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/websocket", nil)
+	go s.getWebSocket(w, r, nil)
+
+	event := &fossilizer.Event{
+		EventType: fossilizer.DidFossilizeSegment,
+		Details:   &fossilizer.Result{},
+	}
+
+	// Wait for channel to be added.
+	select {
+	case eventChan := <-sendChan:
+		// Wait for connection to be ready.
+		select {
+		case <-readyChan:
+		case <-time.After(time.Second):
+			t.Fatalf("connection ready timeout")
+		}
+		eventChan <- event
+	case <-time.After(time.Second):
+		t.Fatalf("save channel not added")
+	}
+
+	// Wait for message to be broadcasted.
+	select {
+	case <-doneChan:
+		got := conn.MockWriteJSON.LastCalledWith.(*fossilizer.Event)
+		if !reflect.DeepEqual(got, event) {
+			gotjs, _ := json.MarshalIndent(got, "", "  ")
+			wantjs, _ := json.MarshalIndent(event, "", "  ")
+			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("fossilized segment not broadcasted")
 	}
 }

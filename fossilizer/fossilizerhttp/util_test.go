@@ -19,9 +19,11 @@ import (
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stratumn/sdk/fossilizer/fossilizertesting"
 	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/sdk/jsonws"
 )
 
 func createServer() (*Server, *fossilizertesting.MockAdapter) {
@@ -29,7 +31,13 @@ func createServer() (*Server, *fossilizertesting.MockAdapter) {
 	s := New(a, &Config{
 		MinDataLen: 2,
 		MaxDataLen: 16,
-	}, &jsonhttp.Config{})
+	}, &jsonhttp.Config{}, &jsonws.BasicConfig{}, &jsonws.BufferedConnConfig{
+		Size:         256,
+		WriteTimeout: 10 * time.Second,
+		PongTimeout:  70 * time.Second,
+		PingInterval: time.Minute,
+		MaxMsgSize:   1024,
+	})
 
 	return s, a
 }
