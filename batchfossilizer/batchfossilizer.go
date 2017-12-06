@@ -148,7 +148,7 @@ type Fossilizer struct {
 	resultChan           chan error
 	batchChan            chan *batch
 	stopChan             chan error
-	semChan              chan struct{}
+	semChan              chan struct{} // used to control number of simultaneous batches
 	resultChans          []chan *fossilizer.Result
 	fossilizerEventChans []chan *fossilizer.Event
 	waitGroup            sync.WaitGroup
@@ -412,7 +412,7 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 			}
 
 			event := &fossilizer.Event{
-				EventType: fossilizer.DidFossilizeSegment,
+				EventType: fossilizer.DidFossilizeLink,
 				Details:   r,
 			}
 			for _, c := range a.fossilizerEventChans {

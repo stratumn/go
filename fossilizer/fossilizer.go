@@ -52,8 +52,8 @@ type Result struct {
 type EventType int
 
 const (
-	// DidFossilizeSegment means that segment was fossilized
-	DidFossilizeSegment EventType = iota
+	// DidFossilizeLink means that segment was fossilized
+	DidFossilizeLink EventType = iota
 )
 
 // Event is the object stores send to notify of important events.
