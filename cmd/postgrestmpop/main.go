@@ -18,8 +18,6 @@ package main
 import (
 	"flag"
 
-	"github.com/stratumn/sdk/leveldbstore"
-
 	"github.com/stratumn/sdk/postgresstore"
 	"github.com/stratumn/sdk/tendermint"
 	"github.com/stratumn/sdk/tmpop"
@@ -41,9 +39,7 @@ func main() {
 	flag.Parse()
 
 	a := postgresstore.InitializeWithFlags(version, commit)
-	kv, _ := leveldbstore.New(&leveldbstore.Config{Path: "leveldb"})
-
 	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, ValidatorFilename: *validatorFilename}
 
-	tmpop.Run(a, kv, tmpopConfig)
+	tmpop.Run(a, a, tmpopConfig)
 }

@@ -68,6 +68,11 @@ func (a *writer) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (a *writer) SaveValue(key []byte, value []byte) error {
+	return a.SetValue(key, value)
+}
+
+// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+func (a *writer) SetValue(key []byte, value []byte) error {
 	_, err := a.stmts.SaveValue.Exec(key, value)
 	if err != nil {
 		return err

@@ -260,6 +260,11 @@ func (c *CouchStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error
 
 // SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
 func (c *CouchStore) SaveValue(key, value []byte) error {
+	return c.SetValue(key, value)
+}
+
+// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+func (c *CouchStore) SetValue(key, value []byte) error {
 	hexKey := hex.EncodeToString(key)
 	valueDoc, err := c.getDocument(dbValue, hexKey)
 	if err != nil {

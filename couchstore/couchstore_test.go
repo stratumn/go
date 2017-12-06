@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/sdk/dummystore"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
@@ -146,7 +145,7 @@ func newTestCouchStoreV2() (store.AdapterV2, error) {
 
 func newTestCouchStoreTMPop() (store.AdapterV2, store.KeyValueStore, error) {
 	a, err := newTestCouchStoreV2()
-	kv := dummystore.New(&dummystore.Config{})
+	kv := a.(*CouchStore)
 	return a, kv, err
 }
 
