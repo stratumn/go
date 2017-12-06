@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
@@ -43,20 +42,6 @@ const noValue = "<no value>"
 
 // Input must be implemented by all input types.
 type Input interface {
-	// <<<
-	// Deprecated
-	// Set must set the value of the input or return an error.
-	// It should be able to, at the very least, set the value from a string.
-	Set(interface{}) error
-
-	// Get must return the value of the input.
-	Get() interface{}
-
-	// Msg must return a message that will be displayed when prompting the
-	// value.
-	Msg() string
-	// >>>
-
 	Run() (interface{}, error)
 }
 
@@ -140,44 +125,6 @@ type StringInput struct {
 	value string
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
-func (in *StringInput) Set(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return errors.New("value must be a string")
-	}
-	if str == "" && in.Default != noValue {
-		str = in.Default
-	}
-	if in.Format != "" {
-		ok, err := regexp.MatchString(in.Format, str)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return errors.Errorf("value must have format %q", in.Format)
-		}
-	}
-	in.value = str
-	return nil
-}
-
-// Get implements github.com/stratumn/sdk/generator.Input.
-func (in StringInput) Get() interface{} {
-	if in.value == "" && in.Default != noValue {
-		return in.Default
-	}
-	return in.value
-}
-
-// Msg implements github.com/stratumn/sdk/generator.Input.
-func (in *StringInput) Msg() string {
-	if in.Default != "" && in.Default != noValue {
-		return fmt.Sprintf("%s (default %q)\n", in.Prompt, in.Default)
-	}
-	return in.Prompt + "\n"
-}
-
 func createStringPrompt(label, format, defaultValue string) promptui.Prompt {
 	prompt := promptui.Prompt{
 		Label: label,
@@ -214,58 +161,9 @@ type StringSelect struct {
 	Default string `json:"default"`
 
 	// Options is an array of possible values.
-	Options []StringSelectOption `json:"options"`
+	Options StringSelectOptionSlice `json:"options"`
 
 	value string
-}
-
-// Set implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSelect) Set(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return errors.Errorf("value must be a string, got %q", val)
-	}
-	if str == "" && in.Default != noValue {
-		for _, opt := range in.Options {
-			if opt.Value == in.Default {
-				in.value = opt.Value
-				return nil
-			}
-		}
-	}
-	for _, opt := range in.Options {
-		if opt.Input == str {
-			in.value = opt.Value
-			return nil
-		}
-	}
-	return errors.Errorf("invalid value %q", str)
-}
-
-// Get implements github.com/stratumn/sdk/generator.Input.
-func (in StringSelect) Get() interface{} {
-	if in.value == "" && in.Default != noValue {
-		return in.Default
-	}
-	return in.value
-}
-
-// Msg implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSelect) Msg() string {
-	// prompt := promptui.Select{
-	// 	Label: "Select Day",
-	// 	Items: []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
-	// 		"Saturday", "Sunday"},
-	// }
-	p := in.Prompt + "\n"
-	for _, v := range in.Options {
-		if in.Default == v.Value && in.Default != noValue {
-			p += v.Input + ": " + v.Text + " (default)\n"
-		} else {
-			p += v.Input + ": " + v.Text + "\n"
-		}
-	}
-	return p
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
@@ -275,19 +173,19 @@ func (in *StringSelect) Run() (interface{}, error) {
 		Items: func() (items []interface{}) {
 			items = make([]interface{}, 0, len(in.Options))
 			if in.Default != "" {
-				items = append(items, in.Default)
+				items = append(items, in.Options.FindText(in.Default))
 			}
 			for _, v := range in.Options {
 				if in.Default == "" || v.Value != in.Default {
-					items = append(items, v.Value)
+					items = append(items, v.Text)
 				}
 			}
 			return
 		}(),
 		Size: len(in.Options),
 	}
-	_, val, err := prompt.Run()
-	return val, err
+	_, txt, err := prompt.Run()
+	return in.Options.FindValue(txt), err
 }
 
 // StringSelectOption contains properties for string select options.
@@ -302,6 +200,29 @@ type StringSelectOption struct {
 	Text string `json:"text"`
 }
 
+// StringSelectOptionSlice is a slice of StringSelectOption to add methods
+type StringSelectOptionSlice []StringSelectOption
+
+// FindText have to be replaced when []StringSelectOption will be a map[string]string
+func (options StringSelectOptionSlice) FindText(value string) string {
+	for _, v := range options {
+		if value == v.Value {
+			return v.Text
+		}
+	}
+	return value
+}
+
+// FindValue have to be replaced when []StringSelectOption will be a map[string]string
+func (options StringSelectOptionSlice) FindValue(text string) string {
+	for _, v := range options {
+		if text == v.Text {
+			return v.Value
+		}
+	}
+	return text
+}
+
 // StringSelectMulti contains properties for multiple select inputs.
 type StringSelectMulti struct {
 	InputShared
@@ -310,7 +231,7 @@ type StringSelectMulti struct {
 	Default string `json:"default"`
 
 	// Options is an array of possible values.
-	Options []StringSelectOption `json:"options"`
+	Options StringSelectOptionSlice `json:"options"`
 
 	// IsRequired is a bool indicating wether an input is needed.
 	IsRequired bool `json:"isRequired"`
@@ -319,64 +240,6 @@ type StringSelectMulti struct {
 	Separator string `json:"separator"`
 
 	values []string
-}
-
-// Set implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSelectMulti) Set(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return errors.Errorf("value must be a string, got %q", val)
-	}
-
-	if str == "" && in.Default != noValue && in.Default != "" {
-		str = in.Default
-	} else if str == "" && !in.IsRequired {
-		return nil
-	}
-
-PARSE_LOOP:
-	for _, value := range strings.Split(str, in.Separator) {
-		value = strings.TrimSpace(value)
-		if value == "" {
-			in.values = nil
-			return errors.Errorf("Value format should match [[1-%d][,[1-%d]]*]?", len(in.Options), len(in.Options))
-		}
-		for _, opt := range in.Options {
-			if opt.Input == value {
-				in.values = append(in.values, opt.Value)
-				continue PARSE_LOOP
-			}
-		}
-		in.values = nil
-		return errors.Errorf("invalid value %q", str)
-	}
-
-	return nil
-}
-
-// Get implements github.com/stratumn/sdk/generator.Input.
-func (in StringSelectMulti) Get() interface{} {
-	if len(in.values) == 0 && in.Default != noValue && in.Default != "" && in.Separator != "" {
-		return strings.Split(in.Default, in.Separator)
-	}
-	return in.values
-}
-
-// Msg implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSelectMulti) Msg() string {
-	p := fmt.Sprintf("%s (separator %q)", in.Prompt, in.Separator)
-	if in.Default == "" && in.IsRequired == false {
-		p += " (default: None)"
-	}
-	p += "\n"
-	for _, v := range in.Options {
-		if in.Default == v.Value && in.Default != noValue {
-			p += v.Input + ": " + v.Text + " (default)\n"
-		} else {
-			p += v.Input + ": " + v.Text + "\n"
-		}
-	}
-	return p
 }
 
 func appendIfNotSelected(value string, input, output []string) []string {
@@ -394,12 +257,12 @@ func (in *StringSelectMulti) Run() (interface{}, error) {
 	for {
 		options := make([]string, 0)
 		if in.Default != "" {
-			options = appendIfNotSelected(in.Default, values, options)
+			options = appendIfNotSelected(in.Options.FindText(in.Default), values, options)
 		}
 		options = append(options, "")
 		for _, v := range in.Options {
 			if in.Default == "" || v.Value != in.Default {
-				options = appendIfNotSelected(v.Value, values, options)
+				options = appendIfNotSelected(v.Text, values, options)
 			}
 		}
 		prompt := promptui.Select{
@@ -419,6 +282,9 @@ func (in *StringSelectMulti) Run() (interface{}, error) {
 	if in.IsRequired && len(values) == 0 {
 		return nil, errors.New("Selection is mandatory")
 	}
+	for i, out := range values {
+		values[i] = in.Options.FindValue(out)
+	}
 	return values, nil
 }
 
@@ -436,53 +302,6 @@ type StringSlice struct {
 	Separator string `json:"separator"`
 
 	values []string
-}
-
-// Set implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSlice) Set(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return errors.New("value must be a string")
-	}
-	if str == "" && in.Default != noValue {
-		str = in.Default
-	}
-	if str == "" {
-		return errors.Errorf("list must be non empty")
-	}
-
-	for _, value := range strings.Split(str, in.Separator) {
-		value = strings.TrimSpace(value)
-		if in.Format != "" {
-			ok, err := regexp.MatchString(in.Format, value)
-			if !ok {
-				err = errors.Errorf("value %q must have format %q", value, in.Format)
-			}
-			if err != nil {
-				in.values = nil
-				return err
-			}
-		}
-		in.values = append(in.values, value)
-	}
-	return nil
-}
-
-// Get implements github.com/stratumn/sdk/generator.Input.
-func (in StringSlice) Get() interface{} {
-	if len(in.values) == 0 && in.Default != noValue && in.Separator != "" {
-		return strings.Split(in.Default, in.Separator)
-	}
-	return in.values
-}
-
-// Msg implements github.com/stratumn/sdk/generator.Input.
-func (in *StringSlice) Msg() string {
-	ret := fmt.Sprintf("%s (separator %q)\n", in.Prompt, in.Separator)
-	if in.Default != "" && in.Default != noValue {
-		ret = fmt.Sprintf("%s (default %q)\n", ret[0:len(ret)-1], in.Default)
-	}
-	return ret
 }
 
 func createListPrompt(label, format, defaultValue string) promptui.Prompt {
