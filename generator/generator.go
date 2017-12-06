@@ -19,8 +19,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -30,6 +28,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -298,6 +298,29 @@ type fileSubstitution struct {
 	filename string // the resulting filename
 }
 
+func (gen Generator) generateFileListFromInterface(name, pattern string, input interface{}) ([]fileSubstitution, error) {
+	if str, ok := input.(string); ok {
+		return []fileSubstitution{fileSubstitution{str, strings.Replace(name, pattern, str, 1)}}, nil
+	} else if str, ok := input.([]string); ok {
+		names := make([]fileSubstitution, len(str), len(str))
+		for i, s := range str {
+			names[i] = fileSubstitution{s, strings.Replace(name, pattern, s, 1)}
+		}
+		return names, nil
+	} else if str, ok := input.([]interface{}); ok {
+		strSlice := make([]string, len(str))
+		for i, s := range str {
+			var ok bool
+			strSlice[i], ok = s.(string)
+			if !ok {
+				return nil, errors.Errorf("bad subinput type %#v", s)
+			}
+		}
+		return gen.generateFileListFromInterface(name, pattern, strSlice)
+	}
+	return nil, errors.Errorf("bad input type %#v", input)
+}
+
 func (gen Generator) generateFileListFromSubstitution(name string) ([]fileSubstitution, error) {
 	for pattern, subst := range gen.def.FilenameSubsts {
 		if !strings.Contains(name, pattern) {
@@ -305,19 +328,14 @@ func (gen Generator) generateFileListFromSubstitution(name string) ([]fileSubsti
 		}
 		input, err := gen.input(subst)
 		if err != nil {
-			return nil, fmt.Errorf("Filename %q contains the pattern %q but no input is found to replace %q / error: %q",
+			return nil, errors.Errorf("Filename %q contains the pattern %q but no input is found to replace %q / error: %q",
 				name, pattern, subst, err.Error())
 		}
-		if str, ok := input.(string); ok {
-			return []fileSubstitution{fileSubstitution{str, strings.Replace(name, pattern, str, 1)}}, nil
-		} else if str, ok := input.([]string); ok {
-			names := make([]fileSubstitution, len(str), len(str))
-			for i, s := range str {
-				names[i] = fileSubstitution{s, strings.Replace(name, pattern, s, 1)}
-			}
-			return names, nil
+		ret, err := gen.generateFileListFromInterface(name, pattern, input)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Filename %q contains the pattern %q", name, pattern)
 		}
-		return nil, fmt.Errorf("Filename %q contains the pattern %q but input has bad type %#v", name, pattern, input)
+		return ret, nil
 	}
 	return []fileSubstitution{fileSubstitution{"", name}}, nil
 }
@@ -394,7 +412,7 @@ func (gen *Generator) input(id string) (interface{}, error) {
 			return val, nil
 		}
 	}
-	return nil, fmt.Errorf("undefined input %q", id)
+	return nil, errors.Errorf("undefined input %q", id)
 }
 
 func (gen *Generator) ask(input string) (interface{}, error) {
