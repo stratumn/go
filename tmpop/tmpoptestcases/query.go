@@ -35,14 +35,11 @@ func (f Factory) TestQuery(t *testing.T) {
 
 	link1, req := commitRandomLink(t, h, req)
 
-	invalidLink := cstesting.RandomLink()
-	invalidLink.Meta["mapId"] = nil
-	invalidLink.Meta["process"] = link1.GetProcess()
+	invalidLink := cstesting.InvalidLinkWithProcess(link1.GetProcess())
 	invalidLinkHash, _ := invalidLink.Hash()
 	req = commitLink(t, h, invalidLink, req)
 
-	link2 := cstesting.RandomLink()
-	link2.Meta["process"] = link1.GetProcess()
+	link2 := cstesting.RandomLinkWithProcess(link1.GetProcess())
 	linkHash2, _ := link2.Hash()
 	req = commitLink(t, h, link2, req)
 

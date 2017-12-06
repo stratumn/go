@@ -40,8 +40,7 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	h.BeginBlock(req)
 
-	l := cstesting.RandomLink()
-	l.Meta["process"] = "testProcess"
+	l := cstesting.RandomLinkWithProcess("testProcess")
 	l.Meta["action"] = "init"
 	l.State["string"] = "test"
 	tx := makeCreateLinkTx(t, l)
@@ -51,8 +50,7 @@ func (f Factory) TestValidation(t *testing.T) {
 		t.Errorf("a.DeliverTx(): failed: %v", res.Log)
 	}
 
-	l = cstesting.RandomLink()
-	l.Meta["process"] = "testProcess"
+	l = cstesting.RandomLinkWithProcess("testProcess")
 	l.Meta["action"] = "init"
 	l.State["string"] = 42
 	tx = makeCreateLinkTx(t, l)

@@ -58,8 +58,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 		linkHash, _ := link.Hash()
 		res := h.CheckTx(tx)
 
-		linkWithRef := cstesting.RandomLink()
-		linkWithRef.Meta["process"] = link.GetProcess()
+		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
 		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
 			"process":  link.GetProcess(),
 			"linkHash": linkHash,
@@ -95,8 +94,7 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		linkHash, _ := link.Hash()
 		res := h.CheckTx(tx)
 
-		linkWithRef := cstesting.RandomLink()
-		linkWithRef.Meta["process"] = link.GetProcess()
+		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
 		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
 			"process":  link.GetProcess(),
 			"linkHash": linkHash,
