@@ -406,19 +406,10 @@ func (gen *Generator) ask(input string) (interface{}, error) {
 }
 
 func (gen *Generator) read(in Input) (interface{}, error) {
-	fmt.Print(in.Msg())
 	for {
-		fmt.Print("? ")
-		str, err := gen.reader.ReadString('\n')
-		if err != nil {
-			return nil, err
+		if output, err := in.Run(); err == nil {
+			return output, nil
 		}
-		str = strings.TrimSpace(str)
-		if err := in.Set(str); err != nil {
-			fmt.Println(err)
-			continue
-		}
-		return in.Get(), nil
 	}
 }
 

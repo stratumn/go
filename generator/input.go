@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/manifoldco/promptui"
 )
 
 const (
@@ -41,6 +43,8 @@ const noValue = "<no value>"
 
 // Input must be implemented by all input types.
 type Input interface {
+	// <<<
+	// Deprecated
 	// Set must set the value of the input or return an error.
 	// It should be able to, at the very least, set the value from a string.
 	Set(interface{}) error
@@ -51,6 +55,9 @@ type Input interface {
 	// Msg must return a message that will be displayed when prompting the
 	// value.
 	Msg() string
+	// >>>
+
+	Run() (interface{}, error)
 }
 
 // InputMap is a maps input names to inputs.
@@ -171,6 +178,34 @@ func (in *StringInput) Msg() string {
 	return in.Prompt + "\n"
 }
 
+func createStringPrompt(label, format, defaultValue string) promptui.Prompt {
+	prompt := promptui.Prompt{
+		Label: label,
+		Validate: func(input string) error {
+			if format != "" {
+				ok, err := regexp.MatchString(format, input)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return fmt.Errorf("value must have format %q", format)
+				}
+			}
+			return nil
+		},
+	}
+	if defaultValue != noValue {
+		prompt.Default = defaultValue
+	}
+	return prompt
+}
+
+// Run implements github.com/stratumn/sdk/generator.Input.
+func (in *StringInput) Run() (interface{}, error) {
+	prompt := createStringPrompt(in.Prompt, in.Format, in.Default)
+	return prompt.Run()
+}
+
 // StringSelect contains properties for string select inputs.
 type StringSelect struct {
 	InputShared
@@ -217,6 +252,11 @@ func (in StringSelect) Get() interface{} {
 
 // Msg implements github.com/stratumn/sdk/generator.Input.
 func (in *StringSelect) Msg() string {
+	// prompt := promptui.Select{
+	// 	Label: "Select Day",
+	// 	Items: []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+	// 		"Saturday", "Sunday"},
+	// }
 	p := in.Prompt + "\n"
 	for _, v := range in.Options {
 		if in.Default == v.Value && in.Default != noValue {
@@ -226,6 +266,28 @@ func (in *StringSelect) Msg() string {
 		}
 	}
 	return p
+}
+
+// Run implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSelect) Run() (interface{}, error) {
+	prompt := promptui.Select{
+		Label: in.Prompt,
+		Items: func() (items []interface{}) {
+			items = make([]interface{}, 0, len(in.Options))
+			if in.Default != "" {
+				items = append(items, in.Default)
+			}
+			for _, v := range in.Options {
+				if in.Default == "" || v.Value != in.Default {
+					items = append(items, v.Value)
+				}
+			}
+			return
+		}(),
+		Size: len(in.Options),
+	}
+	_, val, err := prompt.Run()
+	return val, err
 }
 
 // StringSelectOption contains properties for string select options.
@@ -317,6 +379,49 @@ func (in *StringSelectMulti) Msg() string {
 	return p
 }
 
+func appendIfNotSelected(value string, input, output []string) []string {
+	for _, val := range input {
+		if val == value {
+			return output
+		}
+	}
+	return append(output, value)
+}
+
+// Run implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSelectMulti) Run() (interface{}, error) {
+	values := make([]string, 0)
+	for {
+		options := make([]string, 0)
+		if in.Default != "" {
+			options = appendIfNotSelected(in.Default, values, options)
+		}
+		options = append(options, "")
+		for _, v := range in.Options {
+			if in.Default == "" || v.Value != in.Default {
+				options = appendIfNotSelected(v.Value, values, options)
+			}
+		}
+		prompt := promptui.Select{
+			Label: in.Prompt,
+			Items: options,
+			Size:  len(options),
+		}
+		_, val, err := prompt.Run()
+		if err != nil {
+			return nil, err
+		}
+		if val == "" {
+			break
+		}
+		values = append(values, val)
+	}
+	if in.IsRequired && len(values) == 0 {
+		return nil, errors.New("Selection is mandatory")
+	}
+	return values, nil
+}
+
 // StringSlice contains properties for string inputs.
 type StringSlice struct {
 	InputShared
@@ -378,4 +483,28 @@ func (in *StringSlice) Msg() string {
 		ret = fmt.Sprintf("%s (default %q)\n", ret[0:len(ret)-1], in.Default)
 	}
 	return ret
+}
+
+func createListPrompt(label, format, defaultValue string) promptui.Prompt {
+	return createStringPrompt(label, fmt.Sprintf("|%s", format), defaultValue)
+}
+
+// Run implements github.com/stratumn/sdk/generator.Input.
+func (in *StringSlice) Run() (interface{}, error) {
+	values := make([]interface{}, 0)
+	for {
+		prompt := createListPrompt(in.Prompt, in.Format, in.Default)
+		val, err := prompt.Run()
+		if err != nil {
+			return nil, err
+		}
+		if val == "" {
+			break
+		}
+		values = append(values, val)
+	}
+	if len(values) == 0 {
+		return nil, errors.New("list must be non empty")
+	}
+	return values, nil
 }
