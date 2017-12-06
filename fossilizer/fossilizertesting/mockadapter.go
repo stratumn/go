@@ -28,6 +28,9 @@ type MockAdapter struct {
 	// The mock for the AddResultChan function.
 	MockAddResultChan MockAddResultChan
 
+	// The mock for the AddFossilizerEventChan function.
+	MockAddFossilizerEventChan MockAddFossilizerEventChan
+
 	// The mock for the Fossilize function.
 	MockFossilize MockFossilize
 }
@@ -54,6 +57,21 @@ type MockAddResultChan struct {
 
 	// An optional implementation of the function.
 	Fn func(chan *fossilizer.Result)
+}
+
+// MockAddFossilizerEventChan mocks the AddFossilizerEventChan function.
+type MockAddFossilizerEventChan struct {
+	// The number of times the function was called.
+	CalledCount int
+
+	// The channel that was passed to each call.
+	CalledWith []chan *fossilizer.Event
+
+	// The last channel that was passed.
+	LastCalledWith chan *fossilizer.Event
+
+	// An optional implementation of the function.
+	Fn func(chan *fossilizer.Event)
 }
 
 // MockFossilize mocks the Fossilize function.
@@ -97,6 +115,18 @@ func (a *MockAdapter) AddResultChan(resultChan chan *fossilizer.Result) {
 
 	if a.MockAddResultChan.Fn != nil {
 		a.MockAddResultChan.Fn(resultChan)
+	}
+}
+
+// AddFossilizerEventChan implements
+// github.com/stratumn/sdk/fossilizer.Adapter.AddFossilizerEventChan.
+func (a *MockAdapter) AddFossilizerEventChan(resultChan chan *fossilizer.Event) {
+	a.MockAddFossilizerEventChan.CalledCount++
+	a.MockAddFossilizerEventChan.CalledWith = append(a.MockAddFossilizerEventChan.CalledWith, resultChan)
+	a.MockAddFossilizerEventChan.LastCalledWith = resultChan
+
+	if a.MockAddFossilizerEventChan.Fn != nil {
+		a.MockAddFossilizerEventChan.Fn(resultChan)
 	}
 }
 

@@ -27,6 +27,9 @@ type Adapter interface {
 	// Adds a channel that receives results whenever data is fossilized.
 	AddResultChan(resultChan chan *Result)
 
+	// Adds a channel that receives revents from the fossilizer
+	AddFossilizerEventChan(chan *Event)
+
 	// Requests data to be fossilized.
 	// Meta is arbitrary data that will be sent to the result channels.
 	Fossilize(data []byte, meta []byte) error
@@ -42,4 +45,19 @@ type Result struct {
 
 	// The meta data that was given to Adapter.Fossilize.
 	Meta []byte
+}
+
+// EventType lets you know the kind of event received.
+// A client should ignore events it doesn't care about or doesn't understand.
+type EventType int
+
+const (
+	// DidFossilizeSegment means that segment was fossilized
+	DidFossilizeSegment EventType = iota
+)
+
+// Event is the object stores send to notify of important events.
+type Event struct {
+	EventType EventType
+	Details   interface{}
 }

@@ -27,20 +27,29 @@ import (
 
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/sdk/jsonws"
 )
 
 var (
-	addr             string
-	certFile         string
-	keyFile          string
-	numResultWorkers int
-	minDataLen       int
-	maxDataLen       int
-	callbackTimeout  time.Duration
-	readTimeout      time.Duration
-	writeTimeout     time.Duration
-	maxHeaderBytes   int
-	shutdownTimeout  time.Duration
+	fossilizerEventChanSize int
+	addr                    string
+	wsReadBufSize           int
+	wsWriteBufSize          int
+	wsWriteChanSize         int
+	wsWriteTimeout          time.Duration
+	wsPongTimeout           time.Duration
+	wsPingInterval          time.Duration
+	wsMaxMsgSize            int64
+	certFile                string
+	keyFile                 string
+	numResultWorkers        int
+	minDataLen              int
+	maxDataLen              int
+	callbackTimeout         time.Duration
+	readTimeout             time.Duration
+	writeTimeout            time.Duration
+	maxHeaderBytes          int
+	shutdownTimeout         time.Duration
 )
 
 // Run launches a fossilizerhttp server.
@@ -48,13 +57,15 @@ func Run(
 	a fossilizer.Adapter,
 	config *Config,
 	httpConfig *jsonhttp.Config,
+	basicConfig *jsonws.BasicConfig,
+	bufConnConfig *jsonws.BufferedConnConfig,
 	shutdownTimeout time.Duration,
 ) {
 	log.Info("Copyright (c) 2017 Stratumn SAS")
 	log.Info("Apache License 2.0")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
-	h := New(a, config, httpConfig)
+	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
 
 	go func() {
 		sigc := make(chan os.Signal)
@@ -79,6 +90,7 @@ func Run(
 
 // RegisterFlags register the flags used by RunWithFlags.
 func RegisterFlags() {
+	flag.IntVar(&fossilizerEventChanSize, "event_chan_size", DefaultFossilizerEventChanSize, "Size of the FossilizerEvent channel")
 	flag.StringVar(&addr, "http", DefaultAddress, "HTTP address")
 	flag.StringVar(&certFile, "tls_cert", "", "TLS certificate file")
 	flag.StringVar(&keyFile, "tls_key", "", "TLS private key file")
@@ -90,16 +102,24 @@ func RegisterFlags() {
 	flag.DurationVar(&writeTimeout, "write_timeout", jsonhttp.DefaultWriteTimeout, "Write timeout")
 	flag.IntVar(&maxHeaderBytes, "max_header_bytes", jsonhttp.DefaultMaxHeaderBytes, "Maximum header bytes")
 	flag.DurationVar(&shutdownTimeout, "shutdown_timeout", 10*time.Second, "Shutdown timeout")
+	flag.IntVar(&wsReadBufSize, "ws_read_buf_size", jsonws.DefaultWebSocketReadBufferSize, "Web socket read buffer size")
+	flag.IntVar(&wsWriteBufSize, "ws_write_buf_size", jsonws.DefaultWebSocketWriteBufferSize, "Web socket write buffer size")
+	flag.IntVar(&wsWriteChanSize, "ws_write_chan_size", jsonws.DefaultWebSocketWriteChanSize, "Size of a web socket connection write channel")
+	flag.DurationVar(&wsWriteTimeout, "ws_write_timeout", jsonws.DefaultWebSocketWriteTimeout, "Timeout for a web socket write")
+	flag.DurationVar(&wsPongTimeout, "ws_pong_timeout", jsonws.DefaultWebSocketPongTimeout, "Timeout for a web socket expected pong")
+	flag.DurationVar(&wsPingInterval, "ws_ping_interval", jsonws.DefaultWebSocketPingInterval, "Interval between web socket pings")
+	flag.Int64Var(&wsMaxMsgSize, "max_msg_size", jsonws.DefaultWebSocketMaxMsgSize, "Maximum size of a received web socket message")
 }
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
 // a fossilizerhttp server configured using flag values.
 func RunWithFlags(a fossilizer.Adapter) {
 	config := &Config{
-		NumResultWorkers: numResultWorkers,
-		MinDataLen:       minDataLen,
-		MaxDataLen:       maxDataLen,
-		CallbackTimeout:  callbackTimeout,
+		NumResultWorkers:        numResultWorkers,
+		MinDataLen:              minDataLen,
+		MaxDataLen:              maxDataLen,
+		CallbackTimeout:         callbackTimeout,
+		FossilizerEventChanSize: fossilizerEventChanSize,
 	}
 	httpConfig := &jsonhttp.Config{
 		Address:        addr,
@@ -109,11 +129,24 @@ func RunWithFlags(a fossilizer.Adapter) {
 		CertFile:       certFile,
 		KeyFile:        keyFile,
 	}
+	basicConfig := &jsonws.BasicConfig{
+		ReadBufferSize:  wsReadBufSize,
+		WriteBufferSize: wsWriteBufSize,
+	}
+	bufConnConfig := &jsonws.BufferedConnConfig{
+		Size:         wsWriteChanSize,
+		WriteTimeout: wsWriteTimeout,
+		PongTimeout:  wsPongTimeout,
+		PingInterval: wsPingInterval,
+		MaxMsgSize:   wsMaxMsgSize,
+	}
 
 	Run(
 		a,
 		config,
 		httpConfig,
+		basicConfig,
+		bufConnConfig,
 		shutdownTimeout,
 	)
 }
