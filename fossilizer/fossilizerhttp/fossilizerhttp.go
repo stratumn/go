@@ -40,6 +40,7 @@ import (
 
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/sdk/jsonws"
 )
 
 const (
@@ -59,6 +60,9 @@ const (
 	// DefaultCallbackTimeout is the default timeout of requests to the
 	// callback URLs.
 	DefaultCallbackTimeout = 10 * time.Second
+
+	// DefaultFossilizerEventChanSize is the default size of the fossilizer event channel.
+	DefaultFossilizerEventChanSize = 256
 )
 
 // Config contains configuration options for the server.
@@ -75,6 +79,9 @@ type Config struct {
 
 	// The timeout of requests to the callback URLs.
 	CallbackTimeout time.Duration
+
+	// The size of the EventChan channel.
+	FossilizerEventChanSize int
 }
 
 // Info is the info returned by the root route.
@@ -85,26 +92,37 @@ type Info struct {
 // Server is an HTTP server for fossilizers.
 type Server struct {
 	*jsonhttp.Server
-	adapter    fossilizer.Adapter
-	config     *Config
-	resultChan chan *fossilizer.Result
+	adapter             fossilizer.Adapter
+	config              *Config
+	ws                  *jsonws.Basic
+	fossilizerEventChan chan *fossilizer.Event
+	resultChan          chan *fossilizer.Result
 }
 
 // New create an instance of a server.
-func New(a fossilizer.Adapter, config *Config, httpConfig *jsonhttp.Config) *Server {
+func New(
+	a fossilizer.Adapter,
+	config *Config,
+	httpConfig *jsonhttp.Config,
+	basicConfig *jsonws.BasicConfig,
+	bufConnConfig *jsonws.BufferedConnConfig,
+) *Server {
 	if config.NumResultWorkers < 1 {
 		config.NumResultWorkers = DefaultNumResultWorkers
 	}
 
 	s := Server{
-		Server:     jsonhttp.New(httpConfig),
-		adapter:    a,
-		config:     config,
-		resultChan: make(chan *fossilizer.Result, config.NumResultWorkers),
+		Server:              jsonhttp.New(httpConfig),
+		adapter:             a,
+		config:              config,
+		ws:                  jsonws.NewBasic(basicConfig, bufConnConfig),
+		resultChan:          make(chan *fossilizer.Result, config.NumResultWorkers),
+		fossilizerEventChan: make(chan *fossilizer.Event, config.FossilizerEventChanSize),
 	}
 
 	s.Get("/", s.root)
 	s.Post("/fossils", s.fossilize)
+	s.GetRaw("/websocket", s.getWebSocket)
 
 	return &s
 }
@@ -131,7 +149,9 @@ func (s *Server) ListenAndServe() (err error) {
 
 // Shutdown stops the server.
 func (s *Server) Shutdown(ctx context.Context) error {
+	s.ws.Stop()
 	close(s.resultChan)
+	close(s.fossilizerEventChan)
 	return s.Server.Shutdown(ctx)
 }
 
@@ -139,10 +159,37 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // ListenAndServe().
 func (s *Server) Start() {
 	s.adapter.AddResultChan(s.resultChan)
+	s.adapter.AddFossilizerEventChan(s.fossilizerEventChan)
+
 	client := http.Client{Timeout: s.config.CallbackTimeout}
 
+	wg := sync.WaitGroup{}
+	wg.Add(s.config.NumResultWorkers + 2)
+
+	go func() {
+		s.ws.Start()
+		wg.Done()
+	}()
+
+	go func() {
+		s.handleEvents()
+		wg.Done()
+	}()
+
 	for i := 0; i < s.config.NumResultWorkers; i++ {
-		go handleResults(s.resultChan, &client)
+		go func() {
+			handleResults(s.resultChan, &client)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+
+// Forward events to websocket
+func (s *Server) handleEvents() {
+	for event := range s.fossilizerEventChan {
+		s.ws.Broadcast(event, nil)
 	}
 }
 
@@ -240,4 +287,8 @@ func handleResults(resultChan chan *fossilizer.Result, client *http.Client) {
 			}).Error("Failed to close callback request")
 		}
 	}
+}
+
+func (s *Server) getWebSocket(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	s.ws.Handle(w, r)
 }

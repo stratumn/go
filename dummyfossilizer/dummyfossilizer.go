@@ -53,8 +53,9 @@ type Info struct {
 // DummyFossilizer is the type that implements
 // github.com/stratumn/sdk/fossilizer.Adapter.
 type DummyFossilizer struct {
-	config      *Config
-	resultChans []chan *fossilizer.Result
+	config               *Config
+	resultChans          []chan *fossilizer.Result
+	fossilizerEventChans []chan *fossilizer.Event
 }
 
 // DummyProof implements the cs.Proof interface
@@ -94,7 +95,7 @@ func init() {
 
 // New creates an instance of a DummyFossilizer.
 func New(config *Config) *DummyFossilizer {
-	return &DummyFossilizer{config, nil}
+	return &DummyFossilizer{config, nil, nil}
 }
 
 // GetInfo implements github.com/stratumn/sdk/fossilizer.Adapter.GetInfo.
@@ -113,6 +114,12 @@ func (a *DummyFossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 	a.resultChans = append(a.resultChans, resultChan)
 }
 
+// AddFossilizerEventChan implements
+// github.com/stratumn/sdk/fossilizer.Adapter.AddFossilizerEventChan.
+func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
+	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
+}
+
 // Fossilize implements github.com/stratumn/sdk/fossilizer.Adapter.Fossilize.
 func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 	r := &fossilizer.Result{
@@ -129,6 +136,15 @@ func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 
 	for _, c := range a.resultChans {
 		c <- r
+	}
+
+	event := &fossilizer.Event{
+		EventType: fossilizer.DidFossilizeSegment,
+		Details:   r,
+	}
+
+	for _, c := range a.fossilizerEventChans {
+		c <- event
 	}
 
 	return nil
