@@ -15,7 +15,6 @@
 package tmpop
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -167,9 +166,9 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
 	if t.lastBlock.AppHash.Compare(types.NewBytes32FromBytes(t.currentHeader.AppHash)) == 0 {
 		t.addTendermintEvidence(req.Header)
 	} else {
-		log.Warnf("Unexpected AppHash in BeginBlock, got %s, expected %s",
-			hex.EncodeToString(t.currentHeader.AppHash),
-			hex.EncodeToString(t.lastBlock.AppHash[:]))
+		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x",
+			t.currentHeader.AppHash,
+			*t.lastBlock.AppHash)
 	}
 
 	// TODO: we don't need to re-load the file for each block, it's expensive.
@@ -391,9 +390,9 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 
 	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot)
 	if appHash.Compare(types.NewBytes32FromBytes(header.AppHash)) != 0 {
-		log.Warnf("App hash %s doesn't match the header's: %s.\nEvidence will not be generated.",
-			hex.EncodeToString(appHash[:]),
-			hex.EncodeToString(header.AppHash))
+		log.Warnf("App hash %x doesn't match the header's: %x.\nEvidence will not be generated.",
+			*appHash,
+			header.AppHash)
 		return
 	}
 
