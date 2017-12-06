@@ -140,7 +140,7 @@ func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 	}
 
 	event := &fossilizer.Event{
-		EventType: fossilizer.DidFossilizeSegment,
+		EventType: fossilizer.DidFossilizeLink,
 		Details:   r,
 	}
 
