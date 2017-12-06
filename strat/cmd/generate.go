@@ -15,14 +15,12 @@
 package cmd
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/stratumn/go-indigocore/generator"
@@ -74,24 +72,8 @@ It asks which generator to use, then uses that generator to generate a project i
 					Text:  desc.Description,
 				})
 			}
-
-			fmt.Print(in.Msg())
-			reader := bufio.NewReader(os.Stdin)
-
-			for {
-				fmt.Print("? ")
-				str, err := reader.ReadString('\n')
-				if err != nil {
-					return err
-				}
-				str = strings.TrimSpace(str)
-				if err := in.Set(str); err != nil {
-					fmt.Println(err)
-					continue
-				}
-				name = in.Get().(string)
-				break
-			}
+			ret, err := in.Run()
+			name = ret.(string)
 		}
 
 		varsFile, err := os.Open(varsPath())
