@@ -112,7 +112,7 @@ func (t *TMPop) saveCommitLinkHashes(links []*cs.Link) error {
 }
 
 // getCommitLinkHashes gets the link hashes included in a block at a specific height.
-// This is useful to ignore invalid links included in a that block.
+// This is useful to ignore invalid links included in that block.
 func (t *TMPop) getCommitLinkHashes(height uint64) ([]types.Bytes32, error) {
 	key := getCommitLinkHashesKey(height)
 	value, err := t.kvDB.GetValue(key)

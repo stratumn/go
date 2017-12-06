@@ -55,6 +55,7 @@ func (c *TendermintClientWrapper) Block(height int) *Block {
 	previousBlock, err := c.tmClient.Block(&height)
 	if err != nil {
 		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
+		return &Block{}
 	}
 
 	block := &Block{

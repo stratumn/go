@@ -17,10 +17,10 @@ package cs_test
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"math/rand"
 	"testing"
 
 	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/merkle"
 	"github.com/stratumn/sdk/testutil"
@@ -182,20 +182,22 @@ func TestGenericProof(t *testing.T) {
 }
 
 func TestTendermintProof(t *testing.T) {
-	createValidProof := func(t *testing.T) (*types.Bytes32, *evidences.TendermintProof) {
-		link := cstesting.RandomLink()
-		linkHash, _ := link.Hash()
+	createValidProof := func(t *testing.T, linksCount int) (*types.Bytes32, *evidences.TendermintProof) {
+		position := rand.Intn(linksCount)
+		linkHash := testutil.RandomHash()
+
+		treeLeaves := make([]types.Bytes32, linksCount)
+		for i := 0; i < linksCount; i++ {
+			if i == position {
+				treeLeaves[i] = *linkHash
+			} else {
+				treeLeaves[i] = *testutil.RandomHash()
+			}
+		}
 
 		validationsHash := testutil.RandomHash()[:]
 		previousAppHash := testutil.RandomHash()[:]
-
-		tree, _ := merkle.NewStaticTree([]types.Bytes32{
-			*testutil.RandomHash(),
-			*testutil.RandomHash(),
-			*linkHash,
-			*testutil.RandomHash(),
-			*testutil.RandomHash(),
-		})
+		tree, _ := merkle.NewStaticTree(treeLeaves)
 
 		hash := sha256.New()
 		hash.Write(previousAppHash)
@@ -206,7 +208,7 @@ func TestTendermintProof(t *testing.T) {
 		e := &evidences.TendermintProof{
 			BlockHeight:     42,
 			Root:            tree.Root(),
-			Path:            tree.Path(2),
+			Path:            tree.Path(position),
 			ValidationsHash: validationsHash,
 			Header:          abci.Header{AppHash: previousAppHash},
 			NextHeader:      abci.Header{AppHash: appHash},
@@ -237,20 +239,24 @@ func TestTendermintProof(t *testing.T) {
 			"Could not unmarshal bytes proof")
 	})
 
+	t.Run("Verify() succeeds for single element merkle tree", func(t *testing.T) {
+		createValidProof(t, 1)
+	})
+
 	t.Run("Verify() fails if validations hash changed", func(t *testing.T) {
-		linkHash, e := createValidProof(t)
+		linkHash, e := createValidProof(t, 5)
 		e.ValidationsHash = linkHash[:]
 		assert.False(t, e.Verify(linkHash), "Proof should not be correct if validations hash changed")
 	})
 
 	t.Run("Verify() fails if merkle tree is invalid", func(t *testing.T) {
-		linkHash, e := createValidProof(t)
+		linkHash, e := createValidProof(t, 3)
 		e.Root = linkHash
 		assert.False(t, e.Verify(linkHash), "Proof should not be correct if merkle root changed")
 	})
 
 	t.Run("Verify() fails if previous app hash has changed", func(t *testing.T) {
-		linkHash, e := createValidProof(t)
+		linkHash, e := createValidProof(t, 4)
 		e.Header.AppHash = linkHash[:]
 		assert.False(t, e.Verify(linkHash), "Proof should not be correct if previous app hash changed")
 	})

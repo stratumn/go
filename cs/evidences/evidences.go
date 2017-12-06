@@ -166,6 +166,11 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	// Then we validate the merkle path
 
 	if len(p.Path) == 0 {
+		// If the tree contains a single element, it's valid if it's the root
+		if lh.Compare(p.Root) == 0 {
+			return true
+		}
+
 		return false
 	}
 
