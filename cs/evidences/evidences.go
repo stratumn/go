@@ -140,8 +140,8 @@ func (p *TendermintProof) FullProof() []byte {
 
 // Verify returns true if the proof of a given linkHash is correct
 func (p *TendermintProof) Verify(linkHash interface{}) bool {
-	lh, exists := linkHash.(*types.Bytes32)
-	if exists != true {
+	lh, ok := linkHash.(*types.Bytes32)
+	if ok != true {
 		return false
 	}
 

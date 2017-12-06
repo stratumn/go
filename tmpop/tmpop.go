@@ -219,19 +219,20 @@ func (t *TMPop) Commit() abci.Result {
 }
 
 func (t *TMPop) notifyCreatedLinks(links []*cs.Link) {
-	if t.tmClient != nil {
-		if len(links) > 0 {
-			savedEvents := &StoreEventsData{}
-			for _, link := range links {
-				savedEvents.StoreEvents = append(savedEvents.StoreEvents, &store.Event{
-					EventType: store.SavedLink,
-					Details:   link,
-				})
-			}
-			t.tmClient.FireEvent(StoreEvents, *savedEvents)
-		}
-	} else {
+	if t.tmClient == nil {
 		log.Warn("TMPoP not connected to Tendermint Core. Notifications will not be delivered.")
+		return
+	}
+
+	if len(links) > 0 {
+		savedEvents := &StoreEventsData{}
+		for _, link := range links {
+			savedEvents.StoreEvents = append(savedEvents.StoreEvents, &store.Event{
+				EventType: store.SavedLink,
+				Details:   link,
+			})
+		}
+		t.tmClient.FireEvent(StoreEvents, *savedEvents)
 	}
 }
 

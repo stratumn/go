@@ -50,7 +50,7 @@ func NewState(a store.AdapterV2) (*State, error) {
 	}
 
 	// With transactional databases we cannot really use two transactions as they'd lock each other
-	// (more exactly, checkedSegments would lock out deliveredSegments)
+	// (more exactly, checked links would lock out delivered links)
 	checkedLinks := bufferedbatch.NewBatchV2(a)
 
 	return &State{
