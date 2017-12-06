@@ -15,7 +15,6 @@
 package tmpop
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -35,7 +34,7 @@ var tmpopLastBlockKey = []byte("tmpop:lastblock")
 
 // LastBlock saves the information of the last block committed for Core/App Handshake on crash/restart.
 type LastBlock struct {
-	AppHash    []byte
+	AppHash    *types.Bytes32
 	Height     uint64
 	LastHeader *abci.Header
 }
@@ -97,7 +96,7 @@ func New(a store.AdapterV2, kv store.KeyValueStore, config *Config) (*TMPop, err
 	if initalized == nil {
 		log.Debug("No existing db, creating new db")
 		saveLastBlock(kv, LastBlock{
-			AppHash: []byte{},
+			AppHash: types.NewBytes32FromBytes(nil),
 			Height:  0,
 		})
 	} else {
@@ -132,11 +131,19 @@ func (t *TMPop) ConnectTendermint(tmClient TendermintClient) {
 
 // Info implements github.com/tendermint/abci/types.Application.Info.
 func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
+	// In case we don't have an app hash, Tendermint requires us to return
+	// an empty byte slice (instead of a 32-byte array of 0)
+	// Otherwise handshake will not work
+	lastAppHash := []byte{}
+	if t.lastBlock.AppHash != nil && t.lastBlock.AppHash.Compare(&types.Bytes32{}) != 0 {
+		lastAppHash = t.lastBlock.AppHash[:]
+	}
+
 	return abci.ResponseInfo{
 		Data:             Name,
 		Version:          t.config.Version,
 		LastBlockHeight:  t.lastBlock.Height,
-		LastBlockAppHash: t.lastBlock.AppHash,
+		LastBlockAppHash: lastAppHash,
 	}
 }
 
@@ -157,10 +164,12 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
 	// consensus has been formed around it.
 	// This AppHash will never be denied in a future block so we can add
 	// evidence to the links that were added in the previous blocks.
-	if bytes.Compare(t.lastBlock.AppHash, t.currentHeader.AppHash) == 0 {
+	if t.lastBlock.AppHash.Compare(types.NewBytes32FromBytes(t.currentHeader.AppHash)) == 0 {
 		t.addTendermintEvidence(req.Header)
 	} else {
-		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x", t.currentHeader.AppHash, t.lastBlock.AppHash)
+		log.Warnf("Unexpected AppHash in BeginBlock, got %s, expected %s",
+			hex.EncodeToString(t.currentHeader.AppHash),
+			hex.EncodeToString(t.lastBlock.AppHash[:]))
 	}
 
 	// TODO: we don't need to re-load the file for each block, it's expensive.
@@ -170,7 +179,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
 		t.state.validator = &rootValidator
 	}
 
-	t.state.previousAppHash = t.currentHeader.AppHash
+	t.state.previousAppHash = types.NewBytes32FromBytes(t.currentHeader.AppHash)
 }
 
 // DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx.
@@ -206,7 +215,7 @@ func (t *TMPop) Commit() abci.Result {
 	t.lastBlock.LastHeader = t.currentHeader
 	saveLastBlock(t.kvDB, *t.lastBlock)
 
-	return abci.NewResultOK(appHash, "")
+	return abci.NewResultOK(appHash[:], "")
 }
 
 func (t *TMPop) notifyCreatedLinks(links []*cs.Link) {
@@ -360,7 +369,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		return
 	}
 
-	previousAppHash := block.Header.AppHash
+	previousAppHash := types.NewBytes32FromBytes(block.Header.AppHash)
 	linkHashes, err := t.getCommitLinkHashes(height)
 	if err != nil {
 		log.Warn("Could not get link hashes for this block.\nEvidence will not be generated.")
@@ -379,33 +388,33 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 
 	merkleRoot := merkle.Root()
 
-	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot[:])
-	if bytes.Compare(appHash, header.AppHash) != 0 {
+	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot)
+	if appHash.Compare(types.NewBytes32FromBytes(header.AppHash)) != 0 {
 		log.Warnf("App hash %s doesn't match the header's: %s.\nEvidence will not be generated.",
-			hex.EncodeToString(appHash), hex.EncodeToString(header.AppHash))
+			hex.EncodeToString(appHash[:]),
+			hex.EncodeToString(header.AppHash))
 		return
+	}
+
+	linksPositions := make(map[types.Bytes32]int)
+	for i, lh := range linkHashes {
+		linksPositions[lh] = i
 	}
 
 	evidenceEvents := &StoreEventsData{}
 	for _, tx := range block.Txs {
 		// We only create evidence for valid transactions
 		linkHash, _ := tx.Link.Hash()
-		index := -1
-		for i, lh := range linkHashes {
-			if linkHash.Compare(&lh) == 0 {
-				index = i
-				break
-			}
-		}
+		position, valid := linksPositions[*linkHash]
 
-		if index >= 0 {
+		if valid {
 			evidence := &cs.Evidence{
 				Backend:  Name,
 				Provider: header.ChainId,
 				Proof: &evidences.TendermintProof{
 					BlockHeight:     height,
 					Root:            merkleRoot,
-					Path:            merkle.Path(index),
+					Path:            merkle.Path(position),
 					ValidationsHash: validatorHash,
 					Header:          *block.Header,
 					NextHeader:      *header,

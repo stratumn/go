@@ -91,8 +91,11 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		assert.EqualValues(t, tree.Root(), proof.Root, "Invalid proof merkle root")
 		assert.EqualValues(t, tree.Path(0), proof.Path, "Invalid proof merkle path")
 
-		expectedAppHash, _ := tmpop.ComputeAppHash(previousAppHash, []byte{}, tree.Root()[:])
-		assert.EqualValues(t, expectedAppHash, appHash, "Invalid app hash generated")
+		expectedAppHash, _ := tmpop.ComputeAppHash(
+			types.NewBytes32FromBytes(previousAppHash),
+			types.NewBytes32FromBytes(nil),
+			tree.Root())
+		assert.EqualValues(t, expectedAppHash[:], appHash, "Invalid app hash generated")
 
 		evidenceEventFired := false
 		for _, tmClientCall := range tmClientMock.Calls {

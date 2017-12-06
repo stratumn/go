@@ -195,13 +195,13 @@ func TestTendermintProof(t *testing.T) {
 			}
 		}
 
-		validationsHash := testutil.RandomHash()[:]
-		previousAppHash := testutil.RandomHash()[:]
+		validationsHash := testutil.RandomHash()
+		previousAppHash := testutil.RandomHash()
 		tree, _ := merkle.NewStaticTree(treeLeaves)
 
 		hash := sha256.New()
-		hash.Write(previousAppHash)
-		hash.Write(validationsHash)
+		hash.Write(previousAppHash[:])
+		hash.Write(validationsHash[:])
 		hash.Write(tree.Root()[:])
 		appHash := hash.Sum(nil)
 
@@ -210,7 +210,7 @@ func TestTendermintProof(t *testing.T) {
 			Root:            tree.Root(),
 			Path:            tree.Path(position),
 			ValidationsHash: validationsHash,
-			Header:          abci.Header{AppHash: previousAppHash},
+			Header:          abci.Header{AppHash: previousAppHash[:]},
 			NextHeader:      abci.Header{AppHash: appHash},
 		}
 
@@ -231,7 +231,7 @@ func TestTendermintProof(t *testing.T) {
 		e := &evidences.TendermintProof{
 			BlockHeight:     uint64(42),
 			Header:          abci.Header{Time: uint64(42)},
-			ValidationsHash: []byte("0x42"),
+			ValidationsHash: testutil.RandomHash(),
 		}
 
 		fullProof := e.FullProof()
@@ -245,7 +245,7 @@ func TestTendermintProof(t *testing.T) {
 
 	t.Run("Verify() fails if validations hash changed", func(t *testing.T) {
 		linkHash, e := createValidProof(t, 5)
-		e.ValidationsHash = linkHash[:]
+		e.ValidationsHash = testutil.RandomHash()
 		assert.False(t, e.Verify(linkHash), "Proof should not be correct if validations hash changed")
 	})
 

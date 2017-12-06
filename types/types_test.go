@@ -280,6 +280,43 @@ func TestNewBytes32FromString_invalidHex(t *testing.T) {
 	}
 }
 
+func TestNewBytes32FromBytes(t *testing.T) {
+	slice := make([]byte, types.Bytes32Size)
+	for i := 0; i < types.Bytes32Size; i++ {
+		slice[i] = byte(i)
+	}
+
+	bytes32 := types.NewBytes32FromBytes(slice)
+	for i := 0; i < types.Bytes32Size; i++ {
+		if bytes32[i] != byte(i) {
+			t.Error("Invalid byte")
+		}
+	}
+}
+
+func TestNewBytes32FromBytes_emptySlice(t *testing.T) {
+	bytes32 := types.NewBytes32FromBytes(nil)
+	for i := 0; i < types.Bytes32Size; i++ {
+		if bytes32[i] != byte(0) {
+			t.Error("Invalid byte")
+		}
+	}
+}
+
+func TestNewBytes32FromBytes_bigSlice(t *testing.T) {
+	slice := make([]byte, 2*types.Bytes32Size)
+	for i := 0; i < 2*types.Bytes32Size; i++ {
+		slice[i] = byte(i)
+	}
+
+	bytes32 := types.NewBytes32FromBytes(slice)
+	for i := 0; i < types.Bytes32Size; i++ {
+		if bytes32[i] != byte(i) {
+			t.Error("Invalid byte")
+		}
+	}
+}
+
 func TestBytes32String(t *testing.T) {
 	str := "1234567890123456789012345678901234567890123456789012345678901234"
 	buf, _ := hex.DecodeString(str)

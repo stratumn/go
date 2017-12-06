@@ -111,15 +111,15 @@ type TendermintProof struct {
 
 	Root            *types.Bytes32 `json:"merkleRoot"`
 	Path            types.Path     `json:"merklePath"`
-	ValidationsHash []byte         `json:"validationsHash"`
+	ValidationsHash *types.Bytes32 `json:"validationsHash"`
 
-	// The header and its signatures are needed to validate the previous
-	// app hash and metadata such as the height and time
+	// The header and its signatures are needed to validate
+	// the previous app hash and metadata such as the height and time
 	Header     abci.Header            `json:"header"`
 	Signatures []*TendermintSignature `json:"signatures"`
 
-	// The next header and its signatures are needed to validate the
-	// app hash representing the validations and merkle path
+	// The next header and its signatures are needed to validate
+	// the app hash representing the validations and merkle path
 	NextHeader     abci.Header            `json:"nextHeader"`
 	NextSignatures []*TendermintSignature `json:"nextSignatures"`
 }
@@ -148,10 +148,16 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	// We first verify that the app hash is correct
 
 	hash := sha256.New()
-	if _, err := hash.Write(p.Header.AppHash); err != nil {
+	if _, err := hash.Write(types.NewBytes32FromBytes(p.Header.AppHash)[:]); err != nil {
 		return false
 	}
-	if _, err := hash.Write(p.ValidationsHash); err != nil {
+
+	validationsHash := p.ValidationsHash
+	if validationsHash == nil {
+		validationsHash = &types.Bytes32{}
+	}
+
+	if _, err := hash.Write(validationsHash[:]); err != nil {
 		return false
 	}
 	if _, err := hash.Write(p.Root[:]); err != nil {

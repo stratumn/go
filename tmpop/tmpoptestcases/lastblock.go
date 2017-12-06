@@ -15,10 +15,10 @@
 package tmpoptestcases
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/stratumn/sdk/tmpop"
+	"github.com/stratumn/sdk/types"
 )
 
 // TestLastBlock tests if tmpop correctly stores information
@@ -42,7 +42,7 @@ func (f Factory) TestLastBlock(t *testing.T) {
 				got.Height, 2)
 		}
 
-		if bytes.Compare(got.AppHash, lastAppHash) != 0 {
+		if got.AppHash.Compare(types.NewBytes32FromBytes(lastAppHash)) != 0 {
 			t.Errorf("a.Commit(): expected commit to save the last app hash, expected %v, got %v",
 				lastAppHash, got.AppHash)
 		}

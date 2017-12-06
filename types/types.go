@@ -154,6 +154,16 @@ func NewBytes32FromString(src string) (*Bytes32, error) {
 	return &b, nil
 }
 
+// NewBytes32FromBytes creates a Bytes32 from a byte slice.
+func NewBytes32FromBytes(src []byte) *Bytes32 {
+	var b Bytes32
+	if len(src) > 0 {
+		copy(b[:], src)
+	}
+
+	return &b
+}
+
 // String returns a hex encoded string.
 func (b *Bytes32) String() string {
 	return hex.EncodeToString(b[:])

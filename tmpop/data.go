@@ -73,9 +73,14 @@ func (t *TMPop) saveValidatorHash() error {
 }
 
 // getValidatorHash gets the hash of the validator used for a block at a specific height
-func (t *TMPop) getValidatorHash(height uint64) ([]byte, error) {
+func (t *TMPop) getValidatorHash(height uint64) (*types.Bytes32, error) {
 	key := getValidatorHashKey(height)
-	return t.kvDB.GetValue(key)
+	value, err := t.kvDB.GetValue(key)
+	if err != nil || value == nil {
+		return nil, err
+	}
+
+	return types.NewBytes32FromBytes(value), nil
 }
 
 func getCommitLinkHashesKey(height uint64) []byte {
