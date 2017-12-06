@@ -72,28 +72,8 @@ It asks which generator to use, then uses that generator to generate a project i
 					Text:  desc.Description,
 				})
 			}
-			fmt.Printf("chose %[1]T %[1]+v\n", in)
 			ret, err := in.Run()
-			fmt.Printf("err: %s\n", err)
 			name = ret.(string)
-
-			// fmt.Print(in.Msg())
-			// reader := bufio.NewReader(os.Stdin)
-
-			// for {
-			// 	fmt.Print("? ")
-			// 	str, err := reader.ReadString('\n')
-			// 	if err != nil {
-			// 		return err
-			// 	}
-			// 	str = strings.TrimSpace(str)
-			// 	if err := in.Set(str); err != nil {
-			// 		fmt.Println(err)
-			// 		continue
-			// 	}
-			// 	name = in.Get().(string)
-			// 	break
-			// }
 		}
 
 		varsFile, err := os.Open(varsPath())
