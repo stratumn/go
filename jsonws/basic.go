@@ -16,9 +16,40 @@ package jsonws
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	// DefaultWebSocketReadBufferSize is the default size of the web socket
+	// read buffer in bytes.
+	DefaultWebSocketReadBufferSize = 1024
+
+	// DefaultWebSocketWriteBufferSize is the default size of the web socket
+	// write buffer in bytes.
+	DefaultWebSocketWriteBufferSize = 1024
+
+	// DefaultWebSocketWriteChanSize is the default size of a web socket
+	// buffered connection channel.
+	DefaultWebSocketWriteChanSize = 256
+
+	// DefaultWebSocketWriteTimeout is the default timeout of a web socket
+	// write.
+	DefaultWebSocketWriteTimeout = 10 * time.Second
+
+	// DefaultWebSocketPongTimeout is the default timeout of a web socket
+	// expected pong.
+	DefaultWebSocketPongTimeout = time.Minute
+
+	// DefaultWebSocketPingInterval is the default interval between web
+	// socket pings.
+	DefaultWebSocketPingInterval = (DefaultWebSocketPongTimeout * 9) / 10
+
+	// DefaultWebSocketMaxMsgSize is the default maximum size of a web
+	// socke received message in in bytes.
+	DefaultWebSocketMaxMsgSize = 32 * 1024
 )
 
 // Basic implements basic web socket server meant to be used in conjuction with
