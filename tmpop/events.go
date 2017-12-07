@@ -27,5 +27,5 @@ const (
 // StoreEventsData is the type that contains data sent by TMPoP to listeners
 type StoreEventsData struct {
 	events.EventData
-	StoreEvents []*store.Event
+	StoreEvent *store.Event
 }

@@ -175,11 +175,11 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 		return nil, err
 	}
 
+	linkEvent := store.NewSavedLinks()
+	linkEvent.AddSavedLink(link)
+
 	for _, c := range a.eventChans {
-		c <- &store.Event{
-			EventType: store.SavedLink,
-			Details:   link,
-		}
+		c <- linkEvent
 	}
 	return linkHash, nil
 }
@@ -196,11 +196,11 @@ func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) erro
 		return err
 	}
 
+	evidenceEvent := store.NewSavedEvidences()
+	evidenceEvent.AddSavedEvidence(linkHash, evidence)
+
 	for _, c := range a.eventChans {
-		c <- &store.Event{
-			EventType: store.SavedEvidence,
-			Details:   evidence,
-		}
+		c <- evidenceEvent
 	}
 
 	return nil

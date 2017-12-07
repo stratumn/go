@@ -94,15 +94,6 @@ const (
 	DefaultWebSocketMaxMsgSize = 32 * 1024
 )
 
-// Web socket message types.
-var (
-	// Store event means the store wants to notify of an event.
-	StoreEventTypes = map[store.EventType]string{
-		store.SavedLink:     "SavedLink",
-		store.SavedEvidence: "SavedEvidence",
-	}
-)
-
 // Server is an HTTP server for stores.
 type Server struct {
 	*jsonhttp.Server
@@ -206,8 +197,8 @@ func (s *Server) Start() {
 func (s *Server) loop() {
 	for event := range s.storeEventsChan {
 		s.ws.Broadcast(&msg{
-			Type: StoreEventTypes[event.EventType],
-			Data: event.Details,
+			Type: string(event.EventType),
+			Data: event.Data,
 		}, nil)
 	}
 }

@@ -103,9 +103,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 				continue
 			}
 
-			storeEvents := tmClientCall.Arguments.Get(1).(tmpop.StoreEventsData).StoreEvents
-			if storeEvents[0].EventType == store.SavedEvidence {
-				assert.Equal(t, 2, len(storeEvents), "Two evidences should have been notified")
+			storeEvent := tmClientCall.Arguments.Get(1).(tmpop.StoreEventsData).StoreEvent
+			if storeEvent.EventType == store.SavedEvidences {
+				evidenceEvents := storeEvent.Data.(map[string]*cs.Evidence)
+				assert.Equal(t, 2, len(evidenceEvents), "Two evidences should have been notified")
 				evidenceEventFired = true
 			}
 		}

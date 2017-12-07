@@ -18,6 +18,8 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
@@ -145,8 +147,10 @@ func (f Factory) TestCommitTx(t *testing.T) {
 		tmClientMock.AssertNumberOfCalls(t, "FireEvent", 1)
 		eventsCall := tmClientMock.Calls[0]
 		events := eventsCall.Arguments.Get(1).(tmpop.StoreEventsData)
-		assert.Exactly(t, 2, len(events.StoreEvents), "Invalid number of events")
-		assert.EqualValues(t, link1, events.StoreEvents[0].Details, "Invalid event details")
-		assert.EqualValues(t, link2, events.StoreEvents[1].Details, "Invalid event details")
+		assert.EqualValues(t, store.SavedLinks, events.StoreEvent.EventType)
+		links := events.StoreEvent.Data.([]*cs.Link)
+		assert.Exactly(t, 2, len(links), "Invalid number of links")
+		assert.EqualValues(t, link1, links[0], "Invalid link")
+		assert.EqualValues(t, link2, links[1], "Invalid link")
 	})
 }

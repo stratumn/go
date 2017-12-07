@@ -134,11 +134,11 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 
 	a.maps[mapID][linkHashStr] = struct{}{}
 
+	linkEvent := store.NewSavedLinks()
+	linkEvent.AddSavedLink(link)
+
 	for _, c := range a.eventChans {
-		c <- &store.Event{
-			EventType: store.SavedLink,
-			Details:   link,
-		}
+		c <- linkEvent
 	}
 
 	return linkHash, nil
@@ -149,7 +149,18 @@ func (a *DummyStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence)
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
-	return a.addEvidence(linkHash.String(), evidence)
+	if err := a.addEvidence(linkHash.String(), evidence); err != nil {
+		return err
+	}
+
+	evidenceEvent := store.NewSavedEvidences()
+	evidenceEvent.AddSavedEvidence(linkHash, evidence)
+
+	for _, c := range a.eventChans {
+		c <- evidenceEvent
+	}
+
+	return nil
 }
 
 func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
@@ -174,13 +185,6 @@ func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 	}
 
 	a.evidences[linkHash] = currentEvidences
-
-	for _, c := range a.eventChans {
-		c <- &store.Event{
-			EventType: store.SavedEvidence,
-			Details:   evidence,
-		}
-	}
 
 	return nil
 }

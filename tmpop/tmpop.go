@@ -224,14 +224,12 @@ func (t *TMPop) notifyCreatedLinks(links []*cs.Link) {
 	}
 
 	if len(links) > 0 {
-		savedEvents := &StoreEventsData{}
+		savedEvent := store.NewSavedLinks()
 		for _, link := range links {
-			savedEvents.StoreEvents = append(savedEvents.StoreEvents, &store.Event{
-				EventType: store.SavedLink,
-				Details:   link,
-			})
+			savedEvent.AddSavedLink(link)
 		}
-		t.tmClient.FireEvent(StoreEvents, *savedEvents)
+
+		t.tmClient.FireEvent(StoreEvents, StoreEventsData{StoreEvent: savedEvent})
 	}
 }
 
@@ -401,7 +399,8 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		linksPositions[lh] = i
 	}
 
-	evidenceEvents := &StoreEventsData{}
+	evidenceEvent := store.NewSavedEvidences()
+	evidenceAdded := false
 	for _, tx := range block.Txs {
 		// We only create evidence for valid transactions
 		linkHash, _ := tx.Link.Hash()
@@ -425,14 +424,12 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 				log.Warnf("Evidence could not be added to local store: %v", err)
 			}
 
-			evidenceEvents.StoreEvents = append(evidenceEvents.StoreEvents, &store.Event{
-				EventType: store.SavedEvidence,
-				Details:   evidence,
-			})
+			evidenceEvent.AddSavedEvidence(linkHash, evidence)
+			evidenceAdded = true
 		}
 	}
 
-	if len(evidenceEvents.StoreEvents) > 0 {
-		t.tmClient.FireEvent(StoreEvents, *evidenceEvents)
+	if evidenceAdded {
+		t.tmClient.FireEvent(StoreEvents, StoreEventsData{StoreEvent: evidenceEvent})
 	}
 }

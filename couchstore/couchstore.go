@@ -108,12 +108,9 @@ func (c *CouchStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	c.eventChans = append(c.eventChans, eventChan)
 }
 
-func (c *CouchStore) notifyEvent(eventType store.EventType, details interface{}) {
+func (c *CouchStore) notifyEvent(event *store.Event) {
 	for _, c := range c.eventChans {
-		c <- &store.Event{
-			EventType: eventType,
-			Details:   details,
-		}
+		c <- event
 	}
 }
 
@@ -125,7 +122,12 @@ func (c *CouchStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.notifyEvent(store.SavedLink, link)
+
+	linkEvent := store.NewSavedLinks()
+	linkEvent.AddSavedLink(link)
+
+	c.notifyEvent(linkEvent)
+
 	return linkHash, nil
 }
 
@@ -134,7 +136,12 @@ func (c *CouchStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence)
 	if err := c.addEvidence(linkHash.String(), evidence); err != nil {
 		return err
 	}
-	c.notifyEvent(store.SavedEvidence, evidence)
+
+	evidenceEvent := store.NewSavedEvidences()
+	evidenceEvent.AddSavedEvidence(linkHash, evidence)
+
+	c.notifyEvent(evidenceEvent)
+
 	return nil
 }
 

@@ -131,15 +131,13 @@ func (t *TMStore) StopWebsocket() {
 }
 
 func (t *TMStore) notifyStoreChans(msg events.EventData) {
-	storeEvents, ok := msg.(tmpop.StoreEventsData)
+	storeEvent, ok := msg.(tmpop.StoreEventsData)
 	if !ok {
-		log.Debug("Event could not be read as a list of store events")
+		log.Debug("Event could not be read as a store event")
 	}
 
-	for _, event := range storeEvents.StoreEvents {
-		for _, c := range t.storeEventChans {
-			c <- event
-		}
+	for _, c := range t.storeEventChans {
+		c <- storeEvent.StoreEvent
 	}
 }
 
@@ -205,11 +203,11 @@ func (t *TMStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) er
 		return err
 	}
 
+	evidenceEvent := store.NewSavedEvidences()
+	evidenceEvent.AddSavedEvidence(linkHash, evidence)
+
 	for _, c := range t.storeEventChans {
-		c <- &store.Event{
-			EventType: store.SavedEvidence,
-			Details:   evidence,
-		}
+		c <- evidenceEvent
 	}
 
 	return nil

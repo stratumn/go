@@ -22,6 +22,7 @@ import (
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestAddDidSaveChannel tests that AddDidSaveChannel functions properly.
@@ -53,20 +54,14 @@ func (f Factory) TestLinkSavedChannel(t *testing.T) {
 	a.AddStoreEventChannel(c)
 
 	link := cstesting.RandomLink()
-	if _, err := a.CreateLink(link); err != nil {
-		t.Fatalf("a.CreateLink(); err: %s", err)
-	}
+	_, err := a.CreateLink(link)
+	assert.NoError(t, err, "a.CreateLink()")
 
 	got := <-c
-	if got.EventType != store.SavedLink {
-		t.Errorf("Expected saved link event, got %v", got)
-	}
-
-	if !reflect.DeepEqual(link, got.Details) {
-		gotJS, _ := json.MarshalIndent(got.Details, "", "  ")
-		wantJS, _ := json.MarshalIndent(link, "", "  ")
-		t.Errorf("<- c = %s\n want%s", gotJS, wantJS)
-	}
+	assert.EqualValues(t, store.SavedLinks, got.EventType, "Invalid event type")
+	links := got.Data.([]*cs.Link)
+	assert.Equal(t, 1, len(links), "Invalid number of links")
+	assert.EqualValues(t, link, links[0], "Invalid link")
 }
 
 // TestEvidenceAddedChannel tests that the store correctly notifies listeners when some evidence is added.
@@ -79,14 +74,11 @@ func (f Factory) TestEvidenceAddedChannel(t *testing.T) {
 
 	link := cstesting.RandomLink()
 	linkHash, err := a.CreateLink(link)
-	if err != nil {
-		t.Fatalf("a.CreateLink(); err: %s", err)
-	}
+	assert.NoError(t, err, "a.CreateLink()")
 
 	evidence := cstesting.RandomEvidence()
-	if err = a.AddEvidence(linkHash, evidence); err != nil {
-		t.Fatalf("a.AddEvidence(); err: %s", err)
-	}
+	err = a.AddEvidence(linkHash, evidence)
+	assert.NoError(t, err, "a.AddEvidence()")
 
 	// Ignore the link saved event
 	got := <-c
@@ -95,22 +87,18 @@ func (f Factory) TestEvidenceAddedChannel(t *testing.T) {
 	// and an evidence produced by a blockchain store (hence the for loop)
 	for i := 0; i < 3; i++ {
 		got = <-c
-		if got.EventType != store.SavedEvidence {
+		if got.EventType != store.SavedEvidences {
 			continue
 		}
 
-		if got.Details.(*cs.Evidence).Backend == evidence.Backend {
+		evidences := got.Data.(map[string]*cs.Evidence)
+		e, found := evidences[linkHash.String()]
+		if found && e.Backend == evidence.Backend {
 			break
 		}
 	}
 
-	if got.EventType != store.SavedEvidence {
-		t.Errorf("Expected saved evidence event, got %v", got)
-	}
-
-	if !reflect.DeepEqual(evidence, got.Details) {
-		gotJS, _ := json.MarshalIndent(got.Details, "", "  ")
-		wantJS, _ := json.MarshalIndent(evidence, "", "  ")
-		t.Errorf("<- c = %s\n want%s", gotJS, wantJS)
-	}
+	assert.EqualValues(t, store.SavedEvidences, got.EventType, "Expected saved evidences")
+	evidences := got.Data.(map[string]*cs.Evidence)
+	assert.EqualValues(t, evidence, evidences[linkHash.String()])
 }

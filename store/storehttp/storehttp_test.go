@@ -612,10 +612,8 @@ func TestNotFound(t *testing.T) {
 
 func TestGetSocket(t *testing.T) {
 	link := cstesting.RandomLink()
-	event := &store.Event{
-		EventType: store.SavedLink,
-		Details:   link,
-	}
+	event := store.NewSavedLinks()
+	event.AddSavedLink(link)
 
 	// Chan that will receive the store event channel.
 	sendChan := make(chan chan *store.Event)
@@ -683,8 +681,11 @@ func TestGetSocket(t *testing.T) {
 	// Wait for message to be broadcasted.
 	select {
 	case <-doneChan:
-		got := conn.MockWriteJSON.LastCalledWith.(*msg).Data
-		if !reflect.DeepEqual(got, link) {
+		got := conn.MockWriteJSON.LastCalledWith.(*msg).Data.([]*cs.Link)
+		if len(got) != 1 {
+			t.Fatalf("Invalid number of links in json data")
+		}
+		if !reflect.DeepEqual(got[0], link) {
 			gotjs, _ := json.MarshalIndent(got, "", "  ")
 			wantjs, _ := json.MarshalIndent(link, "", "  ")
 			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
