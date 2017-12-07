@@ -62,7 +62,7 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest) (
 RESULT_LOOP:
 	for _ = range tests {
 		e := <-ec
-		r := e.Details.(*fossilizer.Result)
+		r := e.Data.(*fossilizer.Result)
 		for i := range tests {
 			test := &tests[i]
 			if string(test.meta) == string(r.Meta) {

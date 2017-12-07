@@ -46,15 +46,15 @@ type Result struct {
 
 // EventType lets you know the kind of event received.
 // A client should ignore events it doesn't care about or doesn't understand.
-type EventType int
+type EventType string
 
 const (
-	// DidFossilizeLink means that segment was fossilized
-	DidFossilizeLink EventType = iota
+	// DidFossilizeLink means that the link was fossilized
+	DidFossilizeLink EventType = "DidFossilizeLink"
 )
 
 // Event is the object fossilizers send to notify of important events.
 type Event struct {
 	EventType EventType
-	Details   interface{}
+	Data      interface{}
 }

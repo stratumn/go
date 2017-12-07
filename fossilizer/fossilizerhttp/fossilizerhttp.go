@@ -58,14 +58,6 @@ const (
 	DefaultFossilizerEventChanSize = 256
 )
 
-// Web socket message types.
-var (
-	// Fossilizer event means the fossilizer wants to notify of an event.
-	FossilizerEventTypes = map[fossilizer.EventType]string{
-		fossilizer.DidFossilizeLink: "DidFossilizeLink",
-	}
-)
-
 // Config contains configuration options for the server.
 type Config struct {
 	// The minimum fossilize data length.
@@ -170,8 +162,8 @@ func (s *Server) Start() {
 func (s *Server) handleEvents() {
 	for event := range s.fossilizerEventChan {
 		s.ws.Broadcast(&jsonws.Message{
-			Type: FossilizerEventTypes[event.EventType],
-			Data: event.Details,
+			Type: string(event.EventType),
+			Data: event.Data,
 		}, nil)
 	}
 }
