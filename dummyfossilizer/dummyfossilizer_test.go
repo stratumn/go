@@ -36,8 +36,8 @@ func TestGetInfo(t *testing.T) {
 
 func TestFossilize(t *testing.T) {
 	a := New(&Config{})
-	rc := make(chan *fossilizer.Result)
-	a.AddResultChan(rc)
+	ec := make(chan *fossilizer.Event, 1)
+	a.AddFossilizerEventChan(ec)
 
 	var (
 		data = []byte("data")
@@ -50,7 +50,8 @@ func TestFossilize(t *testing.T) {
 		}
 	}()
 
-	r := <-rc
+	e := <-ec
+	r := e.Details.(*fossilizer.Result)
 
 	if got, want := string(r.Data), string(data); got != want {
 		t.Errorf("<-rc: Data = %q want %q", got, want)
@@ -65,8 +66,8 @@ func TestFossilize(t *testing.T) {
 
 func TestDummyProof(t *testing.T) {
 	a := New(&Config{})
-	rc := make(chan *fossilizer.Result)
-	a.AddResultChan(rc)
+	ec := make(chan *fossilizer.Event, 1)
+	a.AddFossilizerEventChan(ec)
 
 	var (
 		data      = []byte("data")
@@ -80,7 +81,8 @@ func TestDummyProof(t *testing.T) {
 		}
 	}()
 
-	r := <-rc
+	e := <-ec
+	r := e.Details.(*fossilizer.Result)
 
 	t.Run("Time()", func(t *testing.T) {
 		if got, want := r.Evidence.Proof, timestamp; got.Time() != want {
