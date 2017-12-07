@@ -51,7 +51,7 @@ func TestFossilize(t *testing.T) {
 	}()
 
 	e := <-ec
-	r := e.Details.(*fossilizer.Result)
+	r := e.Data.(*fossilizer.Result)
 
 	if got, want := string(r.Data), string(data); got != want {
 		t.Errorf("<-rc: Data = %q want %q", got, want)
@@ -82,7 +82,7 @@ func TestDummyProof(t *testing.T) {
 	}()
 
 	e := <-ec
-	r := e.Details.(*fossilizer.Result)
+	r := e.Data.(*fossilizer.Result)
 
 	t.Run("Time()", func(t *testing.T) {
 		if got, want := r.Evidence.Proof, timestamp; got.Time() != want {
