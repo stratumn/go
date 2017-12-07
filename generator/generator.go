@@ -29,6 +29,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 )
 
@@ -425,8 +426,12 @@ func (gen *Generator) ask(input string) (interface{}, error) {
 
 func (gen *Generator) read(in Input) (interface{}, error) {
 	for {
-		if output, err := in.Run(); err == nil {
+		output, err := in.Run()
+		if err == nil {
 			return output, nil
+		}
+		if err == promptui.ErrInterrupt {
+			return nil, err
 		}
 	}
 }
