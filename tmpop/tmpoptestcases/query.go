@@ -140,7 +140,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		}
 
 		for _, segment := range gots {
-			if segment.GetLinkHash().Compare(invalidLinkHash) == 0 {
+			if segment.GetLinkHash().Equals(invalidLinkHash) {
 				t.Errorf("Invalid segment found in FindSegments")
 			}
 		}

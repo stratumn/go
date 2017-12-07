@@ -303,7 +303,7 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 		lh, _ := link.Hash()
 		var match bool
 		for _, linkHash := range filter.LinkHashes {
-			if linkHash.Compare(lh) == 0 {
+			if linkHash.Equals(lh) {
 				match = true
 				break
 			}

@@ -200,7 +200,42 @@ func (b *Bytes32) UnmarshalJSON(data []byte) error {
 
 // Compare compares two Bytes32
 func (b *Bytes32) Compare(b2 *Bytes32) int {
+	if b == nil || b2 == nil {
+		if b == nil && b2 == nil {
+			return 0
+		}
+
+		return 1
+	}
+
 	return bytes.Compare(b[:], b2[:])
+}
+
+// Equals checks if two Bytes32 are equal
+func (b *Bytes32) Equals(b2 *Bytes32) bool {
+	return b.Compare(b2) == 0
+}
+
+// EqualsBytes checks if a byte slice equals a Bytes32
+func (b *Bytes32) EqualsBytes(b2 []byte) bool {
+	if len(b2) == 0 && (b == nil || b.Zero()) {
+		return true
+	}
+
+	if b == nil {
+		return false
+	}
+
+	return bytes.Compare(b[:], b2) == 0
+}
+
+// Zero checks if a Bytes32 is the default value
+func (b *Bytes32) Zero() bool {
+	if b == nil {
+		return false
+	}
+
+	return b.Equals(&Bytes32{})
 }
 
 // Reverse reverses the bytes order.

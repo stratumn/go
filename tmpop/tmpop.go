@@ -134,7 +134,7 @@ func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
 	// an empty byte slice (instead of a 32-byte array of 0)
 	// Otherwise handshake will not work
 	lastAppHash := []byte{}
-	if t.lastBlock.AppHash != nil && t.lastBlock.AppHash.Compare(&types.Bytes32{}) != 0 {
+	if t.lastBlock.AppHash != nil && !t.lastBlock.AppHash.Zero() {
 		lastAppHash = t.lastBlock.AppHash[:]
 	}
 
@@ -163,7 +163,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
 	// consensus has been formed around it.
 	// This AppHash will never be denied in a future block so we can add
 	// evidence to the links that were added in the previous blocks.
-	if t.lastBlock.AppHash.Compare(types.NewBytes32FromBytes(t.currentHeader.AppHash)) == 0 {
+	if t.lastBlock.AppHash.EqualsBytes(t.currentHeader.AppHash) {
 		t.addTendermintEvidence(req.Header)
 	} else {
 		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x",
@@ -389,7 +389,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	merkleRoot := merkle.Root()
 
 	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot)
-	if appHash.Compare(types.NewBytes32FromBytes(header.AppHash)) != 0 {
+	if !appHash.EqualsBytes(header.AppHash) {
 		log.Warnf("App hash %x doesn't match the header's: %x.\nEvidence will not be generated.",
 			*appHash,
 			header.AppHash)
