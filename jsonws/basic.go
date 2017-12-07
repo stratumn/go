@@ -52,6 +52,12 @@ const (
 	DefaultWebSocketMaxMsgSize = 32 * 1024
 )
 
+// Message is a web socket message.
+type Message struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
 // Basic implements basic web socket server meant to be used in conjuction with
 // an HTTP server.
 type Basic struct {

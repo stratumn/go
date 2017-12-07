@@ -683,7 +683,7 @@ func TestGetSocket(t *testing.T) {
 	// Wait for message to be broadcasted.
 	select {
 	case <-doneChan:
-		got := conn.MockWriteJSON.LastCalledWith.(*msg).Data
+		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message).Data
 		if !reflect.DeepEqual(got, link) {
 			gotjs, _ := json.MarshalIndent(got, "", "  ")
 			wantjs, _ := json.MarshalIndent(link, "", "  ")

@@ -42,7 +42,6 @@ var (
 	wsMaxMsgSize            int64
 	certFile                string
 	keyFile                 string
-	numResultWorkers        int
 	minDataLen              int
 	maxDataLen              int
 	callbackTimeout         time.Duration
@@ -94,7 +93,6 @@ func RegisterFlags() {
 	flag.StringVar(&addr, "http", DefaultAddress, "HTTP address")
 	flag.StringVar(&certFile, "tls_cert", "", "TLS certificate file")
 	flag.StringVar(&keyFile, "tls_key", "", "TLS private key file")
-	flag.IntVar(&numResultWorkers, "workers", DefaultNumResultWorkers, "Number of result workers")
 	flag.IntVar(&minDataLen, "mindata", DefaultMinDataLen, "Minimum data length")
 	flag.IntVar(&maxDataLen, "maxdata", DefaultMaxDataLen, "Maximum data length")
 	flag.DurationVar(&callbackTimeout, "callbacktimeout", DefaultCallbackTimeout, "Callback request timeout")
@@ -115,7 +113,6 @@ func RegisterFlags() {
 // a fossilizerhttp server configured using flag values.
 func RunWithFlags(a fossilizer.Adapter) {
 	config := &Config{
-		NumResultWorkers:        numResultWorkers,
 		MinDataLen:              minDataLen,
 		MaxDataLen:              maxDataLen,
 		CallbackTimeout:         callbackTimeout,
