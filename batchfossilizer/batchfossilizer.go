@@ -402,7 +402,7 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 		} else {
 			event := &fossilizer.Event{
 				EventType: fossilizer.DidFossilizeLink,
-				Details:   r,
+				Data:      r,
 			}
 			for _, c := range a.fossilizerEventChans {
 				c <- event

@@ -292,7 +292,7 @@ func TestGetSocket(t *testing.T) {
 
 	event := &fossilizer.Event{
 		EventType: fossilizer.DidFossilizeLink,
-		Details:   &fossilizer.Result{},
+		Data:      &fossilizer.Result{},
 	}
 
 	// Wait for channel to be added.
@@ -311,8 +311,8 @@ func TestGetSocket(t *testing.T) {
 
 	// Wait for message to be broadcasted.
 	expected := &jsonws.Message{
-		Type: FossilizerEventTypes[event.EventType],
-		Data: event.Details,
+		Type: string(event.EventType),
+		Data: event.Data,
 	}
 	select {
 	case <-doneChan:
