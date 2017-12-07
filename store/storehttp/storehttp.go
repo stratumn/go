@@ -83,12 +83,6 @@ type Info struct {
 	Adapter interface{} `json:"adapter"`
 }
 
-// msg is a web socket message.
-type msg struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
-}
-
 // New create an instance of a server.
 func New(
 	a store.AdapterV2,
@@ -166,7 +160,7 @@ func (s *Server) Start() {
 // Web socket loop.
 func (s *Server) loop() {
 	for event := range s.storeEventsChan {
-		s.ws.Broadcast(&msg{
+		s.ws.Broadcast(&jsonws.Message{
 			Type: string(event.EventType),
 			Data: event.Data,
 		}, nil)

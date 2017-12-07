@@ -681,7 +681,7 @@ func TestGetSocket(t *testing.T) {
 	// Wait for message to be broadcasted.
 	select {
 	case <-doneChan:
-		got := conn.MockWriteJSON.LastCalledWith.(*msg).Data.([]*cs.Link)
+		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message).Data.([]*cs.Link)
 		if len(got) != 1 {
 			t.Fatalf("Invalid number of links in json data")
 		}

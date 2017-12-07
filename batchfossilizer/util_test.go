@@ -38,8 +38,8 @@ type fossilizeTest struct {
 }
 
 func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, start bool, fossilize bool) (results []*fossilizer.Result) {
-	rc := make(chan *fossilizer.Result, 1)
-	a.AddResultChan(rc)
+	ec := make(chan *fossilizer.Event, 1)
+	a.AddFossilizerEventChan(ec)
 
 	if start {
 		go func() {
@@ -64,7 +64,8 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 
 RESULT_LOOP:
 	for _ = range tests {
-		r := <-rc
+		e := <-ec
+		r := e.Details.(*fossilizer.Result)
 		for i := range tests {
 			test := &tests[i]
 			if fmt.Sprint(test.meta) == fmt.Sprint(r.Meta) {
@@ -108,8 +109,8 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 		b.Fatalf("New(): err: %s", err)
 	}
 
-	rc := make(chan *fossilizer.Result)
-	a.AddResultChan(rc)
+	ec := make(chan *fossilizer.Event, 1)
+	a.AddFossilizerEventChan(ec)
 
 	go func() {
 		if err := a.Start(); err != nil {
@@ -137,7 +138,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 	}()
 
 	for i := 0; i < n; i++ {
-		<-rc
+		<-ec
 	}
 
 	b.StopTimer()
