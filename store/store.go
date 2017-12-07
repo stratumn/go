@@ -16,8 +16,6 @@
 package store
 
 import (
-	"encoding/json"
-
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/types"
 )
@@ -142,23 +140,6 @@ type BatchV2 interface {
 
 	// Write definitely writes the content of the Batch
 	WriteV2() error
-}
-
-// EventType lets you know the kind of event received.
-// A client should ignore events it doesn't care about or doesn't understand.
-type EventType int
-
-const (
-	// SavedLink means that a segment link was saved.
-	SavedLink EventType = iota
-	// SavedEvidence means that a segment evidence was saved.
-	SavedEvidence
-)
-
-// Event is the object stores send to notify of important events.
-type Event struct {
-	EventType EventType
-	Details   interface{}
 }
 
 // AdapterV2 is the new store interface. Once all stores are migrated
@@ -357,36 +338,4 @@ func (filter MapFilter) MatchLink(link *cs.Link) bool {
 		return false
 	}
 	return true
-}
-
-// UnmarshalJSON does custom deserialization to correctly
-// type the Details field
-func (event *Event) UnmarshalJSON(b []byte) error {
-	partial := struct {
-		EventType EventType
-		Details   json.RawMessage
-	}{}
-
-	if err := json.Unmarshal(b, &partial); err != nil {
-		return err
-	}
-
-	var details interface{}
-	switch partial.EventType {
-	case SavedLink:
-		details = new(cs.Link)
-	case SavedEvidence:
-		details = new(cs.Evidence)
-	}
-
-	if err := json.Unmarshal(partial.Details, &details); err != nil {
-		return err
-	}
-
-	*event = Event{
-		EventType: partial.EventType,
-		Details:   details,
-	}
-
-	return nil
 }

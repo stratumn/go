@@ -12,17 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package store_test
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/types"
-
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -72,7 +74,7 @@ func emptyPrevLinkHashTestingSegment() *cs.Segment {
 
 func TestSegmentFilter_Match(t *testing.T) {
 	type fields struct {
-		Pagination   Pagination
+		Pagination   store.Pagination
 		MapIDs       []string
 		Process      string
 		PrevLinkHash *string
@@ -195,7 +197,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filter := SegmentFilter{
+			filter := store.SegmentFilter{
 				Pagination:   tt.fields.Pagination,
 				MapIDs:       tt.fields.MapIDs,
 				Process:      tt.fields.Process,
@@ -212,7 +214,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 
 func TestMapFilter_Match(t *testing.T) {
 	type fields struct {
-		Pagination Pagination
+		Pagination store.Pagination
 		Process    string
 	}
 	type args struct {
@@ -251,7 +253,7 @@ func TestMapFilter_Match(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			filter := MapFilter{
+			filter := store.MapFilter{
 				Pagination: tt.fields.Pagination,
 				Process:    tt.fields.Process,
 			}
@@ -262,8 +264,8 @@ func TestMapFilter_Match(t *testing.T) {
 	}
 }
 
-func defaultTestingPagination() Pagination {
-	return Pagination{
+func defaultTestingPagination() store.Pagination {
+	return store.Pagination{
 		Offset: 0,
 		Limit:  10,
 	}
@@ -330,7 +332,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Pagination{
+			p := &store.Pagination{
 				Offset: tt.fields.Offset,
 				Limit:  tt.fields.Limit,
 			}
@@ -403,7 +405,7 @@ func TestPagination_PaginateStrings(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Pagination{
+			p := &store.Pagination{
 				Offset: tt.fields.Offset,
 				Limit:  tt.fields.Limit,
 			}
@@ -412,4 +414,89 @@ func TestPagination_PaginateStrings(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEvents(t *testing.T) {
+	t.Run("SavedLinks constructor", func(t *testing.T) {
+		e := store.NewSavedLinks()
+		assert.EqualValues(t, store.SavedLinks, e.EventType)
+	})
+
+	t.Run("Link can be added to SavedLinks event", func(t *testing.T) {
+		e := store.NewSavedLinks()
+		links := e.Data.([]*cs.Link)
+		assert.Zero(t, len(links), "Links should be initially empty")
+
+		e.AddSavedLink(cstesting.RandomLink())
+		links = e.Data.([]*cs.Link)
+		assert.Equal(t, 1, len(links), "A link should have been added")
+	})
+
+	t.Run("Links can be added to SavedLinks event", func(t *testing.T) {
+		e := store.NewSavedLinks()
+		links := e.Data.([]*cs.Link)
+		assert.Zero(t, len(links), "Links should be initially empty")
+
+		e.AddSavedLinks([]*cs.Link{cstesting.RandomLink(), cstesting.RandomLink()})
+		links = e.Data.([]*cs.Link)
+		assert.Equal(t, 2, len(links), "Two links should have been added")
+	})
+
+	t.Run("SavedEvidences constructor", func(t *testing.T) {
+		e := store.NewSavedEvidences()
+		assert.EqualValues(t, store.SavedEvidences, e.EventType)
+	})
+
+	t.Run("Evidence can be added to SavedEvidences event", func(t *testing.T) {
+		e := store.NewSavedEvidences()
+		evidences := e.Data.(map[string]*cs.Evidence)
+		assert.Zero(t, len(evidences), "Evidences should be initially empty")
+
+		linkHash := testutil.RandomHash()
+		evidence := cstesting.RandomEvidence()
+		e.AddSavedEvidence(linkHash, evidence)
+
+		evidences = e.Data.(map[string]*cs.Evidence)
+		assert.Equal(t, 1, len(evidences), "An evidence should have been added")
+		assert.EqualValues(t, evidence, evidences[linkHash.String()], "Invalid evidence")
+	})
+
+	t.Run("SavedLinks serialization", func(t *testing.T) {
+		e := store.NewSavedLinks()
+		link := cstesting.RandomLink()
+		e.AddSavedLink(link)
+
+		b, err := json.Marshal(e)
+		assert.NoError(t, err)
+
+		var e2 store.Event
+		err = json.Unmarshal(b, &e2)
+		assert.NoError(t, err)
+		assert.EqualValues(t, e.EventType, e2.EventType, "Invalid event type")
+
+		links := e2.Data.([]*cs.Link)
+		assert.Equal(t, 1, len(links), "Invalid number of links")
+		assert.EqualValues(t, link, links[0], "Invalid link")
+	})
+
+	t.Run("SavedEvidences serialization", func(t *testing.T) {
+		e := store.NewSavedEvidences()
+		evidence := cstesting.RandomEvidence()
+		linkHash := testutil.RandomHash()
+		e.AddSavedEvidence(linkHash, evidence)
+
+		b, err := json.Marshal(e)
+		assert.NoError(t, err)
+
+		var e2 store.Event
+		err = json.Unmarshal(b, &e2)
+		assert.NoError(t, err)
+		assert.EqualValues(t, e.EventType, e2.EventType, "Invalid event type")
+
+		evidences := e2.Data.(map[string]*cs.Evidence)
+		deserialized := evidences[linkHash.String()]
+		deserialized.Proof = nil
+		assert.EqualValues(t, evidence, deserialized, "Invalid evidence")
+	})
+
 }
