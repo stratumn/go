@@ -149,7 +149,6 @@ type Fossilizer struct {
 	batchChan            chan *batch
 	stopChan             chan error
 	semChan              chan struct{} // used to control number of simultaneous batches
-	resultChans          []chan *fossilizer.Result
 	fossilizerEventChans []chan *fossilizer.Event
 	waitGroup            sync.WaitGroup
 	transformer          Transformer
@@ -196,12 +195,6 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 		Version:     a.config.Version,
 		Commit:      a.config.Commit,
 	}, nil
-}
-
-// AddResultChan implements
-// github.com/stratumn/sdk/fossilizer.Adapter.AddResultChan.
-func (a *Fossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
-	a.resultChans = append(a.resultChans, resultChan)
 }
 
 // AddFossilizerEventChan implements
@@ -407,10 +400,6 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 		if r, err = a.transformer(&evidence, d, m); err != nil {
 			log.WithField("error", err).Error("Failed to transform evidence")
 		} else {
-			for _, c := range a.resultChans {
-				c <- r
-			}
-
 			event := &fossilizer.Event{
 				EventType: fossilizer.DidFossilizeLink,
 				Details:   r,

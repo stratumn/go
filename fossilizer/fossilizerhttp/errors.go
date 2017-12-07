@@ -32,9 +32,9 @@ func newErrDataLen(msg string) jsonhttp.ErrHTTP {
 	return jsonhttp.NewErrBadRequest(msg)
 }
 
-func newErrCallbackURL(msg string) jsonhttp.ErrHTTP {
+func newErrProcess(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
-		msg = "callback URL required"
+		msg = "process required"
 	}
 	return jsonhttp.NewErrBadRequest(msg)
 }

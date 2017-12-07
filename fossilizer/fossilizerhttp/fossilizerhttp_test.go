@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -26,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizertesting"
 	"github.com/stratumn/sdk/jsonhttp"
@@ -78,23 +78,8 @@ func TestRoot_err(t *testing.T) {
 }
 
 func TestFossilize(t *testing.T) {
-	a := &fossilizertesting.MockAdapter{}
-	ready := make(chan struct{})
-
-	// Capture result channel.
-	var rc chan *fossilizer.Result
-	a.MockAddResultChan.Fn = func(c chan *fossilizer.Result) {
-		rc = c
-		ready <- struct{}{}
-	}
-
-	// Mock fossilize to publish result to channel.
+	s, a := createServer()
 	a.MockFossilize.Fn = func(data []byte, meta []byte) error {
-		rc <- &fossilizer.Result{
-			Evidence: cs.Evidence{},
-			Data:     data,
-			Meta:     meta,
-		}
 		return nil
 	}
 
@@ -128,20 +113,16 @@ func TestFossilize(t *testing.T) {
 	// Make request.
 	req := httptest.NewRequest("POST", "/fossils", nil)
 	req.Form = url.Values{}
-	req.Form.Set("data", "1234567890")
-	req.Form.Set("callbackUrl", "http://localhost:8888")
+	req.Form.Set("data", "42")
+	req.Form.Set("process", "zou")
 
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	fmt.Println(w)
 
-	select {
-	case <-h.done:
-	case <-time.After(time.Second):
-		t.Fatal("callback URL not called after 1s")
+	if got, want := w.Code, http.StatusOK; got != want {
+		t.Errorf("w.StatusCode = %d want %d", got, want)
 	}
 }
 
@@ -150,7 +131,7 @@ func TestFossilize_noData(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/fossils", nil)
 	req.Form = url.Values{}
-	req.Form.Set("callbackUrl", "http://localhost:6666")
+	req.Form.Set("process", "zou")
 
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
@@ -165,8 +146,8 @@ func TestFossilize_dataTooShort(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/fossils", nil)
 	req.Form = url.Values{}
-	req.Form.Set("callbackUrl", "http://localhost:6666")
 	req.Form.Set("data", "1")
+	req.Form.Set("process", "zou")
 
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
@@ -181,8 +162,8 @@ func TestFossilize_dataTooLong(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/fossils", nil)
 	req.Form = url.Values{}
-	req.Form.Set("callbackUrl", "http://localhost:6666")
 	req.Form.Set("data", "12345678901234567890")
+	req.Form.Set("process", "zou")
 
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
@@ -197,8 +178,8 @@ func TestFossilize_dataNotHex(t *testing.T) {
 
 	req := httptest.NewRequest("POST", "/fossils", nil)
 	req.Form = url.Values{}
-	req.Form.Set("callbackUrl", "http://localhost:6666")
 	req.Form.Set("data", "azertyuiop")
+	req.Form.Set("process", "zou")
 
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
@@ -208,7 +189,7 @@ func TestFossilize_dataNotHex(t *testing.T) {
 	}
 }
 
-func TestFossilize_noCallback(t *testing.T) {
+func TestFossilize_noProcess(t *testing.T) {
 	s, _ := createServer()
 
 	req := httptest.NewRequest("POST", "/fossils", nil)
@@ -310,7 +291,7 @@ func TestGetSocket(t *testing.T) {
 	go s.getWebSocket(w, r, nil)
 
 	event := &fossilizer.Event{
-		EventType: fossilizer.DidFossilizeSegment,
+		EventType: fossilizer.DidFossilizeLink,
 		Details:   &fossilizer.Result{},
 	}
 
@@ -329,12 +310,16 @@ func TestGetSocket(t *testing.T) {
 	}
 
 	// Wait for message to be broadcasted.
+	expected := &jsonws.Message{
+		Type: FossilizerEventTypes[event.EventType],
+		Data: event.Details,
+	}
 	select {
 	case <-doneChan:
-		got := conn.MockWriteJSON.LastCalledWith.(*fossilizer.Event)
-		if !reflect.DeepEqual(got, event) {
+		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message)
+		if !reflect.DeepEqual(got, expected) {
 			gotjs, _ := json.MarshalIndent(got, "", "  ")
-			wantjs, _ := json.MarshalIndent(event, "", "  ")
+			wantjs, _ := json.MarshalIndent(expected, "", "  ")
 			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
 		}
 	case <-time.After(2 * time.Second):

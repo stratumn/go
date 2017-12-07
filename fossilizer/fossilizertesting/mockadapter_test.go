@@ -42,29 +42,29 @@ func TestMockAdapter_GetInfo(t *testing.T) {
 	}
 }
 
-func TestMockAdapter_AddResultChan(t *testing.T) {
+func TestMockAdapter_AddFossilizerEventChan(t *testing.T) {
 	a := &MockAdapter{}
 
-	c1 := make(chan *fossilizer.Result)
-	a.AddResultChan(c1)
+	c1 := make(chan *fossilizer.Event)
+	a.AddFossilizerEventChan(c1)
 
-	a.MockAddResultChan.Fn = func(chan *fossilizer.Result) {}
+	a.MockAddFossilizerEventChan.Fn = func(chan *fossilizer.Event) {}
 
-	c2 := make(chan *fossilizer.Result)
-	a.AddResultChan(c2)
+	c2 := make(chan *fossilizer.Event)
+	a.AddFossilizerEventChan(c2)
 
-	if got, want := a.MockAddResultChan.CalledCount, 2; got != want {
-		t.Errorf(`a.MockAddResultChan.CalledCount = %d want %d`, got, want)
+	if got, want := a.MockAddFossilizerEventChan.CalledCount, 2; got != want {
+		t.Errorf(`a.MockAddFossilizerEventChan.CalledCount = %d want %d`, got, want)
 	}
 	var (
-		got  = a.MockAddResultChan.CalledWith
-		want = []chan *fossilizer.Result{c1, c2}
+		got  = a.MockAddFossilizerEventChan.CalledWith
+		want = []chan *fossilizer.Event{c1, c2}
 	)
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf(`a.MockAddResultChan.CalledWith = %#v want %#v`, got, want)
+		t.Errorf(`a.MockAddFossilizerEventChan.CalledWith = %#v want %#v`, got, want)
 	}
-	if got, want := a.MockAddResultChan.LastCalledWith, c2; got != want {
-		t.Errorf(`a.MockAddResultChan.LastCalledWith = %#v want %#v`, got, want)
+	if got, want := a.MockAddFossilizerEventChan.LastCalledWith, c2; got != want {
+		t.Errorf(`a.MockAddFossilizerEventChan.LastCalledWith = %#v want %#v`, got, want)
 	}
 }
 
