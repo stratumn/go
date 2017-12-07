@@ -142,6 +142,9 @@ func (rb *ReversedBytes20) Reverse(b *Bytes20) {
 // Bytes32Size is the size of a 32-byte long byte array.
 const Bytes32Size = 32
 
+// Bytes32Zero is the default value for a 32-byte long byte array.
+var Bytes32Zero = &Bytes32{}
+
 // Bytes32 is a 32-byte long byte array.
 type Bytes32 [Bytes32Size]byte
 
@@ -200,8 +203,8 @@ func (b *Bytes32) UnmarshalJSON(data []byte) error {
 
 // Compare compares two Bytes32
 func (b *Bytes32) Compare(b2 *Bytes32) int {
-	if b == nil || b2 == nil {
-		if b == nil && b2 == nil {
+	if b.Zero() || b2.Zero() {
+		if b.Zero() && b2.Zero() {
 			return 0
 		}
 
@@ -218,7 +221,7 @@ func (b *Bytes32) Equals(b2 *Bytes32) bool {
 
 // EqualsBytes checks if a byte slice equals a Bytes32
 func (b *Bytes32) EqualsBytes(b2 []byte) bool {
-	if len(b2) == 0 && (b == nil || b.Zero()) {
+	if len(b2) == 0 && b.Zero() {
 		return true
 	}
 
@@ -229,13 +232,9 @@ func (b *Bytes32) EqualsBytes(b2 []byte) bool {
 	return bytes.Compare(b[:], b2) == 0
 }
 
-// Zero checks if a Bytes32 is the default value
+// Zero checks if a Bytes32 is the default value or nil
 func (b *Bytes32) Zero() bool {
-	if b == nil {
-		return false
-	}
-
-	return b.Equals(&Bytes32{})
+	return b == nil || bytes.Compare(b[:], Bytes32Zero[:]) == 0
 }
 
 // Reverse reverses the bytes order.

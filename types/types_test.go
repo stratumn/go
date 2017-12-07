@@ -320,23 +320,22 @@ func TestNewBytes32FromBytes_bigSlice(t *testing.T) {
 
 func TestBytes32Compare(t *testing.T) {
 	var nilBytes32 *types.Bytes32
-	zero := &types.Bytes32{}
 	nonZero, _ := types.NewBytes32FromString("1234567890123456789012345678901234567890123456789012345678901234")
 
 	t.Run("Nil slice is equal to zero", func(t *testing.T) {
-		assert.True(t, zero.EqualsBytes(nil))
+		assert.True(t, types.Bytes32Zero.EqualsBytes(nil))
 	})
 
 	t.Run("Empty slice is equal to zero", func(t *testing.T) {
-		assert.True(t, zero.EqualsBytes([]byte{}))
+		assert.True(t, types.Bytes32Zero.EqualsBytes([]byte{}))
 	})
 
-	t.Run("Nil bytes32 is not zero", func(t *testing.T) {
-		assert.False(t, nilBytes32.Zero())
+	t.Run("Nil bytes32 is zero", func(t *testing.T) {
+		assert.True(t, nilBytes32.Zero())
 	})
 
 	t.Run("Nil bytes32 comparison to zero", func(t *testing.T) {
-		assert.NotEqual(t, 0, nilBytes32.Compare(zero))
+		assert.Equal(t, 0, nilBytes32.Compare(types.Bytes32Zero))
 	})
 
 	t.Run("Nil bytes32 comparison", func(t *testing.T) {

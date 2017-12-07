@@ -134,7 +134,7 @@ func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
 	// an empty byte slice (instead of a 32-byte array of 0)
 	// Otherwise handshake will not work
 	lastAppHash := []byte{}
-	if t.lastBlock.AppHash != nil && !t.lastBlock.AppHash.Zero() {
+	if !t.lastBlock.AppHash.Zero() {
 		lastAppHash = t.lastBlock.AppHash[:]
 	}
 
