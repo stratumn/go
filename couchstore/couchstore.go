@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
@@ -36,9 +37,8 @@ const (
 
 // CouchStore is the type that implements github.com/stratumn/sdk/store.Adapter.
 type CouchStore struct {
-	config       *Config
-	didSaveChans []chan *cs.Segment
-	eventChans   []chan *store.Event
+	config     *Config
+	eventChans []chan *store.Event
 }
 
 // Config contains configuration options for the store.
@@ -98,11 +98,6 @@ func (c *CouchStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddDidSaveChannel implements github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
-func (c *CouchStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
-	c.didSaveChans = append(c.didSaveChans, saveChan)
-}
-
 // AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
 func (c *CouchStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	c.eventChans = append(c.eventChans, eventChan)
@@ -143,42 +138,6 @@ func (c *CouchStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence)
 	c.notifyEvent(evidenceEvent)
 
 	return nil
-}
-
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (c *CouchStore) SaveSegment(segment *cs.Segment) error {
-	linkHash, err := c.createLink(&segment.Link)
-	if err != nil {
-		return err
-	}
-
-	for _, evidence := range segment.Meta.Evidences {
-		if err := c.AddEvidence(linkHash, evidence); err != nil {
-			return err
-		}
-	}
-
-	for _, ch := range c.didSaveChans {
-		ch <- segment
-	}
-
-	return nil
-}
-
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (c *CouchStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	segment, err := c.GetSegment(linkHash)
-	if err != nil || segment == nil {
-		return nil, err
-	}
-
-	_, evidenceErr := c.deleteDocument(dbEvidences, linkHash.String())
-	segmentDoc, err := c.deleteDocument(dbLink, linkHash.String())
-	if err != nil || segmentDoc == nil {
-		return nil, err
-	}
-
-	return segment, evidenceErr
 }
 
 /********** Store reader implementation **********/
@@ -265,11 +224,6 @@ func (c *CouchStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error
 
 /********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
 
-// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
-func (c *CouchStore) SaveValue(key, value []byte) error {
-	return c.SetValue(key, value)
-}
-
 // SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
 func (c *CouchStore) SetValue(key, value []byte) error {
 	hexKey := hex.EncodeToString(key)
@@ -323,10 +277,5 @@ func (c *CouchStore) DeleteValue(key []byte) ([]byte, error) {
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (c *CouchStore) NewBatch() (store.Batch, error) {
-	return NewBatch(c), nil
-}
-
-// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
-func (c *CouchStore) NewBatchV2() (store.BatchV2, error) {
-	return nil, nil
+	return bufferedbatch.NewBatch(c), nil
 }

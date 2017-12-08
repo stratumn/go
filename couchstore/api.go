@@ -144,25 +144,13 @@ func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 		ID:         linkHashStr,
 	}
 
-	// <<<<<
 	currentLinkDoc, err := c.getDocument(dbLink, linkHashStr)
 	if err != nil {
 		return nil, err
 	}
 	if currentLinkDoc != nil {
-		linkDoc = currentLinkDoc
+		return nil, errors.Errorf("Link is immutable, %s already exists", linkHashStr)
 	}
-	// =====
-	// After interface update, this behaviour is better. Link is
-	// immutable so it should not be present in database
-	// tmpoptestcases have to be changed
-	// if currentLinkDoc, err := c.getDocument(dbLink, linkHashStr); currentLinkDoc != nil {
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	return nil, errors.Errorf("Link is immutable, %s already exists", linkHashStr)
-	// }
-	// >>>>>
 
 	docs := []*Document{
 		linkDoc,
@@ -177,7 +165,6 @@ func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
-
 	currentDoc, err := c.getDocument(dbEvidences, linkHash)
 	if err != nil {
 		return err
@@ -191,18 +178,7 @@ func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 		currentDoc.Evidences = &cs.Evidences{}
 	}
 
-	// If we already have an evidence for that provider, it means
-	// we're in the case where we go from a PENDING evidence to a
-	// COMPLETE one. This won't be necessary after the store interface
-	// update, but meanwhile we need to correctly update the existing
-	// evidence.
-	previousEvidence := currentDoc.Evidences.GetEvidence(evidence.Provider)
-	if previousEvidence != nil {
-		if previousEvidence.State == cs.PendingEvidence {
-			previousEvidence.State = evidence.State
-			previousEvidence.Proof = evidence.Proof
-		}
-	} else if err := currentDoc.Evidences.AddEvidence(*evidence); err != nil {
+	if err := currentDoc.Evidences.AddEvidence(*evidence); err != nil {
 		return err
 	}
 
@@ -210,7 +186,6 @@ func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 }
 
 func (c *CouchStore) segmentify(link *cs.Link) *cs.Segment {
-
 	segment := link.Segmentify()
 
 	if evidences, err := c.GetEvidences(segment.Meta.GetLinkHash()); evidences != nil && err == nil {
