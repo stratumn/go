@@ -35,12 +35,12 @@ const (
 // the tests on tmpop using this adapter.
 type Factory struct {
 	// New creates an adapter and a key-value store.
-	New func() (store.AdapterV2, store.KeyValueStore, error)
+	New func() (store.Adapter, store.KeyValueStore, error)
 
 	// Free is an optional function to free the adapter and key-value store.
-	Free func(adapter store.AdapterV2, kv store.KeyValueStore)
+	Free func(adapter store.Adapter, kv store.KeyValueStore)
 
-	adapter store.AdapterV2
+	adapter store.Adapter
 	kv      store.KeyValueStore
 }
 

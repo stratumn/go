@@ -36,22 +36,22 @@ type State struct {
 	// be updated.
 	validator *validator.Validator
 
-	adapter            store.AdapterV2
-	deliveredLinks     store.BatchV2
+	adapter            store.Adapter
+	deliveredLinks     store.Batch
 	deliveredLinksList []*cs.Link
-	checkedLinks       store.BatchV2
+	checkedLinks       store.Batch
 }
 
 // NewState creates a new State.
-func NewState(a store.AdapterV2) (*State, error) {
-	deliveredLinks, err := a.NewBatchV2()
+func NewState(a store.Adapter) (*State, error) {
+	deliveredLinks, err := a.NewBatch()
 	if err != nil {
 		return nil, err
 	}
 
 	// With transactional databases we cannot really use two transactions as they'd lock each other
 	// (more exactly, checked links would lock out delivered links)
-	checkedLinks := bufferedbatch.NewBatchV2(a)
+	checkedLinks := bufferedbatch.NewBatch(a)
 
 	return &State{
 		adapter:        a,
@@ -74,7 +74,7 @@ func (s *State) Deliver(link *cs.Link) abci.Result {
 	return res
 }
 
-func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.BatchV2) abci.Result {
+func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) abci.Result {
 	err := link.Segmentify().Validate(batch.GetSegment)
 	if err != nil {
 		return abci.NewError(
@@ -84,7 +84,7 @@ func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.BatchV2) abci.
 	}
 
 	if s.validator != nil {
-		err = (*s.validator).ValidateLink(batch, link)
+		err = (*s.validator).Validate(batch, link)
 		if err != nil {
 			return abci.NewError(
 				CodeTypeValidation,
@@ -110,14 +110,14 @@ func (s *State) Commit() (*types.Bytes32, []*cs.Link, error) {
 		return nil, nil, err
 	}
 
-	if err := s.deliveredLinks.WriteV2(); err != nil {
+	if err := s.deliveredLinks.Write(); err != nil {
 		return nil, nil, err
 	}
 
-	if s.deliveredLinks, err = s.adapter.NewBatchV2(); err != nil {
+	if s.deliveredLinks, err = s.adapter.NewBatch(); err != nil {
 		return nil, nil, err
 	}
-	s.checkedLinks = bufferedbatch.NewBatchV2(s.adapter)
+	s.checkedLinks = bufferedbatch.NewBatch(s.adapter)
 
 	committedLinks := make([]*cs.Link, len(s.deliveredLinksList))
 	copy(committedLinks, s.deliveredLinksList)

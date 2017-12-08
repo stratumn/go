@@ -65,7 +65,7 @@ type TMPop struct {
 	abci.BaseApplication
 
 	state         *State
-	adapter       store.AdapterV2
+	adapter       store.Adapter
 	kvDB          store.KeyValueStore
 	lastBlock     *LastBlock
 	config        *Config
@@ -87,7 +87,7 @@ const (
 )
 
 // New creates a new instance of a TMPop.
-func New(a store.AdapterV2, kv store.KeyValueStore, config *Config) (*TMPop, error) {
+func New(a store.Adapter, kv store.KeyValueStore, config *Config) (*TMPop, error) {
 	initalized, err := kv.GetValue(tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
