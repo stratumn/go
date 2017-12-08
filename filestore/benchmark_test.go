@@ -21,8 +21,11 @@ import (
 )
 
 func BenchmarkFilestore(b *testing.B) {
-	storetestcases.Factory{
+	factory := storetestcases.Factory{
 		New:  createAdapter,
 		Free: freeAdapter,
-	}.RunBenchmarks(b)
+	}
+
+	factory.RunStoreBenchmarks(b)
+	factory.RunKeyValueStoreBenchmarks(b)
 }

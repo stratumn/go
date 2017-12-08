@@ -32,7 +32,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/leveldbstore"
 	"github.com/stratumn/sdk/store"
@@ -52,11 +51,10 @@ const (
 
 // FileStore is the type that implements github.com/stratumn/sdk/store.Adapter.
 type FileStore struct {
-	config       *Config
-	didSaveChans []chan *cs.Segment
-	eventChans   []chan *store.Event
-	mutex        sync.RWMutex // simple global mutex
-	kvDB         *leveldbstore.LevelDBStore
+	config     *Config
+	eventChans []chan *store.Event
+	mutex      sync.RWMutex // simple global mutex
+	kvDB       *leveldbstore.LevelDBStore
 }
 
 // Config contains configuration options for the store.
@@ -89,7 +87,7 @@ func New(config *Config) (*FileStore, error) {
 		return nil, err
 	}
 
-	return &FileStore{config, nil, nil, sync.RWMutex{}, db}, nil
+	return &FileStore{config, nil, sync.RWMutex{}, db}, nil
 }
 
 /********** Store adapter implementation **********/
@@ -104,12 +102,7 @@ func (a *FileStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddDidSaveChannel implements github.com/stratumn/sdk/store.Adapter.AddDidSaveChannel.
-func (a *FileStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
-	a.didSaveChans = append(a.didSaveChans, saveChan)
-}
-
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel
 func (a *FileStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
@@ -117,11 +110,6 @@ func (a *FileStore) AddStoreEventChannel(eventChan chan *store.Event) {
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (a *FileStore) NewBatch() (store.Batch, error) {
 	return NewBatch(a), nil
-}
-
-// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
-func (a *FileStore) NewBatchV2() (store.BatchV2, error) {
-	return bufferedbatch.NewBatchV2(a), nil
 }
 
 /********** Store writer implementation **********/
@@ -172,18 +160,7 @@ func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) 
 		return err
 	}
 
-	// If we already have an evidence for that provider, it means
-	// we're in the case where we go from a PENDING evidence to a
-	// COMPLETE one. This won't be necessary after the store interface
-	// update, but meanwhile we need to correctly update the existing
-	// evidence.
-	previousEvidence := currentEvidences.GetEvidence(evidence.Provider)
-	if previousEvidence != nil {
-		if previousEvidence.State == cs.PendingEvidence {
-			previousEvidence.State = evidence.State
-			previousEvidence.Proof = evidence.Proof
-		}
-	} else if err = currentEvidences.AddEvidence(*evidence); err != nil {
+	if err = currentEvidences.AddEvidence(*evidence); err != nil {
 		return err
 	}
 
@@ -207,58 +184,9 @@ func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) 
 	return nil
 }
 
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (a *FileStore) SaveSegment(segment *cs.Segment) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	return a.saveSegment(segment)
-}
-
-func (a *FileStore) saveSegment(segment *cs.Segment) error {
-	linkHash, err := a.createLink(&segment.Link)
-	if err != nil {
-		return err
-	}
-
-	for _, evidence := range segment.Meta.Evidences {
-		if err := a.AddEvidence(linkHash, evidence); err != nil {
-			return err
-		}
-	}
-
-	for _, c := range a.didSaveChans {
-		c <- segment
-	}
-
-	return nil
-}
-
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (a *FileStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	return a.deleteSegment(linkHash)
-}
-
-func (a *FileStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	segment, err := a.getSegment(linkHash)
-	if segment == nil {
-		return segment, err
-	}
-
-	if err = os.Remove(a.getLinkPath(linkHash)); err != nil {
-		return nil, err
-	}
-
-	return segment, err
-}
-
 /********** Store reader implementation **********/
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment
-// and github.com/stratumn/sdk/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
 func (a *FileStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -286,8 +214,7 @@ func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	}, nil
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments
-// and github.com/stratumn/sdk/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
 func (a *FileStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var segments cs.SegmentSlice
 
@@ -303,8 +230,7 @@ func (a *FileStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, 
 	return filter.Pagination.PaginateSegments(segments), nil
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs
-// and github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
 func (a *FileStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	set := map[string]struct{}{}
 	a.forEach(func(segment *cs.Segment) error {
@@ -366,24 +292,17 @@ func (a *FileStore) getLink(linkHash *types.Bytes32) (*cs.Link, error) {
 
 /********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
 
-// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
-func (a *FileStore) SaveValue(key []byte, value []byte) error {
-	return a.kvDB.SetValue(key, value)
-}
-
 // SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
 func (a *FileStore) SetValue(key []byte, value []byte) error {
 	return a.kvDB.SetValue(key, value)
 }
 
-// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue
-// and github.com/stratumn/sdk/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
 func (a *FileStore) GetValue(key []byte) ([]byte, error) {
 	return a.kvDB.GetValue(key)
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue
-// and github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
 func (a *FileStore) DeleteValue(key []byte) ([]byte, error) {
 	return a.kvDB.DeleteValue(key)
 }

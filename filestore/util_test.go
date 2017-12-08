@@ -21,46 +21,43 @@ import (
 	"github.com/stratumn/sdk/store"
 )
 
+func createFileStore() (*FileStore, error) {
+	path, err := ioutil.TempDir("", "filestore")
+	if err != nil {
+		return nil, err
+	}
+	fs, err := New(&Config{Path: path})
+	if err != nil {
+		return nil, err
+	}
+	return fs, nil
+}
+
 func createAdapter() (store.Adapter, error) {
-	path, err := ioutil.TempDir("", "filestore")
-	if err != nil {
-		return nil, err
-	}
-	fs, err := New(&Config{Path: path})
-	if err != nil {
-		return nil, err
-	}
-	return fs, nil
+	return createFileStore()
 }
 
-func createAdapterV2() (store.AdapterV2, error) {
-	path, err := ioutil.TempDir("", "filestore")
-	if err != nil {
-		return nil, err
-	}
-	fs, err := New(&Config{Path: path})
-	if err != nil {
-		return nil, err
-	}
-	return fs, nil
+func createKeyValueStore() (store.KeyValueStore, error) {
+	return createFileStore()
 }
 
-func createAdapterTMPop() (store.AdapterV2, store.KeyValueStore, error) {
-	a, err := createAdapterV2()
-	kv := a.(*FileStore)
-	return a, kv, err
+func createAdapterTMPop() (store.Adapter, store.KeyValueStore, error) {
+	a, err := createFileStore()
+	return a, a, err
+}
+
+func freeFileStore(s *FileStore) {
+	os.RemoveAll(s.config.Path)
 }
 
 func freeAdapter(s store.Adapter) {
-	a := s.(*FileStore)
-	defer os.RemoveAll(a.config.Path)
+	freeFileStore(s.(*FileStore))
 }
 
-func freeAdapterV2(s store.AdapterV2) {
-	a := s.(*FileStore)
-	defer os.RemoveAll(a.config.Path)
+func freeKeyValueStore(s store.KeyValueStore) {
+	freeFileStore(s.(*FileStore))
 }
 
-func freeAdapterTMPop(a store.AdapterV2, _ store.KeyValueStore) {
-	freeAdapterV2(a)
+func freeAdapterTMPop(a store.Adapter, _ store.KeyValueStore) {
+	freeAdapter(a)
 }

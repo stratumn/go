@@ -22,17 +22,15 @@ import (
 )
 
 func TestFilestore(t *testing.T) {
-	storetestcases.Factory{
-		New:  createAdapter,
-		Free: freeAdapter,
-	}.RunTests(t)
-}
+	factory := storetestcases.Factory{
+		New:               createAdapter,
+		NewKeyValueStore:  createKeyValueStore,
+		Free:              freeAdapter,
+		FreeKeyValueStore: freeKeyValueStore,
+	}
 
-func TestFilestoreV2(t *testing.T) {
-	storetestcases.Factory{
-		NewV2:  createAdapterV2,
-		FreeV2: freeAdapterV2,
-	}.RunTestsV2(t)
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
 }
 
 func TestFileTMPop(t *testing.T) {

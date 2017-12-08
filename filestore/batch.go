@@ -15,8 +15,6 @@
 package filestore
 
 import (
-	"fmt"
-
 	"github.com/stratumn/sdk/bufferedbatch"
 )
 
@@ -40,31 +38,9 @@ func (b *Batch) Write() (err error) {
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()
 
-	for _, op := range b.SegmentOps {
-		switch op.OpType {
-		case bufferedbatch.OpTypeSet:
-			err = b.originalFileStore.saveSegment(op.Segment)
-		case bufferedbatch.OpTypeDelete:
-			_, err = b.originalFileStore.deleteSegment(op.LinkHash)
-		default:
-			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
-		}
-		if err != nil {
-			return
-		}
-	}
-
-	for _, op := range b.ValueOps {
-		switch op.OpType {
-		case bufferedbatch.OpTypeSet:
-			err = b.originalFileStore.SaveValue(op.Key, op.Value)
-		case bufferedbatch.OpTypeDelete:
-			_, err = b.originalFileStore.DeleteValue(op.Key)
-		default:
-			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
-		}
-		if err != nil {
-			return
+	for _, link := range b.Links {
+		if _, err := b.originalFileStore.createLink(link); err != nil {
+			return err
 		}
 	}
 
