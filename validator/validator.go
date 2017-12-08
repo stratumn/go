@@ -13,8 +13,7 @@ const (
 
 // validator defines the interface with single Validate() method
 type validator interface {
-	Validate(store.Reader, *cs.Segment) error
-	ValidateLink(store.SegmentReader, *cs.Link) error
+	Validate(store.SegmentReader, *cs.Link) error
 }
 
 // Validator defines a validator that can be identified by a hash

@@ -26,11 +26,7 @@ func newSchemaValidator(segmentType string, data []byte) (*schemaValidator, erro
 	return &schemaValidator{Type: segmentType, Schema: schema}, nil
 }
 
-func (sv schemaValidator) Filter(_ store.Reader, segment *cs.Segment) bool {
-	return sv.FilterLink(nil, &segment.Link)
-}
-
-func (sv schemaValidator) FilterLink(_ store.SegmentReader, link *cs.Link) bool {
+func (sv schemaValidator) Filter(_ store.SegmentReader, link *cs.Link) bool {
 	// TODO: standardise action as string
 	linkAction, ok := link.Meta["action"].(string)
 	if !ok {
@@ -45,11 +41,7 @@ func (sv schemaValidator) FilterLink(_ store.SegmentReader, link *cs.Link) bool 
 	return true
 }
 
-func (sv schemaValidator) Validate(_ store.Reader, segment *cs.Segment) error {
-	return sv.ValidateLink(nil, &segment.Link)
-}
-
-func (sv schemaValidator) ValidateLink(_ store.SegmentReader, link *cs.Link) error {
+func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	stateBytes, err := json.Marshal(link.State)
 	if err != nil {
 		return err

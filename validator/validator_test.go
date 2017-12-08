@@ -158,58 +158,58 @@ func TestLoadValidJSON(t *testing.T) {
 	}
 }
 
-func makeSegment(action string) *cs.Segment {
-	return &cs.Segment{Link: cs.Link{
+func makeLink(action string) *cs.Link {
+	return &cs.Link{
 		Meta:  map[string]interface{}{"action": action, "process": testProcessName},
 		State: map[string]interface{}{},
-	}}
+	}
 }
 
 func TestFilter(t *testing.T) {
-	initSegment := makeSegment("init")
-	proposeSegment := makeSegment("propose")
+	initLink := makeLink("init")
+	proposeLink := makeLink("propose")
 
 	acceptAllSchema, _ := gojsonschema.NewSchema(gojsonschema.NewBytesLoader([]byte("{}")))
 
 	svInit := schemaValidator{Type: "init", Schema: acceptAllSchema}
 	svPropose := schemaValidator{Type: "propose", Schema: acceptAllSchema}
 
-	if !svInit.Filter(&storetesting.MockBatch{}, initSegment) {
-		t.Errorf("error not selecting segment `init` by validator of type `init`")
+	if !svInit.Filter(&storetesting.MockBatch{}, initLink) {
+		t.Errorf("error not selecting link `init` by validator of type `init`")
 	}
 
-	if svPropose.Filter(&storetesting.MockBatch{}, initSegment) {
-		t.Errorf("error selecting segment `init` by validator of type `propose`")
+	if svPropose.Filter(&storetesting.MockBatch{}, initLink) {
+		t.Errorf("error selecting link `init` by validator of type `propose`")
 	}
 
-	if svInit.Filter(&storetesting.MockBatch{}, proposeSegment) {
-		t.Errorf("error selecting segment `propose` by validator of type `init`")
+	if svInit.Filter(&storetesting.MockBatch{}, proposeLink) {
+		t.Errorf("error selecting link `propose` by validator of type `init`")
 	}
 
-	initSegment.Link.Meta["action"] = 10
+	initLink.Meta["action"] = 10
 
-	if svInit.Filter(&storetesting.MockBatch{}, initSegment) {
-		t.Errorf("error selecting incorrect segment")
+	if svInit.Filter(&storetesting.MockBatch{}, initLink) {
+		t.Errorf("error selecting incorrect link")
 	}
 }
 
 func TestSchemaValidate(t *testing.T) {
-	bidValidSegment := makeSegment("bid")
-	bidInvalidSegment := makeSegment("bid")
+	bidValidLink := makeLink("bid")
+	bidInvalidLink := makeLink("bid")
 
-	bidValidSegment.Link.State["buyer"] = "Alice"
-	bidValidSegment.Link.State["bidPrice"] = 10
+	bidValidLink.State["buyer"] = "Alice"
+	bidValidLink.State["bidPrice"] = 10
 
 	defaultSchema, _ := gojsonschema.NewSchema(gojsonschema.NewBytesLoader([]byte(bidValidator)))
 
 	svBid := schemaValidator{Type: "bid", Schema: defaultSchema}
 
-	if err := svBid.Validate(&storetesting.MockBatch{}, bidValidSegment); err != nil {
-		t.Errorf("error not validating valid segment: %s", err)
+	if err := svBid.Validate(&storetesting.MockBatch{}, bidValidLink); err != nil {
+		t.Errorf("error not validating valid link: %s", err)
 	}
 
-	if err := svBid.Validate(&storetesting.MockBatch{}, bidInvalidSegment); err == nil {
-		t.Errorf("error validating invalid segment `bid`")
+	if err := svBid.Validate(&storetesting.MockBatch{}, bidInvalidLink); err == nil {
+		t.Errorf("error validating invalid link `bid`")
 	}
 }
 
@@ -248,7 +248,7 @@ func TestNewRootValidator(t *testing.T) {
 }
 
 func TestRootValidator(t *testing.T) {
-	segment := makeSegment("init")
+	link := makeLink("init")
 
 	acceptAllSchema, _ := gojsonschema.NewSchema(gojsonschema.NewBytesLoader([]byte("{}")))
 	acceptNoneSchema, _ := gojsonschema.NewSchema(gojsonschema.NewBytesLoader([]byte(`{"type": "array"}`)))
@@ -273,16 +273,16 @@ func TestRootValidator(t *testing.T) {
 	rv3 := rootValidator{ValidByDefault: false}
 	rv4 := rootValidator{ValidatorsByProcess: validators3, ValidByDefault: false}
 
-	if err := rv1.Validate(&storetesting.MockBatch{}, segment); err != nil {
+	if err := rv1.Validate(&storetesting.MockBatch{}, link); err != nil {
 		t.Errorf("failed to validate rv1")
 	}
-	if err := rv2.Validate(&storetesting.MockBatch{}, segment); err == nil {
+	if err := rv2.Validate(&storetesting.MockBatch{}, link); err == nil {
 		t.Errorf("rv2 validation successeful")
 	}
-	if err := rv3.Validate(&storetesting.MockBatch{}, segment); err == nil {
+	if err := rv3.Validate(&storetesting.MockBatch{}, link); err == nil {
 		t.Errorf("rv3 validation successeful")
 	}
-	if err := rv4.Validate(&storetesting.MockBatch{}, segment); err == nil {
+	if err := rv4.Validate(&storetesting.MockBatch{}, link); err == nil {
 		t.Errorf("rv4 validation successeful")
 	}
 }
