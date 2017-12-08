@@ -110,8 +110,8 @@ func (f Factory) RunStoreTests(t *testing.T) {
 	t.Run("TestBatchGetMapIDs", f.TestBatchGetMapIDs)
 }
 
-// RunBenchmarks runs all the benchmarks.
-func (f Factory) RunBenchmarks(b *testing.B) {
+// RunStoreBenchmarks runs all the benchmarks for the store adapter interface.
+func (f Factory) RunStoreBenchmarks(b *testing.B) {
 	b.Run("BenchmarkCreateLink", f.BenchmarkCreateLink)
 	b.Run("BenchmarkCreateLinkParallel", f.BenchmarkCreateLinkParallel)
 
@@ -147,7 +147,7 @@ func (f Factory) RunBenchmarks(b *testing.B) {
 	b.Run("FindSegmentsMapIDs10000Parallel", f.BenchmarkFindSegmentsMapIDs10000Parallel)
 	b.Run("FindSegmentsPrevLinkHash100Parallel", f.BenchmarkFindSegmentsPrevLinkHash100Parallel)
 	b.Run("FindSegmentsPrevLinkHash1000Parallel", f.BenchmarkFindSegmentsPrevLinkHash1000Parallel)
-	b.Run("FindSegmentsPrevLinkHash10000Parallel", f.BenchmarkFindSegmentsPrevLinkHash10000Parallel)
+	b.Run("FindSegmentsPrevLinkHash10000ParalleRunBenchmarksl", f.BenchmarkFindSegmentsPrevLinkHash10000Parallel)
 	b.Run("FindSegmentsTags100Parallel", f.BenchmarkFindSegmentsTags100Parallel)
 	b.Run("FindSegmentsTags1000Parallel", f.BenchmarkFindSegmentsTags1000Parallel)
 	b.Run("FindSegmentsTags10000Parallel", f.BenchmarkFindSegmentsTags10000Parallel)
@@ -167,7 +167,10 @@ func (f Factory) RunBenchmarks(b *testing.B) {
 
 	b.Run("GetSegment", f.BenchmarkGetSegment)
 	b.Run("GetSegmentParallel", f.BenchmarkGetSegmentParallel)
+}
 
+// RunKeyValueStoreBenchmarks runs all the benchmarks for the key-value store interface.
+func (f Factory) RunKeyValueStoreBenchmarks(b *testing.B) {
 	b.Run("GetValue", f.BenchmarkGetValue)
 	b.Run("GetValueParallel", f.BenchmarkGetValueParallel)
 
