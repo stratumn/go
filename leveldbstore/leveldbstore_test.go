@@ -20,96 +20,27 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/store/storetestcases"
 )
 
-func createTestStore() (store.KeyValueStore, error) {
-	path, err := ioutil.TempDir("", "leveldbstore")
-	if err != nil {
-		return nil, err
-	}
-	db, err := New(&Config{Path: path})
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-func freeTestStore(s store.KeyValueStore) {
-	a := s.(*LevelDBStore)
-	defer os.RemoveAll(a.config.Path)
-}
-
-func TestKeyValueStore(t *testing.T) {
-	testStore, err := createTestStore()
-	defer freeTestStore(testStore)
-
-	if err != nil {
-		t.Error(err)
+func TestLevelDBStore(t *testing.T) {
+	factory := storetestcases.Factory{
+		NewKeyValueStore: func() (store.KeyValueStore, error) {
+			path, err := ioutil.TempDir("", "leveldbstore")
+			if err != nil {
+				return nil, err
+			}
+			db, err := New(&Config{Path: path})
+			if err != nil {
+				return nil, err
+			}
+			return db, nil
+		},
+		FreeKeyValueStore: func(s store.KeyValueStore) {
+			a := s.(*LevelDBStore)
+			defer os.RemoveAll(a.config.Path)
+		},
 	}
 
-	t.Run("SetValue correctly updates store", func(t *testing.T) {
-		key := []byte("key1")
-		initialValue := "value1"
-		if err := testStore.SetValue(key, []byte(initialValue)); err != nil {
-			t.Error(err)
-		}
-
-		value, err := testStore.GetValue(key)
-		if err != nil {
-			t.Error(err)
-		}
-		if got := string(value[:]); got != initialValue {
-			t.Errorf("Invalid value: want %s, got %s", initialValue, got)
-		}
-
-		updatedValue := "value2"
-		if err = testStore.SetValue(key, []byte(updatedValue)); err != nil {
-			t.Error(err)
-		}
-
-		value, err = testStore.GetValue(key)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if got := string(value[:]); got != updatedValue {
-			t.Errorf("Invalid value: want %s, got %s", updatedValue, got)
-		}
-	})
-
-	t.Run("DeleteValue correctly removes from store", func(t *testing.T) {
-		key := []byte("to-delete")
-		value := "I will be deleted"
-		if err := testStore.SetValue(key, []byte(value)); err != nil {
-			t.Error(err)
-		}
-
-		deleted, err := testStore.DeleteValue(key)
-		if err != nil {
-			t.Error(err)
-		}
-
-		if got := string(deleted[:]); got != value {
-			t.Errorf("Invalid value: want %s, got %s", got, value)
-		}
-
-		notFound, err := testStore.GetValue(key)
-		if err != nil {
-			t.Error(err)
-		}
-		if notFound != nil {
-			t.Error("Value should be nil after delete")
-		}
-	})
-
-	t.Run("GetValue should return nil for unknown key", func(t *testing.T) {
-		notFound, err := testStore.GetValue([]byte("You won't find me"))
-		if err != nil {
-			t.Error(err)
-		}
-		if notFound != nil {
-			t.Error("Value should be nil for unknown key")
-		}
-
-	})
+	factory.RunKeyValueStoreTests(t)
 }
