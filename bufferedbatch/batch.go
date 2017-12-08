@@ -15,9 +15,6 @@
 package bufferedbatch
 
 import (
-	"bytes"
-	"fmt"
-
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
@@ -29,33 +26,7 @@ import (
 // Only the Write method must be implemented.
 type Batch struct {
 	originalStore store.Adapter
-	ValueOps      []ValueOperation
-	SegmentOps    []SegmentOperation
-}
-
-// OpType represents a operation type on the Batch.
-type OpType int
-
-const (
-	// OpTypeSet set represents a save operation.
-	OpTypeSet = iota
-
-	// OpTypeDelete set represents a delete operation.
-	OpTypeDelete
-)
-
-// ValueOperation represents a operation on a value.
-type ValueOperation struct {
-	OpType
-	Key   []byte
-	Value []byte
-}
-
-// SegmentOperation represents a operation on a segment.
-type SegmentOperation struct {
-	OpType
-	LinkHash *types.Bytes32
-	Segment  *cs.Segment
+	Links         []*cs.Link
 }
 
 // NewBatch creates a new Batch.
@@ -63,80 +34,29 @@ func NewBatch(a store.Adapter) *Batch {
 	return &Batch{originalStore: a}
 }
 
-// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
-func (b *Batch) SaveValue(key, value []byte) error {
-	b.ValueOps = append(b.ValueOps, ValueOperation{OpTypeSet, key, value})
-	return nil
-}
-
-// DeleteValue implements github.com/stratumn/sdk/store.Adapter.DeleteValue.
-func (b *Batch) DeleteValue(key []byte) (value []byte, err error) {
-	// remove all existing save operations and get the last saved value.
-	for i := len(b.ValueOps) - 1; i >= 0; i-- {
-		sOp := b.ValueOps[i]
-		if bytes.Compare(sOp.Key, key) == 0 {
-			if value == nil && sOp.OpType == OpTypeSet {
-				value = sOp.Value
-			}
-			b.ValueOps = append(b.ValueOps[:i], b.ValueOps[i+1:]...)
-		}
-	}
-
-	b.ValueOps = append(b.ValueOps, ValueOperation{OpTypeDelete, key, value})
-
-	if value != nil {
-		return value, nil
-	}
-	return b.originalStore.GetValue(key)
-}
-
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (b *Batch) SaveSegment(segment *cs.Segment) error {
+// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+func (b *Batch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	segment := link.Segmentify()
 	if err := segment.Validate(b.GetSegment); err != nil {
-		return err
+		return nil, err
 	}
-	b.SegmentOps = append(b.SegmentOps, SegmentOperation{OpTypeSet, segment.GetLinkHash(), segment})
-	return nil
+	b.Links = append(b.Links, link)
+	return segment.GetLinkHash(), nil
 }
 
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (b *Batch) DeleteSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
-	// remove all existing save operations and get the last saved value.
-	for i := len(b.SegmentOps) - 1; i >= 0; i-- {
-		sOp := b.SegmentOps[i]
-		if sOp.LinkHash != nil && linkHash != nil && *sOp.LinkHash == *linkHash {
-			if segment == nil && sOp.OpType == OpTypeSet {
-				segment = sOp.Segment
-			}
-			b.SegmentOps = append(b.SegmentOps[:i], b.SegmentOps[i+1:]...)
-		}
-	}
-
-	b.SegmentOps = append(b.SegmentOps, SegmentOperation{OpTypeDelete, linkHash, segment})
-
-	if segment != nil {
-		return segment, nil
-	}
-	return b.originalStore.GetSegment(linkHash)
-}
-
-// GetSegment returns a segment from the cache or delegates the call to the store
+// GetSegment returns a segment from the cache or delegates the call to the store.
 func (b *Batch) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
-	deleted := false
-	for _, sOp := range b.SegmentOps {
-		if *sOp.LinkHash == *linkHash {
-			switch sOp.OpType {
-			case OpTypeSet:
-				segment = sOp.Segment
-				deleted = false
-			case OpTypeDelete:
-				deleted = true
-			}
+	for _, link := range b.Links {
+		lh, err := link.Hash()
+		if err != nil {
+			return nil, err
+		}
+
+		if *lh == *linkHash {
+			segment = link.Segmentify()
 		}
 	}
-	if deleted {
-		return nil, nil
-	}
+
 	if segment != nil {
 		return segment, nil
 	}
@@ -144,61 +64,23 @@ func (b *Batch) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err er
 	return b.originalStore.GetSegment(linkHash)
 }
 
-// FindSegments returns the union of segments in the store and not commited yet
+// FindSegments returns the union of segments in the store and not committed yet.
 func (b *Batch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	segments, err := b.originalStore.FindSegments(filter)
 	if err != nil {
 		return segments, err
 	}
-	for _, sOp := range b.SegmentOps {
-		if sOp.Segment == nil || filter.Match(sOp.Segment) {
-			switch sOp.OpType {
-			case OpTypeSet:
-				segments = append(segments, sOp.Segment)
-			case OpTypeDelete:
-				for i := len(segments) - 1; i >= 0; i-- {
-					s := segments[i]
-					if *s.GetLinkHash() == *sOp.LinkHash {
-						segments = append(segments[:i], segments[i+1:]...)
-					}
-				}
-			}
+
+	for _, link := range b.Links {
+		if filter.MatchLink(link) {
+			segments = append(segments, link.Segmentify())
 		}
 	}
+
 	return filter.Pagination.PaginateSegments(segments), nil
 }
 
-func (b *Batch) filterMapIDsBySegmentToDelete(pagination store.Pagination, mapIDs map[string]int, linkHashesToDel []*types.Bytes32) (map[string]int, error) {
-	if len(linkHashesToDel) == 0 {
-		return mapIDs, nil
-	}
-
-	// Group segment to delete per mapId
-	segToDelMap := make(map[string]int)
-	for _, l := range linkHashesToDel {
-		s, err := b.originalStore.GetSegment(l)
-		if err == nil && s != nil {
-			segToDelMap[s.Link.Meta["mapId"].(string)]++
-		}
-	}
-
-	// Retrieve segments per mapId and delete from results
-	for mapID, nbSegsToDel := range segToDelMap {
-		segs, err := b.originalStore.FindSegments(&store.SegmentFilter{
-			Pagination: store.Pagination{Limit: nbSegsToDel + 1},
-			MapIDs:     []string{mapID},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("cannot find segments from mapId '%s' to delete (%s)", mapID, err)
-		}
-		if nbSegsToDel >= len(segs) {
-			delete(mapIDs, mapID)
-		}
-	}
-	return mapIDs, nil
-}
-
-// GetMapIDs returns the union of mapIds in the store and not commited yet
+// GetMapIDs returns the union of mapIds in the store and not committed yet.
 func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	tmpMapIDs, err := b.originalStore.GetMapIDs(filter)
 	if err != nil {
@@ -209,72 +91,26 @@ func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 		mapIDs[m] = 0
 	}
 
-	// Apply uncommited segments
-	var linkHashesToDel []*types.Bytes32
-	for _, sOp := range b.SegmentOps {
-		switch sOp.OpType {
-		case OpTypeSet:
-			if sOp.Segment != nil {
-				mapID := sOp.Segment.Link.Meta["mapId"].(string)
-				mapIDs[mapID]++
-			}
-		case OpTypeDelete:
-			linkHashesToDel = append(linkHashesToDel, sOp.LinkHash)
+	// Apply uncommitted links
+	for _, link := range b.Links {
+		if filter.MatchLink(link) {
+			mapID := link.Meta["mapId"].(string)
+			mapIDs[mapID]++
 		}
 	}
-
-	mapIDs, err = b.filterMapIDsBySegmentToDelete(filter.Pagination, mapIDs, linkHashesToDel)
 
 	ids := make([]string, 0, len(mapIDs))
 	for k := range mapIDs {
 		ids = append(ids, k)
 	}
+
 	return filter.Pagination.PaginateStrings(ids), err
 }
 
-// GetValue returns a segment from the cache or delegates the call to the store
-func (b *Batch) GetValue(key []byte) (value []byte, err error) {
-	for _, sOp := range b.ValueOps {
-		if bytes.Compare(sOp.Key, key) == 0 && sOp.OpType == OpTypeSet {
-			value = sOp.Value
-		}
-	}
-	if value != nil {
-		return value, nil
-	}
-
-	return b.originalStore.GetValue(key)
-}
-
-// Write implements github.com/stratumn/sdk/store.Batch.Write
+// Write implements github.com/stratumn/sdk/store.Batch.Write.
 func (b *Batch) Write() (err error) {
-	for _, op := range b.ValueOps {
-		switch op.OpType {
-		case OpTypeSet:
-			err = b.originalStore.SaveValue(op.Key, op.Value)
-		case OpTypeDelete:
-			_, err = b.originalStore.DeleteValue(op.Key)
-		default:
-			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
-		}
-		if err != nil {
-			break
-		}
-	}
-
-	if err != nil {
-		return
-	}
-
-	for _, op := range b.SegmentOps {
-		switch op.OpType {
-		case OpTypeSet:
-			err = b.originalStore.SaveSegment(op.Segment)
-		case OpTypeDelete:
-			_, err = b.originalStore.DeleteSegment(op.LinkHash)
-		default:
-			err = fmt.Errorf("Invalid Batch operation type: %v", op.OpType)
-		}
+	for _, link := range b.Links {
+		_, err = b.originalStore.CreateLink(link)
 		if err != nil {
 			break
 		}
