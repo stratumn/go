@@ -22,9 +22,16 @@ import (
 )
 
 func BenchmarkDummystore(b *testing.B) {
-	storetestcases.Factory{
+	factory := storetestcases.Factory{
 		New: func() (store.Adapter, error) {
 			return New(&Config{}), nil
 		},
-	}.RunBenchmarks(b)
+		NewKeyValueStore: func() (store.KeyValueStore, error) {
+			s := New(&Config{})
+			return s, nil
+		},
+	}
+
+	factory.RunStoreBenchmarks(b)
+	factory.RunKeyValueStoreBenchmarks(b)
 }

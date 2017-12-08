@@ -56,14 +56,13 @@ type Info struct {
 
 // DummyStore is the type that implements github.com/stratumn/sdk/store.Adapter.
 type DummyStore struct {
-	config       *Config
-	didSaveChans []chan *cs.Segment
-	eventChans   []chan *store.Event
-	links        linkMap      // maps link hashes to segments
-	evidences    evidenceMap  // maps link hashes to evidences
-	values       valueMap     // maps keys to values
-	maps         hashSetMap   // maps chains IDs to sets of link hashes
-	mutex        sync.RWMutex // simple global mutex
+	config     *Config
+	eventChans []chan *store.Event
+	links      linkMap      // maps link hashes to segments
+	evidences  evidenceMap  // maps link hashes to evidences
+	values     valueMap     // maps keys to values
+	maps       hashSetMap   // maps chains IDs to sets of link hashes
+	mutex      sync.RWMutex // simple global mutex
 }
 
 type linkMap map[string]*cs.Link
@@ -76,7 +75,6 @@ type valueMap map[string][]byte
 func New(config *Config) *DummyStore {
 	return &DummyStore{
 		config,
-		nil,
 		nil,
 		linkMap{},
 		evidenceMap{},
@@ -96,13 +94,7 @@ func (a *DummyStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddDidSaveChannel implements
-// github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
-func (a *DummyStore) AddDidSaveChannel(saveChan chan *cs.Segment) {
-	a.didSaveChans = append(a.didSaveChans, saveChan)
-}
-
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel
 func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
@@ -169,81 +161,13 @@ func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 		currentEvidences = &cs.Evidences{}
 	}
 
-	// If we already have an evidence for that provider, it means
-	// we're in the case where we go from a PENDING evidence to a
-	// COMPLETE one. This won't be necessary after the store interface
-	// update, but meanwhile we need to correctly update the existing
-	// evidence.
-	previousEvidence := currentEvidences.GetEvidence(evidence.Provider)
-	if previousEvidence != nil {
-		if previousEvidence.State == cs.PendingEvidence {
-			previousEvidence.State = evidence.State
-			previousEvidence.Proof = evidence.Proof
-		}
-	} else if err := currentEvidences.AddEvidence(*evidence); err != nil {
+	if err := currentEvidences.AddEvidence(*evidence); err != nil {
 		return err
 	}
 
 	a.evidences[linkHash] = currentEvidences
 
 	return nil
-}
-
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (a *DummyStore) SaveSegment(segment *cs.Segment) error {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	return a.saveSegment(segment)
-}
-
-func (a *DummyStore) saveSegment(segment *cs.Segment) error {
-	linkHash, err := a.createLink(&segment.Link)
-	if err != nil {
-		return err
-	}
-
-	for _, evidence := range segment.Meta.Evidences {
-		if err := a.addEvidence(linkHash.String(), evidence); err != nil {
-			return err
-		}
-	}
-
-	for _, c := range a.didSaveChans {
-		c <- segment
-	}
-
-	return nil
-}
-
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (a *DummyStore) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	a.mutex.Lock()
-	defer a.mutex.Unlock()
-
-	return a.deleteSegment(linkHash)
-}
-
-func (a *DummyStore) deleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	linkHashStr := linkHash.String()
-	segment, err := a.getSegment(linkHashStr)
-	if err != nil || segment == nil {
-		return nil, err
-	}
-
-	delete(a.links, linkHashStr)
-	_, exists := a.evidences[linkHashStr]
-	if exists {
-		delete(a.evidences, linkHashStr)
-	}
-
-	mapID := segment.Link.GetMapID()
-	delete(a.maps[mapID], linkHashStr)
-	if len(a.maps[mapID]) == 0 {
-		delete(a.maps, mapID)
-	}
-
-	return segment, nil
 }
 
 /********** Store reader implementation **********/
@@ -350,11 +274,6 @@ func (a *DummyStore) SetValue(key, value []byte) error {
 	return a.setValue(key, value)
 }
 
-// SaveValue implements github.com/stratumn/sdk/store.Adapter.SaveValue.
-func (a *DummyStore) SaveValue(key, value []byte) error {
-	return a.SetValue(key, value)
-}
-
 func (a *DummyStore) setValue(key, value []byte) error {
 	k := createKey(key)
 	a.values[k] = value
@@ -387,12 +306,7 @@ func (a *DummyStore) deleteValue(key []byte) ([]byte, error) {
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (a *DummyStore) NewBatch() (store.Batch, error) {
-	return NewBatch(a), nil
-}
-
-// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
-func (a *DummyStore) NewBatchV2() (store.BatchV2, error) {
-	return bufferedbatch.NewBatchV2(a), nil
+	return bufferedbatch.NewBatch(a), nil
 }
 
 /********** Utilities **********/

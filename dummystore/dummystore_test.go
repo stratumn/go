@@ -22,25 +22,24 @@ import (
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
 )
 
-func TestDummystore(t *testing.T) {
-	storetestcases.Factory{
+func TestDummyStore(t *testing.T) {
+	factory := storetestcases.Factory{
 		New: func() (store.Adapter, error) {
 			return New(&Config{}), nil
 		},
-	}.RunTests(t)
-}
-
-func TestDummystoreV2(t *testing.T) {
-	storetestcases.Factory{
-		NewV2: func() (store.AdapterV2, error) {
-			return New(&Config{}), nil
+		NewKeyValueStore: func() (store.KeyValueStore, error) {
+			s := New(&Config{})
+			return s, nil
 		},
-	}.RunTestsV2(t)
+	}
+
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
 }
 
 func TestDummyTMPop(t *testing.T) {
 	tmpoptestcases.Factory{
-		New: func() (store.AdapterV2, store.KeyValueStore, error) {
+		New: func() (store.Adapter, store.KeyValueStore, error) {
 			dummyStore := New(&Config{})
 			return dummyStore, dummyStore, nil
 		},
