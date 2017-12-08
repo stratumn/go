@@ -22,21 +22,46 @@ import (
 )
 
 func BenchmarkStore(b *testing.B) {
-	storetestcases.Factory{
-		New: func() (store.Adapter, error) {
-			a, err := New(&Config{URL: "postgres://postgres@localhost/postgres?sslmode=disable"})
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			if err := a.Prepare(); err != nil {
-				return nil, err
-			}
-			return a, err
-		},
-		Free: func(a store.Adapter) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
-		},
-	}.RunBenchmarks(b)
+	factory := storetestcases.Factory{
+		New:               createAdapterB,
+		NewKeyValueStore:  createKeyValueStoreB,
+		Free:              freeAdapterB,
+		FreeKeyValueStore: freeKeyValueStoreB,
+	}
+
+	factory.RunStoreBenchmarks(b)
+	factory.RunKeyValueStoreBenchmarks(b)
+}
+
+func createStoreB() (*Store, error) {
+	a, err := New(&Config{URL: "postgres://postgres@localhost/postgres?sslmode=disable"})
+	if err := a.Create(); err != nil {
+		return nil, err
+	}
+	if err := a.Prepare(); err != nil {
+		return nil, err
+	}
+	return a, err
+}
+
+func createAdapterB() (store.Adapter, error) {
+	return createStore()
+}
+
+func createKeyValueStoreB() (store.KeyValueStore, error) {
+	return createStore()
+}
+
+func freeStoreB(s *Store) {
+	if err := s.Drop(); err != nil {
+		panic(err)
+	}
+}
+
+func freeAdapterB(s store.Adapter) {
+	freeStore(s.(*Store))
+}
+
+func freeKeyValueStoreB(s store.KeyValueStore) {
+	freeStore(s.(*Store))
 }

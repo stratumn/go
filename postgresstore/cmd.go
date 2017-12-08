@@ -20,8 +20,8 @@ import (
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/lib/pq"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/utils"
 )

@@ -29,7 +29,7 @@ type reader struct {
 	stmts readStmts
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
 func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	var segments = make(cs.SegmentSlice, 0, 1)
 
@@ -49,7 +49,7 @@ func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	return segments[0], nil
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
 func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var (
 		rows         *sql.Rows
@@ -173,7 +173,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 	return nil
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
 func (a *reader) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	rows, err := a.stmts.GetMapIDs.Query(filter.Pagination.Offset, filter.Pagination.Limit, filter.Process)
 	if err != nil {
@@ -196,7 +196,7 @@ func (a *reader) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return mapIDs, nil
 }
 
-// GetValue implements github.com/stratumn/sdk/store.Adapter.GetValue.
+// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
 func (a *reader) GetValue(key []byte) ([]byte, error) {
 	var data []byte
 

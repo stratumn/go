@@ -22,47 +22,49 @@ import (
 )
 
 func TestStore(t *testing.T) {
-	storetestcases.Factory{
-		New: func() (store.Adapter, error) {
-			a, err := New(&Config{URL: "postgres://postgres@localhost/sdk_test?sslmode=disable"})
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			if err := a.Prepare(); err != nil {
-				return nil, err
-			}
-			return a, err
-		},
-		Free: func(a store.Adapter) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
-			if err := a.(*Store).Close(); err != nil {
-				panic(err)
-			}
-		},
-	}.RunTests(t)
+	factory := storetestcases.Factory{
+		New:               createAdapter,
+		NewKeyValueStore:  createKeyValueStore,
+		Free:              freeAdapter,
+		FreeKeyValueStore: freeKeyValueStore,
+	}
+
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
 }
 
-func TestStoreV2(t *testing.T) {
-	storetestcases.Factory{
-		NewV2: func() (store.AdapterV2, error) {
-			a, err := New(&Config{URL: "postgres://postgres@localhost/sdk_test?sslmode=disable"})
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			if err := a.Prepare(); err != nil {
-				return nil, err
-			}
-			return a, err
-		},
-		FreeV2: func(a store.AdapterV2) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
-			if err := a.(*Store).Close(); err != nil {
-				panic(err)
-			}
-		},
-	}.RunTestsV2(t)
+func createStore() (*Store, error) {
+	a, err := New(&Config{URL: "postgres://postgres@localhost/sdk_test?sslmode=disable"})
+	if err := a.Create(); err != nil {
+		return nil, err
+	}
+	if err := a.Prepare(); err != nil {
+		return nil, err
+	}
+	return a, err
+}
+
+func createAdapter() (store.Adapter, error) {
+	return createStore()
+}
+
+func createKeyValueStore() (store.KeyValueStore, error) {
+	return createStore()
+}
+
+func freeStore(s *Store) {
+	if err := s.Drop(); err != nil {
+		panic(err)
+	}
+	if err := s.Close(); err != nil {
+		panic(err)
+	}
+}
+
+func freeAdapter(s store.Adapter) {
+	freeStore(s.(*Store))
+}
+
+func freeKeyValueStore(s store.KeyValueStore) {
+	freeStore(s.(*Store))
 }

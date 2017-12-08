@@ -64,14 +64,12 @@ type Info struct {
 type Store struct {
 	*reader
 	*writer
-	config       *Config
-	didSaveChans []chan *cs.Segment
-	eventChans   []chan *store.Event
-	db           *sql.DB
-	stmts        *stmts
+	config     *Config
+	eventChans []chan *store.Event
+	db         *sql.DB
+	stmts      *stmts
 
-	batches   map[*Batch]*sql.Tx
-	batchesV2 map[*Batch]*sql.Tx
+	batches map[*Batch]*sql.Tx
 }
 
 // New creates an instance of a Store.
@@ -83,12 +81,6 @@ func New(config *Config) (*Store, error) {
 	return &Store{config: config, db: db, batches: make(map[*Batch]*sql.Tx)}, nil
 }
 
-// AddDidSaveChannel implements
-// github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
-func (a *Store) AddDidSaveChannel(saveChan chan *cs.Segment) {
-	a.didSaveChans = append(a.didSaveChans, saveChan)
-}
-
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
 func (a *Store) GetInfo() (interface{}, error) {
 	return &Info{
@@ -97,28 +89,6 @@ func (a *Store) GetInfo() (interface{}, error) {
 		Version:     a.config.Version,
 		Commit:      a.config.Commit,
 	}, nil
-}
-
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (a *Store) SaveSegment(segment *cs.Segment) error {
-	curr, err := a.GetSegment(segment.GetLinkHash())
-	if err != nil {
-		return err
-	}
-	if curr != nil {
-		segment, _ = curr.MergeMeta(segment)
-	}
-
-	a.writer.SaveSegment(segment)
-
-	// Send saved segment to all the save channels without blocking.
-	go func(chans []chan *cs.Segment) {
-		for _, c := range chans {
-			c <- segment
-		}
-	}(a.didSaveChans)
-
-	return nil
 }
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
@@ -140,27 +110,6 @@ func (a *Store) NewBatch() (store.Batch, error) {
 	a.batches[b] = tx
 
 	return b, nil
-}
-
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	segment, err := a.writer.DeleteSegment(linkHash)
-	if err != nil {
-		return nil, err
-	}
-
-	if segment == nil {
-		return nil, nil
-	}
-
-	evidences, err := a.reader.GetEvidences(linkHash)
-	if err != nil {
-		return nil, err
-	}
-
-	segment.Meta.Evidences = *evidences
-
-	return segment, nil
 }
 
 // AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
@@ -204,27 +153,6 @@ func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) erro
 	}
 
 	return nil
-}
-
-// NewBatchV2 implements github.com/stratumn/sdk/store.Adapter.NewBatchV2.
-func (a *Store) NewBatchV2() (store.BatchV2, error) {
-	for b := range a.batchesV2 {
-		if b.done {
-			delete(a.batchesV2, b)
-		}
-	}
-
-	tx, err := a.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	b, err := NewBatch(tx)
-	if err != nil {
-		return nil, err
-	}
-	a.batches[b] = tx
-
-	return b, nil
 }
 
 // Create creates the database tables and indexes.
