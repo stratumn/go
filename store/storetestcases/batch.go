@@ -53,7 +53,7 @@ func (f Factory) TestBatchWriteCreateLink(t *testing.T) {
 
 	found, err := a.GetSegment(linkHash)
 	assert.NoError(t, err, "a.GetSegment()")
-	assert.EqualValues(t, link, found.Link, "Link should be found in adapter after a Write")
+	assert.EqualValues(t, *link, found.Link, "Link should be found in adapter after a Write")
 }
 
 // TestBatchFindSegments tests what happens when you find segments in batch and store.
@@ -112,7 +112,7 @@ func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 	assert.NoError(t, err, "b.GetMapIDs()")
 	assert.Equal(t, len(segsByMapID)+2, len(mapIDs), "Invalid number of maps")
 
-	want := map[string]interface{}{"map1": nil, "map2": nil, "map3": nil, "map42": nil, "map43": nil}
+	want := map[string]interface{}{"map0": nil, "map1": nil, "map2": nil, "map42": nil, "map43": nil}
 	got := make(map[string]interface{}, len(mapIDs))
 	for _, mapID := range mapIDs {
 		got[mapID] = nil
