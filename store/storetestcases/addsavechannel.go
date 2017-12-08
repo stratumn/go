@@ -15,8 +15,6 @@
 package storetestcases
 
 import (
-	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/stratumn/sdk/cs"
@@ -25,30 +23,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestAddDidSaveChannel tests that AddDidSaveChannel functions properly.
-func (f Factory) TestAddDidSaveChannel(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.free(a)
-
-	c := make(chan *cs.Segment, 1)
-	a.AddDidSaveChannel(c)
-
-	s := cstesting.RandomSegment()
-	if err := a.SaveSegment(s); err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
-	}
-
-	if got, want := <-c, s; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("<- c = %s\n want%s", gotJS, wantJS)
-	}
-}
-
 // TestLinkSavedChannel tests that the store correctly notifies listeners when a link is created.
 func (f Factory) TestLinkSavedChannel(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	a := f.initAdapter(t)
+	defer f.freeAdapter(a)
 
 	c := make(chan *store.Event, 1)
 	a.AddStoreEventChannel(c)
@@ -66,8 +44,8 @@ func (f Factory) TestLinkSavedChannel(t *testing.T) {
 
 // TestEvidenceAddedChannel tests that the store correctly notifies listeners when some evidence is added.
 func (f Factory) TestEvidenceAddedChannel(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	a := f.initAdapter(t)
+	defer f.freeAdapter(a)
 
 	c := make(chan *store.Event, 10)
 	a.AddStoreEventChannel(c)

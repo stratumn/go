@@ -24,121 +24,76 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 )
 
-// Factory wraps functions to allocate and free an adapter, and is used to run
-// the tests on an adapter.
+// Factory wraps functions to allocate and free an adapter,
+// and is used to run the tests on an adapter.
 type Factory struct {
 	// New creates an adapter.
 	New func() (store.Adapter, error)
 
-	// NewV2 creates an adapter.
-	NewV2 func() (store.AdapterV2, error)
-
 	// Free is an optional function to free an adapter.
 	Free func(adapter store.Adapter)
 
-	// FreeV2 is an optional function to free an adapter.
-	FreeV2 func(adapter store.AdapterV2)
+	// NewKeyValueStore creates a KeyValueStore.
+	// If your store implements the KeyValueStore interface,
+	// you need to implement this method.
+	NewKeyValueStore func() (store.KeyValueStore, error)
+
+	// FreeKeyValueStore is an optional function to free
+	// a KeyValueStore adapter.
+	FreeKeyValueStore func(adapter store.KeyValueStore)
 }
 
-// RunTests runs all the tests.
-func (f Factory) RunTests(t *testing.T) {
-	t.Run("AddDidSaveChannel", f.TestAddDidSaveChannel)
-	t.Run("BatchDeleteSegment", f.TestBatchDeleteSegment)
-	t.Run("BatchDeleteValue", f.TestBatchDeleteValue)
-	t.Run("TestBatchFindSegments", f.TestBatchFindSegments)
-	t.Run("TestBatchGetMapIDs", f.TestBatchGetMapIDs)
-	t.Run("BatchSaveSegment", f.TestBatchSaveSegment)
-	t.Run("BatchSaveValue", f.TestBatchSaveValue)
-	t.Run("BatchWriteDeleteValue", f.TestBatchWriteDeleteValue)
-	t.Run("BatchWriteDeleteSegment", f.TestBatchWriteDeleteSegment)
-	t.Run("BatchWriteSaveSegment", f.TestBatchWriteSaveSegment)
-	t.Run("BatchWriteSaveValue", f.TestBatchWriteSaveValue)
-	t.Run("DeleteSegment", f.TestDeleteSegment)
-	t.Run("DeleteSegmentNotFound", f.TestDeleteSegmentNotFound)
-	t.Run("DeleteValue", f.TestDeleteValue)
-	t.Run("DeleteValueNotFound", f.TestDeleteValueNotFound)
-	t.Run("FindSegments", f.TestFindSegments)
-	t.Run("FindSegmentsPagination", f.TestFindSegmentsPagination)
-	t.Run("FindSegmentEmpty", f.TestFindSegmentEmpty)
-	t.Run("FindSegmentsSingleTag", f.TestFindSegmentsSingleTag)
-	t.Run("FindSegmentsMultipleTags", f.TestFindSegmentsMultipleTags)
-	t.Run("FindSegmentsMapID", f.TestFindSegmentsMapID)
-	t.Run("FindSegmentsMapIDs", f.TestFindSegmentsMapIDs)
-	t.Run("FindSegmentsMapIDTags", f.TestFindSegmentsMapIDTags)
-	t.Run("FindSegmentsMapIDNotFound", f.TestFindSegmentsMapIDNotFound)
-	t.Run("TestFindSegmentsEmptyPrevLinkHash", f.TestFindSegmentsEmptyPrevLinkHash)
-	t.Run("FindSegmentsPrevLinkHash", f.TestFindSegmentsPrevLinkHash)
-	t.Run("FindSegmentsPrevLinkHashTags", f.TestFindSegmentsPrevLinkHashTags)
-	t.Run("FindSegmentsPrevLinkHashGoodMapID", f.TestFindSegmentsPrevLinkHashGoodMapID)
-	t.Run("FindSegmentsPrevLinkHashBadMapID", f.TestFindSegmentsPrevLinkHashBadMapID)
-	t.Run("FindSegmentsPrevLinkHashNotFound", f.TestFindSegmentsPrevLinkHashNotFound)
-	t.Run("FindSegmentsLinkHashesMultiMatch", f.TestFindSegmentsLinkHashesMultiMatch)
-	t.Run("FindSegmentsLinkHashesWithProcess", f.TestFindSegmentsLinkHashesWithProcess)
-	t.Run("FindSegmentsLinkHashesNoMatch", f.TestFindSegmentsLinkHashesNoMatch)
-	t.Run("TestFindSegmentWithGoodProcess", f.TestFindSegmentWithGoodProcess)
-	t.Run("TestFindSegmentWithBadProcess", f.TestFindSegmentWithBadProcess)
-	t.Run("GetInfo", f.TestGetInfo)
-	t.Run("GetMapIDs", f.TestGetMapIDs)
-	t.Run("GetMapIDsPagination", f.TestGetMapIDsPagination)
-	t.Run("GetMapIDs_empty", f.TestGetMapIDsEmpty)
-	t.Run("GetMapIDsByProcess", f.TestGetMapIDsByProcess)
-	t.Run("GetSegment", f.TestGetSegment)
-	t.Run("GetSegmentUpdatedState", f.TestGetSegmentUpdatedState)
-	t.Run("GetSegmentUpdatedMapID", f.TestGetSegmentUpdatedMapID)
-	t.Run("GetSegmentWithEvidences", f.TestGetSegmentWithEvidences)
-	t.Run("GetSegmentNotFound", f.TestGetSegmentNotFound)
-	t.Run("GetValue", f.TestGetValue)
-	t.Run("GetValueNotFound", f.TestGetValueNotFound)
-	t.Run("SaveSegment", f.TestSaveSegment)
-	t.Run("SaveSegmentNoPriority", f.TestSaveSegmentNoPriority)
-	t.Run("SaveValue", f.TestSaveValue)
-	t.Run("SaveSegmentUpdatedState", f.TestSaveSegmentUpdatedState)
-	t.Run("SaveSegmentUpdatedMapID", f.TestSaveSegmentUpdatedMapID)
-	t.Run("SaveSegmentWithEvidences", f.TestSaveSegmentWithEvidences)
-	t.Run("SaveSegmentBranch", f.TestSaveSegmentBranch)
+// RunKeyValueStoreTests runs all the tests for the key value store interface.
+func (f Factory) RunKeyValueStoreTests(t *testing.T) {
+	t.Run("TestSaveValue", f.TestSaveValue)
+	t.Run("TestGetValue", f.TestGetValue)
+	t.Run("TestGetValueNotFound", f.TestGetValueNotFound)
+	t.Run("TestDeleteValue", f.TestDeleteValue)
+	t.Run("TestDeleteValueNotFound", f.TestDeleteValueNotFound)
 }
 
-// RunTestsV2 runs all the tests for the new store interface.
-func (f Factory) RunTestsV2(t *testing.T) {
+// RunStoreTests runs all the tests for the store adapter interface.
+func (f Factory) RunStoreTests(t *testing.T) {
 	// Notifications
 	t.Run("TestLinkSavedChannel", f.TestLinkSavedChannel)
 	t.Run("TestEvidenceAddedChannel", f.TestEvidenceAddedChannel)
 	// Store info
-	t.Run("GetInfo", f.TestGetInfoV2)
+	t.Run("GetInfo", f.TestGetInfo)
 	// Find segments
-	t.Run("TestFindSegmentsV2", f.TestFindSegmentsV2)
-	t.Run("TestFindSegmentsPaginationV2", f.TestFindSegmentsPaginationV2)
-	t.Run("TestFindSegmentEmptyV2", f.TestFindSegmentEmptyV2)
-	t.Run("TestFindSegmentsSingleTagV2", f.TestFindSegmentsSingleTagV2)
-	t.Run("TestFindSegmentsMultipleTagsV2", f.TestFindSegmentsMultipleTagsV2)
-	t.Run("TestFindSegmentsMapIDV2", f.TestFindSegmentsMapIDV2)
-	t.Run("TestFindSegmentsMapIDsV2", f.TestFindSegmentsMapIDsV2)
-	t.Run("TestFindSegmentsMapIDTagsV2", f.TestFindSegmentsMapIDTagsV2)
-	t.Run("TestFindSegmentsMapIDNotFoundV2", f.TestFindSegmentsMapIDNotFoundV2)
-	t.Run("TestFindSegmentsLinkHashesMultiMatchV2", f.TestFindSegmentsLinkHashesMultiMatchV2)
-	t.Run("TestFindSegmentsLinkHashesWithProcessV2", f.TestFindSegmentsLinkHashesWithProcessV2)
-	t.Run("TestFindSegmentsLinkHashesNoMatchV2", f.TestFindSegmentsLinkHashesNoMatchV2)
-	t.Run("TestFindSegmentsEmptyPrevLinkHashV2", f.TestFindSegmentsEmptyPrevLinkHashV2)
-	t.Run("TestFindSegmentsPrevLinkHashV2", f.TestFindSegmentsPrevLinkHashV2)
-	t.Run("TestFindSegmentsPrevLinkHashTagsV2", f.TestFindSegmentsPrevLinkHashTagsV2)
-	t.Run("TestFindSegmentsPrevLinkHashGoodMapIDV2", f.TestFindSegmentsPrevLinkHashGoodMapIDV2)
-	t.Run("TestFindSegmentsPrevLinkHashBadMapIDV2", f.TestFindSegmentsPrevLinkHashBadMapIDV2)
-	t.Run("TestFindSegmentsPrevLinkHashNotFoundV2", f.TestFindSegmentsPrevLinkHashNotFoundV2)
-	t.Run("TestFindSegmentWithGoodProcessV2", f.TestFindSegmentWithGoodProcessV2)
-	t.Run("TestFindSegmentWithBadProcessV2", f.TestFindSegmentWithBadProcessV2)
+	t.Run("TestFindSegments", f.TestFindSegments)
+	t.Run("TestFindSegmentsPagination", f.TestFindSegmentsPagination)
+	t.Run("TestFindSegmentEmpty", f.TestFindSegmentEmpty)
+	t.Run("TestFindSegmentsSingleTag", f.TestFindSegmentsSingleTag)
+	t.Run("TestFindSegmentsMultipleTags", f.TestFindSegmentsMultipleTags)
+	t.Run("TestFindSegmentsMapID", f.TestFindSegmentsMapID)
+	t.Run("TestFindSegmentsMapIDs", f.TestFindSegmentsMapIDs)
+	t.Run("TestFindSegmentsMapIDTags", f.TestFindSegmentsMapIDTags)
+	t.Run("TestFindSegmentsMapIDNotFound", f.TestFindSegmentsMapIDNotFound)
+	t.Run("TestFindSegmentsLinkHashesMultiMatch", f.TestFindSegmentsLinkHashesMultiMatch)
+	t.Run("TestFindSegmentsLinkHashesWithProcess", f.TestFindSegmentsLinkHashesWithProcess)
+	t.Run("TestFindSegmentsLinkHashesNoMatch", f.TestFindSegmentsLinkHashesNoMatch)
+	t.Run("TestFindSegmentsEmptyPrevLinkHash", f.TestFindSegmentsEmptyPrevLinkHash)
+	t.Run("TestFindSegmentsPrevLinkHash", f.TestFindSegmentsPrevLinkHash)
+	t.Run("TestFindSegmentsPrevLinkHashTags", f.TestFindSegmentsPrevLinkHashTags)
+	t.Run("TestFindSegmentsPrevLinkHashGoodMapID", f.TestFindSegmentsPrevLinkHashGoodMapID)
+	t.Run("TestFindSegmentsPrevLinkHashBadMapID", f.TestFindSegmentsPrevLinkHashBadMapID)
+	t.Run("TestFindSegmentsPrevLinkHashNotFound", f.TestFindSegmentsPrevLinkHashNotFound)
+	t.Run("TestFindSegmentWithGoodProcess", f.TestFindSegmentWithGoodProcess)
+	t.Run("TestFindSegmentWithBadProcess", f.TestFindSegmentWithBadProcess)
 	// Map ids
-	t.Run("TestGetMapIDsV2", f.TestGetMapIDsV2)
-	t.Run("TestGetMapIDsPaginationV2", f.TestGetMapIDsPaginationV2)
-	t.Run("TestGetMapIDsEmptyV2", f.TestGetMapIDsEmptyV2)
-	t.Run("TestGetMapIDsByProcessV2", f.TestGetMapIDsByProcessV2)
+	t.Run("TestGetMapIDs", f.TestGetMapIDs)
+	t.Run("TestGetMapIDsPagination", f.TestGetMapIDsPagination)
+	t.Run("TestGetMapIDsEmpty", f.TestGetMapIDsEmpty)
+	t.Run("TestGetMapIDsByProcess", f.TestGetMapIDsByProcess)
 	// Get segment
-	t.Run("TestGetSegmentV2", f.TestGetSegmentV2)
-	t.Run("TestGetSegmentUpdatedStateV2", f.TestGetSegmentUpdatedStateV2)
-	t.Run("TestGetSegmentUpdatedMapIDV2", f.TestGetSegmentUpdatedMapIDV2)
-	t.Run("TestGetSegmentWithEvidencesV2", f.TestGetSegmentWithEvidencesV2)
-	t.Run("TestGetSegmentNotFoundV2", f.TestGetSegmentNotFoundV2)
+	t.Run("TestGetSegment", f.TestGetSegment)
+	t.Run("TestGetSegmentUpdatedState", f.TestGetSegmentUpdatedState)
+	t.Run("TestGetSegmentUpdatedMapID", f.TestGetSegmentUpdatedMapID)
+	t.Run("TestGetSegmentWithEvidences", f.TestGetSegmentWithEvidences)
+	t.Run("TestGetSegmentNotFound", f.TestGetSegmentNotFound)
 	// Create link
 	t.Run("TestCreateLink", f.TestCreateLink)
 	t.Run("TestCreateLinkNoPriority", f.TestCreateLinkNoPriority)
@@ -148,14 +103,18 @@ func (f Factory) RunTestsV2(t *testing.T) {
 	// Add evidence
 	t.Run("TestAddEvidences", f.TestAddEvidences)
 	t.Run("TestAddDuplicateEvidences", f.TestAddDuplicateEvidences)
+	// Batch
+	t.Run("TestBatchCreateLink", f.TestBatchCreateLink)
+	t.Run("TestBatchWriteCreateLink", f.TestBatchWriteCreateLink)
+	t.Run("TestBatchFindSegments", f.TestBatchFindSegments)
+	t.Run("TestBatchGetMapIDs", f.TestBatchGetMapIDs)
 }
 
 // RunBenchmarks runs all the benchmarks.
 func (f Factory) RunBenchmarks(b *testing.B) {
-	b.Run("DeleteSegment", f.BenchmarkDeleteSegment)
-	b.Run("DeleteSegmentParallel", f.BenchmarkDeleteSegmentParallel)
-	b.Run("DeleteValue", f.BenchmarkDeleteValue)
-	b.Run("DeleteValueParallel", f.BenchmarkDeleteValueParallel)
+	b.Run("BenchmarkCreateLink", f.BenchmarkCreateLink)
+	b.Run("BenchmarkCreateLinkParallel", f.BenchmarkCreateLinkParallel)
+
 	b.Run("FindSegments100", f.BenchmarkFindSegments100)
 	b.Run("FindSegments1000", f.BenchmarkFindSegments1000)
 	b.Run("FindSegments10000", f.BenchmarkFindSegments10000)
@@ -198,226 +157,31 @@ func (f Factory) RunBenchmarks(b *testing.B) {
 	b.Run("FindSegmentsPrevLinkHashTags100Parallel", f.BenchmarkFindSegmentsPrevLinkHashTags100Parallel)
 	b.Run("FindSegmentsPrevLinkHashTags1000Parallel", f.BenchmarkFindSegmentsPrevLinkHashTags1000Parallel)
 	b.Run("FindSegmentsPrevLinkHashTags10000Parallel", f.BenchmarkFindSegmentsPrevLinkHashTags10000Parallel)
+
 	b.Run("GetMapIDs100", f.BenchmarkGetMapIDs100)
 	b.Run("GetMapIDs1000", f.BenchmarkGetMapIDs1000)
 	b.Run("GetMapIDs10000", f.BenchmarkGetMapIDs10000)
 	b.Run("GetMapIDs100Parallel", f.BenchmarkGetMapIDs100Parallel)
 	b.Run("GetMapIDs1000Parallel", f.BenchmarkGetMapIDs1000Parallel)
 	b.Run("GetMapIDs10000Parallel", f.BenchmarkGetMapIDs10000Parallel)
+
 	b.Run("GetSegment", f.BenchmarkGetSegment)
 	b.Run("GetSegmentParallel", f.BenchmarkGetSegmentParallel)
+
 	b.Run("GetValue", f.BenchmarkGetValue)
 	b.Run("GetValueParallel", f.BenchmarkGetValueParallel)
-	b.Run("SaveSegment", f.BenchmarkSaveSegment)
-	b.Run("SaveSegmentParallel", f.BenchmarkSaveSegmentParallel)
-	b.Run("SaveSegmentUpdatedState", f.BenchmarkSaveSegmentUpdatedState)
-	b.Run("SaveSegmentUpdatedStateParallel", f.BenchmarkSaveSegmentUpdatedStateParallel)
-	b.Run("SaveSegmentUpdatedMapID", f.BenchmarkSaveSegmentUpdatedMapID)
-	b.Run("SaveSegmentUpdatedMapIDParallel", f.BenchmarkSaveSegmentUpdatedMapIDParallel)
-	b.Run("SaveValue", f.BenchmarkSaveValue)
-	b.Run("SaveValueParallel", f.BenchmarkSaveValueParallel)
-}
 
-func (f Factory) free(adapter store.Adapter) {
-	if f.Free != nil {
-		f.Free(adapter)
-	}
-}
+	b.Run("SetValue", f.BenchmarkSetValue)
+	b.Run("SetValueParallel", f.BenchmarkSetValueParallel)
 
-func (f Factory) freeV2(adapter store.AdapterV2) {
-	if f.FreeV2 != nil {
-		f.FreeV2(adapter)
-	}
-}
-
-// SegmentFunc is a type for a function that creates a segment for benchmarks.
-type SegmentFunc func(b *testing.B, numSegments, i int) *cs.Segment
-
-// RandomSegment is a SegmentFunc that create a random segment.
-func RandomSegment(b *testing.B, numSegments, i int) *cs.Segment {
-	return cstesting.RandomSegment()
-}
-
-// RandomSegmentMapID is a SegmentFunc that create a random segment with map ID.
-// The map ID will be one of ten possible values.
-func RandomSegmentMapID(b *testing.B, numSegments, i int) *cs.Segment {
-	s := cstesting.RandomSegment()
-	s.Link.Meta["mapId"] = fmt.Sprintf("%d", i%10)
-	return s
-}
-
-// RandomSegmentPrevLinkHash is a SegmentFunc that create a random segment with
-// previous link hash.
-// The previous link hash will be one of ten possible values.
-func RandomSegmentPrevLinkHash(b *testing.B, numSegments, i int) *cs.Segment {
-	s := cstesting.RandomSegment()
-	s.Link.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
-	return s
-}
-
-// RandomSegmentTags is a SegmentFunc that create a random segment with tags.
-// The tags will contain one of ten possible values.
-func RandomSegmentTags(b *testing.B, numSegments, i int) *cs.Segment {
-	s := cstesting.RandomSegment()
-	s.Link.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
-	return s
-}
-
-// RandomSegmentMapIDTags is a SegmentFunc that create a random segment with map
-// ID and tags.
-// The map ID will be one of ten possible values.
-// The tags will contain one of ten possible values.
-func RandomSegmentMapIDTags(b *testing.B, numSegments, i int) *cs.Segment {
-	s := cstesting.RandomSegment()
-	s.Link.Meta["mapId"] = fmt.Sprintf("%d", i%10)
-	s.Link.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
-	return s
-}
-
-// RandomSegmentPrevLinkHashTags is a SegmentFunc that create a random segment
-// with previous link hash and tags.
-// The previous link hash will be one of ten possible values.
-// The tags will contain one of ten possible values.
-func RandomSegmentPrevLinkHashTags(b *testing.B, numSegments, i int) *cs.Segment {
-	s := cstesting.RandomSegment()
-	s.Link.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
-	s.Link.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
-	return s
-}
-
-// MapFilterFunc is a type for a function that creates a mapId filter for
-// benchmarks.
-type MapFilterFunc func(b *testing.B, numSegments, i int) *store.MapFilter
-
-// RandomPaginationOffset is a a PaginationFunc that create a pagination with a random offset.
-func RandomPaginationOffset(b *testing.B, numSegments, i int) *store.MapFilter {
-	return &store.MapFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-	}
-}
-
-// FilterFunc is a type for a function that creates a filter for benchmarks.
-type FilterFunc func(b *testing.B, numSegments, i int) *store.SegmentFilter
-
-// RandomFilterOffset is a a FilterFunc that create a filter with a random
-// offset.
-func RandomFilterOffset(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-	}
-}
-
-// RandomFilterOffsetMapID is a a FilterFunc that create a filter with a random
-// offset and map ID.
-// The map ID will be one of ten possible values.
-func RandomFilterOffsetMapID(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-		MapIDs: []string{fmt.Sprintf("%d", i%10)},
-	}
-}
-
-// RandomFilterOffsetMapIDs is a a FilterFunc that create a filter with a random
-// offset and 2 map IDs.
-// The map ID will be one of ten possible values.
-func RandomFilterOffsetMapIDs(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-		MapIDs: []string{fmt.Sprintf("%d", i%10), fmt.Sprintf("%d", (i+1)%10)},
-	}
-}
-
-// RandomFilterOffsetPrevLinkHash is a a FilterFunc that create a filter with a
-// random offset and previous link hash.
-// The previous link hash will be one of ten possible values.
-func RandomFilterOffsetPrevLinkHash(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
-	prevLinkHashStr := prevLinkHash.String()
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-		PrevLinkHash: &prevLinkHashStr,
-	}
-}
-
-// RandomFilterOffsetTags is a a FilterFunc that create a filter with a random
-// offset and map ID.
-// The tags will be one of fifty possible combinations.
-func RandomFilterOffsetTags(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-		Tags: []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
-	}
-}
-
-// RandomFilterOffsetMapIDTags is a a FilterFunc that create a filter with a
-// random offset and map ID and tags.
-// The map ID will be one of ten possible values.
-// The tags will be one of fifty possible combinations.
-func RandomFilterOffsetMapIDTags(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-		MapIDs: []string{fmt.Sprintf("%d", i%10)},
-		Tags:   []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
-	}
-}
-
-// RandomFilterOffsetPrevLinkHashTags is a a FilterFunc that create a filter
-// with a random offset and previous link hash and tags.
-// The previous link hash will be one of ten possible values.
-// The tags will be one of fifty possible combinations.
-func RandomFilterOffsetPrevLinkHashTags(b *testing.B, numSegments, i int) *store.SegmentFilter {
-	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
-	prevLinkHashStr := prevLinkHash.String()
-	return &store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Int() % numSegments,
-			Limit:  store.DefaultLimit,
-		},
-		PrevLinkHash: &prevLinkHashStr,
-		Tags:         []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
-	}
+	b.Run("DeleteValue", f.BenchmarkDeleteValue)
+	b.Run("DeleteValueParallel", f.BenchmarkDeleteValueParallel)
 }
 
 func (f Factory) initAdapter(t *testing.T) store.Adapter {
 	a, err := f.New()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
-	return a
-}
-
-func (f Factory) initAdapterV2(t *testing.T) store.AdapterV2 {
-	a, err := f.NewV2()
-	if err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if a == nil {
-		t.Fatal("a = nil want store.AdapterV2")
-	}
+	assert.NoError(t, err, "f.New()")
+	assert.NotNil(t, a, "Store.Adapter")
 	return a
 }
 
@@ -432,13 +196,201 @@ func (f Factory) initAdapterB(b *testing.B) store.Adapter {
 	return a
 }
 
-func (f Factory) initAdapterV2B(b *testing.B) store.AdapterV2 {
-	a, err := f.NewV2()
+func (f Factory) freeAdapter(adapter store.Adapter) {
+	if f.Free != nil {
+		f.Free(adapter)
+	}
+}
+
+func (f Factory) initKeyValueStore(t *testing.T) store.KeyValueStore {
+	a, err := f.NewKeyValueStore()
+	assert.NoError(t, err, "f.NewKeyValueStore()")
+	assert.NotNil(t, a, "Store.KeyValueStore")
+	return a
+}
+
+func (f Factory) initKeyValueStoreB(b *testing.B) store.KeyValueStore {
+	a, err := f.NewKeyValueStore()
 	if err != nil {
-		b.Fatalf("f.New(): err: %s", err)
+		b.Fatalf("f.NewKeyValueStore(): err: %s", err)
 	}
 	if a == nil {
-		b.Fatal("a = nil want store.AdapterV2")
+		b.Fatal("a = nil want store.KeyValueStore")
 	}
 	return a
+}
+
+func (f Factory) freeKeyValueStore(adapter store.KeyValueStore) {
+	if f.FreeKeyValueStore != nil {
+		f.FreeKeyValueStore(adapter)
+	}
+}
+
+// CreateLinkFunc is a type for a function that creates a link for benchmarks.
+type CreateLinkFunc func(b *testing.B, numLinks, i int) *cs.Link
+
+// RandomLink is a CreateLinkFunc that creates a random segment.
+func RandomLink(b *testing.B, numLinks, i int) *cs.Link {
+	return cstesting.RandomLink()
+}
+
+// RandomLinkMapID is a CreateLinkFunc that creates a random link with map ID.
+// The map ID will be one of ten possible values.
+func RandomLinkMapID(b *testing.B, numLinks, i int) *cs.Link {
+	l := cstesting.RandomLink()
+	l.Meta["mapId"] = fmt.Sprintf("%d", i%10)
+	return l
+}
+
+// RandomLinkPrevLinkHash is a CreateLinkFunc that creates a random link with
+// previous link hash.
+// The previous link hash will be one of ten possible values.
+func RandomLinkPrevLinkHash(b *testing.B, numLinks, i int) *cs.Link {
+	l := cstesting.RandomLink()
+	l.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
+	return l
+}
+
+// RandomLinkTags is a CreateLinkFunc that creates a random link with tags.
+// The tags will contain one of ten possible values.
+func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
+	l := cstesting.RandomLink()
+	l.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
+	return l
+}
+
+// RandomLinkMapIDTags is a CreateLinkFunc that creates a random link with map
+// ID and tags.
+// The map ID will be one of ten possible values.
+// The tags will contain one of ten possible values.
+func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
+	l := cstesting.RandomLink()
+	l.Meta["mapId"] = fmt.Sprintf("%d", i%10)
+	l.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
+	return l
+}
+
+// RandomLinkPrevLinkHashTags is a CreateLinkFunc that creates a random link
+// with previous link hash and tags.
+// The previous link hash will be one of ten possible values.
+// The tags will contain one of ten possible values.
+func RandomLinkPrevLinkHashTags(b *testing.B, numLinks, i int) *cs.Link {
+	l := cstesting.RandomLink()
+	l.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
+	l.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
+	return l
+}
+
+// MapFilterFunc is a type for a function that creates a mapId filter for
+// benchmarks.
+type MapFilterFunc func(b *testing.B, numLinks, i int) *store.MapFilter
+
+// RandomPaginationOffset is a a PaginationFunc that create a pagination with a random offset.
+func RandomPaginationOffset(b *testing.B, numLinks, i int) *store.MapFilter {
+	return &store.MapFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+	}
+}
+
+// FilterFunc is a type for a function that creates a filter for benchmarks.
+type FilterFunc func(b *testing.B, numLinks, i int) *store.SegmentFilter
+
+// RandomFilterOffset is a a FilterFunc that create a filter with a random
+// offset.
+func RandomFilterOffset(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+	}
+}
+
+// RandomFilterOffsetMapID is a a FilterFunc that create a filter with a random
+// offset and map ID.
+// The map ID will be one of ten possible values.
+func RandomFilterOffsetMapID(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+		MapIDs: []string{fmt.Sprintf("%d", i%10)},
+	}
+}
+
+// RandomFilterOffsetMapIDs is a a FilterFunc that create a filter with a random
+// offset and 2 map IDs.
+// The map ID will be one of ten possible values.
+func RandomFilterOffsetMapIDs(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+		MapIDs: []string{fmt.Sprintf("%d", i%10), fmt.Sprintf("%d", (i+1)%10)},
+	}
+}
+
+// RandomFilterOffsetPrevLinkHash is a a FilterFunc that create a filter with a
+// random offset and previous link hash.
+// The previous link hash will be one of ten possible values.
+func RandomFilterOffsetPrevLinkHash(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
+	prevLinkHashStr := prevLinkHash.String()
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+		PrevLinkHash: &prevLinkHashStr,
+	}
+}
+
+// RandomFilterOffsetTags is a a FilterFunc that create a filter with a random
+// offset and map ID.
+// The tags will be one of fifty possible combinations.
+func RandomFilterOffsetTags(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+		Tags: []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
+	}
+}
+
+// RandomFilterOffsetMapIDTags is a a FilterFunc that create a filter with a
+// random offset and map ID and tags.
+// The map ID will be one of ten possible values.
+// The tags will be one of fifty possible combinations.
+func RandomFilterOffsetMapIDTags(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+		MapIDs: []string{fmt.Sprintf("%d", i%10)},
+		Tags:   []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
+	}
+}
+
+// RandomFilterOffsetPrevLinkHashTags is a a FilterFunc that create a filter
+// with a random offset and previous link hash and tags.
+// The previous link hash will be one of ten possible values.
+// The tags will be one of fifty possible combinations.
+func RandomFilterOffsetPrevLinkHashTags(b *testing.B, numLinks, i int) *store.SegmentFilter {
+	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
+	prevLinkHashStr := prevLinkHash.String()
+	return &store.SegmentFilter{
+		Pagination: store.Pagination{
+			Offset: rand.Int() % numLinks,
+			Limit:  store.DefaultLimit,
+		},
+		PrevLinkHash: &prevLinkHashStr,
+		Tags:         []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
+	}
 }

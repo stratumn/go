@@ -30,39 +30,7 @@ import (
 // pagination.
 func (f Factory) TestGetMapIDs(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		for j := 0; j < store.DefaultLimit; j++ {
-			s := cstesting.RandomSegment()
-			s.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			s.SetLinkHash()
-			a.SaveSegment(s)
-		}
-	}
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit * store.DefaultLimit}})
-	if err != nil {
-		t.Fatalf("a.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		mapID := fmt.Sprintf("map%d", i)
-		if !testutil.ContainsString(slice, mapID) {
-			t.Errorf("slice does not contain %q", mapID)
-		}
-	}
-}
-
-// TestGetMapIDsV2 tests what happens when you get map IDs with default
-// pagination.
-func (f Factory) TestGetMapIDsV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	for i := 0; i < store.DefaultLimit; i++ {
 		for j := 0; j < store.DefaultLimit; j++ {
@@ -93,32 +61,7 @@ func (f Factory) TestGetMapIDsV2(t *testing.T) {
 // pagination.
 func (f Factory) TestGetMapIDsPagination(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
-			segment := cstesting.RandomSegment()
-			segment.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			segment.SetLinkHash()
-			a.SaveSegment(segment)
-		}
-	}
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 3, Limit: 5}})
-	if err != nil {
-		t.Fatalf("a.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(slice), 5; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestGetMapIDsPaginationV2 tests what happens when you get map IDs with
-// pagination.
-func (f Factory) TestGetMapIDsPaginationV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
@@ -141,22 +84,7 @@ func (f Factory) TestGetMapIDsPaginationV2(t *testing.T) {
 // TestGetMapIDsEmpty tests what happens when you should get no map IDs.
 func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 100000, Limit: 5}})
-	if err != nil {
-		t.Fatalf("a.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestGetMapIDsEmptyV2 tests what happens when you should get no map IDs.
-func (f Factory) TestGetMapIDsEmptyV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 100000, Limit: 5}})
 	if err != nil {
@@ -171,41 +99,9 @@ func (f Factory) TestGetMapIDsEmptyV2(t *testing.T) {
 // TestGetMapIDsByProcess tests what happens when you get map IDs filtered by process name.
 func (f Factory) TestGetMapIDsByProcess(t *testing.T) {
 	var processNames = [2]string{"Foo", "Bar"}
+
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		for j := 0; j < store.DefaultLimit; j++ {
-			s := cstesting.RandomSegment()
-			s.Link.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			s.Link.Meta["process"] = processNames[i%2]
-			s.SetLinkHash()
-			a.SaveSegment(s)
-		}
-	}
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit * store.DefaultLimit}, Process: processNames[0]})
-	if err != nil {
-		t.Fatalf("a.GetMapIDsByProcess(): err: %s", err)
-	}
-
-	if got, want := len(slice), store.DefaultLimit/2; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-
-	for i := 0; i < store.DefaultLimit; i += 2 {
-		mapID := fmt.Sprintf("map%d", i)
-		if !testutil.ContainsString(slice, mapID) {
-			t.Errorf("slice does not contain %q", mapID)
-		}
-	}
-}
-
-// TestGetMapIDsByProcessV2 tests what happens when you get map IDs filtered by process name.
-func (f Factory) TestGetMapIDsByProcessV2(t *testing.T) {
-	var processNames = [2]string{"Foo", "Bar"}
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	for i := 0; i < store.DefaultLimit; i++ {
 		for j := 0; j < store.DefaultLimit; j++ {
@@ -234,17 +130,17 @@ func (f Factory) TestGetMapIDsByProcessV2(t *testing.T) {
 }
 
 // BenchmarkGetMapIDs benchmarks getting map IDs.
-func (f Factory) BenchmarkGetMapIDs(b *testing.B, numSegments int, segmentFunc SegmentFunc, filterFunc MapFilterFunc) {
+func (f Factory) BenchmarkGetMapIDs(b *testing.B, numLinks int, createLinkFunc CreateLinkFunc, filterFunc MapFilterFunc) {
 	a := f.initAdapterB(b)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
-	for i := 0; i < numSegments; i++ {
-		a.SaveSegment(segmentFunc(b, numSegments, i))
+	for i := 0; i < numLinks; i++ {
+		a.CreateLink(createLinkFunc(b, numLinks, i))
 	}
 
 	filters := make([]*store.MapFilter, b.N)
 	for i := 0; i < b.N; i++ {
-		filters[i] = filterFunc(b, numSegments, i)
+		filters[i] = filterFunc(b, numLinks, i)
 	}
 
 	b.ResetTimer()
@@ -261,31 +157,31 @@ func (f Factory) BenchmarkGetMapIDs(b *testing.B, numSegments int, segmentFunc S
 
 // BenchmarkGetMapIDs100 benchmarks getting map IDs within 100 segments.
 func (f Factory) BenchmarkGetMapIDs100(b *testing.B) {
-	f.BenchmarkGetMapIDs(b, 100, RandomSegment, RandomPaginationOffset)
+	f.BenchmarkGetMapIDs(b, 100, RandomLink, RandomPaginationOffset)
 }
 
 // BenchmarkGetMapIDs1000 benchmarks getting map IDs within 1000 segments.
 func (f Factory) BenchmarkGetMapIDs1000(b *testing.B) {
-	f.BenchmarkGetMapIDs(b, 1000, RandomSegment, RandomPaginationOffset)
+	f.BenchmarkGetMapIDs(b, 1000, RandomLink, RandomPaginationOffset)
 }
 
 // BenchmarkGetMapIDs10000 benchmarks getting map IDs within 10000 segments.
 func (f Factory) BenchmarkGetMapIDs10000(b *testing.B) {
-	f.BenchmarkGetMapIDs(b, 10000, RandomSegment, RandomPaginationOffset)
+	f.BenchmarkGetMapIDs(b, 10000, RandomLink, RandomPaginationOffset)
 }
 
 // BenchmarkGetMapIDsParallel benchmarks getting map IDs in parallel.
-func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numSegments int, segmentFunc SegmentFunc, filterFunc MapFilterFunc) {
+func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numLinks int, createLinkFunc CreateLinkFunc, filterFunc MapFilterFunc) {
 	a := f.initAdapterB(b)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
-	for i := 0; i < numSegments; i++ {
-		a.SaveSegment(segmentFunc(b, numSegments, i))
+	for i := 0; i < numLinks; i++ {
+		a.CreateLink(createLinkFunc(b, numLinks, i))
 	}
 
 	filters := make([]*store.MapFilter, b.N)
 	for i := 0; i < b.N; i++ {
-		filters[i] = filterFunc(b, numSegments, i)
+		filters[i] = filterFunc(b, numLinks, i)
 	}
 
 	var counter uint64
@@ -305,20 +201,20 @@ func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numSegments int, segme
 	})
 }
 
-// BenchmarkGetMapIDs100Parallel benchmarks getting map IDs within 100 segments
+// BenchmarkGetMapIDs100Parallel benchmarks gettiBenchmarkFindSegmentsPrevLinkHashTags100Parallelng map IDs within 100 segments
 // in parallel.
 func (f Factory) BenchmarkGetMapIDs100Parallel(b *testing.B) {
-	f.BenchmarkGetMapIDsParallel(b, 100, RandomSegment, RandomPaginationOffset)
+	f.BenchmarkGetMapIDsParallel(b, 100, RandomLink, RandomPaginationOffset)
 }
 
 // BenchmarkGetMapIDs1000Parallel benchmarks getting map IDs within 1000
 // segments in parallel.
 func (f Factory) BenchmarkGetMapIDs1000Parallel(b *testing.B) {
-	f.BenchmarkGetMapIDsParallel(b, 1000, RandomSegment, RandomPaginationOffset)
+	f.BenchmarkGetMapIDsParallel(b, 1000, RandomLink, RandomPaginationOffset)
 }
 
 // BenchmarkGetMapIDs10000Parallel benchmarks getting map IDs within 10000
 // segments in parallel.
 func (f Factory) BenchmarkGetMapIDs10000Parallel(b *testing.B) {
-	f.BenchmarkGetMapIDsParallel(b, 10000, RandomSegment, RandomPaginationOffset)
+	f.BenchmarkGetMapIDsParallel(b, 10000, RandomLink, RandomPaginationOffset)
 }

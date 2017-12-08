@@ -15,359 +15,113 @@
 package storetestcases
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 	"testing"
-
-	"bytes"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestBatchSaveSegment tests what happens
-// when you write a segment in a Batch
-func (f Factory) TestBatchSaveSegment(t *testing.T) {
+// TestBatchCreateLink tests what happens
+// when you create a link in a Batch
+func (f Factory) TestBatchCreateLink(t *testing.T) {
 	a, b := f.initBatch(t)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
-	s1 := cstesting.RandomSegment()
-	b.SaveSegment(s1)
+	link := cstesting.RandomLink()
+	linkHash, err := b.CreateLink(link)
+	assert.NoError(t, err, "b.CreateLink()")
 
-	s2, err := a.GetSegment(s1.GetLinkHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got := s2; got != nil {
-		t.Error("s2 != nil want nil")
-	}
+	found, err := a.GetSegment(linkHash)
+	assert.NoError(t, err, "a.GetSegment()")
+	assert.Nil(t, found, "Link should not be found in adapter until Write is called")
 }
 
-// TestBatchSaveValue tests what happens
-// when you write a value in a Batch
-func (f Factory) TestBatchSaveValue(t *testing.T) {
+// TestBatchWriteCreateLink tests what happens when you write a Batch with a created link.
+func (f Factory) TestBatchWriteCreateLink(t *testing.T) {
 	a, b := f.initBatch(t)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
-	k := testutil.RandomKey()
-	v1 := testutil.RandomValue()
-	err := b.SaveValue(k, v1)
-	if err != nil {
-		t.Fatalf("b.SaveValue(): err: %s", err)
-	}
-
-	v2, err := a.GetValue(k)
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-
-	if got := v2; got != nil {
-		t.Error("v2 != nil want nil")
-	}
-}
-
-// TestBatchDeleteSegment tests what happens when you delete a segment from
-// a batch.
-func (f Factory) TestBatchDeleteSegment(t *testing.T) {
-	a, b := f.initBatch(t)
-	defer f.free(a)
-
-	s1 := cstesting.RandomSegment()
-	a.SaveSegment(s1)
-
-	linkHash := s1.GetLinkHash()
-
-	s2, err := b.DeleteSegment(linkHash)
-	if err != nil {
-		t.Fatalf("b.DeleteSegment(): err: %s", err)
-	}
-
-	if got := s2; got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	s2.Meta.Evidences = nil
-	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
-	}
-
-	s2, err = a.GetSegment(linkHash)
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-	if got := s2; got == nil {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		t.Fatalf("s2 = %s\n want %s", gotJS, s2)
-	}
-}
-
-// TestBatchDeleteValue tests what happens when you delete a value from
-// a batch.
-func (f Factory) TestBatchDeleteValue(t *testing.T) {
-	a, b := f.initBatch(t)
-	defer f.free(a)
-
-	k := testutil.RandomKey()
-	v1 := testutil.RandomValue()
-	a.SaveValue(k, v1)
-
-	v2, err := b.DeleteValue(k)
-	if err != nil {
-		t.Fatalf("b.DeleteValue(): err: %s", err)
-	}
-
-	if got := v2; got == nil {
-		t.Fatal("s2 = nil want []byte")
-	}
-
-	if got, want := v2, v1; bytes.Compare(got, want) != 0 {
-		t.Errorf("s2 = %s\n want%s", got, want)
-	}
-
-	v2, err = a.GetValue(k)
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-	if got := v2; got == nil {
-		t.Fatalf("s2 = %s\n want %s", got, v2)
-	}
-}
-
-// TestBatchWriteSaveSegment tests what happens when you write a Batch with a saved segment.
-func (f Factory) TestBatchWriteSaveSegment(t *testing.T) {
-	a, b := f.initBatch(t)
-	defer f.free(a)
-
-	s1 := cstesting.RandomSegment()
-	err := b.SaveSegment(s1)
-	if err != nil {
-		t.Fatalf("b.SaveSegment(): err: %s", err)
-	}
+	link := cstesting.RandomLink()
+	linkHash, err := b.CreateLink(link)
+	assert.NoError(t, err, "b.CreateLink()")
 
 	err = b.Write()
-	if err != nil {
-		t.Fatalf("b.Write(): err: %s", err)
-	}
+	assert.NoError(t, err, "b.Write()")
 
-	s2, err := a.GetSegment(s1.GetLinkHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got := s2; got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	s2.Meta.Evidences = nil
-	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
-	}
-}
-
-// TestBatchWriteSaveValue tests what happens when you write a Batch with a saved segment.
-func (f Factory) TestBatchWriteSaveValue(t *testing.T) {
-	a, b := f.initBatch(t)
-	defer f.free(a)
-
-	k := testutil.RandomKey()
-	v1 := testutil.RandomValue()
-	err := b.SaveValue(k, v1)
-	if err != nil {
-		t.Fatalf("b.SaveValue(): err: %s", err)
-	}
-
-	err = b.Write()
-	if err != nil {
-		t.Fatalf("b.Write(): err: %s", err)
-	}
-
-	v2, err := a.GetValue(k)
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-
-	if got := v2; got == nil {
-		t.Fatal("s2 = nil want []byte")
-	}
-
-	if got, want := v2, v1; bytes.Compare(got, want) != 0 {
-		t.Errorf("s2 = %s\n want%s", got, want)
-	}
-}
-
-// TestBatchWriteDeleteSegment tests what happens when you write a Batch with a deleted segment.
-func (f Factory) TestBatchWriteDeleteSegment(t *testing.T) {
-	a, b := f.initBatch(t)
-	defer f.free(a)
-
-	s1 := cstesting.RandomSegment()
-	a.SaveSegment(s1)
-
-	linkHash := s1.GetLinkHash()
-	s2, err := b.DeleteSegment(linkHash)
-	if err != nil {
-		t.Fatalf("a.DeleteSegment(): err: %s", err)
-	}
-	err = b.Write()
-	if err != nil {
-		t.Fatalf("b.Write(): err: %s", err)
-	}
-
-	s2, err = a.GetSegment(linkHash)
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-	if got := s2; got != nil {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		t.Errorf("s2 = %s\n want nil", gotJS)
-	}
-}
-
-// TestBatchWriteDeleteValue tests what happens when you write a Batch with a deleted value.
-func (f Factory) TestBatchWriteDeleteValue(t *testing.T) {
-	a, b := f.initBatch(t)
-	defer f.free(a)
-
-	k := testutil.RandomKey()
-	v1 := testutil.RandomValue()
-	err := a.SaveValue(k, v1)
-	if err != nil {
-		t.Fatalf("b.SaveValue(): err: %s", err)
-	}
-
-	v2, err := b.DeleteValue(k)
-	if err != nil {
-		t.Fatalf("a.DeleteValue(): err: %s", err)
-	}
-	err = b.Write()
-	if err != nil {
-		t.Fatalf("b.Write(): err: %s", err)
-	}
-
-	v2, err = a.GetValue(k)
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-	if got := v2; got != nil {
-		t.Errorf("s2 = %s\n want nil", got)
-	}
+	found, err := a.GetSegment(linkHash)
+	assert.NoError(t, err, "a.GetSegment()")
+	assert.EqualValues(t, link, found.Link, "Link should be found in adapter after a Write")
 }
 
 // TestBatchFindSegments tests what happens when you find segments in batch and store.
 func (f Factory) TestBatchFindSegments(t *testing.T) {
 	a, b := f.initBatch(t)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
-	var nbSegs = store.DefaultLimit / 2
-	var seg *cs.Segment
-
-	for i := 0; i < nbSegs; i++ {
-		seg = cstesting.RandomSegment()
-		a.SaveSegment(seg)
+	var nbLinks = store.DefaultLimit / 2
+	for i := 0; i < nbLinks; i++ {
+		a.CreateLink(cstesting.RandomLink())
 	}
 
 	var segs cs.SegmentSlice
 	var err error
-	if segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
-		t.Fatalf("b.FindSegments(): err: %s", err)
-	}
+	segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+	assert.NoError(t, err, "b.FindSegments()")
+	assert.Equal(t, nbLinks, len(segs), "Invalid number of segments found")
 
-	if got, want := len(segs), nbSegs; got != want {
-		t.Logf("len(b.FindSegments()) = %d want %d", got, want)
-	}
-	nbSegs = len(segs)
+	b.CreateLink(cstesting.RandomLink())
+	b.CreateLink(cstesting.RandomLink())
 
-	b.SaveSegment(cstesting.RandomSegment())
-	b.SaveSegment(cstesting.RandomSegment())
-	b.DeleteSegment(seg.GetLinkHash())
-
-	if segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
-		t.Fatalf("b.FindSegments(): err: %s", err)
-	}
-
-	if got, want := len(segs), nbSegs+2-1; got != want {
-		t.Fatalf("len(b.FindSegments()) = %d want %d", got, want)
-	}
+	segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+	assert.NoError(t, err, "b.FindSegments()")
+	assert.Equal(t, nbLinks+2, len(segs), "Invalid number of segments found")
 }
 
 // TestBatchGetMapIDs tests what happens when you get mapIds in batch and store.
 func (f Factory) TestBatchGetMapIDs(t *testing.T) {
 	a, b := f.initBatch(t)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
 	segsByMapID := make(map[string]cs.SegmentSlice, 3)
 
 	for i := 0; i < 6*store.DefaultLimit; i++ {
-		seg := cstesting.RandomSegment()
+		link := cstesting.RandomLink()
 		mapID := fmt.Sprintf("map%d", i%3)
-		seg.Link.Meta["mapId"] = mapID
-		seg.SetLinkHash()
+		link.Meta["mapId"] = mapID
 		if i < 3 {
 			segsByMapID[mapID] = make(cs.SegmentSlice, 0, 2*store.DefaultLimit)
 		}
-		segsByMapID[mapID] = append(segsByMapID[mapID], seg)
-		a.SaveSegment(seg)
+		segsByMapID[mapID] = append(segsByMapID[mapID], link.Segmentify())
+		a.CreateLink(link)
 	}
 
-	var mapIDs []string
-	var err error
-	if mapIDs, err = b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
-		t.Fatalf("b.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(mapIDs), len(segsByMapID); got != want {
-		t.Fatalf("len(b.GetMapIDs()) = %d want %d", got, want)
-	}
+	mapIDs, err := b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+	assert.NoError(t, err, "b.GetMapIDs()")
+	assert.Equal(t, len(segsByMapID), len(mapIDs), "Invalid number of maps")
 
 	for _, mapID := range []string{"map42", "map43"} {
-		seg := cstesting.RandomSegment()
-		seg.Link.Meta["mapId"] = mapID
-		seg.SetLinkHash()
-		b.SaveSegment(seg)
-	}
-	for _, seg := range segsByMapID["map0"] {
-		b.DeleteSegment(seg.GetLinkHash())
-	}
-	for i, seg := range segsByMapID["map1"] {
-		if i == len(segsByMapID["map1"])-1 {
-			break
-		}
-		b.DeleteSegment(seg.GetLinkHash())
-	}
-	for i, seg := range segsByMapID["map2"] {
-		if i == 2 {
-			break
-		}
-		b.DeleteSegment(seg.GetLinkHash())
+		link := cstesting.RandomLink()
+		link.Meta["mapId"] = mapID
+		b.CreateLink(link)
 	}
 
-	if mapIDs, err = b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}}); err != nil {
-		t.Fatalf("b.GetMapIDs(): err: %s", err)
-	}
+	mapIDs, err = b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+	assert.NoError(t, err, "b.GetMapIDs()")
+	assert.Equal(t, len(segsByMapID)+2, len(mapIDs), "Invalid number of maps")
 
-	if got, want := len(mapIDs), len(segsByMapID)+2-1; got != want {
-		t.Errorf("len(b.GetMapIDs()) = %d want %d", got, want)
-	}
-	want := map[string]interface{}{"map1": nil, "map2": nil, "map42": nil, "map43": nil}
+	want := map[string]interface{}{"map1": nil, "map2": nil, "map3": nil, "map42": nil, "map43": nil}
 	got := make(map[string]interface{}, len(mapIDs))
 	for _, mapID := range mapIDs {
 		got[mapID] = nil
 	}
-	if len(got) != len(want) {
-		t.Errorf("len(b.GetMapIDs()) = %d want %d", len(got), len(want))
-	}
+
+	assert.Equal(t, len(want), len(got), "Invalid maps returned")
 	for mapID := range got {
-		if _, exist := want[mapID]; !exist {
-			t.Fatalf("b.GetMapIDs(): Missing value = %s", mapID)
-		}
+		_, exist := want[mapID]
+		assert.True(t, exist, "Missing map: %s", mapID)
 	}
 }
 

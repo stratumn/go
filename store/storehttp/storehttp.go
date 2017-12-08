@@ -97,7 +97,7 @@ const (
 // Server is an HTTP server for stores.
 type Server struct {
 	*jsonhttp.Server
-	adapter         store.AdapterV2
+	adapter         store.Adapter
 	ws              *jsonws.Basic
 	storeEventsChan chan *store.Event
 }
@@ -121,7 +121,7 @@ type msg struct {
 
 // New create an instance of a server.
 func New(
-	a store.AdapterV2,
+	a store.Adapter,
 	config *Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,

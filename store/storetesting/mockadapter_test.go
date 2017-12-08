@@ -48,50 +48,50 @@ func TestMockAdapter_GetInfo(t *testing.T) {
 	}
 }
 
-func TestMockAdapter_AddSaveChan(t *testing.T) {
+func TestMockAdapter_AddStoreEventChan(t *testing.T) {
 	a := &MockAdapter{}
-	c := make(chan *cs.Segment)
+	c := make(chan *store.Event)
 
-	a.AddDidSaveChannel(c)
+	a.AddStoreEventChannel(c)
 
-	if got, want := a.MockAddDidSaveChannel.CalledCount, 1; got != want {
-		t.Errorf(`a.MockAddDidSaveChannel.CalledCount = %d want %d`, got, want)
+	if got, want := a.MockAddStoreEventChannel.CalledCount, 1; got != want {
+		t.Errorf(`a.MockAddStoreEventChannel.CalledCount = %d want %d`, got, want)
 	}
-	if got, want := a.MockAddDidSaveChannel.CalledWith, []chan *cs.Segment{c}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockAddDidSaveChannel.CalledWith = %p\n want %p", got, want)
+	if got, want := a.MockAddStoreEventChannel.CalledWith, []chan *store.Event{c}; !reflect.DeepEqual(got, want) {
+		t.Errorf("a.MockAddStoreEventChannel.CalledWith = %p\n want %p", got, want)
 	}
-	if got, want := a.MockAddDidSaveChannel.LastCalledWith, c; got != want {
-		t.Errorf("a.MockAddDidSaveChannel.LastCalledWith = %p\n want %p", got, want)
+	if got, want := a.MockAddStoreEventChannel.LastCalledWith, c; got != want {
+		t.Errorf("a.MockAddStoreEventChannel.LastCalledWith = %p\n want %p", got, want)
 	}
 }
 
-func TestMockAdapter_SaveSegment(t *testing.T) {
+func TestMockAdapter_CreateLink(t *testing.T) {
 	a := &MockAdapter{}
-	s := cstesting.RandomSegment()
+	l := cstesting.RandomLink()
 
-	err := a.SaveSegment(s)
+	_, err := a.CreateLink(l)
 	if err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
+		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
 
-	a.MockSaveSegment.Fn = func(s *cs.Segment) error { return nil }
-	err = a.SaveSegment(s)
+	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, nil }
+	_, err = a.CreateLink(l)
 	if err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
+		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
 
-	if got, want := a.MockSaveSegment.CalledCount, 2; got != want {
-		t.Errorf(`a.MockSaveSegment.CalledCount = %d want %d`, got, want)
+	if got, want := a.MockCreateLink.CalledCount, 2; got != want {
+		t.Errorf(`a.MockCreateLink.CalledCount = %d want %d`, got, want)
 	}
-	if got, want := a.MockSaveSegment.CalledWith, []*cs.Segment{s, s}; !reflect.DeepEqual(got, want) {
+	if got, want := a.MockCreateLink.CalledWith, []*cs.Link{l, l}; !reflect.DeepEqual(got, want) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("a.MockSaveSegment.CalledWith = %s\n want %s", gotJS, wantJS)
+		t.Errorf("a.MockCreateLink.CalledWith = %s\n want %s", gotJS, wantJS)
 	}
-	if got, want := a.MockSaveSegment.LastCalledWith, s; got != want {
+	if got, want := a.MockCreateLink.LastCalledWith, l; got != want {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("a.MockSaveSegment.LastCalledWith = %s\n want %s", gotJS, wantJS)
+		t.Errorf("a.MockCreateLink.LastCalledWith = %s\n want %s", gotJS, wantJS)
 	}
 }
 
@@ -125,39 +125,6 @@ func TestMockAdapter_GetSegment(t *testing.T) {
 	}
 	if got, want := *a.MockGetSegment.LastCalledWith, *linkHash2; got != want {
 		t.Errorf("a.MockGetSegment.LastCalledWith = %q want %q", got, want)
-	}
-}
-
-func TestMockAdapter_DeleteSegment(t *testing.T) {
-	a := &MockAdapter{}
-
-	linkHash1 := testutil.RandomHash()
-	_, err := a.DeleteSegment(linkHash1)
-	if err != nil {
-		t.Fatalf("a.DeleteSegment(): err: %s", err)
-	}
-
-	s1 := cstesting.RandomSegment()
-	a.MockDeleteSegment.Fn = func(linkHash *types.Bytes32) (*cs.Segment, error) { return s1, nil }
-	linkHash2 := testutil.RandomHash()
-	s2, err := a.DeleteSegment(linkHash2)
-	if err != nil {
-		t.Fatalf("a.DeleteSegment(): err: %s", err)
-	}
-
-	if got, want := s2, s1; got != want {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want %s", gotJS, wantJS)
-	}
-	if got, want := a.MockDeleteSegment.CalledCount, 2; got != want {
-		t.Errorf(`a.MockDeleteSegment.CalledCount = %d want %d`, got, want)
-	}
-	if got, want := a.MockDeleteSegment.CalledWith, []*types.Bytes32{linkHash1, linkHash2}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockDeleteSegment.CalledWith = %q\n want %q", got, want)
-	}
-	if got, want := a.MockDeleteSegment.LastCalledWith, linkHash2; got != want {
-		t.Errorf("a.MockDeleteSegment.LastCalledWith = %q want %q", got, want)
 	}
 }
 
@@ -227,7 +194,7 @@ func TestMockAdapter_GetMapIDs(t *testing.T) {
 }
 
 func TestMockAdapter_GetValue(t *testing.T) {
-	a := &MockAdapter{}
+	a := &MockKeyValueStore{}
 
 	k1 := testutil.RandomKey()
 	_, err := a.GetValue(k1)
@@ -258,7 +225,7 @@ func TestMockAdapter_GetValue(t *testing.T) {
 }
 
 func TestMockAdapter_DeleteValue(t *testing.T) {
-	a := &MockAdapter{}
+	a := &MockKeyValueStore{}
 
 	k1 := testutil.RandomKey()
 	_, err := a.DeleteValue(k1)
@@ -288,172 +255,29 @@ func TestMockAdapter_DeleteValue(t *testing.T) {
 	}
 }
 
-func TestMockAdapter_SaveValue(t *testing.T) {
-	a := &MockAdapter{}
+func TestMockAdapter_SetValue(t *testing.T) {
+	a := &MockKeyValueStore{}
 	k := testutil.RandomKey()
 	v := testutil.RandomValue()
 
-	err := a.SaveValue(k, v)
+	err := a.SetValue(k, v)
 	if err != nil {
-		t.Fatalf("a.SaveValue(): err: %s", err)
+		t.Fatalf("a.SetValue(): err: %s", err)
 	}
 
-	a.MockSaveValue.Fn = func(key, value []byte) error { return nil }
-	err = a.SaveValue(k, v)
+	a.MockSetValue.Fn = func(key, value []byte) error { return nil }
+	err = a.SetValue(k, v)
 	if err != nil {
-		t.Fatalf("a.SaveValue(): err: %s", err)
+		t.Fatalf("a.SetValue(): err: %s", err)
 	}
 
-	if got, want := a.MockSaveValue.CalledCount, 2; got != want {
-		t.Errorf(`a.MockSaveValue.CalledCount = %d want %d`, got, want)
+	if got, want := a.MockSetValue.CalledCount, 2; got != want {
+		t.Errorf(`a.MockSetValue.CalledCount = %d want %d`, got, want)
 	}
-	if got, want := a.MockSaveValue.CalledWith, [][][]byte{[][]byte{k, v}, [][]byte{k, v}}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockSaveValue.CalledWith = %s\n want %s", got, want)
+	if got, want := a.MockSetValue.CalledWith, [][][]byte{[][]byte{k, v}, [][]byte{k, v}}; !reflect.DeepEqual(got, want) {
+		t.Errorf("a.MockSetValue.CalledWith = %s\n want %s", got, want)
 	}
-	if got, want := a.MockSaveValue.LastCalledWith, [][]byte{k, v}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockSaveValue.LastCalledWith = %s\n want %s", got, want)
-	}
-}
-
-func TestMockAdapter_BatchSaveValue(t *testing.T) {
-	a := &MockAdapter{}
-	batch, err := a.NewBatch()
-	if err != nil {
-		t.Fatalf("a.NewBatch(): err: %s", err)
-	}
-	b := batch.(*MockBatch)
-
-	k := testutil.RandomKey()
-	v := testutil.RandomValue()
-
-	err = b.SaveValue(k, v)
-	if err != nil {
-		t.Fatalf("b.SaveValue(): err: %s", err)
-	}
-
-	b.MockSaveValue.Fn = func(key, value []byte) error { return nil }
-	err = b.SaveValue(k, v)
-	if err != nil {
-		t.Fatalf("b.SaveValue(): err: %s", err)
-	}
-
-	if got, want := b.MockSaveValue.CalledCount, 2; got != want {
-		t.Errorf(`a.MockSaveValue.CalledCount = %d want %d`, got, want)
-	}
-	if got, want := b.MockSaveValue.CalledWith, [][][]byte{[][]byte{k, v}, [][]byte{k, v}}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockSaveValue.CalledWith = %s\n want %s", got, want)
-	}
-	if got, want := b.MockSaveValue.LastCalledWith, [][]byte{k, v}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockSaveValue.LastCalledWith = %s\n want %s", got, want)
-	}
-}
-
-func TestMockAdapter_BatchDeleteValue(t *testing.T) {
-	a := &MockAdapter{}
-	batch, err := a.NewBatch()
-	if err != nil {
-		t.Fatalf("a.NewBatch(): err: %s", err)
-	}
-	b := batch.(*MockBatch)
-
-	k1 := testutil.RandomKey()
-	_, err = b.DeleteValue(k1)
-	if err != nil {
-		t.Fatalf("a.DeleteValue(): err: %s", err)
-	}
-
-	v1 := testutil.RandomValue()
-	b.MockDeleteValue.Fn = func(key []byte) ([]byte, error) { return v1, nil }
-	k2 := testutil.RandomKey()
-	v2, err := b.DeleteValue(k2)
-	if err != nil {
-		t.Fatalf("a.DeleteValue(): err: %s", err)
-	}
-
-	if got, want := v2, v1; bytes.Compare(got, want) != 0 {
-		t.Errorf("v2 = %s\n want %s", got, want)
-	}
-	if got, want := b.MockDeleteValue.CalledCount, 2; got != want {
-		t.Errorf(`b.MockDeleteValue.CalledCount = %d want %d`, got, want)
-	}
-	if got, want := b.MockDeleteValue.CalledWith, [][]byte{k1, k2}; !reflect.DeepEqual(got, want) {
-		t.Errorf("b.MockDeleteValue.CalledWith = %s\n want %s", got, want)
-	}
-	if got, want := b.MockDeleteValue.LastCalledWith, k2; bytes.Compare(got, want) != 0 {
-		t.Errorf("b.MockDeleteValue.LastCalledWith = %s want %s", got, want)
-	}
-}
-
-func TestMockAdapter_BatchSaveSegment(t *testing.T) {
-	a := &MockAdapter{}
-	batch, err := a.NewBatch()
-	if err != nil {
-		t.Fatalf("a.NewBatch(): err: %s", err)
-	}
-	b := batch.(*MockBatch)
-
-	s := cstesting.RandomSegment()
-
-	err = b.SaveSegment(s)
-	if err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
-	}
-
-	b.MockSaveSegment.Fn = func(s *cs.Segment) error { return nil }
-	err = b.SaveSegment(s)
-	if err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
-	}
-
-	if got, want := b.MockSaveSegment.CalledCount, 2; got != want {
-		t.Errorf(`b.MockSaveSegment.CalledCount = %d want %d`, got, want)
-	}
-	if got, want := b.MockSaveSegment.CalledWith, []*cs.Segment{s, s}; !reflect.DeepEqual(got, want) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("b.MockSaveSegment.CalledWith = %s\n want %s", gotJS, wantJS)
-	}
-	if got, want := b.MockSaveSegment.LastCalledWith, s; got != want {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("b.MockSaveSegment.LastCalledWith = %s\n want %s", gotJS, wantJS)
-	}
-}
-
-func TestMockAdapter_BatchDeleteSegment(t *testing.T) {
-	a := &MockAdapter{}
-	batch, err := a.NewBatch()
-	if err != nil {
-		t.Fatalf("a.NewBatch(): err: %s", err)
-	}
-	b := batch.(*MockBatch)
-
-	linkHash1 := testutil.RandomHash()
-	_, err = b.DeleteSegment(linkHash1)
-	if err != nil {
-		t.Fatalf("a.DeleteSegment(): err: %s", err)
-	}
-
-	s1 := cstesting.RandomSegment()
-	b.MockDeleteSegment.Fn = func(linkHash *types.Bytes32) (*cs.Segment, error) { return s1, nil }
-	linkHash2 := testutil.RandomHash()
-	s2, err := b.DeleteSegment(linkHash2)
-	if err != nil {
-		t.Fatalf("a.DeleteSegment(): err: %s", err)
-	}
-
-	if got, want := s2, s1; got != want {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want %s", gotJS, wantJS)
-	}
-	if got, want := b.MockDeleteSegment.CalledCount, 2; got != want {
-		t.Errorf(`b.MockDeleteSegment.CalledCount = %d want %d`, got, want)
-	}
-	if got, want := b.MockDeleteSegment.CalledWith, []*types.Bytes32{linkHash1, linkHash2}; !reflect.DeepEqual(got, want) {
-		t.Errorf("b.MockDeleteSegment.CalledWith = %q\n want %q", got, want)
-	}
-	if got, want := b.MockDeleteSegment.LastCalledWith, linkHash2; got != want {
-		t.Errorf("b.MockDeleteSegment.LastCalledWith = %q want %q", got, want)
+	if got, want := a.MockSetValue.LastCalledWith, [][]byte{k, v}; !reflect.DeepEqual(got, want) {
+		t.Errorf("a.MockSetValue.LastCalledWith = %s\n want %s", got, want)
 	}
 }

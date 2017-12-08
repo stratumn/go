@@ -24,8 +24,8 @@ import (
 // TestAddEvidences tests what happens when you add evidence
 // to a segment.
 func (f Factory) TestAddEvidences(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	a := f.initAdapter(t)
+	defer f.freeAdapter(a)
 
 	e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
 	e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
@@ -63,8 +63,8 @@ func (f Factory) TestAddEvidences(t *testing.T) {
 // TestAddDuplicateEvidences tests that evidence is ignored when an evidence
 // from the same provider has already been added.
 func (f Factory) TestAddDuplicateEvidences(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	a := f.initAdapter(t)
+	defer f.freeAdapter(a)
 
 	e1 := cs.Evidence{Backend: "TMPop", Provider: "42"}
 	e2 := cs.Evidence{Backend: "dummy", Provider: "42"}

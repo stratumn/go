@@ -21,21 +21,7 @@ import (
 // TestGetInfo tests what happens when you get information about the adapter.
 func (f Factory) TestGetInfo(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	info, err := a.GetInfo()
-	if err != nil {
-		t.Fatalf("a.GetInfo(): err: %s", err)
-	}
-	if info == nil {
-		t.Fatal("info = nil want interface{}")
-	}
-}
-
-// TestGetInfoV2 tests what happens when you get information about the adapter.
-func (f Factory) TestGetInfoV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	info, err := a.GetInfo()
 	if err != nil {

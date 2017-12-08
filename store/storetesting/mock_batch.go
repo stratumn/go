@@ -21,24 +21,10 @@ import (
 )
 
 // MockBatch is used to mock a batch.
-//
 // It implements github.com/stratumn/sdk/store.Batch
-// and github.com/stratumn/sdk/store.BatchV2.
 type MockBatch struct {
-	// The mock for the SaveSegment function.
-	MockSaveSegment MockBatchSaveSegment
-
 	// The mock for the CreateLink function.
 	MockCreateLink MockBatchCreateLink
-
-	// The mock for the SaveValue function.
-	MockSaveValue MockBatchSaveValue
-
-	// The mock for the DeleteSegment function.
-	MockDeleteSegment MockBatchDeleteSegment
-
-	// The mock for the DeleteValue function.
-	MockDeleteValue MockBatchDeleteValue
 
 	// The mock for the Write function.
 	MockWrite MockBatchWrite
@@ -51,24 +37,6 @@ type MockBatch struct {
 
 	// The mock for the GetMapIDs function.
 	MockGetMapIDs MockBatchGetMapIDs
-
-	// The mock for the GetValue function.
-	MockGetValue MockBatchGetValue
-}
-
-// MockBatchSaveSegment mocks the SaveSegment function.
-type MockBatchSaveSegment struct {
-	// The number of times the function was called.
-	CalledCount int
-
-	// The segment that was passed to each call.
-	CalledWith []*cs.Segment
-
-	// The last segment that was passed.
-	LastCalledWith *cs.Segment
-
-	// An optional implementation of the function.
-	Fn func(*cs.Segment) error
 }
 
 // MockBatchCreateLink mocks the CreateLink function.
@@ -84,51 +52,6 @@ type MockBatchCreateLink struct {
 
 	// An optional implementation of the function.
 	Fn func(*cs.Link) (*types.Bytes32, error)
-}
-
-// MockBatchSaveValue mocks the SaveValue function.
-type MockBatchSaveValue struct {
-	// The number of times the function was called.
-	CalledCount int
-
-	// The segment that was passed to each call.
-	CalledWith [][][]byte
-
-	// The last segment that was passed.
-	LastCalledWith [][]byte
-
-	// An optional implementation of the function.
-	Fn func(key, value []byte) error
-}
-
-// MockBatchDeleteSegment mocks the DeleteSegment function.
-type MockBatchDeleteSegment struct {
-	// The number of times the function was called.
-	CalledCount int
-
-	// The link hash that was passed to each call.
-	CalledWith []*types.Bytes32
-
-	// The last link hash that was passed.
-	LastCalledWith *types.Bytes32
-
-	// An optional implementation of the function.
-	Fn func(*types.Bytes32) (*cs.Segment, error)
-}
-
-// MockBatchDeleteValue mocks the DeleteValue function.
-type MockBatchDeleteValue struct {
-	// The number of times the function was called.
-	CalledCount int
-
-	// The key that was passed to each call.
-	CalledWith [][]byte
-
-	// The last link hash that was passed.
-	LastCalledWith []byte
-
-	// An optional implementation of the function.
-	Fn func([]byte) ([]byte, error)
 }
 
 // MockBatchWrite mocks the Write function.
@@ -167,28 +90,6 @@ type MockBatchGetMapIDs struct {
 	Fn func(filter *store.MapFilter) ([]string, error)
 }
 
-// MockBatchGetValue mocks the GetValue function.
-type MockBatchGetValue struct {
-	// The number of times the function was called.
-	CalledCount int
-
-	// An optional implementation of the function.
-	Fn func(key []byte) ([]byte, error)
-}
-
-// SaveSegment implements github.com/stratumn/sdk/store.Batch.SaveSegment.
-func (a *MockBatch) SaveSegment(segment *cs.Segment) error {
-	a.MockSaveSegment.CalledCount++
-	a.MockSaveSegment.CalledWith = append(a.MockSaveSegment.CalledWith, segment)
-	a.MockSaveSegment.LastCalledWith = segment
-
-	if a.MockSaveSegment.Fn != nil {
-		return a.MockSaveSegment.Fn(segment)
-	}
-
-	return nil
-}
-
 // CreateLink implements github.com/stratumn/sdk/store.BatchV2.CreateLink.
 func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	a.MockCreateLink.CalledCount++
@@ -202,58 +103,8 @@ func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return nil, nil
 }
 
-// SaveValue implements github.com/stratumn/sdk/store.Batch.SaveValue.
-func (a *MockBatch) SaveValue(key, value []byte) error {
-	a.MockSaveValue.CalledCount++
-	calledWith := [][]byte{key, value}
-	a.MockSaveValue.CalledWith = append(a.MockSaveValue.CalledWith, calledWith)
-	a.MockSaveValue.LastCalledWith = calledWith
-
-	if a.MockSaveValue.Fn != nil {
-		return a.MockSaveValue.Fn(key, value)
-	}
-
-	return nil
-}
-
-// DeleteSegment implements github.com/stratumn/sdk/store.Batch.DeleteSegment.
-func (a *MockBatch) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	a.MockDeleteSegment.CalledCount++
-	a.MockDeleteSegment.CalledWith = append(a.MockDeleteSegment.CalledWith, linkHash)
-	a.MockDeleteSegment.LastCalledWith = linkHash
-
-	if a.MockDeleteSegment.Fn != nil {
-		return a.MockDeleteSegment.Fn(linkHash)
-	}
-
-	return nil, nil
-}
-
-// DeleteValue implements github.com/stratumn/sdk/store.Batch.DeleteValue.
-func (a *MockBatch) DeleteValue(key []byte) ([]byte, error) {
-	a.MockDeleteValue.CalledCount++
-	a.MockDeleteValue.CalledWith = append(a.MockDeleteValue.CalledWith, key)
-	a.MockDeleteValue.LastCalledWith = key
-
-	if a.MockDeleteValue.Fn != nil {
-		return a.MockDeleteValue.Fn(key)
-	}
-
-	return nil, nil
-}
-
 // Write implements github.com/stratumn/sdk/store.Batch.Write.
 func (a *MockBatch) Write() error {
-	a.MockWrite.CalledCount++
-
-	if a.MockWrite.Fn != nil {
-		return a.MockWrite.Fn()
-	}
-	return nil
-}
-
-// WriteV2 implements github.com/stratumn/sdk/store.BatchV2.WriteV2.
-func (a *MockBatch) WriteV2() error {
 	a.MockWrite.CalledCount++
 
 	if a.MockWrite.Fn != nil {
@@ -288,16 +139,6 @@ func (a *MockBatch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 
 	if a.MockGetMapIDs.Fn != nil {
 		return a.MockGetMapIDs.Fn(filter)
-	}
-	return nil, nil
-}
-
-// GetValue delegates the call to a underlying store
-func (a *MockBatch) GetValue(key []byte) ([]byte, error) {
-	a.MockGetValue.CalledCount++
-
-	if a.MockGetValue.Fn != nil {
-		return a.MockGetValue.Fn(key)
 	}
 	return nil, nil
 }

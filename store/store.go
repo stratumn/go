@@ -28,67 +28,6 @@ const (
 	MaxLimit = 200
 )
 
-// Writer is the interface that wraps the Write methods of a Store.
-type Writer interface {
-	// Creates or updates a segment. Segments passed to this method are
-	// assumed to be valid.
-	SaveSegment(segment *cs.Segment) error
-
-	// Deletes a segment by link hash. Returns the removed segment or nil
-	// if not found.
-	DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error)
-
-	// Saves a value at a key.
-	SaveValue(key []byte, value []byte) error
-
-	// Deletes a value at a key.
-	DeleteValue(key []byte) ([]byte, error)
-}
-
-// Reader is the interface that wraps the Read methods of a Store.
-type Reader interface {
-	// Get a segment by link hash. Returns nil if no match is found.
-	GetSegment(linkHash *types.Bytes32) (*cs.Segment, error)
-
-	// Find segments. Returns an empty slice if there are no results.
-	FindSegments(filter *SegmentFilter) (cs.SegmentSlice, error)
-
-	// Get all the existing map IDs.
-	GetMapIDs(filter *MapFilter) ([]string, error)
-
-	// Gets a value at a key
-	GetValue(key []byte) ([]byte, error)
-}
-
-// Batch represents a database transaction
-type Batch interface {
-	Reader
-	Writer
-
-	// Write definitely writes the content of the Batch
-	Write() error
-}
-
-// Adapter must be implemented by a store.
-type Adapter interface {
-	Reader
-	Writer
-
-	// Returns arbitrary information about the adapter.
-	GetInfo() (interface{}, error)
-
-	// Adds a channel that receives segments whenever they are saved.
-	AddDidSaveChannel(chan *cs.Segment)
-
-	// Creates a new Batch
-	NewBatch() (Batch, error)
-}
-
-/* Updated store interfaces.
- * Existing stores should migrate to these interfaces.
- * New stores should implement only this interface.
- */
-
 // SegmentReader is the interface for reading Segments from a store.
 type SegmentReader interface {
 	// Get a segment by link hash. Returns nil if no match is found.
@@ -132,19 +71,18 @@ type EvidenceStore interface {
 	EvidenceWriter
 }
 
-// BatchV2 represents a database transaction.
-// It will be renamed to Batch when the old interface will be removed.
-type BatchV2 interface {
+// Batch represents a database transaction.
+type Batch interface {
 	SegmentReader
 	LinkWriter
 
 	// Write definitely writes the content of the Batch
-	WriteV2() error
+	Write() error
 }
 
-// AdapterV2 is the new store interface. Once all stores are migrated
-// it will be renamed to Adapter and the old interface will be removed.
-type AdapterV2 interface {
+// Adapter is the minimal interface that all stores should implement.
+// Then a store may optionnally implement the KeyValueStore interface.
+type Adapter interface {
 	SegmentReader
 	LinkWriter
 	EvidenceStore
@@ -156,7 +94,7 @@ type AdapterV2 interface {
 	AddStoreEventChannel(chan *Event)
 
 	// Creates a new Batch
-	NewBatchV2() (BatchV2, error)
+	NewBatch() (Batch, error)
 }
 
 // KeyValueReader is the interface for reading key-value pairs.
@@ -171,13 +109,11 @@ type KeyValueWriter interface {
 }
 
 // KeyValueStore is the interface for a key-value store.
-// Some store adapters will implement this interface, but not all.
+// Some stores will implement this interface, but not all.
 type KeyValueStore interface {
 	KeyValueReader
 	KeyValueWriter
 }
-
-/* End of updated store interfaces. */
 
 // Pagination contains pagination options.
 type Pagination struct {

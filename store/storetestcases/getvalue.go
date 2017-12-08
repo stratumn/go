@@ -21,58 +21,42 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/testutil"
-
-	"bytes"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestGetValue tests what happens when you get an existing segment.
 func (f Factory) TestGetValue(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.free(a)
+	a := f.initKeyValueStore(t)
+	defer f.freeKeyValueStore(a)
 
 	k := testutil.RandomKey()
 	v1 := testutil.RandomValue()
 
-	a.SaveValue(k, v1)
-
+	a.SetValue(k, v1)
 	v2, err := a.GetValue(k)
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-
-	if got := v2; got == nil {
-		t.Fatal("s2 = nil want []byte")
-	}
-
-	if got, want := v2, v1; bytes.Compare(got, want) != 0 {
-		t.Errorf("s2 = %s\n want%s", got, want)
-	}
+	assert.NoError(t, err, "a.GetValue()")
+	assert.EqualValues(t, v1, v2, "a.GetValue()")
 }
 
 // TestGetValueNotFound tests what happens when you get a nonexistent segment.
 func (f Factory) TestGetValueNotFound(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.free(a)
+	a := f.initKeyValueStore(t)
+	defer f.freeKeyValueStore(a)
 
 	v, err := a.GetValue(testutil.RandomKey())
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-
-	if got := v; got != nil {
-		t.Errorf("s = %s\n want nil", got)
-	}
+	assert.NoError(t, err, "a.GetValue()")
+	assert.Nil(t, v, "Not found value")
 }
 
 // BenchmarkGetValue benchmarks getting existing segments.
 func (f Factory) BenchmarkGetValue(b *testing.B) {
-	a := f.initAdapterB(b)
-	defer f.free(a)
+	a := f.initKeyValueStoreB(b)
+	defer f.freeKeyValueStore(a)
 
 	values := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
 		v := testutil.RandomKey()
-		a.SaveValue(v, v)
+		a.SetValue(v, v)
 		values[i] = v
 	}
 
@@ -90,13 +74,13 @@ func (f Factory) BenchmarkGetValue(b *testing.B) {
 
 // BenchmarkGetValueParallel benchmarks getting existing segments in parallel.
 func (f Factory) BenchmarkGetValueParallel(b *testing.B) {
-	a := f.initAdapterB(b)
-	defer f.free(a)
+	a := f.initKeyValueStoreB(b)
+	defer f.freeKeyValueStore(a)
 
 	values := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
 		v := testutil.RandomKey()
-		a.SaveValue(v, v)
+		a.SetValue(v, v)
 		values[i] = v
 	}
 

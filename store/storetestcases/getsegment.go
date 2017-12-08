@@ -33,33 +33,7 @@ import (
 // TestGetSegment tests what happens when you get an existing segment.
 func (f Factory) TestGetSegment(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	s1 := cstesting.RandomSegment()
-
-	a.SaveSegment(s1)
-
-	s2, err := a.GetSegment(s1.GetLinkHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got := s2; got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	s2.Meta.Evidences = nil
-	if got, want := s2, s1; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
-	}
-}
-
-// TestGetSegmentV2 tests what happens when you get an existing segment.
-func (f Factory) TestGetSegmentV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	l1 := cstesting.RandomLink()
 	linkHash, _ := a.CreateLink(l1)
@@ -84,36 +58,7 @@ func (f Factory) TestGetSegmentV2(t *testing.T) {
 // state was updated.
 func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	s1 := cstesting.RandomSegment()
-	a.SaveSegment(s1)
-	s2 := cstesting.ChangeSegmentState(s1)
-	a.SaveSegment(s2)
-
-	got, err := a.GetSegment(s1.GetLinkHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	got.Meta.Evidences = nil
-	want := s1
-	if !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("got = %s\n want %s", gotJS, wantJS)
-	}
-}
-
-// TestGetSegmentUpdatedStateV2 tests what happens when you get a segment whose
-// state was updated.
-func (f Factory) TestGetSegmentUpdatedStateV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	l1 := cstesting.RandomLink()
 	linkHash1, _ := a.CreateLink(l1)
@@ -140,36 +85,7 @@ func (f Factory) TestGetSegmentUpdatedStateV2(t *testing.T) {
 // map ID was updated.
 func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	s1 := cstesting.RandomSegment()
-	a.SaveSegment(s1)
-	s2 := cstesting.ChangeSegmentMapID(s1)
-	a.SaveSegment(s2)
-
-	got, err := a.GetSegment(s1.GetLinkHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	got.Meta.Evidences = nil
-	want := s1
-	if !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
-	}
-}
-
-// TestGetSegmentUpdatedMapIDV2 tests what happens when you get a segment whose
-// map ID was updated.
-func (f Factory) TestGetSegmentUpdatedMapIDV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	l1 := cstesting.RandomLink()
 	linkHash1, _ := a.CreateLink(l1)
@@ -192,43 +108,11 @@ func (f Factory) TestGetSegmentUpdatedMapIDV2(t *testing.T) {
 	}
 }
 
-// TestGetSegmentWithEvidences tests what happens when you update the state of a
-// segment.
+// TestGetSegmentWithEvidences tests what happens when you add
+// evidence to a segment.
 func (f Factory) TestGetSegmentWithEvidences(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
-	e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
-	e3 := cs.Evidence{Backend: "batch", Provider: "3"}
-	e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
-	e5 := cs.Evidence{Backend: "generic", Provider: "5"}
-
-	s := cstesting.RandomSegment()
-	s.Meta.AddEvidence(e1)
-	s.Meta.AddEvidence(e2)
-	s.Meta.AddEvidence(e3)
-	s.Meta.AddEvidence(e4)
-	s.Meta.AddEvidence(e5)
-
-	if err := a.SaveSegment(s); err != nil {
-		t.Fatalf("a.SaveSegment(): err: %s", err)
-	}
-	got, err := a.GetSegment(s.GetLinkHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-}
-
-// TestGetSegmentWithEvidencesV2 tests what happens when you add
-// evidence to a segment.
-func (f Factory) TestGetSegmentWithEvidencesV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
 	e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
@@ -265,23 +149,7 @@ func (f Factory) TestGetSegmentWithEvidencesV2(t *testing.T) {
 // TestGetSegmentNotFound tests what happens when you get a nonexistent segment.
 func (f Factory) TestGetSegmentNotFound(t *testing.T) {
 	a := f.initAdapter(t)
-	defer f.free(a)
-
-	s, err := a.GetSegment(testutil.RandomHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got := s; got != nil {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		t.Errorf("s = %s\n want nil", gotJS)
-	}
-}
-
-// TestGetSegmentNotFoundV2 tests what happens when you get a nonexistent segment.
-func (f Factory) TestGetSegmentNotFoundV2(t *testing.T) {
-	a := f.initAdapterV2(t)
-	defer f.freeV2(a)
+	defer f.freeAdapter(a)
 
 	s, err := a.GetSegment(testutil.RandomHash())
 	if err != nil {
@@ -297,13 +165,13 @@ func (f Factory) TestGetSegmentNotFoundV2(t *testing.T) {
 // BenchmarkGetSegment benchmarks getting existing segments.
 func (f Factory) BenchmarkGetSegment(b *testing.B) {
 	a := f.initAdapterB(b)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
 	linkHashes := make([]*types.Bytes32, b.N)
 	for i := 0; i < b.N; i++ {
-		s := cstesting.RandomSegment()
-		a.SaveSegment(s)
-		linkHashes[i] = s.GetLinkHash()
+		l := cstesting.RandomLink()
+		linkHash, _ := a.CreateLink(l)
+		linkHashes[i] = linkHash
 	}
 
 	b.ResetTimer()
@@ -321,13 +189,13 @@ func (f Factory) BenchmarkGetSegment(b *testing.B) {
 // BenchmarkGetSegmentParallel benchmarks getting existing segments in parallel.
 func (f Factory) BenchmarkGetSegmentParallel(b *testing.B) {
 	a := f.initAdapterB(b)
-	defer f.free(a)
+	defer f.freeAdapter(a)
 
 	linkHashes := make([]*types.Bytes32, b.N)
 	for i := 0; i < b.N; i++ {
-		s := cstesting.RandomSegment()
-		a.SaveSegment(s)
-		linkHashes[i] = s.GetLinkHash()
+		l := cstesting.RandomLink()
+		linkHash, _ := a.CreateLink(l)
+		linkHashes[i] = linkHash
 	}
 
 	var counter uint64

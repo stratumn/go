@@ -50,7 +50,7 @@ var (
 
 // Run launches a storehttp server.
 func Run(
-	a store.AdapterV2,
+	a store.Adapter,
 	config *Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
@@ -105,7 +105,7 @@ func RegisterFlags() {
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
 // a storehttp server configured using flag values.
-func RunWithFlags(a store.AdapterV2) {
+func RunWithFlags(a store.Adapter) {
 	config := &Config{
 		StoreEventsChanSize: storeEventsChanSize,
 	}

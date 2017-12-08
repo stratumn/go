@@ -23,55 +23,36 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/testutil"
-
-	"bytes"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestDeleteValue tests what happens when you delete an existing value.
 func (f Factory) TestDeleteValue(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.free(a)
+	a := f.initKeyValueStore(t)
+	defer f.freeKeyValueStore(a)
 
 	key := testutil.RandomKey()
 	value1 := testutil.RandomValue()
-	a.SaveValue(key, value1)
+	a.SetValue(key, value1)
 
 	value2, err := a.DeleteValue(key)
-	if err != nil {
-		t.Fatalf("a.DeleteValue(): err: %s", err)
-	}
-
-	if got := value2; got == nil {
-		t.Fatal("s2 = nil want []byte")
-	}
-
-	if got, want := value2, value1; bytes.Compare(got, want) != 0 {
-		t.Errorf("s2 = %s\n want%s", got, want)
-	}
+	assert.NoError(t, err, "a.DeleteValue()")
+	assert.EqualValues(t, value1, value2, "a.DeleteValue() should return the deleted value")
 
 	value2, err = a.GetValue(key)
-	if err != nil {
-		t.Fatalf("a.GetValue(): err: %s", err)
-	}
-	if got := value2; got != nil {
-		t.Errorf("s2 = %s\n want nil", got)
-	}
+	assert.NoError(t, err, "a.GetValue()")
+	assert.Nil(t, value2, "Deleted value should not be found")
 }
 
 // TestDeleteValueNotFound tests what happens when you delete a nonexistent
 // value.
 func (f Factory) TestDeleteValueNotFound(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.free(a)
+	a := f.initKeyValueStore(t)
+	defer f.freeKeyValueStore(a)
 
 	v, err := a.DeleteValue(testutil.RandomKey())
-	if err != nil {
-		t.Fatalf("a.DeleteValue(): err: %s", err)
-	}
-
-	if got := v; got != nil {
-		t.Errorf("s = %s\n want nil", got)
-	}
+	assert.NoError(t, err, "a.DeleteValue()")
+	assert.Nil(t, v, "Not found value should be nil")
 }
 
 func searchNewKey(values map[string][]byte) ([]byte, string) {
@@ -86,14 +67,14 @@ func searchNewKey(values map[string][]byte) ([]byte, string) {
 
 // BenchmarkDeleteValue benchmarks deleting existing segments.
 func (f Factory) BenchmarkDeleteValue(b *testing.B) {
-	a := f.initAdapterB(b)
-	defer f.free(a)
+	a := f.initKeyValueStoreB(b)
+	defer f.freeKeyValueStore(a)
 
 	values := make(map[string][]byte, b.N)
 	for i := 0; i < b.N; i++ {
 		k, strkey := searchNewKey(values)
 		v := testutil.RandomValue()
-		a.SaveValue(k, v)
+		a.SetValue(k, v)
 		values[strkey] = k
 	}
 
@@ -112,14 +93,14 @@ func (f Factory) BenchmarkDeleteValue(b *testing.B) {
 // BenchmarkDeleteValueParallel benchmarks deleting existing segments in
 // parallel.
 func (f Factory) BenchmarkDeleteValueParallel(b *testing.B) {
-	a := f.initAdapterB(b)
-	defer f.free(a)
+	a := f.initKeyValueStoreB(b)
+	defer f.freeKeyValueStore(a)
 
 	mapvalues := make(map[string][]byte, b.N)
 	for i := 0; i < b.N; i++ {
 		k, strkey := searchNewKey(mapvalues)
 		v := testutil.RandomValue()
-		a.SaveValue(k, v)
+		a.SetValue(k, v)
 		mapvalues[strkey] = k
 	}
 	values := make([][]byte, 0, b.N)

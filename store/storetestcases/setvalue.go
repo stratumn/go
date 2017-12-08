@@ -21,25 +21,33 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestSaveValue tests what happens when you save a new value.
 func (f Factory) TestSaveValue(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.free(a)
+	a := f.initKeyValueStore(t)
+	defer f.freeKeyValueStore(a)
 
 	key := testutil.RandomKey()
 	value := testutil.RandomValue()
 
-	if err := a.SaveValue(key, value); err != nil {
-		t.Fatalf("a.SaveValue(): err: %s", err)
-	}
+	err := a.SetValue(key, value)
+	assert.NoError(t, err, "a.SetValue()")
+
+	updatedValue := testutil.RandomValue()
+	err = a.SetValue(key, updatedValue)
+	assert.NoError(t, err, "a.SetValue()")
+
+	storedValue, err := a.GetValue(key)
+	assert.NoError(t, err, "a.GetValue()")
+	assert.EqualValues(t, updatedValue, storedValue, "a.GetValue()")
 }
 
-// BenchmarkSaveValue benchmarks saving new segments.
-func (f Factory) BenchmarkSaveValue(b *testing.B) {
-	a := f.initAdapterB(b)
-	defer f.free(a)
+// BenchmarkSetValue benchmarks saving new segments.
+func (f Factory) BenchmarkSetValue(b *testing.B) {
+	a := f.initKeyValueStoreB(b)
+	defer f.freeKeyValueStore(a)
 
 	slice := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
@@ -50,16 +58,16 @@ func (f Factory) BenchmarkSaveValue(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
-		if err := a.SaveValue(slice[i], slice[i]); err != nil {
+		if err := a.SetValue(slice[i], slice[i]); err != nil {
 			b.Error(err)
 		}
 	}
 }
 
-// BenchmarkSaveValueParallel benchmarks saving new segments in parallel.
-func (f Factory) BenchmarkSaveValueParallel(b *testing.B) {
-	a := f.initAdapterB(b)
-	defer f.free(a)
+// BenchmarkSetValueParallel benchmarks saving new segments in parallel.
+func (f Factory) BenchmarkSetValueParallel(b *testing.B) {
+	a := f.initKeyValueStoreB(b)
+	defer f.freeKeyValueStore(a)
 
 	slice := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
@@ -74,7 +82,7 @@ func (f Factory) BenchmarkSaveValueParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := atomic.AddUint64(&counter, 1) - 1
-			if err := a.SaveValue(slice[i], slice[i]); err != nil {
+			if err := a.SetValue(slice[i], slice[i]); err != nil {
 				b.Error(err)
 			}
 		}
