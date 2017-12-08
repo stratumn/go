@@ -95,8 +95,10 @@ func TestCouchStore(t *testing.T) {
 	test = t
 	if *integration {
 		factory := storetestcases.Factory{
-			New:  newTestCouchStore,
-			Free: freeTestCouchStore,
+			New:               newTestCouchStoreAdapter,
+			NewKeyValueStore:  newTestCouchStoreKeyValue,
+			Free:              freeTestCouchStoreAdapter,
+			FreeKeyValueStore: freeTestCouchStoreKeyValue,
 		}
 
 		factory.RunStoreTests(t)
@@ -113,28 +115,43 @@ func TestCouchTMPop(t *testing.T) {
 	}
 }
 
-func newTestCouchStore() (store.Adapter, error) {
+func newTestCouchStore() (*CouchStore, error) {
 	config := &Config{
 		Address: fmt.Sprintf("http://%s:%s", domain, port),
 	}
 	return New(config)
 }
 
-func newTestCouchStoreTMPop() (store.Adapter, store.KeyValueStore, error) {
-	a, err := newTestCouchStore()
-	kv := a.(*CouchStore)
-	return a, kv, err
+func newTestCouchStoreAdapter() (store.Adapter, error) {
+	return newTestCouchStore()
 }
 
-func freeTestCouchStore(a store.Adapter) {
-	if err := a.(*CouchStore).deleteDatabase(dbLink); err != nil {
+func newTestCouchStoreKeyValue() (store.KeyValueStore, error) {
+	return newTestCouchStore()
+}
+
+func newTestCouchStoreTMPop() (store.Adapter, store.KeyValueStore, error) {
+	a, err := newTestCouchStore()
+	return a, a, err
+}
+
+func freeTestCouchStore(a *CouchStore) {
+	if err := a.deleteDatabase(dbLink); err != nil {
 		test.Fatal(err)
 	}
-	if err := a.(*CouchStore).deleteDatabase(dbEvidences); err != nil {
+	if err := a.deleteDatabase(dbEvidences); err != nil {
 		test.Fatal(err)
 	}
+}
+
+func freeTestCouchStoreAdapter(a store.Adapter) {
+	freeTestCouchStore(a.(*CouchStore))
+}
+
+func freeTestCouchStoreKeyValue(a store.KeyValueStore) {
+	freeTestCouchStore(a.(*CouchStore))
 }
 
 func freeTestCouchStoreTMPop(a store.Adapter, _ store.KeyValueStore) {
-	freeTestCouchStore(a)
+	freeTestCouchStoreAdapter(a)
 }
