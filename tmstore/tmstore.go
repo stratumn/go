@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tmpop"
@@ -50,7 +51,7 @@ const (
 	DefaultWsRetryInterval = 5 * time.Second
 )
 
-// TMStore is the type that implements github.com/stratumn/sdk/store.AdapterV2.
+// TMStore is the type that implements github.com/stratumn/sdk/store.Adapter.
 type TMStore struct {
 	config          *Config
 	storeEventChans []chan *store.Event
@@ -141,12 +142,12 @@ func (t *TMStore) notifyStoreChans(msg events.EventData) {
 	}
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel.
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel.
 func (t *TMStore) AddStoreEventChannel(storeChan chan *store.Event) {
 	t.storeEventChans = append(t.storeEventChans, storeChan)
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.AdapterV2.GetInfo.
+// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
 func (t *TMStore) GetInfo() (interface{}, error) {
 	response, err := t.sendQuery(tmpop.GetInfo, nil)
 	if err != nil {
@@ -281,9 +282,9 @@ func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 	return
 }
 
-// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
-func (t *TMStore) NewBatchV2() (store.BatchV2, error) {
-	return nil, nil
+// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+func (t *TMStore) NewBatch() (store.Batch, error) {
+	return bufferedbatch.NewBatch(t), nil
 }
 
 func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {

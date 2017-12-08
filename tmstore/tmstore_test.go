@@ -30,19 +30,19 @@ var (
 
 func TestTMStore(t *testing.T) {
 	storetestcases.Factory{
-		NewV2:  newTestTMStore,
-		FreeV2: resetTMPop,
-	}.RunTestsV2(t)
+		New:  newTestTMStore,
+		Free: resetTMPop,
+	}.RunStoreTests(t)
 }
 
-func newTestTMStore() (store.AdapterV2, error) {
+func newTestTMStore() (store.Adapter, error) {
 	tmstore = NewTestClient()
 	tmstore.RetryStartWebsocket(DefaultWsRetryInterval)
 
 	return tmstore, nil
 }
 
-func resetTMPop(_ store.AdapterV2) {
+func resetTMPop(_ store.Adapter) {
 	ResetNode()
 }
 
