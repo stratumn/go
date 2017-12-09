@@ -4,35 +4,25 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/agent/client"
+	"github.com/stretchr/testify/assert"
 )
 
-var agentUrl = "http://localhost:3000"
+var agentURL = "http://localhost:3000"
 
 func TestNewAgentClient(t *testing.T) {
-	client, err := client.NewAgentClient(agentUrl)
-	if err != nil {
-		t.Error(err)
-	}
-	if got, want := client.URL(), agentUrl; got != want {
-		t.Errorf("TestNewAgentClient : wrong default url, got %s, want %s\n", got, want)
-	}
+	client, err := client.NewAgentClient(agentURL)
+	assert.NoError(t, err)
+	assert.Equal(t, agentURL, client.URL())
 }
 
 func TestNewAgentClient_DefaultURL(t *testing.T) {
 	client, err := client.NewAgentClient("")
-	if err != nil {
-		t.Error(err)
-	}
-	want := "http://agent:3000"
-	if got := client.URL(); got != want {
-		t.Errorf("TestNewAgentClient : wrong default url, got %s, want %s\n", got, want)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, "http://agent:3000", client.URL())
 }
 
 func TestNewAgentClient_WrongURL(t *testing.T) {
-	agentUrl := "//http:\\"
-	_, err := client.NewAgentClient(agentUrl)
-	if err == nil {
-		t.Errorf("TestNewAgentClient_WrongURL should have failed, got err = %s, want %s", err, "parse //http:\\: invalid character \"\\\" in host name")
-	}
+	agentURL := "//http:\\"
+	_, err := client.NewAgentClient(agentURL)
+	assert.EqualError(t, err, "parse //http:\\: invalid character \"\\\\\" in host name")
 }

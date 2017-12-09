@@ -7,6 +7,8 @@ import (
 
 	"github.com/stratumn/sdk/agent"
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 )
 
 // DefaultURL is the default url for an agent
@@ -15,14 +17,22 @@ const DefaultURL = "http://agent"
 // DefaultPort is the default port for an agent
 const DefaultPort = "3000"
 
+//SegmentRef defines a format for a valid reference
+type SegmentRef struct {
+	LinkHash *types.Bytes32 `json:"linkHash"`
+	Process  string         `json:"process"`
+	Segment  *cs.Segment    `json:"segment"`
+	Meta     interface{}    `json:"meta"`
+}
+
 // AgentClient is the interface for an agent client
 // It can be used to access an agent's http endpoints
 type AgentClient interface {
-	CreateMap(process string, refs []map[string]string, args ...string) (*cs.Segment, error)
-	CreateSegment(process, linkHash, action string, refs []map[string]string, args ...string) (*cs.Segment, error)
-	FindSegments(process string, opts map[string]string) (cs.SegmentSlice, error)
+	CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error)
+	CreateLink(process, linkHash, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
+	FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error)
 	GetInfo() (*agent.Info, error)
-	GetMapIds(process string, opts map[string]string) (cs.SegmentSlice, error)
+	GetMapIds(filter *store.MapFilter) (cs.SegmentSlice, error)
 	GetProcesses() (agent.Processes, error)
 	GetSegment(process, linkHash string) (*cs.Segment, error)
 	URL() string
@@ -60,7 +70,7 @@ func (a *agentClient) GetInfo() (*agent.Info, error) {
 	return &agentInfo, nil
 }
 
-func (a *agentClient) CreateMap(process string, refs []map[string]string, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
 	seg := cs.Segment{}
 	return &seg, nil
 }
@@ -70,17 +80,17 @@ func (a *agentClient) GetSegment(process, linkHash string) (*cs.Segment, error) 
 	return &seg, nil
 }
 
-func (a *agentClient) FindSegments(process string, opts map[string]string) (cs.SegmentSlice, error) {
+func (a *agentClient) FindSegments(fitler *store.SegmentFilter) (cs.SegmentSlice, error) {
 	sgmts := cs.SegmentSlice{}
 	return sgmts, nil
 }
 
-func (a *agentClient) GetMapIds(process string, opts map[string]string) (cs.SegmentSlice, error) {
+func (a *agentClient) GetMapIds(filter *store.MapFilter) (cs.SegmentSlice, error) {
 	sgmts := cs.SegmentSlice{}
 	return sgmts, nil
 }
 
-func (a *agentClient) CreateSegment(process, linkHash, action string, refs []map[string]string, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateLink(process, linkHash, action string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
 	seg := cs.Segment{}
 	return &seg, nil
 }
