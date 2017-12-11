@@ -23,6 +23,7 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetesting"
+	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
 )
 
@@ -99,7 +100,7 @@ func TestBatch_GetSegment(t *testing.T) {
 		t.Errorf("link = %v want %v", got, want)
 	}
 
-	segment, err = batch.GetSegment(cstesting.RandomSegment().GetLinkHash())
+	segment, err = batch.GetSegment(testutil.RandomHash())
 	if got, want := err, notFoundErr; got != want {
 		t.Errorf("GetSegment should return an error: %s want %s", got, want)
 	}

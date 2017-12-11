@@ -67,94 +67,6 @@ func (s *Segment) SetLinkHash() error {
 // GetSegmentFunc is the function signature to retrieve a Segment
 type GetSegmentFunc func(linkHash *types.Bytes32) (*Segment, error)
 
-// Validate checks for errors in a segment.
-func (s *Segment) Validate(getSegment GetSegmentFunc) error {
-	if s.Meta.LinkHash == "" {
-		return errors.New("meta.linkHash should be a non empty string")
-	}
-	if process, ok := s.Link.Meta["process"].(string); !ok || process == "" {
-		return errors.New("link.meta.process should be a non empty string")
-	}
-	if mapID, ok := s.Link.Meta["mapId"].(string); !ok || mapID == "" {
-		return errors.New("link.meta.mapId should be a non empty string")
-	}
-	if v, ok := s.Link.Meta["prevLinkHash"]; ok {
-		if prevLinkHash, ok := v.(string); !ok || prevLinkHash == "" {
-			return errors.New("link.meta.prevLinkHash should be a non empty string")
-		}
-	}
-
-	if v, ok := s.Link.Meta["tags"]; ok {
-		tags, ok := v.([]interface{})
-		if !ok {
-			return errors.New("link.meta.tags should be an array of non empty string")
-		}
-		for _, t := range tags {
-			if tag, ok := t.(string); !ok || tag == "" {
-				return errors.New("link.meta.tags should be an array of non empty string")
-			}
-		}
-	}
-
-	if v, ok := s.Link.Meta["priority"]; ok {
-		if _, ok := v.(float64); !ok {
-			return errors.New("link.meta.priority should be a float64")
-		}
-	}
-
-	want, err := s.HashLink()
-	if err != nil {
-		return err
-	}
-	if got := s.GetLinkHashString(); want != got {
-		return errors.New("meta.linkHash is not in sync with link")
-	}
-
-	return s.validateReferences(getSegment)
-}
-
-func (s *Segment) validateReferences(getSegment GetSegmentFunc) error {
-	if refs, ok := s.Link.Meta["refs"].([]interface{}); ok {
-		for refIdx, refChild := range refs {
-			ref, ok := refChild.(map[string]interface{})
-			if !ok {
-				return errors.Errorf("link.meta.refs[%d] should be a map", refIdx)
-			}
-			if jsonSeg, ok := ref["segment"].(string); ok {
-				var seg Segment
-				if err := json.Unmarshal([]byte(jsonSeg), &seg); err != nil {
-					return errors.Errorf("link.meta.refs[%d].segment should be a valid json segment", refIdx)
-				}
-				if err := seg.Validate(getSegment); err != nil {
-					return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
-				}
-			} else {
-				process, ok := ref["process"].(string)
-				if !ok || process == "" {
-					return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
-				}
-				linkHashStr, ok := ref["linkHash"].(string)
-				if !ok || linkHashStr == "" {
-					return errors.Errorf("link.meta.refs[%d].linkHash should be a non empty string", refIdx)
-				}
-				linkHash, err := types.NewBytes32FromString(linkHashStr)
-				if err != nil {
-					return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
-				}
-				if s.Link.Meta["process"].(string) == process && getSegment != nil {
-					if seg, err := getSegment(linkHash); err != nil {
-						return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
-					} else if seg == nil {
-						return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
-					}
-				}
-				// Segment from another process is not retrieved because it could be in another store
-			}
-		}
-	}
-	return nil
-}
-
 // IsEmpty checks if a segment is empty (nil)
 func (s *Segment) IsEmpty() bool {
 	return reflect.DeepEqual(*s, Segment{})
@@ -288,6 +200,87 @@ func (l *Link) GetTagMap() map[string]struct{} {
 // It assumes the link is valid.
 func (l *Link) GetProcess() string {
 	return l.Meta["process"].(string)
+}
+
+// Validate checks for errors in a link.
+func (l *Link) Validate(getSegment GetSegmentFunc) error {
+	if process, ok := l.Meta["process"].(string); !ok || process == "" {
+		return errors.New("link.meta.process should be a non empty string")
+	}
+	if mapID, ok := l.Meta["mapId"].(string); !ok || mapID == "" {
+		return errors.New("link.meta.mapId should be a non empty string")
+	}
+	if v, ok := l.Meta["prevLinkHash"]; ok {
+		if prevLinkHash, ok := v.(string); !ok || prevLinkHash == "" {
+			return errors.New("link.meta.prevLinkHash should be a non empty string")
+		}
+	}
+
+	if v, ok := l.Meta["tags"]; ok {
+		tags, ok := v.([]interface{})
+		if !ok {
+			return errors.New("link.meta.tags should be an array of non empty string")
+		}
+		for _, t := range tags {
+			if tag, ok := t.(string); !ok || tag == "" {
+				return errors.New("link.meta.tags should be an array of non empty string")
+			}
+		}
+	}
+
+	if v, ok := l.Meta["priority"]; ok {
+		if _, ok := v.(float64); !ok {
+			return errors.New("link.meta.priority should be a float64")
+		}
+	}
+
+	if _, err := l.Hash(); err != nil {
+		return err
+	}
+
+	return l.validateReferences(getSegment)
+}
+
+func (l *Link) validateReferences(getSegment GetSegmentFunc) error {
+	if refs, ok := l.Meta["refs"].([]interface{}); ok {
+		for refIdx, refChild := range refs {
+			ref, ok := refChild.(map[string]interface{})
+			if !ok {
+				return errors.Errorf("link.meta.refs[%d] should be a map", refIdx)
+			}
+			if jsonSeg, ok := ref["segment"].(string); ok {
+				var seg Segment
+				if err := json.Unmarshal([]byte(jsonSeg), &seg); err != nil {
+					return errors.Errorf("link.meta.refs[%d].segment should be a valid json segment", refIdx)
+				}
+				if err := seg.Link.Validate(getSegment); err != nil {
+					return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
+				}
+			} else {
+				process, ok := ref["process"].(string)
+				if !ok || process == "" {
+					return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
+				}
+				linkHashStr, ok := ref["linkHash"].(string)
+				if !ok || linkHashStr == "" {
+					return errors.Errorf("link.meta.refs[%d].linkHash should be a non empty string", refIdx)
+				}
+				linkHash, err := types.NewBytes32FromString(linkHashStr)
+				if err != nil {
+					return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
+				}
+				if l.Meta["process"].(string) == process && getSegment != nil {
+					if seg, err := getSegment(linkHash); err != nil {
+						return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
+					} else if seg == nil {
+						return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
+					}
+				}
+				// Segment from another process is not retrieved because it could be in another store
+			}
+		}
+	}
+	return nil
 }
 
 // Segmentify returns a segment from a link,

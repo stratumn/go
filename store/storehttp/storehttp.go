@@ -222,15 +222,14 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
 
-	segment := link.Segmentify()
-	if err := segment.Validate(s.adapter.GetSegment); err != nil {
+	if err := link.Validate(s.adapter.GetSegment); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
 	if _, err := s.adapter.CreateLink(&link); err != nil {
 		return nil, err
 	}
 
-	return segment, nil
+	return link.Segmentify(), nil
 }
 
 func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {

@@ -44,7 +44,7 @@ func createRandomLink(adapter *store.Adapter, prepareLink func(l *cs.Link)) *cs.
 }
 
 func createLinkBranch(adapter *store.Adapter, parent *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
-	return createLink(adapter, cstesting.RandomLinkBranch(parent), prepareLink)
+	return createLink(adapter, cstesting.RandomBranch(parent), prepareLink)
 }
 
 // TestFindSegments tests what happens when you search with default pagination.

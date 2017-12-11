@@ -59,7 +59,7 @@ func (f Factory) TestCreateLinkUpdatedState(t *testing.T) {
 		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
 
-	l = cstesting.ChangeLinkState(l)
+	l = cstesting.ChangeState(l)
 	if _, err := a.CreateLink(l); err != nil {
 		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
@@ -76,7 +76,7 @@ func (f Factory) TestCreateLinkUpdatedMapID(t *testing.T) {
 		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
 
-	l2 := cstesting.ChangeLinkMapID(l1)
+	l2 := cstesting.ChangeMapID(l1)
 	if _, err := a.CreateLink(l2); err != nil {
 		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
@@ -93,7 +93,7 @@ func (f Factory) TestCreateLinkBranch(t *testing.T) {
 		t.Fatalf("a.CreateLink(): err: %s", err)
 	}
 
-	l = cstesting.RandomLinkBranch(l)
+	l = cstesting.RandomBranch(l)
 	if _, err := a.CreateLink(l); err != nil {
 		t.Fatalf("a.CreateLink(): err: %s", err)
 	}

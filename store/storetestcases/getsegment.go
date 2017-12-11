@@ -62,7 +62,7 @@ func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
 
 	l1 := cstesting.RandomLink()
 	linkHash1, _ := a.CreateLink(l1)
-	l2 := cstesting.ChangeLinkState(l1)
+	l2 := cstesting.ChangeState(l1)
 	a.CreateLink(l2)
 
 	got, err := a.GetSegment(linkHash1)
@@ -89,7 +89,7 @@ func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
 
 	l1 := cstesting.RandomLink()
 	linkHash1, _ := a.CreateLink(l1)
-	l2 := cstesting.ChangeLinkMapID(l1)
+	l2 := cstesting.ChangeMapID(l1)
 	a.CreateLink(l2)
 
 	got, err := a.GetSegment(linkHash1)

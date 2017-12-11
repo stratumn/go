@@ -20,49 +20,47 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/cs"
+	"github.com/stretchr/testify/assert"
 )
 
 func strEqual(lhs, rhs string) bool {
 	return lhs == rhs
 }
 
-func innerTestSegmentValidate(t *testing.T, s *cs.Segment, getSegment cs.GetSegmentFunc, want string, strComp func(lhs, rhs string) bool) {
-	s.SetLinkHash()
-	if err := s.Validate(getSegment); err == nil {
-		t.Error("s.Validate() = nil want Error")
-	} else if got := err.Error(); !strComp(got, want) {
-		t.Errorf("s.Validate() = %q want %q", got, want)
-	}
+func innerTestLinkValidate(t *testing.T, l *cs.Link, getSegment cs.GetSegmentFunc, want string, strComp func(lhs, rhs string) bool) {
+	err := l.Validate(getSegment)
+	assert.Error(t, err, "l.Validate() expected error")
+	assert.True(t, strComp(err.Error(), want), "Unexpected error:\n%s\n", want, err.Error())
 }
 
-func testSegmentValidateError(t *testing.T, s *cs.Segment, getSegment cs.GetSegmentFunc, want string) {
-	innerTestSegmentValidate(t, s, getSegment, want, strEqual)
+func testLinkValidateError(t *testing.T, l *cs.Link, getSegment cs.GetSegmentFunc, want string) {
+	innerTestLinkValidate(t, l, getSegment, want, strEqual)
 }
 
-func testSegmentValidateErrorWrapper(t *testing.T, s *cs.Segment, getSegment cs.GetSegmentFunc, want string) {
-	innerTestSegmentValidate(t, s, getSegment, want, strings.Contains)
+func testLinkValidateErrorWrapper(t *testing.T, l *cs.Link, getSegment cs.GetSegmentFunc, want string) {
+	innerTestLinkValidate(t, l, getSegment, want, strings.Contains)
 }
 
-func appendRefSegment(s, ref *cs.Segment) {
+func appendRefSegment(l, ref *cs.Link) {
 	var refs []interface{}
 	var present bool
-	if refs, present = s.Link.Meta["refs"].([]interface{}); !present {
+	if refs, present = l.Meta["refs"].([]interface{}); !present {
 		refs = []interface{}{}
 	}
-	marshalledRef, _ := json.Marshal(ref)
+	marshalledRef, _ := json.Marshal(ref.Segmentify())
 	refs = append(refs, map[string]interface{}{"segment": string(marshalledRef)})
-	s.Link.Meta["refs"] = refs
+	l.Meta["refs"] = refs
 }
 
-func appendRefLink(s *cs.Segment, process, linkHash string) {
+func appendRefLink(l *cs.Link, process, linkHash string) {
 	var refs []interface{}
 	var present bool
-	if refs, present = s.Link.Meta["refs"].([]interface{}); !present {
+	if refs, present = l.Meta["refs"].([]interface{}); !present {
 		refs = []interface{}{}
 	}
 	refs = append(refs, map[string]interface{}{
 		"process":  process,
 		"linkHash": linkHash,
 	})
-	s.Link.Meta["refs"] = refs
+	l.Meta["refs"] = refs
 }

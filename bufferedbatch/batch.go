@@ -36,12 +36,11 @@ func NewBatch(a store.Adapter) *Batch {
 
 // CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	segment := link.Segmentify()
-	if err := segment.Validate(b.GetSegment); err != nil {
+	if err := link.Validate(b.GetSegment); err != nil {
 		return nil, err
 	}
 	b.Links = append(b.Links, link)
-	return segment.GetLinkHash(), nil
+	return link.Hash()
 }
 
 // GetSegment returns a segment from the cache or delegates the call to the store.

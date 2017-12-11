@@ -75,7 +75,7 @@ func (s *State) Deliver(link *cs.Link) abci.Result {
 }
 
 func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) abci.Result {
-	err := link.Segmentify().Validate(batch.GetSegment)
+	err := link.Validate(batch.GetSegment)
 	if err != nil {
 		return abci.NewError(
 			CodeTypeValidation,
