@@ -18,9 +18,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/stratumn/sdk/utils"
-
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/sdk/utils"
 )
 
 var (

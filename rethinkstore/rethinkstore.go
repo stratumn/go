@@ -24,6 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
@@ -84,14 +85,13 @@ type Info struct {
 
 // Store is the type that implements github.com/stratumn/sdk/store.AdapterV2.
 type Store struct {
-	config       *Config
-	eventChans   []chan *store.Event
-	didSaveChans []chan *cs.Segment
-	session      *rethink.Session
-	db           rethink.Term
-	links        rethink.Term
-	evidences    rethink.Term
-	values       rethink.Term
+	config     *Config
+	eventChans []chan *store.Event
+	session    *rethink.Session
+	db         rethink.Term
+	links      rethink.Term
+	evidences  rethink.Term
+	values     rethink.Term
 }
 
 type linkWrapper struct {
@@ -149,15 +149,9 @@ func New(config *Config) (*Store, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel.
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel.
 func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
-}
-
-// AddDidSaveChannel implements
-// github.com/stratumn/sdk/fossilizer.Store.AddDidSaveChannel.
-func (a *Store) AddDidSaveChannel(saveChan chan *cs.Segment) {
-	a.didSaveChans = append(a.didSaveChans, saveChan)
 }
 
 // GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
@@ -168,24 +162,6 @@ func (a *Store) GetInfo() (interface{}, error) {
 		Version:     a.config.Version,
 		Commit:      a.config.Commit,
 	}, nil
-}
-
-// SaveSegment implements github.com/stratumn/sdk/store.Adapter.SaveSegment.
-func (a *Store) SaveSegment(segment *cs.Segment) (err error) {
-	var linkHash *types.Bytes32
-	if linkHash, err = a.CreateLink(&segment.Link); err != nil {
-		return err
-	}
-	for _, evidence := range segment.Meta.Evidences {
-		if err := a.AddEvidence(linkHash, evidence); err != nil {
-			return err
-		}
-	}
-	for _, ch := range a.didSaveChans {
-		ch <- segment
-	}
-
-	return nil
 }
 
 // CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
@@ -230,44 +206,6 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return linkHash, nil
 }
 
-// DeleteSegment implements github.com/stratumn/sdk/store.Adapter.DeleteSegment.
-func (a *Store) DeleteSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
-	res, err := a.links.
-		Get(linkHash[:]).
-		Delete(rethink.DeleteOpts{ReturnChanges: true}).
-		RunWrite(a.session)
-	if err != nil {
-		return nil, err
-	}
-	if res.Deleted < 1 {
-		return nil, nil
-	}
-
-	b, err := json.Marshal(res.Changes[0].OldValue)
-	if err != nil {
-		return nil, err
-	}
-
-	var w linkWrapper
-	if err := json.Unmarshal(b, &w); err != nil {
-		return nil, err
-	}
-	segment := w.Content.Segmentify()
-	if evidences, err := a.GetEvidences(segment.Meta.GetLinkHash()); evidences != nil && err == nil {
-		segment.Meta.Evidences = *evidences
-	}
-
-	res, err = a.evidences.
-		Get(linkHash[:]).
-		Delete().
-		RunWrite(a.session)
-	if err != nil {
-		return nil, err
-	}
-
-	return segment, nil
-}
-
 // GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
 func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	cur, err := a.links.Get(linkHash[:]).Run(a.session)
@@ -299,7 +237,6 @@ func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 	q := a.links
 
 	if filter.PrevLinkHash != nil {
-
 		if prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash); prevLinkHashBytes != nil && err == nil {
 			prevLinkHash = prevLinkHashBytes[:]
 		}
@@ -445,13 +382,7 @@ func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) erro
 		currentEvidences = &cs.Evidences{}
 	}
 
-	previousEvidence := currentEvidences.GetEvidence(evidence.Provider)
-	if previousEvidence != nil {
-		if previousEvidence.State == cs.PendingEvidence {
-			previousEvidence.State = evidence.State
-			previousEvidence.Proof = evidence.Proof
-		}
-	} else if err := currentEvidences.AddEvidence(*evidence); err != nil {
+	if err := currentEvidences.AddEvidence(*evidence); err != nil {
 		return err
 	}
 
@@ -510,11 +441,6 @@ func (a *Store) GetValue(key []byte) ([]byte, error) {
 	return w.Value, nil
 }
 
-// SaveValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
-func (a *Store) SaveValue(key, value []byte) error {
-	return a.SetValue(key, value)
-}
-
 // SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
 func (a *Store) SetValue(key, value []byte) error {
 	v := &valueWrapper{
@@ -552,12 +478,7 @@ func (a *Store) DeleteValue(key []byte) ([]byte, error) {
 
 // NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
 func (a *Store) NewBatch() (store.Batch, error) {
-	return NewBatch(a), nil
-}
-
-// NewBatchV2 implements github.com/stratumn/sdk/store.AdapterV2.NewBatchV2.
-func (a *Store) NewBatchV2() (store.BatchV2, error) {
-	return NewBatchV2(a), nil
+	return bufferedbatch.NewBatch(a), nil
 }
 
 // Create creates the database tables and indexes.

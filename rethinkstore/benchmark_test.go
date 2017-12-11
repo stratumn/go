@@ -22,39 +22,47 @@ import (
 )
 
 func BenchmarkStoreSoft(b *testing.B) {
-	storetestcases.Factory{
-		New: func() (store.Adapter, error) {
-			a, err := New(&Config{URL: "localhost:28015", DB: "test"})
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			return a, err
-		},
-		Free: func(a store.Adapter) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
-		},
-	}.RunBenchmarks(b)
+	RunBenchmark(b, false)
 }
 
 func BenchmarkStoreHard(b *testing.B) {
-	storetestcases.Factory{
+	RunBenchmark(b, true)
+}
+
+func RunBenchmark(b *testing.B, hard bool) {
+	factory := storetestcases.Factory{
 		New: func() (store.Adapter, error) {
-			a, err := New(&Config{
-				URL:  "localhost:28015",
-				DB:   "test",
-				Hard: true,
-			})
-			if err := a.Create(); err != nil {
-				return nil, err
-			}
-			return a, err
+			return createStoreB(hard)
+		},
+		NewKeyValueStore: func() (store.KeyValueStore, error) {
+			return createStoreB(hard)
 		},
 		Free: func(a store.Adapter) {
-			if err := a.(*Store).Drop(); err != nil {
-				panic(err)
-			}
+			freeStoreB(a.(*Store))
 		},
-	}.RunBenchmarks(b)
+		FreeKeyValueStore: func(a store.KeyValueStore) {
+			freeStoreB(a.(*Store))
+		},
+	}
+
+	factory.RunStoreBenchmarks(b)
+	factory.RunKeyValueStoreBenchmarks(b)
+}
+
+func createStoreB(hard bool) (*Store, error) {
+	a, err := New(&Config{
+		URL:  "localhost:28015",
+		DB:   "test",
+		Hard: true,
+	})
+	if err := a.Create(); err != nil {
+		return nil, err
+	}
+	return a, err
+}
+
+func freeStoreB(s *Store) {
+	if err := s.Drop(); err != nil {
+		panic(err)
+	}
 }

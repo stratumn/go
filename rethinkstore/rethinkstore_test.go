@@ -48,49 +48,46 @@ func TestExists(t *testing.T) {
 }
 
 func TestStore(t *testing.T) {
-	storetestcases.Factory{
-		New:  createAdapter,
-		Free: freeAdapter,
-	}.RunTests(t)
+	factory := storetestcases.Factory{
+		New:               createAdapter,
+		NewKeyValueStore:  createKeyValueStore,
+		Free:              freeAdapter,
+		FreeKeyValueStore: freeKeyValueStore,
+	}
+
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
 }
 
-func TestStoreV2(t *testing.T) {
-	storetestcases.Factory{
-		NewV2:  createAdapterV2,
-		FreeV2: freeAdapterV2,
-	}.RunTestsV2(t)
+func createStore() (*Store, error) {
+	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})
+	if err != nil {
+		return nil, err
+	}
+	if err := a.Create(); err != nil {
+		return nil, err
+	}
+	return a, err
 }
 
 func createAdapter() (store.Adapter, error) {
-	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})
-	if err != nil {
-		return nil, err
+	return createStore()
+}
+
+func createKeyValueStore() (store.KeyValueStore, error) {
+	return createStore()
+}
+
+func freeStore(a *Store) {
+	if err := a.Clean(); err != nil {
+		panic(err)
 	}
-	if err := a.Create(); err != nil {
-		return nil, err
-	}
-	return a, err
 }
 
 func freeAdapter(a store.Adapter) {
-	if err := a.(*Store).Clean(); err != nil {
-		panic(err)
-	}
+	freeStore(a.(*Store))
 }
 
-func createAdapterV2() (store.AdapterV2, error) {
-	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})
-	if err != nil {
-		return nil, err
-	}
-	if err := a.Create(); err != nil {
-		return nil, err
-	}
-	return a, err
-}
-
-func freeAdapterV2(a store.AdapterV2) {
-	if err := a.(*Store).Clean(); err != nil {
-		panic(err)
-	}
+func freeKeyValueStore(a store.KeyValueStore) {
+	freeStore(a.(*Store))
 }
