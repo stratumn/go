@@ -29,12 +29,12 @@ type SegmentRef struct {
 // It can be used to access an agent's http endpoints
 type AgentClient interface {
 	CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error)
-	CreateLink(process, linkHash, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
+	CreateLink(process string, linkHash types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
 	FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error)
 	GetInfo() (*agent.Info, error)
 	GetMapIds(filter *store.MapFilter) (cs.SegmentSlice, error)
 	GetProcesses() (agent.Processes, error)
-	GetSegment(process, linkHash string) (*cs.Segment, error)
+	GetSegment(process string, linkHash types.Bytes32) (*cs.Segment, error)
 	URL() string
 }
 
@@ -75,12 +75,12 @@ func (a *agentClient) CreateMap(process string, refs []SegmentRef, args ...strin
 	return &seg, nil
 }
 
-func (a *agentClient) GetSegment(process, linkHash string) (*cs.Segment, error) {
+func (a *agentClient) GetSegment(process string, linkHash types.Bytes32) (*cs.Segment, error) {
 	seg := cs.Segment{}
 	return &seg, nil
 }
 
-func (a *agentClient) FindSegments(fitler *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *agentClient) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	sgmts := cs.SegmentSlice{}
 	return sgmts, nil
 }
@@ -90,7 +90,7 @@ func (a *agentClient) GetMapIds(filter *store.MapFilter) (cs.SegmentSlice, error
 	return sgmts, nil
 }
 
-func (a *agentClient) CreateLink(process, linkHash, action string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateLink(process string, linkHash types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
 	seg := cs.Segment{}
 	return &seg, nil
 }
