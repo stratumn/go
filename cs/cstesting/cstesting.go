@@ -91,7 +91,6 @@ func RandomSegment() *cs.Segment {
 // RandomEvidence creates a random evidence.
 func RandomEvidence() *cs.Evidence {
 	return &cs.Evidence{
-		State:    cs.CompleteEvidence,
 		Provider: testutil.RandomString(12),
 		Backend:  "generic",
 	}

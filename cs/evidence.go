@@ -21,14 +21,6 @@ import (
 	"fmt"
 )
 
-const (
-	// CompleteEvidence characterizes a Complete Evidence.
-	CompleteEvidence = "COMPLETE"
-
-	// PendingEvidence characterizes a Pending Evidence.
-	PendingEvidence = "PENDING"
-)
-
 // DeserializeMethods maps a proof backend (like "TMPop") to a deserializer function returning a specific proof
 var DeserializeMethods = make(map[string]func(json.RawMessage) (Proof, error), 0)
 
@@ -66,7 +58,6 @@ func (e *Evidences) FindEvidences(backend string) (res Evidences) {
 
 // Evidence contains data that can be used to externally verify a segment's proof of existence
 type Evidence struct {
-	State    string `json:"state"`    // "QUEUED", "PENDING", "COMPLETE"
 	Backend  string `json:"backend"`  // can either be "TMPop", "bitcoin", "dummy"...
 	Provider string `json:"provider"` // can either be a chainId (in case of a blockchain) or an identifier for a trusted third-party (timestamping authority, regulator...)
 	Proof    Proof  `json:"proof"`
@@ -75,7 +66,6 @@ type Evidence struct {
 // UnmarshalJSON serialize bytes into an Evidence
 func (e *Evidence) UnmarshalJSON(data []byte) error {
 	serialized := struct {
-		State    string          `json:"state"`
 		Backend  string          `json:"backend"`
 		Provider string          `json:"provider"`
 		Proof    json.RawMessage `json:"proof"`
@@ -92,7 +82,6 @@ func (e *Evidence) UnmarshalJSON(data []byte) error {
 	}
 
 	*e = Evidence{
-		State:    serialized.State,
 		Backend:  serialized.Backend,
 		Provider: serialized.Provider,
 		Proof:    proof,

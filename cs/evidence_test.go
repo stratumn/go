@@ -41,7 +41,6 @@ var (
 	}
 
 	TestEvidence = cs.Evidence{
-		State:    "COMPLETE",
 		Provider: TestChainId,
 		Backend:  "generic",
 		Proof: &cs.GenericProof{
@@ -54,7 +53,6 @@ var (
 
 	JSONTestWrongEvidences = `
 		[{
-			"state": "COMPLETE",
 			"backend": "random",
 			"provider": "testChain",
 			"proof": {}
@@ -63,19 +61,16 @@ var (
 	JSONTestEvidences = `
 		[
 		{
-			"state": "COMPLETE",
 			"backend": "generic",
 			"provider": "testChain0",
 			"proof": {}
 		},
 		{
-			"state": "COMPLETE",
 			"backend": "dummy",
 			"provider": "testChain1",
 			"proof": {}
 		},
 		{
-			"state": "COMPLETE",
 			"backend": "batch",
 			"provider": "testChain2",
 			"proof": {
@@ -89,13 +84,11 @@ var (
 
 		},
 		{
-			"state": "PENDING",
 			"backend": "bcbatch",
 			"provider": "testChain3",
 			"proof": {}
 		},
 		{
-			"state": "COMPLETE",
 			"backend": "TMPop",
 			"provider": "testChain4",
 			"proof": {

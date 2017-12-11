@@ -490,47 +490,6 @@ func TestFindEvidences(t *testing.T) {
 	}
 }
 
-func TestMergeMeta(t *testing.T) {
-	s1 := cstesting.RandomSegment()
-	e1 := TestEvidence
-	e1.State = cs.PendingEvidence
-	s1.Meta.AddEvidence(e1)
-
-	s2 := cstesting.RandomSegment()
-	s2.Meta.LinkHash = s1.Meta.LinkHash
-	e2 := TestEvidence
-	e2.Provider = "xyz"
-	s2.Meta.AddEvidence(e2)
-
-	t.Run("MergeMetaOK", func(t *testing.T) {
-		s1_complete := cstesting.RandomSegment()
-		s1_complete.Meta.LinkHash = s1.GetLinkHashString()
-		e1_complete := TestEvidence
-		s1_complete.Meta.AddEvidence(e1_complete)
-		if _, err := s1.MergeMeta(s1_complete); err != nil {
-			t.Errorf("Segment.MergeMeta(): %s", err)
-		}
-
-		s1, err := s1.MergeMeta(s2)
-		if err != nil {
-			t.Errorf("Segment.MergeMeta(): %s", err)
-		}
-		if len(s1.Meta.Evidences) != 2 {
-			t.Errorf("Segment.MergeMeta(): len(s1.Meta.Evidences) = %d, want %d", len(s1.Meta.Evidences), 2)
-		}
-		if s1.Meta.GetEvidence(e1.Provider).State == cs.PendingEvidence {
-			t.Errorf("Segment.MergeMeta(): Evidence state is %s, want %s", cs.PendingEvidence, cs.CompleteEvidence)
-		}
-	})
-
-	t.Run("MergeMetaDifferentLinkHash", func(t *testing.T) {
-		s2.Meta.LinkHash = "SomethingElse"
-		if _, err := s1.MergeMeta(s2); err == nil {
-			t.Errorf("Segment.MergeMeta(): should have failed")
-		}
-	})
-}
-
 func TestEmptySegment(t *testing.T) {
 	if got, want := cstesting.RandomSegment().IsEmpty(), false; got != want {
 		t.Errorf("IsEmpty = %t want %t", got, want)

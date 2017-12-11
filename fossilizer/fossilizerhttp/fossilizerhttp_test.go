@@ -114,7 +114,7 @@ func TestFossilize(t *testing.T) {
 	defer l.Close()
 	h := &resultHandler{
 		t: t, listener: l,
-		want: "{\"state\":\"\",\"backend\":\"\",\"provider\":\"\",\"proof\":null}",
+		want: "{\"backend\":\"\",\"provider\":\"\",\"proof\":null}",
 		done: make(chan struct{}),
 	}
 	go http.Serve(l, h)

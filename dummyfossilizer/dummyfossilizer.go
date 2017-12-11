@@ -117,7 +117,6 @@ func (a *DummyFossilizer) AddResultChan(resultChan chan *fossilizer.Result) {
 func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 	r := &fossilizer.Result{
 		Evidence: cs.Evidence{
-			State:    cs.CompleteEvidence,
 			Backend:  Name,
 			Provider: Name,
 			Proof: &DummyProof{

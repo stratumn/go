@@ -388,7 +388,6 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 		)
 
 		evidence := cs.Evidence{
-			State:    cs.CompleteEvidence,
 			Backend:  Name,
 			Provider: Name,
 			Proof: &evidences.BatchProof{
