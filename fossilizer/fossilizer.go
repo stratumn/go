@@ -24,7 +24,7 @@ type Adapter interface {
 	// Returns arbitrary information about the adapter.
 	GetInfo() (interface{}, error)
 
-	// Adds a channel that receives revents from the fossilizer
+	// Adds a channel that receives events from the fossilizer
 	AddFossilizerEventChan(chan *Event)
 
 	// Requests data to be fossilized.
