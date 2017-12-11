@@ -90,7 +90,7 @@ type MockBatchGetMapIDs struct {
 	Fn func(filter *store.MapFilter) ([]string, error)
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.BatchV2.CreateLink.
+// CreateLink implements github.com/stratumn/sdk/store.Batch.CreateLink.
 func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)

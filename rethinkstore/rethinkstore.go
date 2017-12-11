@@ -83,7 +83,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// Store is the type that implements github.com/stratumn/sdk/store.AdapterV2.
+// Store is the type that implements github.com/stratumn/sdk/store.Adapter.
 type Store struct {
 	config     *Config
 	eventChans []chan *store.Event

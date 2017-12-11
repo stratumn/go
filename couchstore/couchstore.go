@@ -98,7 +98,7 @@ func (c *CouchStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.AdapterV2.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel
 func (c *CouchStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	c.eventChans = append(c.eventChans, eventChan)
 }
