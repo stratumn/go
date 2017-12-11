@@ -81,7 +81,7 @@ type Batch interface {
 }
 
 // Adapter is the minimal interface that all stores should implement.
-// Then a store may optionnally implement the KeyValueStore interface.
+// Then a store may optionally implement the KeyValueStore interface.
 type Adapter interface {
 	SegmentReader
 	LinkWriter
