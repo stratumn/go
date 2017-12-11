@@ -48,18 +48,13 @@ type Factory struct {
 
 // RunKeyValueStoreTests runs all the tests for the key value store interface.
 func (f Factory) RunKeyValueStoreTests(t *testing.T) {
-	t.Run("TestSaveValue", f.TestSaveValue)
-	t.Run("TestGetValue", f.TestGetValue)
-	t.Run("TestGetValueNotFound", f.TestGetValueNotFound)
-	t.Run("TestDeleteValue", f.TestDeleteValue)
-	t.Run("TestDeleteValueNotFound", f.TestDeleteValueNotFound)
+	t.Run("TestKeyValueStore", f.TestKeyValueStore)
 }
 
 // RunStoreTests runs all the tests for the store adapter interface.
 func (f Factory) RunStoreTests(t *testing.T) {
-	// Notifications
-	t.Run("TestLinkSavedChannel", f.TestLinkSavedChannel)
-	t.Run("TestEvidenceAddedChannel", f.TestEvidenceAddedChannel)
+	// Store notifications
+	t.Run("TestStoreEvents", f.TestStoreEvents)
 	// Store info
 	t.Run("GetInfo", f.TestGetInfo)
 	// Find segments
@@ -100,14 +95,13 @@ func (f Factory) RunStoreTests(t *testing.T) {
 	t.Run("TestCreateLinkUpdatedState", f.TestCreateLinkUpdatedState)
 	t.Run("TestCreateLinkUpdatedMapID", f.TestCreateLinkUpdatedMapID)
 	t.Run("TestCreateLinkBranch", f.TestCreateLinkBranch)
-	// Add evidence
-	t.Run("TestAddEvidences", f.TestAddEvidences)
-	t.Run("TestAddDuplicateEvidences", f.TestAddDuplicateEvidences)
 	// Batch
 	t.Run("TestBatchCreateLink", f.TestBatchCreateLink)
 	t.Run("TestBatchWriteCreateLink", f.TestBatchWriteCreateLink)
 	t.Run("TestBatchFindSegments", f.TestBatchFindSegments)
 	t.Run("TestBatchGetMapIDs", f.TestBatchGetMapIDs)
+	// Evidence store
+	t.Run("EvidenceStore", f.TestEvidenceStore)
 }
 
 // RunStoreBenchmarks runs all the benchmarks for the store adapter interface.
