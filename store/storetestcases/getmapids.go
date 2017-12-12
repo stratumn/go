@@ -24,87 +24,18 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestGetMapIDs tests what happens when you get map IDs with default
-// pagination.
+// TestGetMapIDs tests what happens when you get map IDs.
 func (f Factory) TestGetMapIDs(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	for i := 0; i < store.DefaultLimit; i++ {
-		for j := 0; j < store.DefaultLimit; j++ {
-			l := cstesting.RandomLink()
-			l.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			a.CreateLink(l)
-		}
-	}
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit * store.DefaultLimit}})
-	if err != nil {
-		t.Fatalf("a.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		mapID := fmt.Sprintf("map%d", i)
-		if !testutil.ContainsString(slice, mapID) {
-			t.Errorf("slice does not contain %q", mapID)
-		}
-	}
-}
-
-// TestGetMapIDsPagination tests what happens when you get map IDs with
-// pagination.
-func (f Factory) TestGetMapIDsPagination(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
-			link := cstesting.RandomLink()
-			link.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			a.CreateLink(link)
-		}
-	}
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 3, Limit: 5}})
-	if err != nil {
-		t.Fatalf("a.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(slice), 5; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestGetMapIDsEmpty tests what happens when you should get no map IDs.
-func (f Factory) TestGetMapIDsEmpty(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Offset: 100000, Limit: 5}})
-	if err != nil {
-		t.Fatalf("a.GetMapIDs(): err: %s", err)
-	}
-
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestGetMapIDsByProcess tests what happens when you get map IDs filtered by process name.
-func (f Factory) TestGetMapIDsByProcess(t *testing.T) {
-	var processNames = [2]string{"Foo", "Bar"}
-
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		for j := 0; j < store.DefaultLimit; j++ {
+	processNames := [2]string{"Foo", "Bar"}
+	testPageSize := 3
+	for i := 0; i < testPageSize; i++ {
+		for j := 0; j < testPageSize; j++ {
 			l := cstesting.RandomLink()
 			l.Meta["mapId"] = fmt.Sprintf("map%d", i)
 			l.Meta["process"] = processNames[i%2]
@@ -112,21 +43,51 @@ func (f Factory) TestGetMapIDsByProcess(t *testing.T) {
 		}
 	}
 
-	slice, err := a.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit * store.DefaultLimit}, Process: processNames[0]})
-	if err != nil {
-		t.Fatalf("a.GetMapIDsByProcess(): err: %s", err)
-	}
+	t.Run("Getting all map IDs should work", func(t *testing.T) {
+		slice, err := a.GetMapIDs(&store.MapFilter{
+			Pagination: store.Pagination{Limit: testPageSize * testPageSize},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, testPageSize, len(slice), "Invalid number of map IDs")
 
-	if got, want := len(slice), store.DefaultLimit/2; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-
-	for i := 0; i < store.DefaultLimit; i += 2 {
-		mapID := fmt.Sprintf("map%d", i)
-		if !testutil.ContainsString(slice, mapID) {
-			t.Errorf("slice does not contain %q", mapID)
+		for i := 0; i < testPageSize; i++ {
+			mapID := fmt.Sprintf("map%d", i)
+			assert.True(t, testutil.ContainsString(slice, mapID),
+				"slice does not contain %s", mapID)
 		}
-	}
+	})
+
+	t.Run("Map ID pagination should work", func(t *testing.T) {
+		slice, err := a.GetMapIDs(&store.MapFilter{
+			Pagination: store.Pagination{Offset: 1, Limit: 2},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(slice), "Invalid number of map IDs found")
+	})
+
+	t.Run("Map ID outside pagination limits should return an empty slice", func(t *testing.T) {
+		slice, err := a.GetMapIDs(&store.MapFilter{
+			Pagination: store.Pagination{Offset: 100000, Limit: 5},
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(slice), "Invalid number of map IDs found")
+	})
+
+	t.Run("Filtering by process should work", func(t *testing.T) {
+		processName := processNames[0]
+		slice, err := a.GetMapIDs(&store.MapFilter{
+			Pagination: store.Pagination{Limit: testPageSize * testPageSize},
+			Process:    processName,
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(slice), "Invalid number of maps for %s", processName)
+
+		for i := 0; i < testPageSize; i += 2 {
+			expectedMapID := fmt.Sprintf("map%d", i)
+			assert.True(t, testutil.ContainsString(slice, expectedMapID),
+				"slice does not contain %q", expectedMapID)
+		}
+	})
 }
 
 // BenchmarkGetMapIDs benchmarks getting map IDs.
