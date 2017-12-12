@@ -144,11 +144,9 @@ func (t *TMStore) notifyStoreChans() {
 		log.Warn("TMPoP pending events could not be unmarshalled.")
 	}
 
-	if len(pendingEvents) > 0 {
-		for _, event := range pendingEvents {
-			for _, c := range t.storeEventChans {
-				c <- event
-			}
+	for _, event := range pendingEvents {
+		for _, c := range t.storeEventChans {
+			c <- event
 		}
 	}
 }
