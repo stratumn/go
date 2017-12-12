@@ -22,6 +22,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestCreateLink tests what happens when you create a new link.
@@ -29,74 +30,50 @@ func (f Factory) TestCreateLink(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	l := cstesting.RandomLink()
-	if _, err := a.CreateLink(l); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
-}
+	t.Run("CreateLink should not produce an error", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		_, err := a.CreateLink(l)
+		assert.NoError(t, err, "a.CreateLink()")
+	})
 
-// TestCreateLinkNoPriority tests what happens when you create a new link with no priority.
-func (f Factory) TestCreateLinkNoPriority(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
+	t.Run("CreateLink with no priority should not produce an error", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		delete(l.Meta, "priority")
 
-	l := cstesting.RandomLink()
-	delete(l.Meta, "priority")
+		_, err := a.CreateLink(l)
+		assert.NoError(t, err, "a.CreateLink()")
+	})
 
-	if _, err := a.CreateLink(l); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
-}
+	t.Run("CreateLink and update state should not produce an error", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		_, err := a.CreateLink(l)
+		assert.NoError(t, err, "a.CreateLink()")
 
-// TestCreateLinkUpdatedState tests what happens when you update the state of a
-// link.
-func (f Factory) TestCreateLinkUpdatedState(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
+		l = cstesting.ChangeState(l)
+		_, err = a.CreateLink(l)
+		assert.NoError(t, err, "a.CreateLink()")
+	})
 
-	l := cstesting.RandomLink()
-	if _, err := a.CreateLink(l); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
+	t.Run("CreateLink and update map ID should not produce an error", func(t *testing.T) {
+		l1 := cstesting.RandomLink()
+		_, err := a.CreateLink(l1)
+		assert.NoError(t, err, "a.CreateLink()")
 
-	l = cstesting.ChangeState(l)
-	if _, err := a.CreateLink(l); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
-}
+		l2 := cstesting.ChangeMapID(l1)
+		_, err = a.CreateLink(l2)
+		assert.NoError(t, err, "a.CreateLink()")
 
-// TestCreateLinkUpdatedMapID tests what happens when you update the map ID of
-// a link.
-func (f Factory) TestCreateLinkUpdatedMapID(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
+	})
 
-	l1 := cstesting.RandomLink()
-	if _, err := a.CreateLink(l1); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
+	t.Run("CreateLink with previous link hash should not produce an error", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		_, err := a.CreateLink(l)
+		assert.NoError(t, err, "a.CreateLink()")
 
-	l2 := cstesting.ChangeMapID(l1)
-	if _, err := a.CreateLink(l2); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
-}
-
-// TestCreateLinkBranch tests what happens when you create a link with a
-// previous link hash.
-func (f Factory) TestCreateLinkBranch(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l := cstesting.RandomLink()
-	if _, err := a.CreateLink(l); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
-
-	l = cstesting.RandomBranch(l)
-	if _, err := a.CreateLink(l); err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
+		l = cstesting.RandomBranch(l)
+		_, err = a.CreateLink(l)
+		assert.NoError(t, err, "a.CreateLink()")
+	})
 }
 
 // BenchmarkCreateLink benchmarks creating new links.

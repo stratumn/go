@@ -90,11 +90,7 @@ func (f Factory) RunStoreTests(t *testing.T) {
 	t.Run("TestGetSegmentWithEvidences", f.TestGetSegmentWithEvidences)
 	t.Run("TestGetSegmentNotFound", f.TestGetSegmentNotFound)
 	// Create link
-	t.Run("TestCreateLink", f.TestCreateLink)
-	t.Run("TestCreateLinkNoPriority", f.TestCreateLinkNoPriority)
-	t.Run("TestCreateLinkUpdatedState", f.TestCreateLinkUpdatedState)
-	t.Run("TestCreateLinkUpdatedMapID", f.TestCreateLinkUpdatedMapID)
-	t.Run("TestCreateLinkBranch", f.TestCreateLinkBranch)
+	t.Run("Test creating links", f.TestCreateLink)
 	// Batch
 	t.Run("Test Batch implementation", f.TestBatch)
 	// Evidence store
