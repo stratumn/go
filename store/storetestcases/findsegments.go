@@ -15,10 +15,8 @@
 package storetestcases
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"sync/atomic"
 	"testing"
 
@@ -27,697 +25,303 @@ import (
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 )
 
 var emptyPrevLinkHash = ""
 
-func createLink(adapter *store.Adapter, link *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
+func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
 	if prepareLink != nil {
 		prepareLink(link)
 	}
-	(*adapter).CreateLink(link)
+	adapter.CreateLink(link)
 	return link
 }
 
-func createRandomLink(adapter *store.Adapter, prepareLink func(l *cs.Link)) *cs.Link {
+func createRandomLink(adapter store.Adapter, prepareLink func(l *cs.Link)) *cs.Link {
 	return createLink(adapter, cstesting.RandomLink(), prepareLink)
 }
 
-func createLinkBranch(adapter *store.Adapter, parent *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
+func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
 	return createLink(adapter, cstesting.RandomBranch(parent), prepareLink)
 }
 
-// TestFindSegments tests what happens when you search with default pagination.
+func verifyPriorityOrdering(t *testing.T, slice cs.SegmentSlice) {
+	wantLTE := 100.0
+	for _, s := range slice {
+		got := s.Link.GetPriority()
+		assert.True(t, got <= wantLTE, "Invalid priority")
+		wantLTE = got
+	}
+}
+
+func verifyResultsCount(t *testing.T, err error, slice cs.SegmentSlice, expectedCount int) {
+	assert.NoError(t, err)
+	assert.NotNil(t, slice)
+	assert.Equal(t, expectedCount, len(slice), "Invalid number of results")
+}
+
+// TestFindSegments tests what happens when you search for segments with various filters.
 func (f Factory) TestFindSegments(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	for i := 0; i < store.DefaultLimit*2; i++ {
-		createRandomLink(&a, nil)
-	}
+	// Setup a test fixture with segments matching different types of filters
 
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
+	testPageSize := 3
+	segmentsTotalCount := 8
+
+	createRandomLink(a, func(l *cs.Link) {
+		l.Meta["mapId"] = "map1"
+		delete(l.Meta, "prevLinkHash")
+		l.Meta["process"] = "Foo"
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-
-	wantLTE := 100.0
-	for _, s := range slice {
-		got := s.Link.GetPriority()
-		if got > wantLTE {
-			t.Errorf("priority = %f want <= %f", got, wantLTE)
-		}
-		wantLTE = got
-	}
-}
-
-// TestFindSegmentsPagination tests what happens when you search with
-// pagination.
-func (f Factory) TestFindSegmentsPagination(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < 100; i++ {
-		createRandomLink(&a, nil)
-	}
-
-	limit := 10 + rand.Intn(10)
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Offset: rand.Intn(40),
-			Limit:  limit,
-		},
+	createRandomLink(a, func(l *cs.Link) {
+		l.Meta["tags"] = []interface{}{"tag1", "tag42"}
+		l.Meta["mapId"] = "map2"
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got, want := len(slice), limit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-
-	wantLTE := 100.0
-	for _, s := range slice {
-		got := s.Link.GetPriority()
-		if got > wantLTE {
-			t.Errorf("priority = %f want <= %f", got, wantLTE)
-		}
-		wantLTE = got
-	}
-}
-
-// TestFindSegmentEmpty tests what happens when there are no matches.
-func (f Factory) TestFindSegmentEmpty(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < 100; i++ {
-		createRandomLink(&a, nil)
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Tags: []string{"blablabla"},
+	createRandomLink(a, func(l *cs.Link) {
+		l.Meta["tags"] = []interface{}{"tag2"}
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
+	link4 := createRandomLink(a, nil)
+	linkHash4, _ := link4.Hash()
 
-// TestFindSegmentsSingleTag tests what happens when you search with only one
-// tag.
-func (f Factory) TestFindSegmentsSingleTag(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	tag1 := testutil.RandomString(5)
-	tag2 := testutil.RandomString(5)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
-		})
-	}
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{tag1, tag2, testutil.RandomString(5)}
-		})
-	}
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, nil)
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 3,
-		},
-		Tags: []string{tag1},
+	createLinkBranch(a, link4, func(l *cs.Link) {
+		l.Meta["tags"] = []interface{}{"tag1", testutil.RandomString(5)}
+		l.Meta["mapId"] = "map1"
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got, want := len(slice), store.DefaultLimit*2; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsMultipleTags tests what happens when you search with more
-// than one tag.
-func (f Factory) TestFindSegmentsMultipleTags(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	tag1 := testutil.RandomString(5)
-	tag2 := testutil.RandomString(5)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
-		})
-	}
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{tag1, tag2, testutil.RandomString(5)}
-		})
-	}
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, nil)
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 3,
-		},
-		Tags: []string{tag2, tag1},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsMapID tests whan happens when you search for an existing map
-// ID.
-func (f Factory) TestFindSegmentsMapID(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < 2; i++ {
-		for j := 0; j < store.DefaultLimit; j++ {
-			createRandomLink(&a, func(l *cs.Link) {
-				l.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			})
-		}
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 2,
-		},
-		MapIDs: []string{"map1"},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsMapIDs tests whan happens when you search for several existing map
-// IDs.
-func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < 3; i++ {
-		for j := 0; j < store.DefaultLimit; j++ {
-			createRandomLink(&a, func(l *cs.Link) {
-				l.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			})
-		}
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 3,
-		},
-		MapIDs: []string{"map1", "map2"},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), store.DefaultLimit*2; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsMapIDTags tests whan happens when you search for an existing
-// map ID and tags.
-func (f Factory) TestFindSegmentsMapIDTags(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	tag1 := testutil.RandomString(5)
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = "map1"
-			l.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
-		})
-	}
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = "map1"
-			l.Meta["tags"] = []interface{}{testutil.RandomString(5)}
-		})
-	}
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = "map2"
-			l.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
-		})
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 3,
-		},
-		MapIDs: []string{"map1"},
-		Tags:   []string{tag1},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsMapIDNotFound tests whan happens when you search for a
-// nonexistent map ID.
-func (f Factory) TestFindSegmentsMapIDNotFound(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-		MapIDs: []string{testutil.RandomString(10)},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsLinkHashesMultiMatch tests searching for segments by a slice of
-// linkHashes with multiple matches.
-func (f Factory) TestFindSegmentsLinkHashesMultiMatch(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	link1 := createRandomLink(&a, nil)
-	link2 := createRandomLink(&a, nil)
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, nil)
-	}
-
-	linkHash1, _ := link1.Hash()
-	linkHash2, _ := link2.Hash()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		LinkHashes: []*types.Bytes32{
-			linkHash1,
-			testutil.RandomHash(),
-			linkHash2,
-		},
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), 2; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsLinkHashesWithProcess tests matching a linkHash will fail
-// if the provided process attribute does not match.
-func (f Factory) TestFindSegmentsLinkHashesWithProcess(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	link1 := createRandomLink(&a, nil)
-	link2 := createRandomLink(&a, func(l *cs.Link) {
-		l.Meta["process"] = "Baz"
-	})
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, nil)
-	}
-
-	linkHash1, _ := link1.Hash()
-	linkHash2, _ := link2.Hash()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		LinkHashes: []*types.Bytes32{
-			linkHash1,
-			linkHash2,
-		},
-		Process: "Baz",
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), 1; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsLinkHashesNoMatch tests searching for segments by a slice of
-// linkHashes will return emtpy slice when there are no matches.
-func (f Factory) TestFindSegmentsLinkHashesNoMatch(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, nil)
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		LinkHashes: []*types.Bytes32{
-			testutil.RandomHash(),
-			testutil.RandomHash(),
-		},
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsEmptyPrevLinkHash tests what happens when you search for an
-// existing previous link hash.
-func (f Factory) TestFindSegmentsEmptyPrevLinkHash(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l := createRandomLink(&a, func(l *cs.Link) {
+	link6 := createRandomLink(a, func(l *cs.Link) {
+		l.Meta["tags"] = []interface{}{"tag2", "tag42"}
+		l.Meta["process"] = "Foo"
 		delete(l.Meta, "prevLinkHash")
 	})
+	linkHash6, _ := link6.Hash()
 
-	for i := 0; i < store.DefaultLimit; i++ {
-		createLinkBranch(&a, l, nil)
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, PrevLinkHash: &emptyPrevLinkHash})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got := slice; got == nil {
-		t.Fatal("slice = nil want cs.SegmentSlice")
-	}
-	if got, want := len(slice), 1; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsPrevLinkHash tests whan happens when you search for an
-// existing previous link hash.
-func (f Factory) TestFindSegmentsPrevLinkHash(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l := createRandomLink(&a, nil)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createLinkBranch(&a, l, nil)
-	}
-
-	prevLinkHash, _ := l.HashString()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 2,
-		},
-		PrevLinkHash: &prevLinkHash,
+	createRandomLink(a, func(l *cs.Link) {
+		l.Meta["mapId"] = "map2"
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
+	createLinkBranch(a, link4, nil)
 
-// TestFindSegmentsPrevLinkHashTags tests whan happens when you search for a
-// previous link hash and tags.
-func (f Factory) TestFindSegmentsPrevLinkHashTags(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l1 := createRandomLink(&a, nil)
-	tag1 := testutil.RandomString(5)
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createLinkBranch(&a, l1, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
+	t.Run("Should order by priority", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: testPageSize,
+			},
 		})
-	}
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createLinkBranch(&a, l1, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{testutil.RandomString(5)}
-		})
-	}
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["tags"] = []interface{}{tag1, testutil.RandomString(5)}
-		})
-	}
-
-	prevLinkHash, _ := l1.HashString()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 3,
-		},
-		PrevLinkHash: &prevLinkHash,
-		Tags:         []string{tag1},
+		verifyResultsCount(t, err, slice, testPageSize)
+		verifyPriorityOrdering(t, slice)
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got := slice; got == nil {
-		t.Fatal("slice = nit want cs.SegmentSlice")
-	}
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsPrevLinkHashGoodMapID tests that map IDs match with
-// segments found with the given previous link hash.
-func (f Factory) TestFindSegmentsPrevLinkHashGoodMapID(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l1 := createRandomLink(&a, nil)
-	var mapID1 = l1.Meta["mapId"].(string)
-	l2 := createRandomLink(&a, nil)
-	var mapID2 = l2.Meta["mapId"].(string)
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createLinkBranch(&a, l1, nil)
-		createLinkBranch(&a, l2, nil)
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = mapID1
+	t.Run("Should support pagination", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Offset: testPageSize,
+				Limit:  testPageSize,
+			},
 		})
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = mapID2
-		})
-	}
-
-	prevLinkHash, _ := l1.HashString()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 2,
-		},
-		PrevLinkHash: &prevLinkHash,
-		MapIDs:       []string{mapID1, mapID2},
+		verifyResultsCount(t, err, slice, testPageSize)
+		verifyPriorityOrdering(t, slice)
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got := slice; got == nil {
-		t.Fatal("slice = nil want cs.SegmentSlice")
-	}
-	if got, want := len(slice), store.DefaultLimit; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsPrevLinkHashBadMapID tests that map IDs invalidate all
-// segments found with the given previous link hash.
-func (f Factory) TestFindSegmentsPrevLinkHashBadMapID(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l1 := createRandomLink(&a, nil)
-	var mapID1 = l1.Meta["mapId"].(string)
-	l2 := createRandomLink(&a, nil)
-	var mapID2 = l2.Meta["mapId"].(string)
-
-	for j := 0; j < store.DefaultLimit; j++ {
-		createLinkBranch(&a, l1, nil)
-		createLinkBranch(&a, l2, nil)
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = mapID1
+	t.Run("Should return no results for invalid tag filter", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Tags: []string{"blablabla"},
 		})
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["mapId"] = mapID2
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports tags filtering", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Tags: []string{"tag1"},
 		})
-	}
-
-	prevLinkHash, _ := l1.HashString()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit * 2,
-		},
-		PrevLinkHash: &prevLinkHash,
-		MapIDs:       []string{mapID2},
+		verifyResultsCount(t, err, slice, 2)
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got := slice; got == nil {
-		t.Fatal("slice = nil want cs.SegmentSlice")
-	}
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentsPrevLinkHashNotFound tests whan happens when you search for a
-// nonexistent previous link hash.
-func (f Factory) TestFindSegmentsPrevLinkHashNotFound(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	notFoundPrevLinkHash := testutil.RandomHash().String()
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-		PrevLinkHash: &notFoundPrevLinkHash,
-	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
-
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentWithGoodProcess tests what happens when you search with a process name filter.
-func (f Factory) TestFindSegmentWithGoodProcess(t *testing.T) {
-	var processNames = [4]string{"Foo", "Bar", "Yin", "Yang"}
-
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < store.DefaultLimit; i++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["process"] = processNames[i%len(processNames)]
+	t.Run("Supports filtering on multiple tags", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Tags: []string{"tag2", "tag42"},
 		})
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-		Process: processNames[0],
+		verifyResultsCount(t, err, slice, 1)
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got, want := len(slice), store.DefaultLimit/len(processNames); got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
-}
-
-// TestFindSegmentWithBadProcess tests what happens when you search with an unexisting process name.
-func (f Factory) TestFindSegmentWithBadProcess(t *testing.T) {
-	var processNames = [2]string{"Foo", "Bar"}
-
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	for i := 0; i < store.DefaultLimit*2; i++ {
-		createRandomLink(&a, func(l *cs.Link) {
-			l.Meta["process"] = processNames[i%2]
+	t.Run("Supports filtering on map ID", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDs: []string{"map1"},
 		})
-	}
-
-	slice, err := a.FindSegments(&store.SegmentFilter{
-		Pagination: store.Pagination{
-			Limit: store.DefaultLimit,
-		},
-		Process: "Baz",
+		verifyResultsCount(t, err, slice, 2)
 	})
-	if err != nil {
-		t.Fatalf("a.FindSegments(): err: %s", err)
-	}
 
-	if got, want := len(slice), 0; got != want {
-		t.Errorf("len(slice) = %d want %d", got, want)
-	}
+	t.Run("Supports filtering on multiple map IDs", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDs: []string{"map1", "map2"},
+		})
+		verifyResultsCount(t, err, slice, 4)
+	})
+
+	t.Run("Supports filtering on map ID and tag at the same time", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDs: []string{"map1"},
+			Tags:   []string{"tag1"},
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Returns no results for map ID not found", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDs: []string{"yolo42000"},
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports filtering on link hashes", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			LinkHashes: []*types.Bytes32{
+				linkHash4,
+				testutil.RandomHash(),
+				linkHash6,
+			},
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+		})
+		verifyResultsCount(t, err, slice, 2)
+	})
+
+	t.Run("Supports filtering on link hash and process at the same time", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			LinkHashes: []*types.Bytes32{
+				linkHash4,
+				linkHash6,
+			},
+			Process: "Foo",
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Should return no results for unknown link hashes", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			LinkHashes: []*types.Bytes32{
+				testutil.RandomHash(),
+				testutil.RandomHash(),
+			},
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports filtering for segments with empty previous link hash", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination:   store.Pagination{Limit: segmentsTotalCount},
+			PrevLinkHash: &emptyPrevLinkHash,
+		})
+		verifyResultsCount(t, err, slice, 2)
+	})
+
+	t.Run("Supports filtering by previous link hash", func(t *testing.T) {
+		prevLinkHash := linkHash4.String()
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			PrevLinkHash: &prevLinkHash,
+		})
+		verifyResultsCount(t, err, slice, 2)
+	})
+
+	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
+		prevLinkHash := linkHash4.String()
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			PrevLinkHash: &prevLinkHash,
+			Tags:         []string{"tag1"},
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
+		prevLinkHash := linkHash4.String()
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			PrevLinkHash: &prevLinkHash,
+			MapIDs:       []string{"map1", "map2"},
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Returns no result when filtering on good previous link hash but invalid map ID", func(t *testing.T) {
+		prevLinkHash := linkHash4.String()
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			PrevLinkHash: &prevLinkHash,
+			MapIDs:       []string{"map2"},
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Returns no result for previous link hash not found", func(t *testing.T) {
+		notFoundPrevLinkHash := testutil.RandomHash().String()
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			PrevLinkHash: &notFoundPrevLinkHash,
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports filtering by process", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Process: "Foo",
+		})
+		verifyResultsCount(t, err, slice, 2)
+	})
+
+	t.Run("Returns no result for process not found", func(t *testing.T) {
+		slice, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Process: "Bar",
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
 }
 
 // BenchmarkFindSegments benchmarks finding segments.

@@ -53,40 +53,13 @@ func (f Factory) RunKeyValueStoreTests(t *testing.T) {
 
 // RunStoreTests runs all the tests for the store adapter interface.
 func (f Factory) RunStoreTests(t *testing.T) {
-	// Store notifications
 	t.Run("Test store events", f.TestStoreEvents)
-	// Store info
-	t.Run("GetInfo", f.TestGetInfo)
-	// Find segments
-	t.Run("TestFindSegments", f.TestFindSegments)
-	t.Run("TestFindSegmentsPagination", f.TestFindSegmentsPagination)
-	t.Run("TestFindSegmentEmpty", f.TestFindSegmentEmpty)
-	t.Run("TestFindSegmentsSingleTag", f.TestFindSegmentsSingleTag)
-	t.Run("TestFindSegmentsMultipleTags", f.TestFindSegmentsMultipleTags)
-	t.Run("TestFindSegmentsMapID", f.TestFindSegmentsMapID)
-	t.Run("TestFindSegmentsMapIDs", f.TestFindSegmentsMapIDs)
-	t.Run("TestFindSegmentsMapIDTags", f.TestFindSegmentsMapIDTags)
-	t.Run("TestFindSegmentsMapIDNotFound", f.TestFindSegmentsMapIDNotFound)
-	t.Run("TestFindSegmentsLinkHashesMultiMatch", f.TestFindSegmentsLinkHashesMultiMatch)
-	t.Run("TestFindSegmentsLinkHashesWithProcess", f.TestFindSegmentsLinkHashesWithProcess)
-	t.Run("TestFindSegmentsLinkHashesNoMatch", f.TestFindSegmentsLinkHashesNoMatch)
-	t.Run("TestFindSegmentsEmptyPrevLinkHash", f.TestFindSegmentsEmptyPrevLinkHash)
-	t.Run("TestFindSegmentsPrevLinkHash", f.TestFindSegmentsPrevLinkHash)
-	t.Run("TestFindSegmentsPrevLinkHashTags", f.TestFindSegmentsPrevLinkHashTags)
-	t.Run("TestFindSegmentsPrevLinkHashGoodMapID", f.TestFindSegmentsPrevLinkHashGoodMapID)
-	t.Run("TestFindSegmentsPrevLinkHashBadMapID", f.TestFindSegmentsPrevLinkHashBadMapID)
-	t.Run("TestFindSegmentsPrevLinkHashNotFound", f.TestFindSegmentsPrevLinkHashNotFound)
-	t.Run("TestFindSegmentWithGoodProcess", f.TestFindSegmentWithGoodProcess)
-	t.Run("TestFindSegmentWithBadProcess", f.TestFindSegmentWithBadProcess)
-	// Map ids
+	t.Run("Test store info", f.TestGetInfo)
+	t.Run("Test finding segments", f.TestFindSegments)
 	t.Run("Test getting map IDs", f.TestGetMapIDs)
-	// Get segment
 	t.Run("Test getting segments", f.TestGetSegment)
-	// Create link
 	t.Run("Test creating links", f.TestCreateLink)
-	// Batch
 	t.Run("Test batch implementation", f.TestBatch)
-	// Evidence store
 	t.Run("Test evidence store", f.TestEvidenceStore)
 }
 
