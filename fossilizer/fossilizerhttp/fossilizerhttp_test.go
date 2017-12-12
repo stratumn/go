@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -83,33 +81,6 @@ func TestFossilize(t *testing.T) {
 		return nil
 	}
 
-	config := &Config{
-		MinDataLen: 2,
-		MaxDataLen: 16,
-	}
-
-	s := New(a, config, &jsonhttp.Config{}, &jsonws.BasicConfig{}, &jsonws.BufferedConnConfig{})
-
-	go s.Start()
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	defer s.Shutdown(ctx)
-	defer cancel()
-
-	<-ready
-
-	// Mock result endpoint.
-	l, err := net.Listen("tcp", ":8888")
-	if err != nil {
-		t.Fatalf("net.Listen(): err: %s", err)
-	}
-	defer l.Close()
-	h := &resultHandler{
-		t: t, listener: l,
-		want: "{\"backend\":\"\",\"provider\":\"\",\"proof\":null}",
-		done: make(chan struct{}),
-	}
-	go http.Serve(l, h)
-
 	// Make request.
 	req := httptest.NewRequest("POST", "/fossils", nil)
 	req.Form = url.Values{}
@@ -118,8 +89,6 @@ func TestFossilize(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
-
-	fmt.Println(w)
 
 	if got, want := w.Code, http.StatusOK; got != want {
 		t.Errorf("w.StatusCode = %d want %d", got, want)
