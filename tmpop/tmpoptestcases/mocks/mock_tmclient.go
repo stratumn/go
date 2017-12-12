@@ -17,7 +17,6 @@ package tmpoptestcasesmocks
 import (
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stretchr/testify/mock"
-	events "github.com/tendermint/tmlibs/events"
 )
 
 // MockedTendermintClient is a mock for the tmpop.TendermintClient interface
@@ -27,13 +26,7 @@ type MockedTendermintClient struct {
 
 // AllowCalls allows any call to go through the mock without throwing errors
 func (m *MockedTendermintClient) AllowCalls() {
-	m.On("FireEvent", mock.Anything, mock.Anything)
 	m.On("Block", mock.Anything)
-}
-
-// FireEvent mocks firing an event to Tendermint
-func (m *MockedTendermintClient) FireEvent(event string, data events.EventData) {
-	m.Called(event, data)
 }
 
 // Block returns an empty block

@@ -15,8 +15,6 @@
 package tmpoptestcases
 
 import (
-	"encoding/json"
-	"reflect"
 	"testing"
 
 	abci "github.com/tendermint/abci/types"
@@ -26,6 +24,7 @@ import (
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 )
 
 // TestQuery tests each query request type implemented by TMPop
@@ -45,22 +44,14 @@ func (f Factory) TestQuery(t *testing.T) {
 
 	t.Run("Info() returns correct last seen height and app hash", func(t *testing.T) {
 		abciInfo := h.Info(abci.RequestInfo{})
-		if abciInfo.LastBlockHeight != 3 {
-			t.Errorf("Invalid LastBlockHeight: expected %d, got %d",
-				3, abciInfo.LastBlockHeight)
-		}
+		assert.Equal(t, uint64(3), abciInfo.LastBlockHeight)
 	})
 
 	t.Run("GetInfo() correctly returns name", func(t *testing.T) {
 		info := &tmpop.Info{}
 		err := makeQuery(h, tmpop.GetInfo, nil, info)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if info.Name != tmpop.Name {
-			t.Errorf("h.Query(): expected GetInfo to return name %v, got %v", info.Name, tmpop.Name)
-		}
+		assert.NoError(t, err)
+		assert.EqualValues(t, tmpop.Name, info.Name)
 	})
 
 	t.Run("AddEvidence() adds an external evidence", func(t *testing.T) {
@@ -72,24 +63,16 @@ func (f Factory) TestQuery(t *testing.T) {
 			linkHash2,
 			evidence,
 		}
-		if err := makeQuery(h, tmpop.AddEvidence, evidenceRequest, nil); err != nil {
-			t.Fatal(err)
-		}
+		err := makeQuery(h, tmpop.AddEvidence, evidenceRequest, nil)
+		assert.NoError(t, err)
 
 		got := &cs.Segment{}
-		if err := makeQuery(h, tmpop.GetSegment, linkHash2, got); err != nil {
-			t.Fatal(err)
-		}
-
-		if len(got.Meta.Evidences) != 1 {
-			t.Fatalf("Segment should have an evidence added")
-		}
+		err = makeQuery(h, tmpop.GetSegment, linkHash2, got)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(got.Meta.Evidences), "Segment should have an evidence added")
 
 		storedEvidence := got.Meta.GetEvidence("1")
-		if storedEvidence.Backend != evidence.Backend || storedEvidence.Provider != evidence.Provider {
-			t.Errorf("Unexpected evidence stored: got %v, want %v",
-				storedEvidence, evidence)
-		}
+		assert.True(t, storedEvidence.Backend == evidence.Backend && storedEvidence.Provider == evidence.Provider)
 	})
 
 	t.Run("GetSegment()", func(t *testing.T) {
@@ -108,19 +91,11 @@ func (f Factory) TestQuery(t *testing.T) {
 		}
 		gots := cs.SegmentSlice{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(gots) != 1 {
-			t.Fatalf("h.Query(): unexpected size for FindSegments result, got %v", gots)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(gots), "Unexpected number of segments")
 
 		got := gots[0]
-		if want, got := *link2, got.Link; !reflect.DeepEqual(want, got) {
-			gotJS, _ := json.MarshalIndent(got, "", "  ")
-			wantJS, _ := json.MarshalIndent(want, "", "  ")
-			t.Errorf("h.Query(): expected FindSegments to return %s, got %s", wantJS, gotJS)
-		}
+		assert.EqualValues(t, link2, &got.Link)
 	})
 
 	t.Run("FindSegments() skips invalid links", func(t *testing.T) {
@@ -132,17 +107,12 @@ func (f Factory) TestQuery(t *testing.T) {
 		}
 		gots := cs.SegmentSlice{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(gots) != 2 {
-			t.Fatalf("h.Query(): unexpected size for FindSegments result, got %v", gots)
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(gots), "Unexpected number of segments")
 
 		for _, segment := range gots {
-			if segment.GetLinkHash().Equals(invalidLinkHash) {
-				t.Errorf("Invalid segment found in FindSegments")
-			}
+			assert.NotEqual(t, *invalidLinkHash, *segment.GetLinkHash(),
+				"Invalid segment found in FindSegments")
 		}
 	})
 
@@ -155,13 +125,8 @@ func (f Factory) TestQuery(t *testing.T) {
 
 		var got []string
 		err := makeQuery(h, tmpop.GetMapIDs, args, &got)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 2 {
-			t.Errorf("Invalid number of maps found: expected %d, got %d",
-				2, len(got))
-		}
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(got), "Unexpected number of maps")
 
 		mapIdsFound := make(map[string]bool)
 		for _, mapID := range got {
@@ -169,26 +134,32 @@ func (f Factory) TestQuery(t *testing.T) {
 		}
 
 		for _, mapID := range []string{link1.GetMapID(), link2.GetMapID()} {
-			if _, found := mapIdsFound[mapID]; found == false {
-				t.Errorf("Couldn't find map id %s", mapID)
-			}
+			_, found := mapIdsFound[mapID]
+			assert.True(t, found, "Couldn't find map id %s", mapID)
 		}
+	})
+
+	t.Run("Pending events are delivered only once", func(t *testing.T) {
+		var events []*store.Event
+		err := makeQuery(h, tmpop.PendingEvents, nil, &events)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(events), "We should have two saved links events (no evidence since Tendermint Core is not connected)")
+
+		err = makeQuery(h, tmpop.PendingEvents, nil, &events)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(events), "Events should not be delivered twice")
 	})
 
 	t.Run("Unsupported Query", func(t *testing.T) {
 		q := h.Query(abci.RequestQuery{
 			Path: "Unsupported",
 		})
-		if got, want := q.GetCode(), abci.CodeType_UnknownRequest; got != want {
-			t.Errorf("h.Query(): expected unsupported query to return %v, got %v", want, got)
-		}
+		assert.EqualValues(t, abci.CodeType_UnknownRequest, q.GetCode())
 
 		q = h.Query(abci.RequestQuery{
 			Path:   tmpop.FindSegments,
 			Height: 12,
 		})
-		if got, want := q.GetCode(), abci.CodeType_InternalError; got != want {
-			t.Errorf("h.Query(): expected unsupported query to return %v, got %v", want, got)
-		}
+		assert.EqualValues(t, abci.CodeType_InternalError, q.GetCode())
 	})
 }

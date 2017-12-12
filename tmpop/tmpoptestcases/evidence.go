@@ -26,7 +26,6 @@ import (
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
 	"github.com/stratumn/sdk/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -36,8 +35,6 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	defer f.free()
 
 	tmClientMock := new(tmpoptestcasesmocks.MockedTendermintClient)
-	tmClientMock.On("FireEvent", mock.Anything, mock.Anything)
-
 	h.ConnectTendermint(tmClientMock)
 
 	// First block contains an invalid link
@@ -96,21 +93,25 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 			types.NewBytes32FromBytes(nil),
 			tree.Root())
 		assert.EqualValues(t, expectedAppHash[:], appHash, "Invalid app hash generated")
+	})
 
-		evidenceEventFired := false
-		for _, tmClientCall := range tmClientMock.Calls {
-			if tmClientCall.Method != "FireEvent" {
-				continue
-			}
+	t.Run("Creates evidence events when block is signed", func(t *testing.T) {
+		var events []*store.Event
+		err := makeQuery(h, tmpop.PendingEvents, nil, &events)
+		assert.NoError(t, err)
 
-			storeEvent := tmClientCall.Arguments.Get(1).(tmpop.StoreEventsData).StoreEvent
-			if storeEvent.EventType == store.SavedEvidences {
-				evidenceEvents := storeEvent.Data.(map[string]*cs.Evidence)
-				assert.Equal(t, 2, len(evidenceEvents), "Two evidences should have been notified")
-				evidenceEventFired = true
+		var evidenceEvents []*store.Event
+		for _, event := range events {
+			if event.EventType == store.SavedEvidences {
+				evidenceEvents = append(evidenceEvents, event)
 			}
 		}
-		assert.True(t, evidenceEventFired, "Missing evidence event")
+
+		assert.Equal(t, 1, len(evidenceEvents), "Invalid number of events")
+		savedEvidences := evidenceEvents[0].Data.(map[string]*cs.Evidence)
+		assert.Equal(t, 2, len(savedEvidences), "Invalid number of evidence produced")
+		assert.NotNil(t, savedEvidences[linkHash1.String()], "Evidence missing for %x", *linkHash1)
+		assert.NotNil(t, savedEvidences[linkHash2.String()], "Evidence missing for %x", *linkHash2)
 	})
 
 	t.Run("Does not add evidence right after commit", func(t *testing.T) {

@@ -71,6 +71,7 @@ type TMPop struct {
 	config        *Config
 	currentHeader *abci.Header
 	tmClient      TendermintClient
+	eventsManager eventsManager
 }
 
 const (
@@ -207,7 +208,7 @@ func (t *TMPop) Commit() abci.Result {
 		return abci.NewError(abci.CodeType_InternalError, err.Error())
 	}
 
-	t.notifyCreatedLinks(links)
+	t.eventsManager.AddSavedLinks(links)
 
 	t.lastBlock.AppHash = appHash
 	t.lastBlock.Height = t.currentHeader.Height
@@ -215,22 +216,6 @@ func (t *TMPop) Commit() abci.Result {
 	saveLastBlock(t.kvDB, *t.lastBlock)
 
 	return abci.NewResultOK(appHash[:], "")
-}
-
-func (t *TMPop) notifyCreatedLinks(links []*cs.Link) {
-	if t.tmClient == nil {
-		log.Warn("TMPoP not connected to Tendermint Core. Notifications will not be delivered.")
-		return
-	}
-
-	if len(links) > 0 {
-		savedEvent := store.NewSavedLinks()
-		for _, link := range links {
-			savedEvent.AddSavedLink(link)
-		}
-
-		t.tmClient.FireEvent(StoreEvents, StoreEventsData{StoreEvent: savedEvent})
-	}
 }
 
 // Query implements github.com/tendermint/abci/types.Application.Query.
@@ -300,6 +285,9 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		}
 
 		result, err = t.adapter.GetMapIDs(filter)
+
+	case PendingEvents:
+		result = t.eventsManager.GetPendingEvents()
 
 	default:
 		resQuery.Code = abci.CodeType_UnknownRequest
@@ -399,8 +387,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		linksPositions[lh] = i
 	}
 
-	evidenceEvent := store.NewSavedEvidences()
-	evidenceAdded := false
+	newEvidences := make(map[*types.Bytes32]*cs.Evidence)
 	for _, tx := range block.Txs {
 		// We only create evidence for valid transactions
 		linkHash, _ := tx.Link.Hash()
@@ -424,12 +411,9 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 				log.Warnf("Evidence could not be added to local store: %v", err)
 			}
 
-			evidenceEvent.AddSavedEvidence(linkHash, evidence)
-			evidenceAdded = true
+			newEvidences[linkHash] = evidence
 		}
 	}
 
-	if evidenceAdded {
-		t.tmClient.FireEvent(StoreEvents, StoreEventsData{StoreEvent: evidenceEvent})
-	}
+	t.eventsManager.AddSavedEvidences(newEvidences)
 }

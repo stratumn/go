@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/tmpop"
 	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
 	"github.com/stretchr/testify/assert"
@@ -34,10 +34,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 	t.Run("Check valid link returns ok", func(t *testing.T) {
 		_, tx := makeCreateRandomLinkTx(t)
 		res := h.CheckTx(tx)
-
-		if !res.IsOK() {
-			t.Errorf("Expected CheckTx to return an OK result, got %v", res)
-		}
+		assert.True(t, res.IsOK(), "Expected CheckTx to return an OK result, got %v", res)
 	})
 
 	t.Run("Check link with invalid reference returns not-ok", func(t *testing.T) {
@@ -50,9 +47,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 
 		res := h.CheckTx(tx)
 
-		if res.Code != tmpop.CodeTypeValidation {
-			t.Errorf("Expected CheckTx to return an error, got %v", res)
-		}
+		assert.EqualValues(t, tmpop.CodeTypeValidation, res.Code)
 	})
 
 	t.Run("Check link with uncommitted but checked reference returns ok", func(t *testing.T) {
@@ -69,9 +64,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 
 		res = h.CheckTx(tx)
 
-		if !res.IsOK() {
-			t.Errorf("Expected CheckTx to return an OK result, got %v", res)
-		}
+		assert.True(t, res.IsOK(), "Expected CheckTx to return an OK result, got %v", res)
 	})
 }
 
@@ -86,9 +79,7 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		_, tx := makeCreateRandomLinkTx(t)
 		res := h.DeliverTx(tx)
 
-		if !res.IsOK() {
-			t.Errorf("Expected DeliverTx to return an OK result, got %v", res)
-		}
+		assert.True(t, res.IsOK(), "Expected DeliverTx to return an OK result, got %v", res)
 	})
 
 	t.Run("Deliver link referencing a checked but not delivered link returns an error", func(t *testing.T) {
@@ -104,9 +95,7 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		tx = makeCreateLinkTx(t, linkWithRef)
 		res = h.DeliverTx(tx)
 
-		if res.Code != tmpop.CodeTypeValidation {
-			t.Errorf("Expected DeliverTx to return an error, got %v", res)
-		}
+		assert.EqualValues(t, tmpop.CodeTypeValidation, res.Code)
 	})
 }
 
@@ -143,14 +132,18 @@ func (f Factory) TestCommitTx(t *testing.T) {
 		}
 	})
 
-	t.Run("Commit fires an event to notify that links were created", func(t *testing.T) {
-		tmClientMock.AssertNumberOfCalls(t, "FireEvent", 1)
-		eventsCall := tmClientMock.Calls[0]
-		events := eventsCall.Arguments.Get(1).(tmpop.StoreEventsData)
-		assert.EqualValues(t, store.SavedLinks, events.StoreEvent.EventType)
-		links := events.StoreEvent.Data.([]*cs.Link)
-		assert.Exactly(t, 2, len(links), "Invalid number of links")
-		assert.EqualValues(t, link1, links[0], "Invalid link")
-		assert.EqualValues(t, link2, links[1], "Invalid link")
+	t.Run("Committed link events are saved and can be queried", func(t *testing.T) {
+		var events []*store.Event
+		err := makeQuery(h, tmpop.PendingEvents, nil, &events)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(events), "Invalid number of events")
+
+		savedEvent := events[0]
+		assert.EqualValues(t, store.SavedLinks, savedEvent.EventType)
+
+		savedLinks := savedEvent.Data.([]*cs.Link)
+		assert.Equal(t, 2, len(savedLinks), "Invalid number of links")
+		assert.EqualValues(t, link1, savedLinks[0])
+		assert.EqualValues(t, link2, savedLinks[1])
 	})
 }

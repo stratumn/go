@@ -18,12 +18,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
-	events "github.com/tendermint/tmlibs/events"
 )
 
 // TendermintClient is a light interface to query Tendermint Core
 type TendermintClient interface {
-	FireEvent(event string, data events.EventData)
 	Block(height int) *Block
 }
 
@@ -43,11 +41,6 @@ func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 	return &TendermintClientWrapper{
 		tmClient: tmClient,
 	}
-}
-
-// FireEvent fires an event through Tendermint Core
-func (c *TendermintClientWrapper) FireEvent(event string, data events.EventData) {
-	c.tmClient.FireEvent(event, data)
 }
 
 // Block queries for a block at a specific height

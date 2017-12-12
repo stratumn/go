@@ -31,6 +31,7 @@ import (
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tmlibs/events"
 
 	log "github.com/sirupsen/logrus"
@@ -101,8 +102,8 @@ func (t *TMStore) StartWebsocket() error {
 	}
 
 	// TMPoP notifies us of store events that we forward to clients
-	t.tmClient.AddListenerForEvent("TMStore", tmpop.StoreEvents, func(msg events.EventData) {
-		go t.notifyStoreChans(msg)
+	t.tmClient.AddListenerForEvent("TMStore", tmtypes.EventStringNewBlock(), func(_ events.EventData) {
+		go t.notifyStoreChans()
 	})
 
 	log.Info("Connected to TMPoP")
@@ -131,14 +132,24 @@ func (t *TMStore) StopWebsocket() {
 	t.tmClient.Stop()
 }
 
-func (t *TMStore) notifyStoreChans(msg events.EventData) {
-	storeEvent, ok := msg.(tmpop.StoreEventsData)
-	if !ok {
-		log.Debug("Event could not be read as a store event")
+func (t *TMStore) notifyStoreChans() {
+	var pendingEvents []*store.Event
+	response, err := t.sendQuery(tmpop.PendingEvents, nil)
+	if err != nil || response.Value == nil {
+		log.Warn("Could not get pending events from TMPoP.")
 	}
 
-	for _, c := range t.storeEventChans {
-		c <- storeEvent.StoreEvent
+	err = json.Unmarshal(response.Value, &pendingEvents)
+	if err != nil {
+		log.Warn("TMPoP pending events could not be unmarshalled.")
+	}
+
+	if len(pendingEvents) > 0 {
+		for _, event := range pendingEvents {
+			for _, c := range t.storeEventChans {
+				c <- event
+			}
+		}
 	}
 }
 

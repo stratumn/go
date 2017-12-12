@@ -15,17 +15,54 @@
 package tmpop
 
 import (
+	"sync"
+
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
-	events "github.com/tendermint/tmlibs/events"
+	"github.com/stratumn/sdk/types"
 )
 
-// Event types.
-const (
-	StoreEvents = "StoreEvents"
-)
+// Tendermint doesn't allow us to fire arbitrary events to notify TMStore.
+// So instead we store pending events here, and TMStore will query them
+// when a new block is produced.
+type eventsManager struct {
+	pendingEvents []*store.Event
+	lock          sync.Mutex
+}
 
-// StoreEventsData is the type that contains data sent by TMPoP to listeners
-type StoreEventsData struct {
-	events.EventData
-	StoreEvent *store.Event
+func (e *eventsManager) AddSavedLinks(links []*cs.Link) {
+	if len(links) > 0 {
+		savedEvent := store.NewSavedLinks()
+		for _, link := range links {
+			savedEvent.AddSavedLink(link)
+		}
+
+		e.lock.Lock()
+		defer e.lock.Unlock()
+		e.pendingEvents = append(e.pendingEvents, savedEvent)
+	}
+}
+
+func (e *eventsManager) AddSavedEvidences(evidences map[*types.Bytes32]*cs.Evidence) {
+	if len(evidences) > 0 {
+		evidenceEvent := store.NewSavedEvidences()
+		for linkHash, evidence := range evidences {
+			evidenceEvent.AddSavedEvidence(linkHash, evidence)
+		}
+
+		e.lock.Lock()
+		defer e.lock.Unlock()
+		e.pendingEvents = append(e.pendingEvents, evidenceEvent)
+	}
+}
+
+func (e *eventsManager) GetPendingEvents() []*store.Event {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	eventsToDeliver := make([]*store.Event, len(e.pendingEvents))
+	copy(eventsToDeliver, e.pendingEvents)
+	e.pendingEvents = nil
+
+	return eventsToDeliver
 }
