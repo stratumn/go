@@ -56,6 +56,11 @@ func RandomLink() *cs.Link {
 		testutil.RandomHash().String(), RandomTags(), rand.Float64())
 }
 
+// RandomSegment creates a random segment.
+func RandomSegment() *cs.Segment {
+	return RandomLink().Segmentify()
+}
+
 // RandomLinkWithProcess creates a random link in a specific process.
 func RandomLinkWithProcess(process string) *cs.Link {
 	return CreateLink(process, testutil.RandomString(24),

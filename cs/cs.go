@@ -64,13 +64,30 @@ func (s *Segment) SetLinkHash() error {
 	return nil
 }
 
-// GetSegmentFunc is the function signature to retrieve a Segment
-type GetSegmentFunc func(linkHash *types.Bytes32) (*Segment, error)
-
 // IsEmpty checks if a segment is empty (nil)
 func (s *Segment) IsEmpty() bool {
 	return reflect.DeepEqual(*s, Segment{})
 }
+
+// Validate checks for errors in a segment
+func (s *Segment) Validate(getSegment GetSegmentFunc) error {
+	if s.Meta.LinkHash == "" {
+		return errors.New("meta.linkHash should be a non empty string")
+	}
+
+	want, err := s.HashLink()
+	if err != nil {
+		return err
+	}
+	if got := s.GetLinkHashString(); want != got {
+		return errors.New("meta.linkHash is not in sync with link")
+	}
+
+	return s.Link.Validate(getSegment)
+}
+
+// GetSegmentFunc is the function signature to retrieve a Segment
+type GetSegmentFunc func(linkHash *types.Bytes32) (*Segment, error)
 
 // SegmentMeta contains additional information about the segment and a proof of existence
 type SegmentMeta struct {

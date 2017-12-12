@@ -64,6 +64,23 @@ func TestLinkValidate_valid(t *testing.T) {
 	assert.NoError(t, err, "l.Validate()")
 }
 
+func TestSegmentValidate_valid(t *testing.T) {
+	s := cstesting.RandomSegment()
+	err := s.Validate(nil)
+	assert.NoError(t, err, "s.Validate()")
+}
+
+func TestSegmentValidate_invalidLinkHash(t *testing.T) {
+	s := &cs.Segment{
+		Link: *cstesting.RandomLink(),
+		Meta: cs.SegmentMeta{
+			LinkHash: testutil.RandomString(24),
+		},
+	}
+	err := s.Validate(nil)
+	assert.Error(t, err)
+}
+
 func TestLinkValidate_processNil(t *testing.T) {
 	l := cstesting.RandomLink()
 	delete(l.Meta, "process")
@@ -216,7 +233,7 @@ func TestLinkValidate_refGoodLinkChecked(t *testing.T) {
 	l := cstesting.RandomLink()
 	appendRefLink(l, l.Meta["process"].(string), testutil.RandomHash().String())
 	err := l.Validate(func(linkHash *types.Bytes32) (*cs.Segment, error) {
-		return cstesting.RandomLink().Segmentify(), nil
+		return cstesting.RandomSegment(), nil
 	})
 	assert.NoError(t, err)
 }
@@ -385,7 +402,7 @@ func TestLinkGetProcess(t *testing.T) {
 }
 
 func TestAddEvidence(t *testing.T) {
-	s := cstesting.RandomLink().Segmentify()
+	s := cstesting.RandomSegment()
 	s.Meta.AddEvidence(TestEvidence)
 	assert.Equal(t, 1, len(s.Meta.Evidences), "Evidences count")
 
@@ -400,7 +417,7 @@ func TestAddEvidence(t *testing.T) {
 }
 
 func TestGetEvidence(t *testing.T) {
-	s := cstesting.RandomLink().Segmentify()
+	s := cstesting.RandomSegment()
 	s.Meta.AddEvidence(TestEvidence)
 
 	assert.EqualValues(t, TestEvidence, *s.Meta.GetEvidence(TestChainId), "Invalid evidence")
@@ -408,7 +425,7 @@ func TestGetEvidence(t *testing.T) {
 }
 
 func TestFindEvidences(t *testing.T) {
-	s := cstesting.RandomLink().Segmentify()
+	s := cstesting.RandomSegment()
 	e1 := TestEvidence
 	s.Meta.AddEvidence(e1)
 
@@ -426,7 +443,7 @@ func TestFindEvidences(t *testing.T) {
 }
 
 func TestEmptySegment(t *testing.T) {
-	s := cstesting.RandomLink().Segmentify()
+	s := cstesting.RandomSegment()
 	assert.False(t, s.IsEmpty(), "Segment should not be empty")
 	s = &cs.Segment{}
 	assert.True(t, s.IsEmpty(), "Segment should be empty")

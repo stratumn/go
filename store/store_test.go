@@ -48,7 +48,7 @@ func init() {
 	segmentSlice = make(cs.SegmentSlice, sliceSize)
 	stringSlice = make([]string, sliceSize)
 	for i := 0; i < sliceSize; i++ {
-		segmentSlice[i] = cstesting.RandomLink().Segmentify()
+		segmentSlice[i] = cstesting.RandomSegment()
 		stringSlice[i] = testutil.RandomString(10)
 	}
 }

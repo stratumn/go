@@ -222,7 +222,7 @@ func TestAddEvidence_err(t *testing.T) {
 
 func TestGetSegment(t *testing.T) {
 	s, a := createServer()
-	s1 := cstesting.RandomLink().Segmentify()
+	s1 := cstesting.RandomSegment()
 	a.MockGetSegment.Fn = func(*types.Bytes32) (*cs.Segment, error) { return s1, nil }
 
 	var s2 cs.Segment
@@ -298,7 +298,7 @@ func TestFindSegments(t *testing.T) {
 	s, a := createServer()
 	var s1 cs.SegmentSlice
 	for i := 0; i < 10; i++ {
-		s1 = append(s1, cstesting.RandomLink().Segmentify())
+		s1 = append(s1, cstesting.RandomSegment())
 	}
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return s1, nil }
 
@@ -346,7 +346,7 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 	s, a := createServer()
 	var s1 cs.SegmentSlice
 	for i := 0; i < 10; i++ {
-		s1 = append(s1, cstesting.RandomLink().Segmentify())
+		s1 = append(s1, cstesting.RandomSegment())
 	}
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return s1, nil }
 
@@ -396,7 +396,7 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 	s, a := createServer()
 	var s1 cs.SegmentSlice
 	for i := 0; i < 2; i++ {
-		s1 = append(s1, cstesting.RandomLink().Segmentify())
+		s1 = append(s1, cstesting.RandomSegment())
 	}
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return s1, nil }
 
