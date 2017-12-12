@@ -15,10 +15,8 @@
 package storetestcases
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
-	"reflect"
 	"sync/atomic"
 	"testing"
 
@@ -28,138 +26,58 @@ import (
 	_ "github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestGetSegment tests what happens when you get an existing segment.
+// TestGetSegment tests what happens when you get a segment.
 func (f Factory) TestGetSegment(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	l1 := cstesting.RandomLink()
-	linkHash, _ := a.CreateLink(l1)
+	link := cstesting.RandomLink()
+	linkHash, _ := a.CreateLink(link)
 
-	s2, err := a.GetSegment(linkHash)
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
+	link2 := cstesting.ChangeState(link)
+	linkHash2, _ := a.CreateLink(link2)
 
-	if got := s2; got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
+	t.Run("Getting an existing segment should work", func(t *testing.T) {
+		s, err := a.GetSegment(linkHash)
+		assert.NoError(t, err)
+		assert.NotNil(t, s, "Segment should be found")
+		assert.EqualValues(t, link, &s.Link, "Invalid link")
+	})
 
-	if got, want := &s2.Link, l1; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
-	}
-}
+	t.Run("Getting an updated segment should work", func(t *testing.T) {
+		got, err := a.GetSegment(linkHash2)
+		assert.NoError(t, err)
+		assert.NotNil(t, got, "Segment should be found")
+		assert.EqualValues(t, link2, &got.Link, "Invalid link")
+	})
 
-// TestGetSegmentUpdatedState tests what happens when you get a segment whose
-// state was updated.
-func (f Factory) TestGetSegmentUpdatedState(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
+	t.Run("Getting an unknown segment should return nil", func(t *testing.T) {
+		s, err := a.GetSegment(testutil.RandomHash())
+		assert.NoError(t, err)
+		assert.Nil(t, s)
+	})
 
-	l1 := cstesting.RandomLink()
-	linkHash1, _ := a.CreateLink(l1)
-	l2 := cstesting.ChangeState(l1)
-	a.CreateLink(l2)
+	t.Run("Getting a segment should return its evidences", func(t *testing.T) {
+		e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
+		e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
+		e3 := cs.Evidence{Backend: "batch", Provider: "3"}
+		e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
+		e5 := cs.Evidence{Backend: "generic", Provider: "5"}
+		evidences := []cs.Evidence{e1, e2, e3, e4, e5}
 
-	got, err := a.GetSegment(linkHash1)
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	if got, want := &got.Link, l1; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("got = %s\n want %s", gotJS, wantJS)
-	}
-}
-
-// TestGetSegmentUpdatedMapID tests what happens when you get a segment whose
-// map ID was updated.
-func (f Factory) TestGetSegmentUpdatedMapID(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	l1 := cstesting.RandomLink()
-	linkHash1, _ := a.CreateLink(l1)
-	l2 := cstesting.ChangeMapID(l1)
-	a.CreateLink(l2)
-
-	got, err := a.GetSegment(linkHash1)
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-
-	if got, want := &got.Link, l1; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("s2 = %s\n want%s", gotJS, wantJS)
-	}
-}
-
-// TestGetSegmentWithEvidences tests what happens when you add
-// evidence to a segment.
-func (f Factory) TestGetSegmentWithEvidences(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
-	e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
-	e3 := cs.Evidence{Backend: "batch", Provider: "3"}
-	e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
-	e5 := cs.Evidence{Backend: "generic", Provider: "5"}
-	evidences := []cs.Evidence{e1, e2, e3, e4, e5}
-
-	l := cstesting.RandomLink()
-	linkHash, err := a.CreateLink(l)
-	if err != nil {
-		t.Fatalf("a.CreateLink(): err: %s", err)
-	}
-
-	for _, e := range evidences {
-		if err = a.AddEvidence(linkHash, &e); err != nil {
-			t.Fatalf("a.AddEvidence(): err: %s", err)
+		for _, e := range evidences {
+			err := a.AddEvidence(linkHash2, &e)
+			assert.NoError(t, err, "a.AddEvidence()")
 		}
-	}
 
-	got, err := a.GetSegment(linkHash)
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-	if got == nil {
-		t.Fatal("s2 = nil want *cs.Segment")
-	}
-	if len(got.Meta.Evidences) != 5 {
-		t.Fatalf("Invalid number of evidences: got %d, expected %d",
-			len(got.Meta.Evidences), 5)
-	}
-}
-
-// TestGetSegmentNotFound tests what happens when you get a nonexistent segment.
-func (f Factory) TestGetSegmentNotFound(t *testing.T) {
-	a := f.initAdapter(t)
-	defer f.freeAdapter(a)
-
-	s, err := a.GetSegment(testutil.RandomHash())
-	if err != nil {
-		t.Fatalf("a.GetSegment(): err: %s", err)
-	}
-
-	if got := s; got != nil {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		t.Errorf("s = %s\n want nil", gotJS)
-	}
+		got, err := a.GetSegment(linkHash2)
+		assert.NoError(t, err, "a.GetSegment()")
+		assert.NotNil(t, got)
+		assert.Equal(t, 5, len(got.Meta.Evidences), "Invalid number of evidences")
+	})
 }
 
 // BenchmarkGetSegment benchmarks getting existing segments.

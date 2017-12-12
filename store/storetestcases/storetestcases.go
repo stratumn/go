@@ -84,11 +84,7 @@ func (f Factory) RunStoreTests(t *testing.T) {
 	t.Run("TestGetMapIDsEmpty", f.TestGetMapIDsEmpty)
 	t.Run("TestGetMapIDsByProcess", f.TestGetMapIDsByProcess)
 	// Get segment
-	t.Run("TestGetSegment", f.TestGetSegment)
-	t.Run("TestGetSegmentUpdatedState", f.TestGetSegmentUpdatedState)
-	t.Run("TestGetSegmentUpdatedMapID", f.TestGetSegmentUpdatedMapID)
-	t.Run("TestGetSegmentWithEvidences", f.TestGetSegmentWithEvidences)
-	t.Run("TestGetSegmentNotFound", f.TestGetSegmentNotFound)
+	t.Run("Test getting segments", f.TestGetSegment)
 	// Create link
 	t.Run("Test creating links", f.TestCreateLink)
 	// Batch
