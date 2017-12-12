@@ -54,7 +54,7 @@ func (f Factory) RunKeyValueStoreTests(t *testing.T) {
 // RunStoreTests runs all the tests for the store adapter interface.
 func (f Factory) RunStoreTests(t *testing.T) {
 	// Store notifications
-	t.Run("TestStoreEvents", f.TestStoreEvents)
+	t.Run("Test Store Events", f.TestStoreEvents)
 	// Store info
 	t.Run("GetInfo", f.TestGetInfo)
 	// Find segments
@@ -96,10 +96,7 @@ func (f Factory) RunStoreTests(t *testing.T) {
 	t.Run("TestCreateLinkUpdatedMapID", f.TestCreateLinkUpdatedMapID)
 	t.Run("TestCreateLinkBranch", f.TestCreateLinkBranch)
 	// Batch
-	t.Run("TestBatchCreateLink", f.TestBatchCreateLink)
-	t.Run("TestBatchWriteCreateLink", f.TestBatchWriteCreateLink)
-	t.Run("TestBatchFindSegments", f.TestBatchFindSegments)
-	t.Run("TestBatchGetMapIDs", f.TestBatchGetMapIDs)
+	t.Run("Test Batch implementation", f.TestBatch)
 	// Evidence store
 	t.Run("EvidenceStore", f.TestEvidenceStore)
 }
