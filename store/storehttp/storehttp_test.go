@@ -409,12 +409,11 @@ func TestFindSegments_multipleLinkHashes(t *testing.T) {
 	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
 
 	f := a.MockFindSegments.LastCalledWith
-	wantLinkHash, _ := types.NewBytes32FromString(zeros)
 	assert.Equal(t, 1, f.Offset)
 	assert.Equal(t, 2, f.Limit)
 	assert.Equal(t, 2, len(f.LinkHashes))
-	assert.True(t, f.LinkHashes[0].Equals(wantLinkHash))
-	assert.True(t, f.LinkHashes[1].Equals(wantLinkHash))
+	assert.Equal(t, f.LinkHashes[0], zeros)
+	assert.Equal(t, f.LinkHashes[1], zeros)
 }
 
 func TestFindSegments_defaultLimit(t *testing.T) {

@@ -234,6 +234,7 @@ func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 // FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
 func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var prevLinkHash []byte
+	var linkHashes []*types.Bytes32
 	q := a.links
 
 	if filter.PrevLinkHash != nil {
@@ -253,7 +254,16 @@ func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 		})
 	}
 
-	if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
+	if len(filter.LinkHashes) > 0 {
+
+		for _, lh := range filter.LinkHashes {
+			linkHashBytes, err := types.NewBytes32FromString(lh)
+			if err != nil {
+				return nil, err
+			}
+			linkHashes = append(linkHashes, linkHashBytes)
+		}
+
 		ids := make([]interface{}, len(linkHashes))
 		for i, v := range linkHashes {
 			ids[i] = v

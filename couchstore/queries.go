@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
 )
 
 // LinkSelector used in LinkQuery
@@ -19,7 +18,7 @@ type LinkSelector struct {
 
 // LinkHashIn specifies the list of link hashes to search for
 type LinkHashIn struct {
-	LinkHashes []*types.Bytes32 `json:"$in,omitempty"`
+	LinkHashes []string `json:"$in,omitempty"`
 }
 
 // MapIdsIn specifies that segment mapId should be in specified list

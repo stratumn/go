@@ -23,7 +23,6 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,14 +77,14 @@ func TestSegmentFilter_Match(t *testing.T) {
 		MapIDs       []string
 		Process      string
 		PrevLinkHash *string
-		LinkHashes   []*types.Bytes32
+		LinkHashes   []string
 		Tags         []string
 	}
 	type args struct {
 		segment *cs.Segment
 	}
 	linkHashesSegment := defaultTestingSegment()
-	linkHashesSegmentHash := linkHashesSegment.GetLinkHash()
+	linkHashesSegmentHash := linkHashesSegment.GetLinkHashString()
 	tests := []struct {
 		name   string
 		fields fields
@@ -160,13 +159,13 @@ func TestSegmentFilter_Match(t *testing.T) {
 		},
 		{
 			name:   "LinkHashes ok",
-			fields: fields{LinkHashes: []*types.Bytes32{testutil.RandomHash(), linkHashesSegmentHash}},
+			fields: fields{LinkHashes: []string{testutil.RandomHash().String(), linkHashesSegmentHash}},
 			args:   args{linkHashesSegment},
 			want:   true,
 		},
 		{
 			name:   "LinkHashes ko",
-			fields: fields{LinkHashes: []*types.Bytes32{testutil.RandomHash()}},
+			fields: fields{LinkHashes: []string{testutil.RandomHash().String()}},
 			args:   args{defaultTestingSegment()},
 			want:   false,
 		},

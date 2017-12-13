@@ -143,7 +143,7 @@ type SegmentFilter struct {
 
 	// A slice of linkHashes to search Segments.
 	// This attribute is optional.
-	LinkHashes []*types.Bytes32 `json:"linkHashes"`
+	LinkHashes []string `json:"linkHashes"`
 
 	// A slice of tags the segments must all contain.
 	Tags []string `json:"tags"`
@@ -217,10 +217,10 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		lh, _ := link.Hash()
+		lh, _ := link.HashString()
 		var match bool
 		for _, linkHash := range filter.LinkHashes {
-			if linkHash.Equals(lh) {
+			if linkHash == lh {
 				match = true
 				break
 			}

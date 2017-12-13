@@ -24,7 +24,6 @@ import (
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -198,10 +197,10 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Supports filtering on link hashes", func(t *testing.T) {
 		slice, err := a.FindSegments(&store.SegmentFilter{
-			LinkHashes: []*types.Bytes32{
-				linkHash4,
-				testutil.RandomHash(),
-				linkHash6,
+			LinkHashes: []string{
+				linkHash4.String(),
+				testutil.RandomHash().String(),
+				linkHash6.String(),
 			},
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
@@ -212,9 +211,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Supports filtering on link hash and process at the same time", func(t *testing.T) {
 		slice, err := a.FindSegments(&store.SegmentFilter{
-			LinkHashes: []*types.Bytes32{
-				linkHash4,
-				linkHash6,
+			LinkHashes: []string{
+				linkHash4.String(),
+				linkHash6.String(),
 			},
 			Process: "Foo",
 			Pagination: store.Pagination{
@@ -226,9 +225,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Should return no results for unknown link hashes", func(t *testing.T) {
 		slice, err := a.FindSegments(&store.SegmentFilter{
-			LinkHashes: []*types.Bytes32{
-				testutil.RandomHash(),
-				testutil.RandomHash(),
+			LinkHashes: []string{
+				testutil.RandomHash().String(),
+				testutil.RandomHash().String(),
 			},
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
