@@ -15,6 +15,8 @@
 package tmpop
 
 import (
+	"fmt"
+
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -39,4 +41,12 @@ type ABCIError struct {
 // IsOK returns true if no error occurred.
 func (e *ABCIError) IsOK() bool {
 	return e == nil || e.Code == abci.CodeTypeOK
+}
+
+func (e *ABCIError) Error() string {
+	if e.IsOK() {
+		return ""
+	}
+
+	return fmt.Sprintf("Code: %d. Log: %s", e.Code, e.Log)
 }
