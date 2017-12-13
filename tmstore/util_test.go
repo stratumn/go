@@ -44,9 +44,13 @@ func StartNode() *node.Node {
 		panic(err)
 	}
 
-	testNode = rpctest.StartTendermint(testTmpop)
+	testNode = rpctest.NewTendermint(testTmpop)
 	testClient := tmpop.NewTendermintClient(client.NewLocal(testNode))
 	testTmpop.ConnectTendermint(testClient)
+
+	if err = testNode.Start(); err != nil {
+		panic(err)
+	}
 
 	return testNode
 }
