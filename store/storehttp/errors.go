@@ -41,3 +41,10 @@ func newErrPrevLinkHash(msg string) jsonhttp.ErrHTTP {
 	}
 	return jsonhttp.NewErrBadRequest(msg)
 }
+
+func newErrLinkHashes(msg string) jsonhttp.ErrHTTP {
+	if msg == "" {
+		msg = "linkHashes must be an array of 64 byte long hexadecimal string"
+	}
+	return jsonhttp.NewErrBadRequest(msg)
+}

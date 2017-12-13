@@ -29,14 +29,17 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 	}
 
 	const prevLinkHashKey = "prevLinkHash"
+	const linkHashesKey = "linkHashes[]"
 
 	var (
 		q               = r.URL.Query()
 		mapIDs          = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
+		linkHashesStr   = append(q["linkHashes[]"], q["linkHashes%5B%5D"]...)
 		process         = q.Get("process")
 		prevLinkHashStr = q.Get(prevLinkHashKey)
 		tags            = append(q["tags[]"], q["tags%5B%5D"]...)
 		prevLinkHash    *string
+		linkHashes      []*types.Bytes32
 	)
 
 	if _, exists := q[prevLinkHashKey]; exists {
@@ -49,11 +52,22 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 		}
 	}
 
+	if len(linkHashesStr) > 0 {
+		for _, l := range linkHashesStr {
+			linkHashBytes, err := types.NewBytes32FromString(l)
+			if err != nil {
+				return nil, newErrLinkHashes("")
+			}
+			linkHashes = append(linkHashes, linkHashBytes)
+		}
+	}
+
 	return &store.SegmentFilter{
 		Pagination:   *pagination,
 		MapIDs:       mapIDs,
 		Process:      process,
 		PrevLinkHash: prevLinkHash,
+		LinkHashes:   linkHashes,
 		Tags:         tags,
 	}, nil
 }
