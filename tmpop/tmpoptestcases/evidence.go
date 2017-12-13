@@ -82,7 +82,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 		proof := evidence.Proof.(*evidences.TendermintProof)
 		assert.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
-		assert.Equal(t, uint64(2), proof.BlockHeight, "Invalid block height in proof")
+		assert.Equal(t, int64(2), proof.BlockHeight, "Invalid block height in proof")
 
 		tree, _ := merkle.NewStaticTree([]types.Bytes32{*linkHash1, *linkHash2})
 		assert.EqualValues(t, tree.Root(), proof.Root, "Invalid proof merkle root")
