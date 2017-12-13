@@ -34,6 +34,7 @@ import (
 	"github.com/stratumn/sdk/store/storetesting"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
+	"github.com/stretchr/testify/assert"
 )
 
 const zeros = "0000000000000000000000000000000000000000000000000000000000000000"
@@ -402,37 +403,18 @@ func TestFindSegments_multipleLinkHashes(t *testing.T) {
 
 	var s2 cs.SegmentSlice
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&linkHashes[]="+zeros+"&linkHashes%5B%5D="+zeros, nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 1; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, s1, s2)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
 
 	f := a.MockFindSegments.LastCalledWith
 	wantLinkHash, _ := types.NewBytes32FromString(zeros)
-	if got, want := f.Offset, 1; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Offset = %d want %d", got, want)
-	}
-	if got, want := f.Limit, 2; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Limit = %d want %d", got, want)
-	}
-	if got, want := len(f.LinkHashes), 2; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.LinkHashes = %q want %q", got, want)
-	} else if got, want := f.LinkHashes[0], wantLinkHash; !got.Equals(want) {
-		t.Errorf("a.MockFindSegments.LastCalledWith.LinkHashes = %s want %s", got.String(), want.String())
-	} else if got, want := f.LinkHashes[1], wantLinkHash; !got.Equals(want) {
-		t.Errorf("a.MockFindSegments.LastCalledWith.LinkHashes = %s want %s", got.String(), want.String())
-	}
+	assert.Equal(t, 1, f.Offset)
+	assert.Equal(t, 2, f.Limit)
+	assert.Equal(t, 2, len(f.LinkHashes))
+	assert.True(t, f.LinkHashes[0].Equals(wantLinkHash))
+	assert.True(t, f.LinkHashes[1].Equals(wantLinkHash))
 }
 
 func TestFindSegments_defaultLimit(t *testing.T) {
@@ -548,19 +530,10 @@ func TestFindSegments_invalidLinkHashes(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?linkHashes[]=3", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, newErrLinkHashes("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), newErrLinkHashes("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 0; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, newErrLinkHashes("").Status(), w.Code)
+	assert.Equal(t, newErrLinkHashes("").Error(), body["error"].(string))
+	assert.Equal(t, 0, a.MockFindSegments.CalledCount)
 }
 
 func TestGetMapIDs(t *testing.T) {
