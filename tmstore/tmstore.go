@@ -17,6 +17,7 @@
 package tmstore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -32,7 +33,7 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-	"github.com/tendermint/tmlibs/events"
+	tmcommon "github.com/tendermint/tmlibs/common"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/jsonhttp"
@@ -55,9 +56,10 @@ const (
 // TMStore is the type that implements github.com/stratumn/sdk/store.Adapter.
 type TMStore struct {
 	config          *Config
+	ctx             context.Context
+	tmEventChan     chan interface{}
 	storeEventChans []chan *store.Event
 	tmClient        client.Client
-	stoppingWS      bool
 	clientFactory   func(endpoint string) client.Client
 }
 
@@ -91,34 +93,44 @@ func New(config *Config) *TMStore {
 
 // NewFromClient creates a new instance of a TMStore with the given client.
 func NewFromClient(config *Config, clientFactory func(endpoint string) client.Client) *TMStore {
-	return &TMStore{config, nil, clientFactory(config.Endpoint), false, clientFactory}
+	return &TMStore{config, context.Background(), nil, nil, clientFactory(config.Endpoint), clientFactory}
 }
 
 // StartWebsocket starts the websocket client and wait for New Block events.
 func (t *TMStore) StartWebsocket() error {
-	t.stoppingWS = false
-	if _, err := t.tmClient.Start(); err != nil {
-		return err
+	if !t.tmClient.IsRunning() {
+		if err := t.tmClient.Start(); err != nil && err != tmcommon.ErrAlreadyStarted {
+			return err
+		}
 	}
 
 	// TMPoP notifies us of store events that we forward to clients
-	t.tmClient.AddListenerForEvent("TMStore", tmtypes.EventStringNewBlock(), func(_ events.EventData) {
-		go t.notifyStoreChans()
-	})
+	t.tmEventChan = make(chan interface{}, 10)
+	go func() {
+		for {
+			_, ok := <-t.tmEventChan
+			if !ok {
+				break
+			}
+
+			go t.notifyStoreChans()
+		}
+	}()
+
+	newBlocksQuery := fmt.Sprintf("%s='%s'", tmtypes.EventTypeKey, tmtypes.EventNewBlock)
+	if err := t.tmClient.Subscribe(t.ctx, newBlocksQuery, t.tmEventChan); err != nil {
+		return err
+	}
 
 	log.Info("Connected to TMPoP")
 	return nil
 }
 
-// RetryStartWebsocket starts the websocket client and wait for New Block events, it retries on errors.
+// RetryStartWebsocket starts the websocket client and retries on errors.
 func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 	return utils.Retry(func(attempt int) (retry bool, err error) {
 		err = t.StartWebsocket()
 		if err != nil {
-			// the tendermint RPC HTTPClient does not handle well connection errors
-			// we have to recreate the client in case of errors
-			// (Check if it is still needed on Tendermint updates)
-			t.tmClient = t.clientFactory(t.config.Endpoint)
 			log.Infof("%v, retrying...", err)
 			time.Sleep(interval)
 		}
@@ -127,9 +139,21 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 }
 
 // StopWebsocket stops the websocket client.
-func (t *TMStore) StopWebsocket() {
-	t.stoppingWS = true
-	t.tmClient.Stop()
+func (t *TMStore) StopWebsocket() error {
+	// Note: no need to close t.tmEventChan, unsubscribing handles it
+	if err := t.tmClient.UnsubscribeAll(t.ctx); err != nil {
+		log.Warnf("Error unsubscribing to Tendermint events: %s", err.Error())
+		return err
+	}
+
+	if t.tmClient.IsRunning() {
+		if err := t.tmClient.Stop(); err != nil && err != tmcommon.ErrAlreadyStopped {
+			log.Warnf("Error stopping Tendermint client: %s", err.Error())
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (t *TMStore) notifyStoreChans() {
@@ -321,19 +345,19 @@ func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, er
 	return result, nil
 }
 
-func (t *TMStore) sendQuery(name string, args interface{}) (res *abci.ResultQuery, err error) {
+func (t *TMStore) sendQuery(name string, args interface{}) (res *abci.ResponseQuery, err error) {
 	query, err := tmpop.BuildQueryBinary(args)
 	if err != nil {
 		return
 	}
 
-	result, err := t.tmClient.ABCIQuery(name, query)
+	response, err := t.tmClient.ABCIQuery(name, query)
 	if err != nil {
 		return
 	}
-	if !result.ResultQuery.Code.IsOK() {
-		return res, fmt.Errorf("NOK Response from TMPop: %v", result.ResultQuery)
+	if !response.Response.IsOK() {
+		return res, fmt.Errorf("NOK Response from TMPop: %v", response.Response)
 	}
 
-	return result.ResultQuery, nil
+	return &response.Response, nil
 }

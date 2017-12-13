@@ -22,6 +22,7 @@ import (
 	"github.com/stratumn/sdk/jsonhttp"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -46,11 +47,39 @@ func resetTMPop(_ store.Adapter) {
 	ResetNode()
 }
 
+// TestWebSocket tests how the web socket with Tendermint behaves
+func TestWebSocket(t *testing.T) {
+	tmstore = NewTestClient()
+
+	t.Run("Start and stop websocket", func(t *testing.T) {
+		err := tmstore.StartWebsocket()
+		assert.NoError(t, err)
+
+		err = tmstore.StopWebsocket()
+		assert.NoError(t, err)
+	})
+
+	t.Run("Start websocket multiple times", func(t *testing.T) {
+		err := tmstore.StartWebsocket()
+		assert.NoError(t, err)
+
+		err = tmstore.StartWebsocket()
+		assert.NoError(t, err)
+
+		err = tmstore.StopWebsocket()
+		assert.NoError(t, err)
+	})
+
+	t.Run("Stop already stopped websocket", func(t *testing.T) {
+		err := tmstore.StopWebsocket()
+		assert.NoError(t, err)
+	})
+}
+
+// TestValidation tests custom validation rules
 func TestValidation(t *testing.T) {
 	tmstore, err := newTestTMStore()
-	if err != nil {
-		t.Fatalf("newTestTMStore(): err: %s", err)
-	}
+	assert.NoError(t, err)
 
 	l := cstesting.RandomLink()
 	l.Meta["process"] = "testProcess"
@@ -58,16 +87,9 @@ func TestValidation(t *testing.T) {
 	l.State["string"] = 42
 
 	_, err = tmstore.CreateLink(l)
-	if err == nil {
-		t.Error("A validation error is expected")
-	}
+	assert.Error(t, err, "A validation error is expected")
 
 	errHTTP, ok := err.(jsonhttp.ErrHTTP)
-	if !ok {
-		t.Error("Invalid error received: want ErrHTTP")
-	}
-
-	if got := errHTTP.Status(); got != http.StatusBadRequest {
-		t.Errorf("status = %d want %d", got, http.StatusBadRequest)
-	}
+	assert.True(t, ok, "Invalid error received: want ErrHTTP")
+	assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
 }
