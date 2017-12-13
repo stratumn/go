@@ -20,3 +20,16 @@ type Process struct {
 
 // Processes is a list of Process
 type Processes []*Process
+
+// ProcessesMap is a mapping of processes indexed by name
+type ProcessesMap map[string]*Process
+
+// FindProcess returns the process whose name matches the provided one
+func (p Processes) FindProcess(name string) *Process {
+	for _, process := range p {
+		if process.Name == name {
+			return process
+		}
+	}
+	return nil
+}

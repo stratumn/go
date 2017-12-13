@@ -118,10 +118,10 @@ type KeyValueStore interface {
 // Pagination contains pagination options.
 type Pagination struct {
 	// Index of the first entry.
-	Offset int `json:"offset"`
+	Offset int `json:"offset" url:"offset"`
 
 	// Maximum number of entries.
-	Limit int `json:"limit"`
+	Limit int `json:"limit" url:"limit"`
 }
 
 // SegmentFilter contains filtering options for segments.
@@ -131,22 +131,22 @@ type SegmentFilter struct {
 	Pagination `json:"pagination"`
 
 	// Map IDs the segments must have.
-	MapIDs []string `json:"mapIds"`
+	MapIDs []string `json:"mapIds" url:"mapIds,brackets"`
 
 	// Process name is optionnal.
-	Process string `json:"process"`
+	Process string `json:"process" url:"-"`
 
 	// A previous link hash the segments must have.
 	// nil makes this attribute as optional
 	// empty string is to search Segments without parent
-	PrevLinkHash *string `json:"prevLinkHash"`
+	PrevLinkHash *string `json:"prevLinkHash" url:"prevLinkHash"`
 
 	// A slice of linkHashes to search Segments.
 	// This attribute is optional.
-	LinkHashes []string `json:"linkHashes"`
+	LinkHashes []string `json:"linkHashes" url:"linkHashes,brackets"`
 
 	// A slice of tags the segments must all contain.
-	Tags []string `json:"tags"`
+	Tags []string `json:"tags" url:"tags"`
 }
 
 // MapFilter contains filtering options for segments.
@@ -154,7 +154,7 @@ type MapFilter struct {
 	Pagination `json:"pagination"`
 
 	// Process name is optionnal.
-	Process string `json:"process"`
+	Process string `json:"process" url:"-"`
 }
 
 // PaginateStrings paginates a list of strings

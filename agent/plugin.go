@@ -7,6 +7,7 @@ import "github.com/stratumn/sdk/cs"
 type PluginInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	ID          string `json:"id"`
 }
 
 // Plugin is the interface describing the handlers that a plugin can implement
@@ -25,4 +26,4 @@ type Plugin interface {
 }
 
 // Plugins is a list of Plugin
-type Plugins []Plugin
+type Plugins []PluginInfo

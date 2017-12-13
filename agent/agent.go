@@ -10,7 +10,7 @@ import (
 
 // Info is the data structure returned by Agent.GetInfo()
 type Info struct {
-	Processes   Processes        `json:"processes"`
+	Processes   ProcessesMap     `json:"processes"`
 	Stores      []StoreInfo      `json:"stores"`
 	Fossilizers []FossilizerInfo `json:"fossilizers"`
 	Plugins     Plugins          `json:"plugins"`
@@ -36,7 +36,7 @@ type Agent interface {
 	AddProcess(process string, actions Actions, storeClient interface{}, fossilizerClients []interface{}, opts *ProcessOptions) (Process, error)
 	FindSegments(filter store.SegmentFilter) (cs.SegmentSlice, error)
 	GetInfo() (*Info, error)
-	GetMapIds(filter store.MapFilter) (cs.SegmentSlice, error)
+	GetMapIds(filter store.MapFilter) ([]string, error)
 	GetProcesses() (Processes, error)
 	GetProcess(process string) (*Process, error)
 	GetSegment(process string, linkHash types.Bytes32)
