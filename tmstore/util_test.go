@@ -24,9 +24,7 @@ var (
 
 // NewTestClient returns a rpc client pointing to the test node
 func NewTestClient() *TMStore {
-	return NewFromClient(&Config{}, func(endpoint string) client.Client {
-		return client.NewLocal(testNode)
-	})
+	return New(&Config{}, client.NewLocal(testNode))
 }
 
 func ResetNode() {
