@@ -82,7 +82,7 @@ func (f *Factory) newTMPop(t *testing.T, config *tmpop.Config) (*tmpop.TMPop, ab
 		t.Fatalf("tmpop.New(): err: %s", err)
 	}
 
-	return h, makeBeginBlock([]byte{}, uint64(1))
+	return h, makeBeginBlock([]byte{}, int64(1))
 }
 
 func makeQuery(h *tmpop.TMPop, name string, args interface{}, res interface{}) error {
@@ -116,7 +116,7 @@ func makeCreateLinkTx(t *testing.T, l *cs.Link) []byte {
 	return res
 }
 
-func makeBeginBlock(appHash []byte, height uint64) abci.RequestBeginBlock {
+func makeBeginBlock(appHash []byte, height int64) abci.RequestBeginBlock {
 	return abci.RequestBeginBlock{
 		Hash: []byte{},
 		Header: &abci.Header{

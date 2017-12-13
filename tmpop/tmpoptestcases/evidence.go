@@ -44,7 +44,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	req = commitLink(t, h, invalidLink, req)
 	previousAppHash := req.Header.AppHash
 	tmClientMock.On("Block", 1).Return(&tmpop.Block{
-		Header: &abci.Header{Height: uint64(1)},
+		Header: &abci.Header{Height: int64(1)},
 	})
 
 	// Second block contains two valid links
@@ -61,7 +61,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	expectedTx2 := &tmpop.Tx{TxType: tmpop.CreateLink, Link: link2}
 	expectedBlock := &tmpop.Block{
 		Header: &abci.Header{
-			Height:  uint64(2),
+			Height:  int64(2),
 			AppHash: previousAppHash,
 		},
 		Txs: []*tmpop.Tx{expectedTx1, expectedTx2},
