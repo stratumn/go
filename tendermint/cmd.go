@@ -79,9 +79,10 @@ func RegisterFlags() {
 	flag.StringVar(&profLaddr, "prof_laddr", config.BaseConfig.ProfListenAddress, "Profile listen address")
 	flag.BoolVar(&fastSync, "fast_sync", config.BaseConfig.FastSync, "Fast blockchain syncing")
 	flag.BoolVar(&filterPeers, "filter_peers", config.BaseConfig.FilterPeers, "If true, query the ABCI app on connecting to a new peer so the app can decide if we should keep the connection or not")
-	flag.StringVar(&txIndex, "tx_index", config.BaseConfig.TxIndex, "What indexer to use for transactions")
 	flag.StringVar(&dbBackend, "db_backend", config.BaseConfig.DBBackend, "Database backend for the blockchain and TendermintCore state (leveldb or memdb)")
 	flag.StringVar(&dbDir, "db_dir", config.BaseConfig.DBPath, "Database directory")
+
+	flag.StringVar(&txIndex, "tx_index", config.TxIndex.Indexer, "What indexer to use for transactions")
 
 	flag.StringVar(&nodeLaddr, "node_laddr", config.P2P.ListenAddress, "Node listen address (0.0.0.0:0 means any interface, any port)")
 	flag.StringVar(&seeds, "seeds", config.P2P.Seeds, "Comma delimited host:port seed nodes")
@@ -141,9 +142,10 @@ func GetConfig() *cfg.Config {
 	config.BaseConfig.ProfListenAddress = profLaddr
 	config.BaseConfig.FastSync = fastSync
 	config.BaseConfig.FilterPeers = filterPeers
-	config.BaseConfig.TxIndex = txIndex
 	config.BaseConfig.DBBackend = dbBackend
 	config.BaseConfig.DBPath = dbDir
+
+	config.TxIndex.Indexer = txIndex
 
 	config.P2P.ListenAddress = nodeLaddr
 	config.P2P.Seeds = seeds
