@@ -174,7 +174,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// We should improve this and only reload when a config update was committed.
 	if t.config.ValidatorFilename != "" {
 		rootValidator := validator.NewRootValidator(t.config.ValidatorFilename, true)
-		t.state.validator = &rootValidator
+		t.state.validator = rootValidator
 	}
 
 	t.state.previousAppHash = types.NewBytes32FromBytes(t.currentHeader.AppHash)

@@ -63,7 +63,7 @@ func getValidatorHashKey(height int64) []byte {
 func (t *TMPop) saveValidatorHash() error {
 	if t.state.validator != nil {
 		key := getValidatorHashKey(t.currentHeader.Height)
-		value := (*t.state.validator).Hash()[:]
+		value := t.state.validator.Hash()[:]
 		if err := t.kvDB.SetValue(key, value); err != nil {
 			return err
 		}
