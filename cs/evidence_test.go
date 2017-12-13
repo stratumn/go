@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	height      = uint64(1)
+	height      = int64(1)
 	TestChainId = "testChain"
 )
 
@@ -214,7 +214,7 @@ func TestTendermintProof(t *testing.T) {
 
 	t.Run("Time()", func(t *testing.T) {
 		e := &evidences.TendermintProof{
-			Header: abci.Header{Time: uint64(42)},
+			Header: abci.Header{Time: int64(42)},
 		}
 
 		assert.Equal(t, uint64(42), e.Time(), "Invalid proof time")
@@ -222,8 +222,8 @@ func TestTendermintProof(t *testing.T) {
 
 	t.Run("FullProof()", func(t *testing.T) {
 		e := &evidences.TendermintProof{
-			BlockHeight:     uint64(42),
-			Header:          abci.Header{Time: uint64(42)},
+			BlockHeight:     int64(42),
+			Header:          abci.Header{Time: int64(42)},
 			ValidationsHash: testutil.RandomHash(),
 		}
 
