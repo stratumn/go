@@ -154,12 +154,12 @@ func (f Factory) TestQuery(t *testing.T) {
 		q := h.Query(abci.RequestQuery{
 			Path: "Unsupported",
 		})
-		assert.EqualValues(t, abci.CodeType_UnknownRequest, q.GetCode())
+		assert.EqualValues(t, tmpop.CodeTypeNotImplemented, q.GetCode())
 
 		q = h.Query(abci.RequestQuery{
 			Path:   tmpop.FindSegments,
 			Height: 12,
 		})
-		assert.EqualValues(t, abci.CodeType_InternalError, q.GetCode())
+		assert.EqualValues(t, tmpop.CodeTypeInternalError, q.GetCode())
 	})
 }

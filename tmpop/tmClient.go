@@ -45,7 +45,8 @@ func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 
 // Block queries for a block at a specific height
 func (c *TendermintClientWrapper) Block(height int) *Block {
-	previousBlock, err := c.tmClient.Block(&height)
+	requestHeight := int64(height)
+	previousBlock, err := c.tmClient.Block(&requestHeight)
 	if err != nil {
 		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
 		return &Block{}
@@ -54,13 +55,14 @@ func (c *TendermintClientWrapper) Block(height int) *Block {
 	block := &Block{
 		Header: &abci.Header{
 			ChainId:        previousBlock.BlockMeta.Header.ChainID,
-			Height:         uint64(previousBlock.BlockMeta.Header.Height),
-			Time:           uint64(previousBlock.BlockMeta.Header.Time.Unix()),
+			Height:         int64(previousBlock.BlockMeta.Header.Height),
+			Time:           int64(previousBlock.BlockMeta.Header.Time.Unix()),
 			LastCommitHash: previousBlock.BlockMeta.Header.LastCommitHash,
 			DataHash:       previousBlock.BlockMeta.Header.DataHash,
 			AppHash:        previousBlock.BlockMeta.Header.AppHash,
 		},
 	}
+
 	for _, tx := range previousBlock.Block.Txs {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {

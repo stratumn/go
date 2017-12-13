@@ -54,7 +54,7 @@ func saveLastBlock(a store.KeyValueWriter, l LastBlock) {
 	a.SetValue(tmpopLastBlockKey, wire.BinaryBytes(l))
 }
 
-func getValidatorHashKey(height uint64) []byte {
+func getValidatorHashKey(height int64) []byte {
 	key := fmt.Sprintf("tmpop:validator:%d", height)
 	return []byte(key)
 }
@@ -73,7 +73,7 @@ func (t *TMPop) saveValidatorHash() error {
 }
 
 // getValidatorHash gets the hash of the validator used for a block at a specific height
-func (t *TMPop) getValidatorHash(height uint64) (*types.Bytes32, error) {
+func (t *TMPop) getValidatorHash(height int64) (*types.Bytes32, error) {
 	key := getValidatorHashKey(height)
 	value, err := t.kvDB.GetValue(key)
 	if err != nil || value == nil {
@@ -83,7 +83,7 @@ func (t *TMPop) getValidatorHash(height uint64) (*types.Bytes32, error) {
 	return types.NewBytes32FromBytes(value), nil
 }
 
-func getCommitLinkHashesKey(height uint64) []byte {
+func getCommitLinkHashesKey(height int64) []byte {
 	key := fmt.Sprintf("tmpop:linkhashes:%d", height)
 	return []byte(key)
 }
@@ -118,7 +118,7 @@ func (t *TMPop) saveCommitLinkHashes(links []*cs.Link) error {
 
 // getCommitLinkHashes gets the link hashes included in a block at a specific height.
 // This is useful to ignore invalid links included in that block.
-func (t *TMPop) getCommitLinkHashes(height uint64) ([]types.Bytes32, error) {
+func (t *TMPop) getCommitLinkHashes(height int64) ([]types.Bytes32, error) {
 	key := getCommitLinkHashesKey(height)
 	value, err := t.kvDB.GetValue(key)
 	if err != nil || value == nil {

@@ -34,7 +34,7 @@ var tmpopLastBlockKey = []byte("tmpop:lastblock")
 // LastBlock saves the information of the last block committed for Core/App Handshake on crash/restart.
 type LastBlock struct {
 	AppHash    *types.Bytes32
-	Height     uint64
+	Height     int64
 	LastHeader *abci.Header
 }
 
@@ -80,11 +80,6 @@ const (
 
 	// Description of this Tendermint Application.
 	Description = "Agent Store in a Blockchain"
-)
-
-const (
-	// CodeTypeValidation is the ABCI error code for a validation error.
-	CodeTypeValidation abci.CodeType = 400
 )
 
 // New creates a new instance of a TMPop.
@@ -148,16 +143,19 @@ func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
 }
 
 // SetOption implements github.com/tendermint/abci/types.Application.SetOption.
-func (t *TMPop) SetOption(key string, value string) (log string) {
-	return "No options are supported yet"
+func (t *TMPop) SetOption(req abci.RequestSetOption) abci.ResponseSetOption {
+	return abci.ResponseSetOption{
+		Code: CodeTypeNotImplemented,
+		Log:  "No options are supported yet",
+	}
 }
 
 // BeginBlock implements github.com/tendermint/abci/types.Application.BeginBlock.
-func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
+func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	t.currentHeader = req.GetHeader()
 	if t.currentHeader == nil {
 		log.Error("Cannot begin block without header")
-		return
+		return abci.ResponseBeginBlock{}
 	}
 
 	// If the AppHash of the previous block is present in this block's header,
@@ -180,32 +178,59 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) {
 	}
 
 	t.state.previousAppHash = types.NewBytes32FromBytes(t.currentHeader.AppHash)
+
+	return abci.ResponseBeginBlock{}
 }
 
 // DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx.
-func (t *TMPop) DeliverTx(tx []byte) abci.Result {
-	return t.doTx(t.state.Deliver, tx)
+func (t *TMPop) DeliverTx(tx []byte) abci.ResponseDeliverTx {
+	err := t.doTx(t.state.Deliver, tx)
+	if !err.IsOK() {
+		return abci.ResponseDeliverTx{
+			Code: err.Code,
+			Log:  err.Log,
+		}
+	}
+
+	return abci.ResponseDeliverTx{}
 }
 
 // CheckTx implements github.com/tendermint/abci/types.Application.CheckTx.
-func (t *TMPop) CheckTx(tx []byte) abci.Result {
-	return t.doTx(t.state.Check, tx)
+func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
+	err := t.doTx(t.state.Check, tx)
+	if !err.IsOK() {
+		return abci.ResponseCheckTx{
+			Code: err.Code,
+			Log:  err.Log,
+		}
+	}
+
+	return abci.ResponseCheckTx{}
 }
 
 // Commit implements github.com/tendermint/abci/types.Application.Commit.
 // It actually commits the current state in the Store.
-func (t *TMPop) Commit() abci.Result {
+func (t *TMPop) Commit() abci.ResponseCommit {
 	appHash, links, err := t.state.Commit()
 	if err != nil {
-		return abci.NewError(abci.CodeType_InternalError, err.Error())
+		return abci.ResponseCommit{
+			Code: CodeTypeInternalError,
+			Log:  err.Error(),
+		}
 	}
 
 	if err := t.saveValidatorHash(); err != nil {
-		return abci.NewError(abci.CodeType_InternalError, err.Error())
+		return abci.ResponseCommit{
+			Code: CodeTypeInternalError,
+			Log:  err.Error(),
+		}
 	}
 
 	if err := t.saveCommitLinkHashes(links); err != nil {
-		return abci.NewError(abci.CodeType_InternalError, err.Error())
+		return abci.ResponseCommit{
+			Code: CodeTypeInternalError,
+			Log:  err.Error(),
+		}
 	}
 
 	t.eventsManager.AddSavedLinks(links)
@@ -215,13 +240,15 @@ func (t *TMPop) Commit() abci.Result {
 	t.lastBlock.LastHeader = t.currentHeader
 	saveLastBlock(t.kvDB, *t.lastBlock)
 
-	return abci.NewResultOK(appHash[:], "")
+	return abci.ResponseCommit{
+		Data: appHash[:],
+	}
 }
 
 // Query implements github.com/tendermint/abci/types.Application.Query.
 func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) {
 	if reqQuery.Height != 0 {
-		resQuery.Code = abci.CodeType_InternalError
+		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = "tmpop only supports queries on latest commit"
 		return
 	}
@@ -290,12 +317,12 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		result = t.eventsManager.GetPendingEvents()
 
 	default:
-		resQuery.Code = abci.CodeType_UnknownRequest
+		resQuery.Code = CodeTypeNotImplemented
 		resQuery.Log = fmt.Sprintf("Unexpected Query path: %v", reqQuery.Path)
 	}
 
 	if err != nil {
-		resQuery.Code = abci.CodeType_InternalError
+		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = err.Error()
 
 		return
@@ -303,7 +330,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	if result != nil {
 		resBytes, err := json.Marshal(result)
 		if err != nil {
-			resQuery.Code = abci.CodeType_InternalError
+			resQuery.Code = CodeTypeInternalError
 			resQuery.Log = err.Error()
 		}
 
@@ -313,21 +340,27 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	return
 }
 
-func (t *TMPop) doTx(createLink func(*cs.Link) abci.Result, txBytes []byte) abci.Result {
+func (t *TMPop) doTx(createLink func(*cs.Link) *ABCIError, txBytes []byte) *ABCIError {
 	if len(txBytes) == 0 {
-		return abci.ErrEncodingError.SetLog("Tx length cannot be zero")
+		return &ABCIError{
+			CodeTypeValidation,
+			"Tx length cannot be zero",
+		}
 	}
 
-	tx, res := unmarshallTx(txBytes)
-	if res.IsErr() {
-		return res
+	tx, err := unmarshallTx(txBytes)
+	if !err.IsOK() {
+		return err
 	}
 
 	switch tx.TxType {
 	case CreateLink:
 		return createLink(tx.Link)
 	default:
-		return abci.ErrUnknownRequest.SetLog(fmt.Sprintf("Unexpected Tx type byte %X", tx.TxType))
+		return &ABCIError{
+			CodeTypeNotImplemented,
+			fmt.Sprintf("Unexpected Tx type byte %X", tx.TxType),
+		}
 	}
 }
 

@@ -19,7 +19,6 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/types"
-	abci "github.com/tendermint/abci/types"
 )
 
 // TxType represents the type of a Transaction
@@ -37,12 +36,12 @@ type Tx struct {
 	LinkHash *types.Bytes32 `json:"linkhash"`
 }
 
-func unmarshallTx(txBytes []byte) (*Tx, abci.Result) {
+func unmarshallTx(txBytes []byte) (*Tx, *ABCIError) {
 	tx := &Tx{}
 
 	if err := json.Unmarshal(txBytes, tx); err != nil {
-		return nil, abci.NewError(abci.CodeType_InternalError, err.Error())
+		return nil, &ABCIError{CodeTypeValidation, err.Error()}
 	}
 
-	return tx, abci.NewResultOK([]byte{}, "ok")
+	return tx, nil
 }

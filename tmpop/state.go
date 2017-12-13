@@ -24,7 +24,6 @@ import (
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator"
-	abci "github.com/tendermint/abci/types"
 )
 
 // State represents the app states, separating the committed state (for queries)
@@ -61,12 +60,12 @@ func NewState(a store.Adapter) (*State, error) {
 }
 
 // Check checks if creating this link is a valid operation
-func (s *State) Check(link *cs.Link) abci.Result {
+func (s *State) Check(link *cs.Link) *ABCIError {
 	return s.checkLinkAndAddToBatch(link, s.checkedLinks)
 }
 
 // Deliver adds a link to the list of links to be committed
-func (s *State) Deliver(link *cs.Link) abci.Result {
+func (s *State) Deliver(link *cs.Link) *ABCIError {
 	res := s.checkLinkAndAddToBatch(link, s.deliveredLinks)
 	if res.IsOK() {
 		s.deliveredLinksList = append(s.deliveredLinksList, link)
@@ -74,30 +73,33 @@ func (s *State) Deliver(link *cs.Link) abci.Result {
 	return res
 }
 
-func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) abci.Result {
+func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIError {
 	err := link.Validate(batch.GetSegment)
 	if err != nil {
-		return abci.NewError(
+		return &ABCIError{
 			CodeTypeValidation,
 			fmt.Sprintf("Link validation failed %v: %v", link, err),
-		)
+		}
 	}
 
 	if s.validator != nil {
 		err = (*s.validator).Validate(batch, link)
 		if err != nil {
-			return abci.NewError(
+			return &ABCIError{
 				CodeTypeValidation,
 				fmt.Sprintf("Link validation rules failed %v: %v", link, err),
-			)
+			}
 		}
 	}
 
 	if _, err := batch.CreateLink(link); err != nil {
-		return abci.NewError(abci.CodeType_InternalError, err.Error())
+		return &ABCIError{
+			CodeTypeInternalError,
+			err.Error(),
+		}
 	}
 
-	return abci.OK
+	return nil
 }
 
 // Commit commits the delivered links,

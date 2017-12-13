@@ -85,7 +85,7 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 	t.Run("Deliver link referencing a checked but not delivered link returns an error", func(t *testing.T) {
 		link, tx := makeCreateRandomLinkTx(t)
 		linkHash, _ := link.Hash()
-		res := h.CheckTx(tx)
+		h.CheckTx(tx)
 
 		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
 		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
@@ -93,7 +93,7 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 			"linkHash": linkHash,
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
-		res = h.DeliverTx(tx)
+		res := h.DeliverTx(tx)
 
 		assert.EqualValues(t, tmpop.CodeTypeValidation, res.Code)
 	})

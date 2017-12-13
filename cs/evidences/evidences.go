@@ -107,7 +107,7 @@ type TendermintSignature struct {
 
 // TendermintProof implements the Proof interface
 type TendermintProof struct {
-	BlockHeight uint64 `json:"blockHeight"`
+	BlockHeight int64 `json:"blockHeight"`
 
 	Root            *types.Bytes32 `json:"merkleRoot"`
 	Path            types.Path     `json:"merklePath"`
@@ -126,7 +126,7 @@ type TendermintProof struct {
 
 // Time returns the timestamp from the block header
 func (p *TendermintProof) Time() uint64 {
-	return p.Header.GetTime()
+	return uint64(p.Header.GetTime())
 }
 
 // FullProof returns a JSON formatted proof
