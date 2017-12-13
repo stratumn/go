@@ -60,7 +60,6 @@ type TMStore struct {
 	tmEventChan     chan interface{}
 	storeEventChans []chan *store.Event
 	tmClient        client.Client
-	clientFactory   func(endpoint string) client.Client
 }
 
 // Config contains configuration options for the store.
@@ -70,9 +69,6 @@ type Config struct {
 
 	// A git commit hash that will be set in the store's information.
 	Commit string
-
-	// Endoint used to communicate with Tendermint core
-	Endpoint string
 }
 
 // Info is the info returned by GetInfo.
@@ -85,15 +81,12 @@ type Info struct {
 }
 
 // New creates a new instance of a TMStore.
-func New(config *Config) *TMStore {
-	return NewFromClient(config, func(endpoint string) client.Client {
-		return client.NewHTTP(endpoint, "/websocket")
-	})
-}
-
-// NewFromClient creates a new instance of a TMStore with the given client.
-func NewFromClient(config *Config, clientFactory func(endpoint string) client.Client) *TMStore {
-	return &TMStore{config, context.Background(), nil, nil, clientFactory(config.Endpoint), clientFactory}
+func New(config *Config, tmClient client.Client) *TMStore {
+	return &TMStore{
+		config:   config,
+		ctx:      context.Background(),
+		tmClient: tmClient,
+	}
 }
 
 // StartWebsocket starts the websocket client and wait for New Block events.

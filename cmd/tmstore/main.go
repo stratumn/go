@@ -22,6 +22,7 @@ import (
 	_ "github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/store/storehttp"
 	"github.com/stratumn/sdk/tmstore"
+	"github.com/tendermint/tendermint/rpc/client"
 )
 
 var (
@@ -39,7 +40,14 @@ func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", tmstore.Description, version, commit[:7])
 
-	a := tmstore.New(&tmstore.Config{Endpoint: *endpoint, Version: version, Commit: commit})
+	tmClient := client.NewHTTP(*endpoint, "/websocket")
+	a := tmstore.New(
+		&tmstore.Config{
+			Version: version,
+			Commit:  commit,
+		},
+		tmClient)
+
 	go a.RetryStartWebsocket(*tmWsRetryInterval)
 
 	storehttp.RunWithFlags(a)
