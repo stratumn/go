@@ -59,7 +59,6 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 		segments     = make(cs.SegmentSlice, 0, limit)
 		process      = filter.Process
 		prevLinkHash []byte
-		linkHashes   []*types.Bytes32
 	)
 
 	if filter.PrevLinkHash != nil {
@@ -86,12 +85,9 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 		}
 	} else if len(filter.LinkHashes) > 0 {
 
-		for _, lh := range filter.LinkHashes {
-			linkHashBytes, err := types.NewBytes32FromString(lh)
-			if err != nil {
-				return nil, err
-			}
-			linkHashes = append(linkHashes, linkHashBytes)
+		linkHashes, err := cs.NewLinkHashesFromStrings(filter.LinkHashes)
+		if err != nil {
+			return nil, err
 		}
 
 		linkHashesArray := pq.Array(linkHashes)

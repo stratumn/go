@@ -344,3 +344,20 @@ func (s SegmentSlice) Less(i, j int) bool {
 
 	return s1.GetLinkHashString() < s2.GetLinkHashString()
 }
+
+// LinkHashes is a slice of Bytes32-formatted link hashes
+type LinkHashes []*types.Bytes32
+
+// NewLinkHashesFromStrings creates a slice of bytes-formatted link hashes
+// from a slice of string-formatted link hashes
+func NewLinkHashesFromStrings(linkHashesStr []string) (LinkHashes, error) {
+	linkHashes := LinkHashes{}
+	for _, lh := range linkHashesStr {
+		linkHashBytes, err := types.NewBytes32FromString(lh)
+		if err != nil {
+			return nil, err
+		}
+		linkHashes = append(linkHashes, linkHashBytes)
+	}
+	return linkHashes, nil
+}
