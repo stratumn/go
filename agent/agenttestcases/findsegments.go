@@ -2,43 +2,145 @@ package agenttestcases
 
 import (
 	"testing"
+
+	"github.com/stratumn/sdk/store"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestFindSegmentsOK tests the client's ability to handle a FindSegment request
+// TestFindSegments tests the client's ability to handle a FindSegment request
 func (f Factory) TestFindSegmentsOK(t *testing.T) {
+	process := "test"
+	expected := 20
+	for i := 0; i != expected; i++ {
+		f.Client.CreateMap(process, nil, "test")
+	}
+
+	filter := store.SegmentFilter{
+		Process: process,
+		Pagination: store.Pagination{
+			Limit: expected,
+		},
+	}
+	sgmts, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.NotNil(t, sgmts)
+	assert.Equal(t, expected, len(sgmts))
 }
 
 // TestFindSegmentsTags tests the client's ability to handle a FindSegment request
 // when tags are set in the filter
 func (f Factory) TestFindSegmentsTags(t *testing.T) {
+	process, tag := "test", "tag"
+	f.Client.CreateMap(process, nil, tag)
+
+	filter := store.SegmentFilter{
+		Process: process,
+		Tags:    []string{tag},
+		Pagination: store.Pagination{
+			Limit: 20,
+		},
+	}
+	found, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.NotNil(t, found)
+	assert.True(t, len(found) > 0)
+	for _, s := range found {
+		assert.Equal(t, []interface{}{tag}, s.Link.Meta["tags"])
+	}
 }
 
 // TestFindSegmentsLinkHashes tests the client's ability to handle a FindSegment request
 // when LinkHashes are set in the filter
 func (f Factory) TestFindSegmentsLinkHashes(t *testing.T) {
+	process := "test"
+	parent, _ := f.Client.CreateMap(process, nil, "test")
 
+	filter := store.SegmentFilter{
+		Process:    process,
+		LinkHashes: []string{parent.Meta.GetLinkHashString()},
+		Pagination: store.Pagination{
+			Limit: 20,
+		},
+	}
+	found, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.NotNil(t, found)
+	assert.Equal(t, 1, len(found))
+	assert.Equal(t, parent.Meta.LinkHash, found[0].Meta.LinkHash)
 }
 
 // TestFindSegmentsMapIDs tests the client's ability to handle a FindSegment request
 // when a map ID is set in the filter
 func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
+	process := "test"
+	parent, _ := f.Client.CreateMap(process, nil, "test")
 
+	filter := store.SegmentFilter{
+		Process: process,
+		MapIDs:  []string{parent.Link.Meta["mapId"].(string)},
+		Pagination: store.Pagination{
+			Limit: 20,
+		},
+	}
+	found, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.NotNil(t, found)
+	assert.Equal(t, 1, len(found))
+	assert.Equal(t, parent.Meta.LinkHash, found[0].Meta.LinkHash)
 }
 
 // TestFindSegmentsLimit tests the client's ability to handle a FindSegment request
 // when a limit is set in the filter
 func (f Factory) TestFindSegmentsLimit(t *testing.T) {
+	process := "test"
+	created := 10
+	expected := 0
+	for i := 0; i != created; i++ {
+		f.Client.CreateMap(process, nil, "test")
+	}
 
+	filter := store.SegmentFilter{
+		Process: process,
+		Pagination: store.Pagination{
+			Limit: expected,
+		},
+	}
+	sgmts, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.NotNil(t, sgmts)
+	assert.Equal(t, expected, len(sgmts))
 }
 
 // TestFindSegmentsNoLimit tests the client's ability to handle a FindSegment request
 // when the limit is set to -1 in the filter to retrieve all segments
 func (f Factory) TestFindSegmentsNoLimit(t *testing.T) {
+	process := "test"
+	created := 40
+	limit := -1
+	for i := 0; i != created; i++ {
+		f.Client.CreateMap(process, nil, "test")
+	}
 
+	filter := store.SegmentFilter{
+		Process: process,
+		Pagination: store.Pagination{
+			Limit: limit,
+		},
+	}
+	sgmts, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.NotNil(t, sgmts)
+	assert.True(t, len(sgmts) > created)
 }
 
 // TestFindSegmentsNoMatch tests the client's ability to handle a FindSegment request
 // when no segment is found
 func (f Factory) TestFindSegmentsNoMatch(t *testing.T) {
-
+	process := "wrong"
+	filter := store.SegmentFilter{
+		Process: process,
+	}
+	sgmts, err := f.Client.FindSegments(&filter)
+	assert.EqualError(t, err, "process 'wrong' does not exist")
+	assert.Nil(t, sgmts)
 }

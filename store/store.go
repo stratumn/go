@@ -146,7 +146,7 @@ type SegmentFilter struct {
 	LinkHashes []string `json:"linkHashes" url:"linkHashes,brackets"`
 
 	// A slice of tags the segments must all contain.
-	Tags []string `json:"tags" url:"tags"`
+	Tags []string `json:"tags" url:"tags,brackets"`
 }
 
 // MapFilter contains filtering options for segments.
