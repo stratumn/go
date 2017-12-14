@@ -43,6 +43,13 @@ func TestNewAgentClient_ExtraSlash(t *testing.T) {
 	assert.Equal(t, agentURL, client.URL())
 }
 
+func TestNewAgentClient_ConnectionRefused(t *testing.T) {
+	agentURL := "http://notfound:3000"
+	client, err := client.NewAgentClient(agentURL)
+	assert.EqualError(t, err, "Get http://notfound:3000/: dial tcp: lookup notfound: no such host")
+	assert.Equal(t, agentURL, client.URL())
+}
+
 // TestNewAgentClient_WrongURL tests the error handling when the
 // provided url is ill formatted
 func TestNewAgentClient_WrongURL(t *testing.T) {
