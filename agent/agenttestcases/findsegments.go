@@ -15,7 +15,7 @@ func (f Factory) TestFindSegmentsTags(t *testing.T) {
 }
 
 // TestFindSegmentsLinkHashes tests the client's ability to handle a FindSegment request
-// when linkHashes are set in the filter
+// when LinkHashes are set in the filter
 func (f Factory) TestFindSegmentsLinkHashes(t *testing.T) {
 
 }
@@ -33,7 +33,7 @@ func (f Factory) TestFindSegmentsLimit(t *testing.T) {
 }
 
 // TestFindSegmentsNoLimit tests the client's ability to handle a FindSegment request
-// when a limit is set in the filter
+// when the limit is set to -1 in the filter to retrieve all segments
 func (f Factory) TestFindSegmentsNoLimit(t *testing.T) {
 
 }

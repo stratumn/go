@@ -10,13 +10,13 @@ func (f Factory) TestGetMapIds(t *testing.T) {
 }
 
 // TestGetMapIdsLimit tests the client's ability to handle a GetMapIds request
-// when no mapID is found
+// when a limit is set in the filter
 func (f Factory) TestGetMapIdsLimit(t *testing.T) {
 
 }
 
 // TestGetMapIdsNoLimit tests the client's ability to handle a GetMapIds request
-// when no mapID is found
+// when the limit is set to -1 to retrieve all map IDs
 func (f Factory) TestGetMapIdsNoLimit(t *testing.T) {
 
 }

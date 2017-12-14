@@ -10,7 +10,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 }
 
 // TestGetSegmentNotFound tests the client's ability to handle a GetSegment request
-// when it does not exist
+// when the queried linkHash does not exist
 func (f Factory) TestGetSegmentNotFound(t *testing.T) {
 
 }
