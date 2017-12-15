@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Postgres container configuration.
-	imageName := "postgres:latest"
+	imageName := "postgres:10.1"
 	containerName := "indigo_postgresstore_test"
 	p, _ := nat.NewPort("tcp", port)
 	exposedPorts := map[nat.Port]struct{}{p: {}}

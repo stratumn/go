@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 
 	// Rethinkdb container configuration.
-	imageName := "rethinkdb:latest"
+	imageName := "rethinkdb:2.3"
 	containerName := "indigo_rethinkstore_test"
 	p, _ := nat.NewPort("tcp", port)
 	exposedPorts := map[nat.Port]struct{}{p: {}}

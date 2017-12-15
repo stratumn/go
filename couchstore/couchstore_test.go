@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	if *integration {
 		// Couch container configuration.
-		imageName := "couchdb:latest"
+		imageName := "couchdb:2.1"
 		containerName := "sdk_couchstore_integration_test"
 		p, _ := nat.NewPort("tcp", port)
 		exposedPorts := map[nat.Port]struct{}{p: {}}
