@@ -11,8 +11,9 @@ import (
 
 var agentURL = "http://localhost:3000"
 
-// Factory wraps functions to mock an HTTP server for an agent and run
-// the  for the agent and its client
+// Factory wraps functions to create a client and a mock agent.
+// After its creation, the client is stored in the factory to avoid
+// re-creating it in every test.
 type Factory struct {
 	NewMock   func(t *testing.T, agentURL string) *http.Server
 	NewClient func(agentURL string) (client.AgentClient, error)
