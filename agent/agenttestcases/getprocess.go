@@ -4,9 +4,8 @@ import (
 	"testing"
 )
 
-// TestGetProcess tests the client's ability to handle a GetProcess request
-func (f Factory) TestGetProcess(t *testing.T) {
-
+// TestGetProcessOK tests the client's ability to handle a GetProcess request
+func (f Factory) TestGetProcessOK(t *testing.T) {
 }
 
 // TestGetProcessNotFound tests the client's ability to handle a FindSegment request

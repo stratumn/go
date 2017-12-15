@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-// TestGetInfo tests the client's ability to handle a GetInfo request
-func (f Factory) TestGetInfo(t *testing.T) {
-
+// TestGetInfoOK tests the client's ability to handle a GetInfo request
+func (f Factory) TestGetInfoOK(t *testing.T) {
 }

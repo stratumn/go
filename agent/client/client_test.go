@@ -3,7 +3,6 @@ package client_test
 import (
 	"flag"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -20,7 +19,6 @@ var (
 func TestMain(m *testing.M) {
 	seed := int64(time.Now().Nanosecond())
 	fmt.Printf("using seed %d\n", seed)
-	rand.Seed(seed)
 	flag.Parse()
 	m.Run()
 }

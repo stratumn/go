@@ -4,9 +4,8 @@ import (
 	"testing"
 )
 
-// TestGetMapIds tests the client's ability to handle a GetMapIds request
-func (f Factory) TestGetMapIds(t *testing.T) {
-
+// TestGetMapIdsOK tests the client's ability to handle a GetMapIds request
+func (f Factory) TestGetMapIdsOK(t *testing.T) {
 }
 
 // TestGetMapIdsLimit tests the client's ability to handle a GetMapIds request

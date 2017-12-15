@@ -4,9 +4,8 @@ import (
 	"testing"
 )
 
-// TestFindSegments tests the client's ability to handle a FindSegment request
-func (f Factory) TestFindSegments(t *testing.T) {
-
+// TestFindSegmentsOK tests the client's ability to handle a FindSegment request
+func (f Factory) TestFindSegmentsOK(t *testing.T) {
 }
 
 // TestFindSegmentsTags tests the client's ability to handle a FindSegment request

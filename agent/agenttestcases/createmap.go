@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-// TestCreateMap tests the client's ability to handle a CreateMap request
-func (f Factory) TestCreateMap(t *testing.T) {
+// TestCreateMapOK tests the client's ability to handle a CreateMap request
+func (f Factory) TestCreateMapOK(t *testing.T) {
 }
 
 // TestCreateMapWithRefs tests the client's ability to handle a CreateMap request

@@ -35,7 +35,7 @@ func (m *mockHTTPServer) sendError(w http.ResponseWriter, status int, message st
 	}
 	bytes, err := json.Marshal(errorData)
 	if err != nil {
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(status)
@@ -46,7 +46,7 @@ func (m *mockHTTPServer) sendError(w http.ResponseWriter, status int, message st
 func (m *mockHTTPServer) sendResponse(w http.ResponseWriter, status int, data interface{}) {
 	bytes, err := json.Marshal(data)
 	if err != nil {
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(status)

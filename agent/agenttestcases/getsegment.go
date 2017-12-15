@@ -4,9 +4,8 @@ import (
 	"testing"
 )
 
-// TestGetSegment tests the client's ability to handle a GetSegment request
-func (f Factory) TestGetSegment(t *testing.T) {
-
+// TestGetSegmentOK tests the client's ability to handle a GetSegment request
+func (f Factory) TestGetSegmentOK(t *testing.T) {
 }
 
 // TestGetSegmentNotFound tests the client's ability to handle a GetSegment request

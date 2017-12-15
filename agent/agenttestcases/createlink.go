@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-// TestCreateLink tests the client's ability to handle a CreateLink request
-func (f Factory) TestCreateLink(t *testing.T) {
+// TestCreateLinkOK tests the client's ability to handle a CreateLink request
+func (f Factory) TestCreateLinkOK(t *testing.T) {
 }
 
 // TestCreateLinkWithRefs tests the client's ability to handle a CreateLink request
