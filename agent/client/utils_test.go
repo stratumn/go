@@ -57,11 +57,11 @@ func (m *mockHTTPServer) sendResponse(w http.ResponseWriter, status int, data in
 func (m *mockHTTPServer) mockCreateLink(w http.ResponseWriter, r *http.Request) {
 	params, err := m.decodePostParams(r)
 	if err != nil {
-		m.sendError(w, 400, err.Error())
+		m.sendError(w, http.StatusOK, err.Error())
 		return
 	}
 	if len(params) < 2 {
-		m.sendError(w, 400, "a title is required")
+		m.sendError(w, http.StatusOK, "a title is required")
 		return
 	}
 	refs := params[0]
@@ -69,16 +69,16 @@ func (m *mockHTTPServer) mockCreateLink(w http.ResponseWriter, r *http.Request) 
 
 	vars := mux.Vars(r)
 	if vars["linkHash"] == "0000000000000000000000000000000000000000000000000000000000000000" {
-		m.sendError(w, 400, "Not Found")
+		m.sendError(w, http.StatusOK, "Not Found")
 		return
 	} else if vars["action"] == "wrong" {
-		m.sendError(w, 400, "not found")
+		m.sendError(w, http.StatusOK, "not found")
 		return
 	} else if vars["process"] == "wrong" {
-		m.sendError(w, 400, "process 'wrong' does not exist")
+		m.sendError(w, http.StatusOK, "process 'wrong' does not exist")
 		return
 	} else if vars["process"] == "wrongref" {
-		m.sendError(w, 400, "missing segment or (process and linkHash)")
+		m.sendError(w, http.StatusOK, "missing segment or (process and linkHash)")
 		return
 	}
 
@@ -99,11 +99,11 @@ func (m *mockHTTPServer) mockCreateLink(w http.ResponseWriter, r *http.Request) 
 func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 	params, err := m.decodePostParams(r)
 	if err != nil {
-		m.sendError(w, 400, err.Error())
+		m.sendError(w, http.StatusOK, err.Error())
 		return
 	}
 	if len(params) < 2 {
-		m.sendError(w, 400, "a title is required")
+		m.sendError(w, http.StatusOK, "a title is required")
 		return
 	}
 	refs := params[0]
@@ -111,7 +111,7 @@ func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	if vars["process"] == "wrongref" {
-		m.sendError(w, 400, "missing segment or (process and linkHash)")
+		m.sendError(w, http.StatusOK, "missing segment or (process and linkHash)")
 		return
 	}
 	s := cs.Segment{
@@ -138,7 +138,7 @@ func (m *mockHTTPServer) mockFindSegments(w http.ResponseWriter, r *http.Request
 	s := cs.SegmentSlice{}
 	vars := mux.Vars(r)
 	if vars["process"] == "wrong" {
-		m.sendError(w, 400, "process 'wrong' does not exist")
+		m.sendError(w, http.StatusOK, "process 'wrong' does not exist")
 		return
 	}
 	if len(linkHashesStr) > 0 || len(mapIDs) > 0 {
@@ -192,7 +192,7 @@ func (m *mockHTTPServer) mockGetMapIds(w http.ResponseWriter, r *http.Request) {
 	s := make([]string, 0)
 	vars := mux.Vars(r)
 	if vars["process"] == "wrong" {
-		m.sendError(w, 400, "process 'wrong' does not exist")
+		m.sendError(w, http.StatusOK, "process 'wrong' does not exist")
 		return
 	}
 	if offset > limit {
@@ -222,7 +222,7 @@ func (m *mockHTTPServer) mockGetSegment(w http.ResponseWriter, r *http.Request) 
 	s := cs.Segment{}
 	vars := mux.Vars(r)
 	if vars["linkHash"] == "0000000000000000000000000000000000000000000000000000000000000000" {
-		m.sendError(w, 404, "Not Found")
+		m.sendError(w, http.StatusNotFound, "Not Found")
 		return
 	}
 	m.sendResponse(w, 200, s)

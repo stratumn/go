@@ -2,9 +2,7 @@ package client_test
 
 import (
 	"flag"
-	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stratumn/sdk/agent/agenttestcases"
 	"github.com/stratumn/sdk/agent/client"
@@ -17,8 +15,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	seed := int64(time.Now().Nanosecond())
-	fmt.Printf("using seed %d\n", seed)
 	flag.Parse()
 	m.Run()
 }
