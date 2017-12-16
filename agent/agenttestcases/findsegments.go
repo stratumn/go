@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestFindSegments tests the client's ability to handle a FindSegment request
+// TestFindSegmentsOK tests the client's ability to handle a FindSegment request
 func (f Factory) TestFindSegmentsOK(t *testing.T) {
 	process := "test"
 	expected := 20
