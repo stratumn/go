@@ -1,18 +1,19 @@
 ## Change log
 
-### 0.2.0
+### 0.2.0 - BREAKING CHANGES
 
 * Updated to Tendermint 0.13.0
 * Updated license
 * Changed internal store interfaces to more clearly separate Links from their Meta
   * Links are always immutable and can be very easily stored on a blockchain
   * Segments' Meta (which contains mainly evidences) is mutable (since evidence can be added after the fact) and can be stored in a separate store
+  * The exposed http interface has changed accordingly
 * Re-architectured notifications to use websockets and channels everywhere
 * Refactored internal types to operate as much as possible on Links
 * Refactored types for more consistency
-* A Segment can now references existing Segments (even from other processes / maps)
+* A Segment can now reference existing Segments (even from other processes / maps)
 * Added new store implementations (Rethink, CouchDB, PostgreSQL)
-* Added fossilizers implementations (BTCFossilizer, BatchFossilizer, DummyFossilizer)
+* Added fossilizers implementations (BTCFossilizer, BatchFossilizer)
 
 ### 0.1.1
 
