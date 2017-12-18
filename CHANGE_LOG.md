@@ -1,14 +1,30 @@
 ## Change log
 
+### 0.2.0
+
+* Updated to Tendermint 0.13.0
+* Updated license
+* Changed internal store interfaces to more clearly separate Links from their Meta
+  * Links are always immutable and can be very easily stored on a blockchain
+  * Segments' Meta (which contains mainly evidences) is mutable (since evidence can be added after the fact) and can be stored in a separate store
+* Re-architectured notifications to use websockets and channels everywhere
+* Refactored internal types to operate as much as possible on Links
+* Refactored types for more consistency
+* A Segment can now references existing Segments (even from other processes / maps)
+* Added new store implementations (Rethink, CouchDB, PostgreSQL)
+* Added fossilizers implementations (BTCFossilizer, BatchFossilizer, DummyFossilizer)
+
 ### 0.1.1
+
 * Updated to Tendermint 0.11.1.
 
 ### 0.1.0 - BREAKING CHANGES
+
 * Updated to Tendermint 0.11.0.
 * Added basic segment schema based validation at the node level.
 * Added "multi-process" support:
-  - Made field `segment.link.meta.process` mandatory
-  - Scoped all read requests by process
+  * Made field `segment.link.meta.process` mandatory
+  * Scoped all read requests by process
 * Updated FindSegments so that it filters by prevLinkHash and mapIDs
 * Changed `strat update` so that it updates both the CLI and generators.
 * Changed license back to Apache 2.
@@ -19,6 +35,7 @@
 * Cleaned logs.
 
 ### 0.0.8-dev
+
 * Updated to Tendermint 0.9.0.
 * Improved Tendermint node stability.
 * Added batch support to stores.
@@ -27,14 +44,17 @@
 * Created homebrew formula.
 
 ### 0.0.7-dev
+
 * Made single binary for Indigo node and Tendermint core.
 * Improved `tmstore` websocket.
 * Changed license to MPL-2.0.
 
 ### 0.0.6-dev
+
 * Fixed `tmstore` `didSave` channel.
 
 ### 0.0.5-dev
+
 * Added support for proof-of-process over a Tendermint blockchain network. Each
   node can use any of the available store adapters to save its data.
 * Added the `filetmpop` command, which is a Tendermint application that uses a
@@ -46,18 +66,21 @@
   environment variables.
 
 ### 0.0.4-dev
+
 * The `strat` command will now use standard flags, using the `cobra` library.
 * Added a `--generators-path` flag to `strat` to specify the location of the
   generators on the local file system. This makes it easier to develop
   generators.
 
 ### 0.0.3-dev
+
 * Added a -stdin flag to all `strat` commands that execute scripts. It is set to
   false by default. If true, the standard input will be attached to the process
   executing the shell command. Hopefully this will fix `strat test` not working
   on Windows.
 
 ### 0.0.2-dev
+
 * Reduced size of Docker images.
 * Improved Docker images security.
 * Locked Docker base images to specific versions.
@@ -67,27 +90,33 @@
   file.
 
 ### 0.0.1-dev
+
 * Reset version to `0.0.1-dev`.
 * Added the `strat deploy` command. It expects an environment name as the first
   argument, and will try to execute the `deploy:{env}` script of the project.
 * Minor fixes and improvements.
 
 ### 0.24.1-alpha
+
 * The command `strat update` should now work properly even if temporary files
   are on a different file system.
 
 ### 0.24.0-alpha
+
 * The update mechanism for `strat update` should now work properly on all
   supported platforms.
 
 ### 0.23.0-alpha
+
 * `strat update` will now check the cryptographic signature of downloaded
   binaries.
 
 ### 0.22.0-alpha
+
 * All releases binaries are now signed.
 
 ### 0.21.0-alpha
+
 * Added `strat` command `down` that executes a project script that should stop
   running services.
 * Added `strat` command `pull` that executes a project script that should pull
@@ -96,14 +125,17 @@
   updates.
 
 ### 0.20.0-alpha
+
 * Use `logrus` as the logger.
 
 ### 0.19.0-alpha
+
 * Fixed `strat` `down:test` not working.
 * Made `strat` support private Github repositories on repository commands via a
   flag or environment variable.
 
 ### 0.18.0-alpha
+
 * Added support for `strat` `down:test` script. This addition makes `strat test`
   execute a `down:test` script if present after the tests. It will handle the
   exit code properly.
@@ -113,14 +145,16 @@
 * Improved code documentation.
 
 ### 0.17.0-alpha
+
 * Scripts executed by `strat` can now be OS and architecture specific. It will
   look fist for a script named `{name}:{os}:{arch}`, then `{name}:{os}`, then
   `{name}:{arch}`, and finally `{name}`.
 * Added the `strat build` command that executes the `build` script of a project.
 
 ### 0.16.0-alpha
+
 * Scripts executed by `strat` are now passed to a shell instead of being
-  executed directly. On*nix, the shell is `sh`. On Windows it is `cmd` (needs to
+  executed directly. On\*nix, the shell is `sh`. On Windows it is `cmd` (needs to
   be tested). This is to allow executing multiple commands in a script, for
   instance using `&&`.
 * Scripts executed by `strat` are now passed a working directory and can
@@ -146,6 +180,7 @@
   not being saved to the correct directory.
 
 ### 0.15.0-alpha
+
 * Command `strat update` will now update the CLI. It will update to the latest
   published release by default, or the latest prerelease if `-prerelease` is
   set.
