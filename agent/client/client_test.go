@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"context"
 	"flag"
 	"testing"
 
@@ -23,7 +24,7 @@ func TestMain(m *testing.M) {
 func TestNewAgentClient(t *testing.T) {
 	if *integration == false {
 		srv := mockAgentServer(t, agentURL)
-		defer srv.Shutdown(nil)
+		defer srv.Shutdown(context.Background())
 	}
 	client, err := client.NewAgentClient(agentURL)
 	assert.NoError(t, err)
@@ -36,7 +37,7 @@ func TestNewAgentClient_ExtraSlash(t *testing.T) {
 	if *integration == false {
 		agentURL := "http://localhost:3000/"
 		srv := mockAgentServer(t, agentURL)
-		defer srv.Shutdown(nil)
+		defer srv.Shutdown(context.Background())
 	}
 	client, err := client.NewAgentClient(agentURL)
 	assert.NoError(t, err)

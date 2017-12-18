@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -143,4 +144,17 @@ func (f Factory) TestFindSegmentsNoMatch(t *testing.T) {
 	sgmts, err := f.Client.FindSegments(&filter)
 	assert.EqualError(t, err, "process 'wrong' does not exist")
 	assert.Nil(t, sgmts)
+}
+
+// TestFindSegmentsNotFound tests the client's ability to handle a FindSegment request
+// when no segment is found
+func (f Factory) TestFindSegmentsNotFound(t *testing.T) {
+	process, prevLinkHash := "test", testutil.RandomHash().String()
+	filter := store.SegmentFilter{
+		Process:      process,
+		PrevLinkHash: &prevLinkHash,
+	}
+	sgmts, err := f.Client.FindSegments(&filter)
+	assert.NoError(t, err)
+	assert.Len(t, sgmts, 0)
 }

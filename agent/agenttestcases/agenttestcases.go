@@ -1,6 +1,7 @@
 package agenttestcases
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -26,7 +27,7 @@ func (f Factory) RunAgentClientTests(t *testing.T) {
 	if f.NewMock != nil {
 		srv := f.NewMock(t, agentURL)
 		defer func() {
-			if err := srv.Shutdown(nil); err != nil {
+			if err := srv.Shutdown(context.Background()); err != nil {
 				log.WithField("error", err).Fatal("Failed to shutdown HTTP server")
 			}
 		}()
@@ -70,6 +71,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("TestFindSegmentsMapIDs", f.TestFindSegmentsMapIDs)
 	t.Run("TestFindSegmentsTags", f.TestFindSegmentsTags)
 	t.Run("TestFindSegmentsNoMatch", f.TestFindSegmentsNoMatch)
+	t.Run("TestFindSegmentsNotFound", f.TestFindSegmentsNotFound)
 }
 
 // TestGetInfo tests what happens when getting an agent's infos

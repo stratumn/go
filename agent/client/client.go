@@ -86,7 +86,7 @@ func (a *agentClient) CreateLink(process string, linkHash *types.Bytes32, action
 	}
 	decoder := json.NewDecoder(resp.Body)
 	seg := cs.Segment{}
-	// TODO: could be improved by impelmenting UnnmarshalJSON on cs.Segment
+	// TODO: could be improved by implementing UnnmarshalJSON on cs.Segment
 	// to deserialize references
 	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
