@@ -61,7 +61,7 @@ var (
 	wsPongTimeout   = flag.Duration("ws_pong_timeout", jsonws.DefaultWebSocketPongTimeout, "Timeout for a web socket expected pong")
 	wsPingInterval  = flag.Duration("ws_ping_interval", jsonws.DefaultWebSocketPingInterval, "Interval between web socket pings")
 	wsMaxMsgSize    = flag.Int64("max_msg_size", jsonws.DefaultWebSocketMaxMsgSize, "Maximum size of a received web socket message")
-	version         = "0.1.0"
+	version         = "0.2.0"
 	commit          = "00000000000000000000000000000000"
 )
 

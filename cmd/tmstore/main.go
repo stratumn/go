@@ -28,7 +28,7 @@ import (
 var (
 	endpoint          = flag.String("endpoint", tmstore.DefaultEndpoint, "Endpoint used to communicate with Tendermint Core")
 	tmWsRetryInterval = flag.Duration("tm_ws_retry_interval", tmstore.DefaultWsRetryInterval, "Interval between tendermint websocket connection tries")
-	version           = "0.1.0"
+	version           = "0.2.0"
 	commit            = "00000000000000000000000000000000"
 )
 

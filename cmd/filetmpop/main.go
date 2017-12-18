@@ -29,7 +29,7 @@ import (
 var (
 	path              = flag.String("path", filestore.DefaultPath, "Path to directory where files are stored")
 	validatorFilename = flag.String("rules_filename", validator.DefaultFilename, "Path to filename containing validation rules")
-	version           = "0.1.0"
+	version           = "0.2.0"
 	commit            = "00000000000000000000000000000000"
 )
 

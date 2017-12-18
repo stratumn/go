@@ -1,6 +1,6 @@
 {
   "name": "invalid_partial",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Invalid partial test",
   "author": "Stratumn",
   "license": "MIT",
@@ -40,20 +40,20 @@
     "license": {
       "type": "select:string",
       "prompt": "License:",
-      "options": [{
-        "input": "1",
-        "value": "mit",
-        "text": "MIT"
-      }, {
-        "input": "2",
-        "value": "bsd",
-        "text": "BSD"
-      }],
+      "options": [
+        {
+          "input": "1",
+          "value": "mit",
+          "text": "MIT"
+        },
+        {
+          "input": "2",
+          "value": "bsd",
+          "text": "BSD"
+        }
+      ],
       "default": "mit"
     }
   },
-  "priorities": [
-    "README.md",
-    "LICENSE"
-  ]
+  "priorities": ["README.md", "LICENSE"]
 }

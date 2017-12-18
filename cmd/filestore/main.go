@@ -26,7 +26,7 @@ import (
 
 var (
 	path    = flag.String("path", filestore.DefaultPath, "Path to directory where files are stored")
-	version = "0.1.0"
+	version = "0.2.0"
 	commit  = "00000000000000000000000000000000"
 )
 

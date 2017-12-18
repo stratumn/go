@@ -33,7 +33,7 @@ import (
 // It also tests the root route of the server using net/http/httptest.
 func Example() {
 	// Create a dummy adapter.
-	a := dummyfossilizer.New(&dummyfossilizer.Config{Version: "0.1.0", Commit: "abc"})
+	a := dummyfossilizer.New(&dummyfossilizer.Config{Version: "0.2.0", Commit: "abc"})
 	config := &fossilizerhttp.Config{
 		MaxDataLen: 64,
 	}
@@ -73,5 +73,5 @@ func Example() {
 	}
 
 	fmt.Printf("%s", info)
-	// Output: {"adapter":{"name":"dummy","description":"Stratumn Dummy Fossilizer","version":"0.1.0","commit":"abc"}}
+	// Output: {"adapter":{"name":"dummy","description":"Stratumn Dummy Fossilizer","version":"0.2.0","commit":"abc"}}
 }
