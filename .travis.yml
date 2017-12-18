@@ -4,7 +4,6 @@ services:
   - docker
 go:
   - 1.9
-  - tip
 env:
   global:
   - COMMIT=${TRAVIS_COMMIT::8}
