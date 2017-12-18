@@ -198,6 +198,14 @@ func runScript(name, wd string, args []string, ignoreNotExist bool) error {
 		script += " " + strings.Join(args, " ")
 	}
 
+	cmd := strings.Split(script, " ")
+	if cmd[0] == "strat" {
+		if cmd[1] == "run" {
+			return runScript(cmd[2], "", cmd[3:], false)
+		}
+		return runScript(cmd[1], "", cmd[2:], false)
+	}
+
 	var shell []string
 	if runtime.GOOS == win {
 		shell = winShell
