@@ -77,3 +77,9 @@
 [[constraint]]
   name = "github.com/google/go-querystring"
   branch="master"
+
+[[override]] 
+  # This is required because Tendermint needs v0.5
+  # but Docker claims it needs v0.4 (but probably not intentionnally)
+  name = "github.com/gogo/protobuf"
+  version = "v0.5"
