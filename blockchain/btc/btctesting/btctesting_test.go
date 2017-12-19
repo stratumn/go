@@ -19,9 +19,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stratumn/sdk/blockchain/btc"
 	"github.com/stratumn/sdk/testutil"
 	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/blockchain/btc"
 )
 
 func TestMockFindUnspent(t *testing.T) {

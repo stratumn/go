@@ -84,7 +84,7 @@ func New(c *Config) *Client {
 // FindUnspent implements
 // github.com/stratumn/sdk/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
-	for _ = range c.limiter {
+	for range c.limiter {
 		break
 	}
 	c.waitGroup.Add(1)
@@ -135,7 +135,7 @@ TX_LOOP:
 // Broadcast implements
 // github.com/stratumn/sdk/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(raw []byte) error {
-	for _ = range c.limiter {
+	for range c.limiter {
 		break
 	}
 	c.waitGroup.Add(1)
@@ -164,7 +164,7 @@ func (c *Client) Start() {
 
 	go func() {
 		for {
-			for _ = range c.timer.C {
+			for range c.timer.C {
 				break
 			}
 			if c.closeChan == nil {
@@ -194,7 +194,7 @@ func (c *Client) Stop() {
 }
 
 func (c *Client) wait() error {
-	for _ = range c.limiter {
+	for range c.limiter {
 		break
 	}
 	if c.closeChan == nil {

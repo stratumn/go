@@ -17,9 +17,9 @@ package merkle_test
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/merkle"
 	"github.com/stratumn/sdk/merkle/treetestcases"
+	"github.com/stratumn/sdk/types"
 )
 
 func TestNewStaticTree_noLeaves(t *testing.T) {

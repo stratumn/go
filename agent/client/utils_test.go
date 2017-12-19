@@ -157,23 +157,23 @@ func (m *mockHTTPServer) mockGetInfo(w http.ResponseWriter, r *http.Request) {
 			"test": &agent.Process{},
 		},
 		Stores: []agent.StoreInfo{
-			agent.StoreInfo{
+			{
 				"url": "http://localhost:5000",
 			},
 		},
 		Fossilizers: []agent.FossilizerInfo{},
 		Plugins: []agent.PluginInfo{
-			agent.PluginInfo{
+			{
 				Name:        "Agent URL",
 				Description: "Saves in segment meta the URL that can be used to retrieve a segment.",
 				ID:          "1",
 			},
-			agent.PluginInfo{
+			{
 				Name:        "Action arguments",
 				Description: "Saves the action and its arguments in link meta information.",
 				ID:          "2",
 			},
-			agent.PluginInfo{
+			{
 				Name:        "State Hash",
 				Description: "Computes and adds the hash of the state in meta.",
 				ID:          "3",
@@ -211,8 +211,8 @@ func (m *mockHTTPServer) mockGetProcesses(w http.ResponseWriter, r *http.Request
 		Name: "test",
 		ProcessInfo: agent.ProcessInfo{
 			Actions: map[string]agent.ActionInfo{
-				"one": agent.ActionInfo{},
-				"two": agent.ActionInfo{},
+				"one": {},
+				"two": {},
 			},
 		}})
 	m.sendResponse(w, 200, p)

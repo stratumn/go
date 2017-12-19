@@ -163,12 +163,12 @@ func TestStringInputMsg_default(t *testing.T) {
 func TestStringSelectSet(t *testing.T) {
 	in := StringSelect{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -186,12 +186,12 @@ func TestStringSelectSet(t *testing.T) {
 func TestStringSelectSet_default(t *testing.T) {
 	in := StringSelect{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -210,12 +210,12 @@ func TestStringSelectSet_default(t *testing.T) {
 func TestStringSelectSet_notString(t *testing.T) {
 	in := StringSelect{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -230,12 +230,12 @@ func TestStringSelectSet_notString(t *testing.T) {
 func TestStringSelectSet_invalid(t *testing.T) {
 	in := StringSelect{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -250,12 +250,12 @@ func TestStringSelectSet_invalid(t *testing.T) {
 func TestStringSelectGet(t *testing.T) {
 	in := StringSelect{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -272,12 +272,12 @@ func TestStringSelectGet(t *testing.T) {
 func TestStringSelectGet_default(t *testing.T) {
 	in := StringSelect{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -296,12 +296,12 @@ func TestStringSelectMsg(t *testing.T) {
 			Prompt: "value:",
 		},
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -323,12 +323,12 @@ func TestStringSelectMsg_default(t *testing.T) {
 			Prompt: "value:",
 		},
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -348,12 +348,12 @@ n: no (default)
 func TestStringSelectMultiSet(t *testing.T) {
 	in := StringSelectMulti{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -371,12 +371,12 @@ func TestStringSelectMultiSet_multi(t *testing.T) {
 	in := StringSelectMulti{
 		Separator: ",",
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "1",
 				Value: "1",
 				Text:  "one",
 			},
-			StringSelectOption{
+			{
 				Input: "2",
 				Value: "2",
 				Text:  "two",
@@ -394,12 +394,12 @@ func TestStringSelectMultiSet_multi(t *testing.T) {
 func TestStringSelectMultiSet_default(t *testing.T) {
 	in := StringSelectMulti{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -418,12 +418,12 @@ func TestStringSelectMultiSet_default(t *testing.T) {
 func TestStringSelectMultiSet_notString(t *testing.T) {
 	in := StringSelectMulti{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -438,12 +438,12 @@ func TestStringSelectMultiSet_notString(t *testing.T) {
 func TestStringSelectMultiSet_invalid(t *testing.T) {
 	in := StringSelectMulti{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -460,12 +460,12 @@ func TestStringSelectMultiSet_requiredNoDefault(t *testing.T) {
 		IsRequired: true,
 		Separator:  ",",
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -483,12 +483,12 @@ func TestStringSelectMultiSet_requiredDefault(t *testing.T) {
 		Default:    "1,2",
 		Separator:  ",",
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "1",
 				Value: "1",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "2",
 				Value: "2",
 				Text:  "no",
@@ -507,12 +507,12 @@ func TestStringSelectMultiSet_noSeparator(t *testing.T) {
 	in := StringSelectMulti{
 		IsRequired: true,
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "1",
 				Value: "1",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "2",
 				Value: "2",
 				Text:  "no",
@@ -529,12 +529,12 @@ func TestStringSelectMultiSet_notRequired(t *testing.T) {
 		IsRequired: false,
 		Separator:  ",",
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "1",
 				Value: "1",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "2",
 				Value: "2",
 				Text:  "no",
@@ -552,12 +552,12 @@ func TestStringSelectMultiSet_notRequired(t *testing.T) {
 func TestStringSelectMultiGet(t *testing.T) {
 	in := StringSelectMulti{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -574,12 +574,12 @@ func TestStringSelectMultiGet(t *testing.T) {
 func TestStringSelectMultiGet_default(t *testing.T) {
 	in := StringSelectMulti{
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",
@@ -600,12 +600,12 @@ func TestStringSelectMultiMsg(t *testing.T) {
 		},
 		Separator: ",",
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "1",
 				Value: "1",
 				Text:  "one",
 			},
-			StringSelectOption{
+			{
 				Input: "2",
 				Value: "2",
 				Text:  "two",
@@ -628,12 +628,12 @@ func TestStringSelectMultiMsg_required(t *testing.T) {
 		Separator:  ",",
 		IsRequired: true,
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "1",
 				Value: "1",
 				Text:  "one",
 			},
-			StringSelectOption{
+			{
 				Input: "2",
 				Value: "2",
 				Text:  "two",
@@ -655,12 +655,12 @@ func TestStringSelectMultiMsg_default(t *testing.T) {
 			Prompt: "value:",
 		},
 		Options: []StringSelectOption{
-			StringSelectOption{
+			{
 				Input: "y",
 				Value: "y",
 				Text:  "yes",
 			},
-			StringSelectOption{
+			{
 				Input: "n",
 				Value: "n",
 				Text:  "no",

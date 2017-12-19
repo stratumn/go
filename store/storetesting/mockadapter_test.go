@@ -274,7 +274,7 @@ func TestMockAdapter_SetValue(t *testing.T) {
 	if got, want := a.MockSetValue.CalledCount, 2; got != want {
 		t.Errorf(`a.MockSetValue.CalledCount = %d want %d`, got, want)
 	}
-	if got, want := a.MockSetValue.CalledWith, [][][]byte{[][]byte{k, v}, [][]byte{k, v}}; !reflect.DeepEqual(got, want) {
+	if got, want := a.MockSetValue.CalledWith, [][][]byte{{k, v}, {k, v}}; !reflect.DeepEqual(got, want) {
 		t.Errorf("a.MockSetValue.CalledWith = %s\n want %s", got, want)
 	}
 	if got, want := a.MockSetValue.LastCalledWith, [][]byte{k, v}; !reflect.DeepEqual(got, want) {

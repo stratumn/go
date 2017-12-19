@@ -309,7 +309,7 @@ func (gen Generator) generateFileListFromSubstitution(name string) ([]fileSubsti
 				name, pattern, subst, err.Error())
 		}
 		if str, ok := input.(string); ok {
-			return []fileSubstitution{fileSubstitution{str, strings.Replace(name, pattern, str, 1)}}, nil
+			return []fileSubstitution{{str, strings.Replace(name, pattern, str, 1)}}, nil
 		} else if str, ok := input.([]string); ok {
 			names := make([]fileSubstitution, len(str), len(str))
 			for i, s := range str {
@@ -319,7 +319,7 @@ func (gen Generator) generateFileListFromSubstitution(name string) ([]fileSubsti
 		}
 		return nil, fmt.Errorf("Filename %q contains the pattern %q but input has bad type %#v", name, pattern, input)
 	}
-	return []fileSubstitution{fileSubstitution{"", name}}, nil
+	return []fileSubstitution{{"", name}}, nil
 }
 
 func (gen *Generator) generate(dst string) error {
