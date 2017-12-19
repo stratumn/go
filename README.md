@@ -13,7 +13,7 @@
 
 The SDK includes tools to build [Proof of Process Networks](https://proofofprocess.org) using the [Indigo Framework](https://indigoframework.com).
 
-To get started, visit the Indigo Framework website:  
+To get started, visit the Indigo Framework website:
 https://indigoframework.com
 
 ## Run tests
@@ -55,6 +55,25 @@ Build tagged docker images:
 ```bash
 make docker_images
 ```
+
+## Releasing a new version
+
+If you want to release a new version of the Stratumn SDK, here is what you need to do.
+You need to install:
+
+* [Docker](https://www.docker.com/)
+* [Keybase](https://keybase.io/)
+* [github-release](https://github.com/aktau/github-release/releases/)
+
+You'll need to add your PGP public key to strat/cmd/pubkey.go
+
+Then at the root of the repo:
+
+* Update the CHANGELOG file
+* Create a branch named vA.B.x (for example: 0.1.x) from master
+* On this new branch, create a VERSION file that contains the version (for example: 0.1.0)
+* Set the pre-release flag in PRERELEASE if needed
+* Run _make release_ (this will create the tag, build the binaries and the docker images, push the docker images and publish a release on Github)
 
 ## License
 
