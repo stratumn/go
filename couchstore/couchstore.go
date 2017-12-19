@@ -43,7 +43,7 @@ type CouchStore struct {
 
 // Config contains configuration options for the store.
 type Config struct {
-	// Adress is CouchDB api end point.
+	// Address is CouchDB api end point.
 	Address string
 
 	// A version string that will be set in the store's information.
