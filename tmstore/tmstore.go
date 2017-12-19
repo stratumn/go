@@ -203,8 +203,9 @@ func (t *TMStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	}
 
 	tx := &tmpop.Tx{
-		TxType: tmpop.CreateLink,
-		Link:   link,
+		TxType:   tmpop.CreateLink,
+		Link:     link,
+		LinkHash: linkHash,
 	}
 	_, err = t.broadcastTx(tx)
 

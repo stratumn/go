@@ -84,11 +84,11 @@ const (
 
 // New creates a new instance of a TMPop.
 func New(a store.Adapter, kv store.KeyValueStore, config *Config) (*TMPop, error) {
-	initalized, err := kv.GetValue(tmpopLastBlockKey)
+	initialized, err := kv.GetValue(tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
 	}
-	if initalized == nil {
+	if initialized == nil {
 		log.Debug("No existing db, creating new db")
 		saveLastBlock(kv, LastBlock{
 			AppHash: types.NewBytes32FromBytes(nil),

@@ -58,7 +58,7 @@ type Message struct {
 	Data interface{} `json:"data"`
 }
 
-// Basic implements basic web socket server meant to be used in conjuction with
+// Basic implements basic web socket server meant to be used in conjunction with
 // an HTTP server.
 type Basic struct {
 	*Hub
