@@ -49,17 +49,9 @@ func NewSavedLinks(linkArgs ...*cs.Link) *Event {
 	}
 }
 
-// AddSavedLink adds a link to the event.
-// It assumes the event is a correctly initialized SavedLinks event.
-func (event *Event) AddSavedLink(link *cs.Link) {
-	linksData := event.Data.([]*cs.Link)
-	linksData = append(linksData, link)
-	event.Data = linksData
-}
-
 // AddSavedLinks adds links to the event.
 // It assumes the event is a correctly initialized SavedLinks event.
-func (event *Event) AddSavedLinks(links []*cs.Link) {
+func (event *Event) AddSavedLinks(links ...*cs.Link) {
 	linksData := event.Data.([]*cs.Link)
 	linksData = append(linksData, links...)
 	event.Data = linksData

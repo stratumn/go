@@ -422,19 +422,11 @@ func TestEvents(t *testing.T) {
 		assert.IsType(t, []*cs.Link{}, e.Data, "Event.Data should be a slice of *cs.Link")
 	})
 
-	t.Run("Link can be added to SavedLinks event", func(t *testing.T) {
-		e := store.NewSavedLinks()
-		assert.Empty(t, e.Data, "Links should be initially empty")
-
-		e.AddSavedLink(cstesting.RandomLink())
-		assert.Len(t, e.Data, 1, "A link should have been added")
-	})
-
 	t.Run("Links can be added to SavedLinks event", func(t *testing.T) {
 		e := store.NewSavedLinks()
 		assert.Empty(t, e.Data, "Links should be initially empty")
 
-		e.AddSavedLinks([]*cs.Link{cstesting.RandomLink(), cstesting.RandomLink()})
+		e.AddSavedLinks(cstesting.RandomLink(), cstesting.RandomLink())
 		assert.Len(t, e.Data, 2, "Two links should have been added")
 	})
 
