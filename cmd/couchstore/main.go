@@ -27,7 +27,7 @@ import (
 
 var (
 	endpoint = flag.String("endpoint", "http://localhost:5984", "CouchDB endpoint")
-	version  = "0.2.0"
+	version  = "x.x.x"
 	commit   = "00000000000000000000000000000000"
 )
 

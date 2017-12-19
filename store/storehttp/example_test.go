@@ -34,7 +34,7 @@ import (
 // It also tests the root route of the server using net/http/httptest.
 func Example() {
 	// Create a dummy adapter.
-	a := dummystore.New(&dummystore.Config{Version: "0.2.0", Commit: "abc"})
+	a := dummystore.New(&dummystore.Config{Version: "x.x.x", Commit: "abc"})
 	config := &storehttp.Config{
 		StoreEventsChanSize: 8,
 	}
@@ -74,5 +74,5 @@ func Example() {
 	}
 
 	fmt.Printf("%s", info)
-	// Output: {"adapter":{"name":"dummy","description":"Stratumn Dummy Store","version":"0.2.0","commit":"abc"}}
+	// Output: {"adapter":{"name":"dummy","description":"Stratumn Dummy Store","version":"x.x.x","commit":"abc"}}
 }

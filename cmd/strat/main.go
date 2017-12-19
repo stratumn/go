@@ -18,7 +18,7 @@ package main
 import "github.com/stratumn/sdk/strat/cmd"
 
 var (
-	version = "0.2.0"
+	version = "x.x.x"
 	commit  = "00000000000000000000000000000000"
 )
 

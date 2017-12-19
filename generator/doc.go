@@ -44,7 +44,7 @@
 // A basic definition file may look something like this:
 //      {
 //        "name": "basic",
-//        "version": "0.2.0",
+//        "version": "x.x.x",
 //        "description": "A basic generator",
 //        "author": "Stratumn",
 //        "license": "MIT",
