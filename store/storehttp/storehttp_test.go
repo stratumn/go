@@ -646,8 +646,7 @@ func TestNotFound(t *testing.T) {
 
 func TestGetSocket(t *testing.T) {
 	link := cstesting.RandomLink()
-	event := store.NewSavedLinks()
-	event.AddSavedLink(link)
+	event := store.NewSavedLinks(link)
 
 	// Chan that will receive the store event channel.
 	sendChan := make(chan chan *store.Event)

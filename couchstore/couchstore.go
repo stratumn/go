@@ -118,8 +118,7 @@ func (c *CouchStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 		return nil, err
 	}
 
-	linkEvent := store.NewSavedLinks()
-	linkEvent.AddSavedLink(link)
+	linkEvent := store.NewSavedLinks(link)
 
 	c.notifyEvent(linkEvent)
 

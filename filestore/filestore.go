@@ -143,8 +143,7 @@ func (a *FileStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 		return nil, err
 	}
 
-	linkEvent := store.NewSavedLinks()
-	linkEvent.AddSavedLink(link)
+	linkEvent := store.NewSavedLinks(link)
 
 	for _, c := range a.eventChans {
 		c <- linkEvent

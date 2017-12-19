@@ -32,10 +32,7 @@ type eventsManager struct {
 
 func (e *eventsManager) AddSavedLinks(links []*cs.Link) {
 	if len(links) > 0 {
-		savedEvent := store.NewSavedLinks()
-		for _, link := range links {
-			savedEvent.AddSavedLink(link)
-		}
+		savedEvent := store.NewSavedLinks(links...)
 
 		e.lock.Lock()
 		defer e.lock.Unlock()

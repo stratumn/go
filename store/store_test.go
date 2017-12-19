@@ -419,51 +419,52 @@ func TestEvents(t *testing.T) {
 	t.Run("SavedLinks constructor", func(t *testing.T) {
 		e := store.NewSavedLinks()
 		assert.EqualValues(t, store.SavedLinks, e.EventType)
+		assert.IsType(t, []*cs.Link{}, e.Data, "Event.Data should be a slice of *cs.Link")
 	})
 
 	t.Run("Link can be added to SavedLinks event", func(t *testing.T) {
 		e := store.NewSavedLinks()
-		links := e.Data.([]*cs.Link)
-		assert.Zero(t, len(links), "Links should be initially empty")
+		assert.Empty(t, e.Data, "Links should be initially empty")
 
 		e.AddSavedLink(cstesting.RandomLink())
-		links = e.Data.([]*cs.Link)
-		assert.Equal(t, 1, len(links), "A link should have been added")
+		assert.Len(t, e.Data, 1, "A link should have been added")
 	})
 
 	t.Run("Links can be added to SavedLinks event", func(t *testing.T) {
 		e := store.NewSavedLinks()
-		links := e.Data.([]*cs.Link)
-		assert.Zero(t, len(links), "Links should be initially empty")
+		assert.Empty(t, e.Data, "Links should be initially empty")
 
 		e.AddSavedLinks([]*cs.Link{cstesting.RandomLink(), cstesting.RandomLink()})
-		links = e.Data.([]*cs.Link)
-		assert.Equal(t, 2, len(links), "Two links should have been added")
+		assert.Len(t, e.Data, 2, "Two links should have been added")
+	})
+
+	t.Run("SavedLinks event can be initialized with links", func(t *testing.T) {
+		e := store.NewSavedLinks(cstesting.RandomLink(), cstesting.RandomLink())
+		assert.Len(t, e.Data, 2, "Links should be initially empty")
 	})
 
 	t.Run("SavedEvidences constructor", func(t *testing.T) {
 		e := store.NewSavedEvidences()
 		assert.EqualValues(t, store.SavedEvidences, e.EventType)
+		assert.IsType(t, map[string]*cs.Evidence{}, e.Data, "Event.Data should be a map of string/*cs.Evidence")
 	})
 
 	t.Run("Evidence can be added to SavedEvidences event", func(t *testing.T) {
 		e := store.NewSavedEvidences()
-		evidences := e.Data.(map[string]*cs.Evidence)
-		assert.Zero(t, len(evidences), "Evidences should be initially empty")
+		assert.Empty(t, e.Data, "Evidences should be initially empty")
 
 		linkHash := testutil.RandomHash()
 		evidence := cstesting.RandomEvidence()
 		e.AddSavedEvidence(linkHash, evidence)
 
-		evidences = e.Data.(map[string]*cs.Evidence)
-		assert.Equal(t, 1, len(evidences), "An evidence should have been added")
+		assert.Len(t, e.Data, 1, "An evidence should have been added")
+		evidences := e.Data.(map[string]*cs.Evidence)
 		assert.EqualValues(t, evidence, evidences[linkHash.String()], "Invalid evidence")
 	})
 
 	t.Run("SavedLinks serialization", func(t *testing.T) {
-		e := store.NewSavedLinks()
 		link := cstesting.RandomLink()
-		e.AddSavedLink(link)
+		e := store.NewSavedLinks(link)
 
 		b, err := json.Marshal(e)
 		assert.NoError(t, err)
@@ -474,7 +475,7 @@ func TestEvents(t *testing.T) {
 		assert.EqualValues(t, e.EventType, e2.EventType, "Invalid event type")
 
 		links := e2.Data.([]*cs.Link)
-		assert.Equal(t, 1, len(links), "Invalid number of links")
+		assert.Len(t, links, 1, "Invalid number of links")
 		assert.EqualValues(t, link, links[0], "Invalid link")
 	})
 

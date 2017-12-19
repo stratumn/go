@@ -126,8 +126,7 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 
 	a.maps[mapID][linkHashStr] = struct{}{}
 
-	linkEvent := store.NewSavedLinks()
-	linkEvent.AddSavedLink(link)
+	linkEvent := store.NewSavedLinks(link)
 
 	for _, c := range a.eventChans {
 		c <- linkEvent
