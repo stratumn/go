@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"flag"
+	"os"
 	"testing"
 
 	"github.com/stratumn/sdk/agent/agenttestcases"
@@ -17,7 +18,7 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	m.Run()
+	os.Exit(m.Run())
 }
 
 // TestNewAgentClient checks the initialisation of a new client
