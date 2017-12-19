@@ -85,8 +85,8 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 		}
 	} else if len(filter.LinkHashes) > 0 {
 
-		linkHashes, err := cs.NewLinkHashesFromStrings(filter.LinkHashes)
-		if err != nil {
+		linkHashes, err1 := cs.NewLinkHashesFromStrings(filter.LinkHashes)
+		if err1 != nil {
 			return nil, err
 		}
 

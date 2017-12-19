@@ -29,9 +29,6 @@ import (
 )
 
 const (
-	// DefaultAddress is the default address of the server.
-	DefaultAddress = ":5000"
-
 	// DefaultReadTimeout is the default read timeout.
 	DefaultReadTimeout = 10 * time.Second
 
@@ -137,11 +134,6 @@ func (s *Server) GetRaw(path string, handle RawHandle) {
 
 // ListenAndServe starts the server.
 func (s *Server) ListenAndServe() error {
-	addr := s.config.Address
-	if addr == "" {
-		addr = DefaultAddress
-	}
-
 	if s.config.CertFile != "" && s.config.KeyFile != "" {
 		return s.server.ListenAndServeTLS(s.config.CertFile, s.config.KeyFile)
 	}
