@@ -87,7 +87,7 @@ func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, err
 
 		linkHashes, err1 := cs.NewLinkHashesFromStrings(filter.LinkHashes)
 		if err1 != nil {
-			return nil, err
+			return nil, err1
 		}
 
 		linkHashesArray := pq.Array(linkHashes)
