@@ -408,6 +408,10 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	merkleRoot := merkle.Root()
 
 	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot)
+	if err != nil {
+		log.Warn("Could not compute app hash.\nEvidence will not be generated.")
+		return
+	}
 	if !appHash.EqualsBytes(header.AppHash) {
 		log.Warnf("App hash %x doesn't match the header's: %x.\nEvidence will not be generated.",
 			*appHash,

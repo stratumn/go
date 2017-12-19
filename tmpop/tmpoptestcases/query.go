@@ -40,7 +40,7 @@ func (f Factory) TestQuery(t *testing.T) {
 
 	link2 := cstesting.RandomLinkWithProcess(link1.GetProcess())
 	linkHash2, _ := link2.Hash()
-	req = commitLink(t, h, link2, req)
+	commitLink(t, h, link2, req)
 
 	t.Run("Info() returns correct last seen height and app hash", func(t *testing.T) {
 		abciInfo := h.Info(abci.RequestInfo{})

@@ -151,7 +151,7 @@ func TestBatch_FindSegments(t *testing.T) {
 		t.Errorf("segment slice length = %d want %d", got, want)
 	}
 
-	segments, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
+	_, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
 	if got, want := err, notFoundErr; got != want {
 		t.Errorf("FindSegments should return an error: %s want %s", got, want)
 	}
