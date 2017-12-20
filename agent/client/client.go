@@ -16,13 +16,13 @@ import (
 	"github.com/stratumn/sdk/types"
 )
 
-// ErrorData is the format used by an agent to format errors
+// ErrorData is the format used by an agent to format errors.
 type ErrorData struct {
 	Status  int    `json:"status"`
 	Message string `json:"error"`
 }
 
-//SegmentRef defines a format for a valid reference
+//SegmentRef defines a format for a valid reference.
 type SegmentRef struct {
 	LinkHash *types.Bytes32 `json:"linkHash"`
 	Process  string         `json:"process"`
@@ -31,10 +31,10 @@ type SegmentRef struct {
 }
 
 // AgentClient is the interface for an agent client
-// It can be used to access an agent's http endpoints
+// It can be used to access an agent's http endpoints.
 type AgentClient interface {
 	CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error)
-	CreateLink(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
+	CreateSegment(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
 	FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error)
 	GetInfo() (*agent.Info, error)
 	GetMapIds(filter *store.MapFilter) ([]string, error)
@@ -44,7 +44,7 @@ type AgentClient interface {
 	URL() string
 }
 
-// agentClient wraps an http.Client used to send request to the agent's server
+// agentClient wraps an http.Client used to send request to the agent's server.
 type agentClient struct {
 	c         *http.Client
 	agentURL  *url.URL
@@ -52,7 +52,7 @@ type agentClient struct {
 }
 
 // NewAgentClient returns an initialized AgentClient
-// If the provided url is empty, it will use a default one
+// If the provided url is empty, it will use a default one.
 func NewAgentClient(agentURL string) (AgentClient, error) {
 	if len(agentURL) == 0 {
 		return nil, errors.New("An URL must be provided to initialize a client")
@@ -72,9 +72,9 @@ func NewAgentClient(agentURL string) (AgentClient, error) {
 	return client, nil
 }
 
-// CreateLink sends a CreateLink request to the agent and returns
-// the newly created segment
-func (a *agentClient) CreateLink(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
+// CreateSegment sends a CreateSegment request to the agent and returns
+// the newly created segment.
+func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments/%s/%s", process, linkHash, action)
 	postParams, err := a.makeActionPostParams(refs, args...)
 	if err != nil {
@@ -86,8 +86,6 @@ func (a *agentClient) CreateLink(process string, linkHash *types.Bytes32, action
 	}
 	decoder := json.NewDecoder(resp.Body)
 	seg := cs.Segment{}
-	// TODO: could be improved by implementing UnnmarshalJSON on cs.Segment
-	// to deserialize references
 	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
@@ -95,7 +93,7 @@ func (a *agentClient) CreateLink(process string, linkHash *types.Bytes32, action
 }
 
 // CreateMap sends a CreateMap request to the agent and returns
-// the first segment of the newly created map
+// the first segment of the newly created map.
 func (a *agentClient) CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments", process)
 	postParams, err := a.makeActionPostParams(refs, args...)
@@ -112,17 +110,19 @@ func (a *agentClient) CreateMap(process string, refs []SegmentRef, args ...strin
 }
 
 // FindSegments sends a FindSegments request to the agent and returns
-// the list of found segments
+// the list of found segments.
 func (a *agentClient) FindSegments(filter *store.SegmentFilter) (sgmts cs.SegmentSlice, err error) {
 	if filter.Limit == -1 {
 		filter.Limit = store.DefaultLimit
-		for batch, err := a.findSegments(filter); len(batch) == filter.Limit && err != nil; {
+		batch, err := a.findSegments(filter)
+		for ; len(batch) == filter.Limit && err == nil; batch, err = a.findSegments(filter) {
 			sgmts = append(sgmts, batch...)
 			filter.Offset += filter.Limit
 		}
 		if err != nil {
 			return nil, err
 		}
+		sgmts = append(sgmts, batch...)
 		return sgmts, err
 	}
 	return a.findSegments(filter)
@@ -143,7 +143,7 @@ func (a *agentClient) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice
 
 }
 
-// GetInfo sends a GetInfo request to the agent and returns the result
+// GetInfo sends a GetInfo request to the agent and returns the result.
 func (a *agentClient) GetInfo() (*agent.Info, error) {
 	resp, err := a.get("/", nil)
 	if err != nil {
@@ -159,18 +159,19 @@ func (a *agentClient) GetInfo() (*agent.Info, error) {
 }
 
 // GetMapIds sends a GetMapIds request to the agent and returns
-// a list of found map IDs for a process
+// a list of found map IDs for a process.
 func (a *agentClient) GetMapIds(filter *store.MapFilter) (IDs []string, err error) {
 	if filter.Limit == -1 {
 		filter.Limit = store.DefaultLimit
-
-		for batch, err := a.getMapIds(filter); len(batch) == filter.Limit && err == nil; batch, err = a.getMapIds(filter) {
+		batch, err := a.getMapIds(filter)
+		for ; len(batch) == filter.Limit && err == nil; batch, err = a.getMapIds(filter) {
 			IDs = append(IDs, batch...)
 			filter.Offset += filter.Limit
 		}
 		if err != nil {
 			return nil, err
 		}
+		IDs = append(IDs, batch...)
 		return IDs, err
 	}
 	return a.getMapIds(filter)
@@ -190,7 +191,7 @@ func (a *agentClient) getMapIds(filter *store.MapFilter) ([]string, error) {
 	return mapIDs, nil
 }
 
-// GetProcess returns a process given its name
+// GetProcess returns a process given its name.
 func (a *agentClient) GetProcess(name string) (*agent.Process, error) {
 	processes, err := a.GetProcesses()
 	if err != nil {
@@ -204,7 +205,7 @@ func (a *agentClient) GetProcess(name string) (*agent.Process, error) {
 }
 
 // GetProcesses sends a GetProcesses request to the agent and returns
-// a list of all the processes
+// a list of all the processes.
 func (a *agentClient) GetProcesses() (agent.Processes, error) {
 	resp, err := a.get("/processes", nil)
 	if err != nil {
@@ -220,7 +221,7 @@ func (a *agentClient) GetProcesses() (agent.Processes, error) {
 }
 
 // GetSegment sends a GetSegment request to the agent and returns a segment
-// given its link hash
+// given its link hash.
 func (a *agentClient) GetSegment(process string, linkHash *types.Bytes32) (*cs.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments/%s", process, linkHash)
 	resp, err := a.get(queryURL, nil)
@@ -235,7 +236,7 @@ func (a *agentClient) GetSegment(process string, linkHash *types.Bytes32) (*cs.S
 	return &seg, nil
 }
 
-// URL returns the url of the agent
+// URL returns the url of the agent.
 func (a *agentClient) URL() string {
 	return a.agentURL.String()
 }
@@ -259,20 +260,21 @@ func (a *agentClient) makeActionPostParams(refs []SegmentRef, args ...string) ([
 	return json.Marshal(rawParams)
 }
 
-// get sends an HTTP GET request and checks the status of the response
+// get sends an HTTP GET request and checks the status of the response.
 func (a *agentClient) get(endpoint string, params interface{}) (*http.Response, error) {
+	path, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, err
+	}
+
 	if params != nil {
 		queryParams, err := query.Values(params)
 		if err != nil {
 			return nil, err
 		}
-		endpoint += "?" + queryParams.Encode()
+		path.RawQuery = queryParams.Encode()
 	}
 
-	path, err := url.Parse(endpoint)
-	if err != nil {
-		return nil, err
-	}
 	url := a.agentURL.ResolveReference(path)
 	resp, err := a.c.Get(url.String())
 	if err != nil {
@@ -284,7 +286,7 @@ func (a *agentClient) get(endpoint string, params interface{}) (*http.Response, 
 	return resp, nil
 }
 
-// post sends an HTTP POST request and checks the status of the response
+// post sends an HTTP POST request and checks the status of the response.
 func (a *agentClient) post(endpoint string, data []byte) (*http.Response, error) {
 	path, err := url.Parse(endpoint)
 	if err != nil {

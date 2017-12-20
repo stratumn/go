@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestCreateMapOK tests the client's ability to handle a CreateMap request
+// TestCreateMapOK tests the client's ability to handle a CreateMap request.
 func (f Factory) TestCreateMapOK(t *testing.T) {
 	process := "test"
 	segment, err := f.Client.CreateMap(process, nil, "test")
@@ -18,12 +18,10 @@ func (f Factory) TestCreateMapOK(t *testing.T) {
 }
 
 // TestCreateMapWithRefs tests the client's ability to handle a CreateMap request
-// when one or multiple references are passed
+// when one or multiple references are passed.
 func (f Factory) TestCreateMapWithRefs(t *testing.T) {
 	process := "test"
-	ref := client.SegmentRef{Process: "other", LinkHash: testutil.RandomHash()}
-	refs := make([]client.SegmentRef, 0)
-	refs = append(refs, ref)
+	refs := []client.SegmentRef{{Process: "other", LinkHash: testutil.RandomHash()}}
 
 	segment, err := f.Client.CreateMap(process, refs, "test")
 	assert.NoError(t, err)
@@ -35,12 +33,10 @@ func (f Factory) TestCreateMapWithRefs(t *testing.T) {
 }
 
 // TestCreateMapWithBadRefs tests the client's ability to handle a CreateMap request
-// when the provided reference is ill formatted
+// when the provided reference is ill formatted.
 func (f Factory) TestCreateMapWithBadRefs(t *testing.T) {
 	process, arg := "test", "wrongref"
-	ref := client.SegmentRef{Process: "wrong"}
-	refs := make([]client.SegmentRef, 0)
-	refs = append(refs, ref)
+	refs := []client.SegmentRef{{Process: "wrong"}}
 
 	segment, err := f.Client.CreateMap(process, refs, arg)
 	assert.EqualError(t, err, "missing segment or (process and linkHash)")
@@ -48,7 +44,7 @@ func (f Factory) TestCreateMapWithBadRefs(t *testing.T) {
 }
 
 // TestCreateMapHandlesWrongInitArgs tests the client's ability to handle a CreateMap request
-// when the provided arguments do not match those of the 'init' function
+// when the provided arguments do not match those of the 'init' function.
 func (f Factory) TestCreateMapHandlesWrongInitArgs(t *testing.T) {
 	process := "test"
 	parent, err := f.Client.CreateMap(process, nil)

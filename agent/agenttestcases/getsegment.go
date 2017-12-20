@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGetSegmentOK tests the client's ability to handle a GetSegment request
+// TestGetSegmentOK tests the client's ability to handle a GetSegment request.
 func (f Factory) TestGetSegmentOK(t *testing.T) {
 	process := "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
@@ -18,7 +18,7 @@ func (f Factory) TestGetSegmentOK(t *testing.T) {
 }
 
 // TestGetSegmentNotFound tests the client's ability to handle a GetSegment request
-// when the queried linkHash does not exist
+// when the queried linkHash does not exist.
 func (f Factory) TestGetSegmentNotFound(t *testing.T) {
 	process := "test"
 	fakeLinkHash, _ := types.NewBytes32FromString("0000000000000000000000000000000000000000000000000000000000000000")

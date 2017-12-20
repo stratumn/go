@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGetProcessesOK tests the client's ability to handle a GetProcesses request
+// TestGetProcessesOK tests the client's ability to handle a GetProcesses request.
 func (f Factory) TestGetProcessesOK(t *testing.T) {
 	processes, err := f.Client.GetProcesses()
 	assert.NoError(t, err)

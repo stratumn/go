@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGetMapIdsOK tests the client's ability to handle a GetMapIds request
+// TestGetMapIdsOK tests the client's ability to handle a GetMapIds request.
 func (f Factory) TestGetMapIdsOK(t *testing.T) {
 	process := "test"
 	expected := 20
@@ -28,51 +28,45 @@ func (f Factory) TestGetMapIdsOK(t *testing.T) {
 }
 
 // TestGetMapIdsLimit tests the client's ability to handle a GetMapIds request
-// when a limit is set in the filter
+// when a limit is set in the filter and when the limit is set to -1
 func (f Factory) TestGetMapIdsLimit(t *testing.T) {
 	process := "test"
-	created := 10
-	expected := 0
+	created := 30
 	for i := 0; i != created; i++ {
 		f.Client.CreateMap(process, nil, "test")
 	}
 
-	filter := store.MapFilter{
-		Process: process,
-		Pagination: store.Pagination{
-			Limit: expected,
-		},
-	}
-	ids, err := f.Client.GetMapIds(&filter)
-	assert.NoError(t, err)
-	assert.NotNil(t, ids)
-	assert.Equal(t, expected, len(ids))
-}
+	t.Run("With a limit", func(t *testing.T) {
+		limit := 5
+		filter := store.MapFilter{
+			Process: process,
+			Pagination: store.Pagination{
+				Limit: limit,
+			},
+		}
+		ids, err := f.Client.GetMapIds(&filter)
+		assert.NoError(t, err)
+		assert.NotNil(t, ids)
+		assert.Equal(t, limit, len(ids))
+	})
 
-// TestGetMapIdsNoLimit tests the client's ability to handle a GetMapIds request
-// when the limit is set to -1 to retrieve all map IDs
-func (f Factory) TestGetMapIdsNoLimit(t *testing.T) {
-	process := "test"
-	created := 40
-	limit := -1
-	for i := 0; i != created; i++ {
-		f.Client.CreateMap(process, nil, "test")
-	}
-
-	filter := store.MapFilter{
-		Process: process,
-		Pagination: store.Pagination{
-			Limit: limit,
-		},
-	}
-	ids, err := f.Client.GetMapIds(&filter)
-	assert.NoError(t, err)
-	assert.NotNil(t, ids)
-	assert.True(t, len(ids) > created)
+	t.Run("Without a limit", func(t *testing.T) {
+		limit := -1
+		filter := store.MapFilter{
+			Process: process,
+			Pagination: store.Pagination{
+				Limit: limit,
+			},
+		}
+		ids, err := f.Client.GetMapIds(&filter)
+		assert.NoError(t, err)
+		assert.NotNil(t, ids)
+		assert.True(t, len(ids) > created)
+	})
 }
 
 // TestGetMapIdsNoMatch tests the client's ability to handle a GetMapIds request
-// when no mapID is found
+// when no mapID is found.
 func (f Factory) TestGetMapIdsNoMatch(t *testing.T) {
 	process := "wrong"
 	filter := store.MapFilter{

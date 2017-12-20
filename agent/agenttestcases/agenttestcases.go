@@ -22,7 +22,7 @@ type Factory struct {
 	Client client.AgentClient
 }
 
-// RunAgentClientTests runs the test suite for an agent client
+// RunAgentClientTests runs the test suite for an agent client.
 func (f Factory) RunAgentClientTests(t *testing.T) {
 	if f.NewMock != nil {
 		srv := f.NewMock(t, agentURL)
@@ -36,7 +36,7 @@ func (f Factory) RunAgentClientTests(t *testing.T) {
 	f.Client, _ = f.NewClient(agentURL)
 
 	t.Run("Test creating map", f.TestCreateMap)
-	t.Run("Test creating link", f.TestCreateLink)
+	t.Run("Test creating segment", f.TestCreateSegment)
 	t.Run("Test find segments", f.TestFindSegments)
 	t.Run("Test getting infos", f.TestGetInfo)
 	t.Run("Test getting a process", f.TestGetProcess)
@@ -44,7 +44,7 @@ func (f Factory) RunAgentClientTests(t *testing.T) {
 	t.Run("Test getting a segment", f.TestGetSegment)
 }
 
-// TestCreateMap tests what happens when creating a map with various inputs
+// TestCreateMap tests what happens when creating a map with various inputs.
 func (f Factory) TestCreateMap(t *testing.T) {
 	t.Run("TestCreateMap", f.TestCreateMapOK)
 	t.Run("TestCreateMapWithRefs", f.TestCreateMapWithRefs)
@@ -52,18 +52,18 @@ func (f Factory) TestCreateMap(t *testing.T) {
 	t.Run("TestCreateMapHandlesWrongInitArgs", f.TestCreateMapHandlesWrongInitArgs)
 }
 
-// TestCreateLink tests what happens when creating a link with various inputs
-func (f Factory) TestCreateLink(t *testing.T) {
-	t.Run("TestCreateLink", f.TestCreateLinkOK)
-	t.Run("TestCreateLinkWithRefs", f.TestCreateLinkWithRefs)
-	t.Run("TestCreateLinkWithBadRefs", f.TestCreateLinkWithBadRefs)
-	t.Run("TestCreateLinkHandlesWrongAction", f.TestCreateLinkHandlesWrongAction)
-	t.Run("TestCreateLinkHandlesWrongActionArgs", f.TestCreateLinkHandlesWrongActionArgs)
-	t.Run("TestCreateLinkHandlesWrongLinkHash", f.TestCreateLinkHandlesWrongLinkHash)
-	t.Run("TestCreateLinkHandlesWrongProcess", f.TestCreateLinkHandlesWrongProcess)
+// TestCreateSegment tests what happens when creating a link with various inputs.
+func (f Factory) TestCreateSegment(t *testing.T) {
+	t.Run("TestCreateSegment", f.TestCreateSegmentOK)
+	t.Run("TestCreateSegmentWithRefs", f.TestCreateSegmentWithRefs)
+	t.Run("TestCreateSegmentWithBadRefs", f.TestCreateSegmentWithBadRefs)
+	t.Run("TestCreateSegmentHandlesWrongAction", f.TestCreateSegmentHandlesWrongAction)
+	t.Run("TestCreateSegmentHandlesWrongActionArgs", f.TestCreateSegmentHandlesWrongActionArgs)
+	t.Run("TestCreateSegmentHandlesWrongLinkHash", f.TestCreateSegmentHandlesWrongLinkHash)
+	t.Run("TestCreateSegmentHandlesWrongProcess", f.TestCreateSegmentHandlesWrongProcess)
 }
 
-// TestFindSegments tests what happens when finding segments with various filters
+// TestFindSegments tests what happens when finding segments with various filters.
 func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("TestFindSegments", f.TestFindSegmentsOK)
 	t.Run("TestFindSegmentsLimit", f.TestFindSegmentsLimit)
@@ -74,31 +74,30 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("TestFindSegmentsNotFound", f.TestFindSegmentsNotFound)
 }
 
-// TestGetInfo tests what happens when getting an agent's infos
+// TestGetInfo tests what happens when getting an agent's infos.
 func (f Factory) TestGetInfo(t *testing.T) {
 	t.Run("TestGetInfo", f.TestGetInfoOK)
 }
 
-// TestGetMapIds tests what happens when finding map ids with varisou filters
+// TestGetMapIds tests what happens when finding map ids with varisou filters.
 func (f Factory) TestGetMapIds(t *testing.T) {
 	t.Run("TestGetMapIds", f.TestGetMapIdsOK)
 	t.Run("TestGetMapIdsLimit", f.TestGetMapIdsLimit)
-	t.Run("TestGetMapIdsNoLimit", f.TestGetMapIdsNoLimit)
 	t.Run("TestGetMapIdsNoMatch", f.TestGetMapIdsNoMatch)
 }
 
-// TestGetProcess tests what happens when getting informations about a process
+// TestGetProcess tests what happens when getting informations about a process.
 func (f Factory) TestGetProcess(t *testing.T) {
 	t.Run("TestGetProcess", f.TestGetProcessOK)
 	t.Run("TestGetProcessNotFound", f.TestGetProcessNotFound)
 }
 
-// TestGetProcesses tests what happens whengetting all the processes from an agent
+// TestGetProcesses tests what happens whengetting all the processes from an agent.
 func (f Factory) TestGetProcesses(t *testing.T) {
 	t.Run("TestGetProcesses", f.TestGetProcessesOK)
 }
 
-// TestGetSegment tests what happens when getting a segment
+// TestGetSegment tests what happens when getting a segment.
 func (f Factory) TestGetSegment(t *testing.T) {
 	t.Run("TestGetSegment", f.TestGetSegmentOK)
 	t.Run("TestGetSegmentNotFound", f.TestGetSegmentNotFound)

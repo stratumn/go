@@ -21,7 +21,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// TestNewAgentClient checks the initialisation of a new client
+// TestNewAgentClient checks the initialisation of a new client.
 func TestNewAgentClient(t *testing.T) {
 	if *integration == false {
 		srv := mockAgentServer(t, agentURL)
@@ -33,7 +33,7 @@ func TestNewAgentClient(t *testing.T) {
 }
 
 // TestNewAgentClient_ExtraSlash tests if the client handles correctly
-// the connection when the url ends with and extra '/'
+// the connection when the url ends with and extra '/'.
 func TestNewAgentClient_ExtraSlash(t *testing.T) {
 	if *integration == false {
 		agentURL := "http://localhost:3000/"
@@ -54,14 +54,14 @@ func TestNewAgentClient_ConnectionRefused(t *testing.T) {
 }
 
 // TestNewAgentClient_WrongURL tests the error handling when the
-// provided url is ill formatted
+// provided url is ill formatted.
 func TestNewAgentClient_WrongURL(t *testing.T) {
 	agentURL := "//http:\\"
 	_, err := client.NewAgentClient(agentURL)
 	assert.EqualError(t, err, "parse //http:\\: invalid character \"\\\\\" in host name")
 }
 
-// TestAgentClient runs all the tests for the client
+// TestAgentClient runs all the tests for the client.
 func TestAgentClient(t *testing.T) {
 	mockServer := mockAgentServer
 	if *integration == true {

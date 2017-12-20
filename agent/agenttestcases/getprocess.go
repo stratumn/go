@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestGetProcessOK tests the client's ability to handle a GetProcess request
+// TestGetProcessOK tests the client's ability to handle a GetProcess request.
 func (f Factory) TestGetProcessOK(t *testing.T) {
 	process, err := f.Client.GetProcess("test")
 	assert.NoError(t, err)
@@ -16,7 +16,7 @@ func (f Factory) TestGetProcessOK(t *testing.T) {
 }
 
 // TestGetProcessNotFound tests the client's ability to handle a FindSegment request
-// when no process is found
+// when no process is found.
 func (f Factory) TestGetProcessNotFound(t *testing.T) {
 	process, err := f.Client.GetProcess("wrong")
 	assert.EqualError(t, err, "Not Found")

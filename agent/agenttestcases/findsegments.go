@@ -1,6 +1,7 @@
 package agenttestcases
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stratumn/sdk/store"
@@ -8,11 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestFindSegmentsOK tests the client's ability to handle a FindSegment request
+// TestFindSegmentsOK tests the client's ability to handle a FindSegment request.
 func (f Factory) TestFindSegmentsOK(t *testing.T) {
 	process := "test"
 	expected := 20
-	for i := 0; i != expected; i++ {
+	for i := 0; i < expected; i++ {
 		f.Client.CreateMap(process, nil, "test")
 	}
 
@@ -29,7 +30,7 @@ func (f Factory) TestFindSegmentsOK(t *testing.T) {
 }
 
 // TestFindSegmentsTags tests the client's ability to handle a FindSegment request
-// when tags are set in the filter
+// when tags are set in the filter.
 func (f Factory) TestFindSegmentsTags(t *testing.T) {
 	process, tag := "test", "tag"
 	f.Client.CreateMap(process, nil, tag)
@@ -51,7 +52,7 @@ func (f Factory) TestFindSegmentsTags(t *testing.T) {
 }
 
 // TestFindSegmentsLinkHashes tests the client's ability to handle a FindSegment request
-// when LinkHashes are set in the filter
+// when LinkHashes are set in the filter.
 func (f Factory) TestFindSegmentsLinkHashes(t *testing.T) {
 	process := "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
@@ -71,7 +72,7 @@ func (f Factory) TestFindSegmentsLinkHashes(t *testing.T) {
 }
 
 // TestFindSegmentsMapIDs tests the client's ability to handle a FindSegment request
-// when a map ID is set in the filter
+// when a map ID is set in the filter.
 func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
 	process := "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
@@ -91,51 +92,47 @@ func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
 }
 
 // TestFindSegmentsLimit tests the client's ability to handle a FindSegment request
-// when a limit is set in the filter
+// when a limit is set in the filter, and when this liit is set to -1
 func (f Factory) TestFindSegmentsLimit(t *testing.T) {
 	process := "test"
-	created := 10
-	expected := 0
-	for i := 0; i != created; i++ {
+	created := 30
+	for i := 0; i < created; i++ {
 		f.Client.CreateMap(process, nil, "test")
 	}
 
-	filter := store.SegmentFilter{
-		Process: process,
-		Pagination: store.Pagination{
-			Limit: expected,
-		},
-	}
-	sgmts, err := f.Client.FindSegments(&filter)
-	assert.NoError(t, err)
-	assert.NotNil(t, sgmts)
-	assert.Equal(t, expected, len(sgmts))
-}
+	t.Run("With a limit", func(t *testing.T) {
+		limit := 5
+		filter := store.SegmentFilter{
+			Process: process,
+			Pagination: store.Pagination{
+				Limit: limit,
+			},
+		}
+		sgmts, err := f.Client.FindSegments(&filter)
+		assert.NoError(t, err)
+		assert.NotNil(t, sgmts)
+		assert.Equal(t, limit, len(sgmts))
+	})
 
-// TestFindSegmentsNoLimit tests the client's ability to handle a FindSegment request
-// when the limit is set to -1 in the filter to retrieve all segments
-func (f Factory) TestFindSegmentsNoLimit(t *testing.T) {
-	process := "test"
-	created := 40
-	limit := -1
-	for i := 0; i != created; i++ {
-		f.Client.CreateMap(process, nil, "test")
-	}
+	t.Run("Without a limit", func(t *testing.T) {
+		limit := -1
+		filter := store.SegmentFilter{
+			Process: process,
+			Pagination: store.Pagination{
+				Limit: limit,
+			},
+		}
+		sgmts, err := f.Client.FindSegments(&filter)
+		assert.NoError(t, err)
+		assert.NotNil(t, sgmts)
+		fmt.Println(len(sgmts))
+		assert.True(t, len(sgmts) > created)
+	})
 
-	filter := store.SegmentFilter{
-		Process: process,
-		Pagination: store.Pagination{
-			Limit: limit,
-		},
-	}
-	sgmts, err := f.Client.FindSegments(&filter)
-	assert.NoError(t, err)
-	assert.NotNil(t, sgmts)
-	assert.True(t, len(sgmts) > created)
 }
 
 // TestFindSegmentsNoMatch tests the client's ability to handle a FindSegment request
-// when no segment is found
+// when no segment is found.
 func (f Factory) TestFindSegmentsNoMatch(t *testing.T) {
 	process := "wrong"
 	filter := store.SegmentFilter{
@@ -147,7 +144,7 @@ func (f Factory) TestFindSegmentsNoMatch(t *testing.T) {
 }
 
 // TestFindSegmentsNotFound tests the client's ability to handle a FindSegment request
-// when no segment is found
+// when no segment is found.
 func (f Factory) TestFindSegmentsNotFound(t *testing.T) {
 	process, prevLinkHash := "test", testutil.RandomHash().String()
 	filter := store.SegmentFilter{

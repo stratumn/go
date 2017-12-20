@@ -54,7 +54,7 @@ func (m *mockHTTPServer) sendResponse(w http.ResponseWriter, status int, data in
 	w.Write(bytes)
 }
 
-func (m *mockHTTPServer) mockCreateLink(w http.ResponseWriter, r *http.Request) {
+func (m *mockHTTPServer) mockCreateSegment(w http.ResponseWriter, r *http.Request) {
 	params, err := m.decodePostParams(r)
 	if err != nil {
 		m.sendError(w, http.StatusBadRequest, err.Error())
@@ -131,6 +131,7 @@ func (m *mockHTTPServer) mockFindSegments(w http.ResponseWriter, r *http.Request
 	var (
 		q             = r.URL.Query()
 		limit, _      = strconv.Atoi(q.Get("limit"))
+		offset, _     = strconv.Atoi(q.Get("offset"))
 		linkHashesStr = append(q["linkHashes[]"], q["linkHashes%5B%5D"]...)
 		mapIDs        = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
 		tags          = append(q["tags[]"], q["tags%5B%5D"]...)
@@ -143,6 +144,9 @@ func (m *mockHTTPServer) mockFindSegments(w http.ResponseWriter, r *http.Request
 	}
 	if len(linkHashesStr) > 0 || len(mapIDs) > 0 {
 		s = append(s, &cs.Segment{})
+	} else if offset > limit {
+		m.sendResponse(w, http.StatusOK, s)
+		return
 	} else if len(tags) > 0 {
 
 		s = append(s, &cs.Segment{Link: cs.Link{
@@ -247,7 +251,7 @@ func mockAgent(t *testing.T, address string) *agent.MockAgent {
 		mux.HandleFunc("/", handler.mockGetInfo).Methods("GET")
 		mux.HandleFunc("/processes", handler.mockGetProcesses).Methods("GET")
 		mux.HandleFunc("/{process}/segments", handler.mockCreateMap).Methods("POST")
-		mux.HandleFunc("/{process}/segments/{linkHash}/{action}", handler.mockCreateLink).Methods("POST")
+		mux.HandleFunc("/{process}/segments/{linkHash}/{action}", handler.mockCreateSegment).Methods("POST")
 		mux.HandleFunc("/{process}/segments/{linkHash}", handler.mockGetSegment).Methods("GET")
 		mux.HandleFunc("/{process}/maps", handler.mockGetMapIds).Methods("GET")
 		mux.HandleFunc("/{process}/segments", handler.mockFindSegments).Methods("GET")
