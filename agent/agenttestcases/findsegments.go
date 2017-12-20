@@ -1,7 +1,6 @@
 package agenttestcases
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stratumn/sdk/store"
@@ -125,7 +124,6 @@ func (f Factory) TestFindSegmentsLimit(t *testing.T) {
 		sgmts, err := f.Client.FindSegments(&filter)
 		assert.NoError(t, err)
 		assert.NotNil(t, sgmts)
-		fmt.Println(len(sgmts))
 		assert.True(t, len(sgmts) > created)
 	})
 

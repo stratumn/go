@@ -55,7 +55,7 @@ type agentClient struct {
 // If the provided url is empty, it will use a default one.
 func NewAgentClient(agentURL string) (AgentClient, error) {
 	if len(agentURL) == 0 {
-		return nil, errors.New("An URL must be provided to initialize a client")
+		return nil, errors.New(URLRequiredError)
 	}
 	url, err := url.Parse(agentURL)
 	if err != nil {
@@ -199,7 +199,7 @@ func (a *agentClient) GetProcess(name string) (*agent.Process, error) {
 	}
 	process := processes.FindProcess(name)
 	if process == nil {
-		return nil, errors.New("Not Found")
+		return nil, errors.New(ProcessNotFoundError)
 	}
 	return process, nil
 }
