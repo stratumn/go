@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/agent/agenttestcases"
 	"github.com/stratumn/sdk/agent/client"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,11 @@ func TestMain(m *testing.M) {
 func TestNewAgentClient(t *testing.T) {
 	if *integration == false {
 		srv := mockAgentServer(t, agentURL)
-		defer srv.Shutdown(context.Background())
+		defer func() {
+			if err := srv.Shutdown(context.Background()); err != nil {
+				log.WithField("error", err).Fatal("Failed to shutdown HTTP server")
+			}
+		}()
 	}
 	client, err := client.NewAgentClient(agentURL)
 	assert.NoError(t, err)
@@ -36,13 +41,16 @@ func TestNewAgentClient(t *testing.T) {
 // the connection when the url ends with and extra '/'.
 func TestNewAgentClient_ExtraSlash(t *testing.T) {
 	if *integration == false {
-		agentURL := "http://localhost:3000/"
 		srv := mockAgentServer(t, agentURL)
-		defer srv.Shutdown(context.Background())
+		defer func() {
+			if err := srv.Shutdown(context.Background()); err != nil {
+				log.WithField("error", err).Fatal("Failed to shutdown HTTP server")
+			}
+		}()
 	}
-	client, err := client.NewAgentClient(agentURL)
+	client, err := client.NewAgentClient(agentURL + "/")
 	assert.NoError(t, err)
-	assert.Equal(t, agentURL, client.URL())
+	assert.Equal(t, "http://localhost:3000/", client.URL())
 }
 
 func TestNewAgentClient_ConnectionRefused(t *testing.T) {

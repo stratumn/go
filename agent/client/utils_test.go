@@ -2,11 +2,13 @@ package client_test
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/stratumn/sdk/agent"
 	"github.com/stratumn/sdk/agent/client"
 	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/utils"
 )
 
 type mockHTTPServer struct{}
@@ -273,13 +276,26 @@ func cleanURL(address string) string {
 
 func mockAgentServer(t *testing.T, agentURL string) *http.Server {
 	server := mockAgent(t, agentURL).HttpServer()
-
+	started := make(chan bool)
 	go func() {
-		log.Info("Listening on ", agentURL, "...")
-		if err := server.ListenAndServe(); err != nil {
-			log.WithField("info", err).Info("Server stopped")
-			return
+		if err := utils.Retry(func(attempt int) (bool, error) {
+			listener, err := net.Listen("tcp", server.Addr)
+			if err != nil {
+				log.Error("Error starting server : ", err)
+				time.Sleep(1 * time.Second)
+				return true, err
+			}
+			log.Info("Listening on ", server.Addr, "...")
+			started <- true
+			if err := server.Serve(listener); err != nil {
+				log.WithField("info", err).Info("Server stopped")
+				return false, nil
+			}
+			return false, nil
+		}, 10); err != nil {
+			t.Error(err)
 		}
 	}()
+	<-started
 	return server
 }
