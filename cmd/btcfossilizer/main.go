@@ -84,7 +84,7 @@ func main() {
 	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
 		network = btc.NetworkMain
 	} else {
-		log.Fatal("WIF encoded private key uses nknown Bitcoin network")
+		log.Fatal("WIF encoded private key uses unknown Bitcoin network")
 	}
 
 	log.Infof("%s v%s@%s", bcbatchfossilizer.Description, version, commit[:7])
