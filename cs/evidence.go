@@ -63,7 +63,7 @@ type Evidence struct {
 	Proof    Proof  `json:"proof"`
 }
 
-// UnmarshalJSON serialize bytes into an Evidence
+// UnmarshalJSON serializes bytes into an Evidence
 func (e *Evidence) UnmarshalJSON(data []byte) error {
 	serialized := struct {
 		Backend  string          `json:"backend"`
@@ -87,6 +87,16 @@ func (e *Evidence) UnmarshalJSON(data []byte) error {
 		Proof:    proof,
 	}
 	return nil
+}
+
+// UnmarshalRQL serializes an interface{} into an Evidence
+func (e *Evidence) UnmarshalRQL(data interface{}) error {
+	return e.UnmarshalJSON(data.([]byte))
+}
+
+// MarshalRQL serializes an Evidence into an JSON-formatted byte array
+func (e *Evidence) MarshalRQL() (interface{}, error) {
+	return json.Marshal(e)
 }
 
 // Proof is the generic interface which a custom proof type has to implement

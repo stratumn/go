@@ -20,6 +20,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stratumn/sdk/cs/evidences"
+
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/store"
@@ -321,6 +323,34 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		})
 		verifyResultsCount(t, err, slice, 0)
 	})
+
+	t.Run("Returns its evidences", func(t *testing.T) {
+		e1 := cs.Evidence{Backend: "TMPop", Provider: "1", Proof: &evidences.TendermintProof{Root: testutil.RandomHash()}}
+		e2 := cs.Evidence{Backend: "dummy", Provider: "2", Proof: &cs.GenericProof{}}
+		e3 := cs.Evidence{Backend: "batch", Provider: "3", Proof: &evidences.BatchProof{}}
+		e4 := cs.Evidence{Backend: "bcbatch", Provider: "4", Proof: &evidences.BcBatchProof{}}
+		e5 := cs.Evidence{Backend: "generic", Provider: "5"}
+		testEvidences := []cs.Evidence{e1, e2, e3, e4, e5}
+
+		for _, e := range testEvidences {
+			err := a.AddEvidence(linkHash4, &e)
+			assert.NoError(t, err, "a.AddEvidence()")
+		}
+
+		got, err := a.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			LinkHashes: []string{
+				linkHash4.String(),
+			},
+		})
+		assert.NoError(t, err, "a.FindSegments()")
+		assert.NotNil(t, got)
+		assert.Len(t, got, 1)
+		assert.True(t, len(got[0].Meta.Evidences) >= 5)
+	})
+
 }
 
 // BenchmarkFindSegments benchmarks finding segments.
