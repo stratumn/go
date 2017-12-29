@@ -198,6 +198,7 @@ func NewFromDir(src string, opts *Options) (*Generator, error) {
 // 	- secret(length int) (string, error): returns a random secret string
 // 	- uid() int: returns the system user id (UID)
 // 	- add(i, j int) int: returns i + j
+//	- loop(start, end int) []int: implements a basic for start <= i < end loop
 func (gen *Generator) StdTmplFuncs() template.FuncMap {
 	return template.FuncMap{
 		"ask":     gen.ask,
@@ -210,6 +211,7 @@ func (gen *Generator) StdTmplFuncs() template.FuncMap {
 		"secret":  secret,
 		"uid":     os.Geteuid,
 		"add":     add,
+		"loop":    loop,
 	}
 }
 
@@ -456,6 +458,14 @@ func walkTmpl(base, dir string, tmpl *template.Template) error {
 
 func add(i, j int) int {
 	return i + j
+}
+
+func loop(start, end int) []int {
+	res := make([]int, 0, end-start+1)
+	for i := start; i < end; i++ {
+		res = append(res, i)
+	}
+	return res
 }
 
 func now(format string) string {
