@@ -30,7 +30,7 @@ const (
 	Name = "dummy"
 
 	// Description is the description set in the fossilizer's information.
-	Description = "Stratumn Dummy Fossilizer"
+	Description = "Indigo's Dummy Fossilizer"
 )
 
 // Config contains configuration options for the store.

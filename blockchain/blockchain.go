@@ -21,28 +21,27 @@ import (
 	"github.com/stratumn/sdk/types"
 )
 
+// Info is the info returned by GetInfo.
+type Info struct {
+	Network     Network
+	Description string
+}
+
 // Network represents a blockchain network.
 type Network interface {
 	fmt.Stringer
 }
 
-// Networker must be able to return a network identifier.
-type Networker interface {
-	// Network returns the network identifier of the blockchain.
-	Network() Network
-}
-
 // Timestamper must be able to timestamp data.
 type Timestamper interface {
-	Networker
-
 	// Timestamp timestamps data on a blockchain.
 	Timestamp(date interface{}) (types.TransactionID, error)
 }
 
 // HashTimestamper must be able to timestamp a hash.
 type HashTimestamper interface {
-	Networker
+	// GetInfo returns information on the Timestamper
+	GetInfo() *Info
 
 	// TimestampHash timestamps a hash on a blockchain.
 	TimestampHash(hash *types.Bytes32) (types.TransactionID, error)

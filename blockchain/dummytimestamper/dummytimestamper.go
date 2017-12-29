@@ -25,6 +25,9 @@ import (
 
 const networkString = "dummytimestamper"
 
+// Description describes this Timestamper
+const Description = "Dummy Timestamper"
+
 // Network is the identifier of the dummy network.
 type Network struct{}
 
@@ -55,4 +58,12 @@ func (Timestamper) Timestamp(data interface{}) (types.TransactionID, error) {
 func (Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
 	sum := sha256.Sum256(hash[:])
 	return sum[:], nil
+}
+
+// GetInfo implements github.com/stratumn/sdk/blockchain.HashTimestamper.
+func (t Timestamper) GetInfo() *blockchain.Info {
+	return &blockchain.Info{
+		Network:     t.Network(),
+		Description: Description,
+	}
 }

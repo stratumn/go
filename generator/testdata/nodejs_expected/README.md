@@ -8,6 +8,6 @@ Test project
 
 ## License
 
-Copyright (c) 2016 Stratumn
+Copyright (c) 2017 Stratumn
 
 See LICENSE.

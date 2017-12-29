@@ -35,6 +35,9 @@ import (
 const (
 	// DefaultFee is the default transaction fee.
 	DefaultFee = int64(15000)
+
+	// Description describes this Timestamper
+	Description = "Bitcoin Timestamper"
 )
 
 // Config contains configuration options for the timestamper.
@@ -100,6 +103,15 @@ func New(config *Config) (*Timestamper, error) {
 // Network implements fmt.Stringer.
 func (ts *Timestamper) Network() blockchain.Network {
 	return ts.net
+}
+
+// GetInfo implements
+// github.com/stratumn/sdk/blockchain.HashTimestamper.
+func (ts *Timestamper) GetInfo() *blockchain.Info {
+	return &blockchain.Info{
+		Network:     ts.net,
+		Description: Description,
+	}
 }
 
 // TimestampHash implements

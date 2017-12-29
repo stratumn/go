@@ -31,7 +31,7 @@ const (
 	Name = "postgres"
 
 	// Description is the description set in the store's information.
-	Description = "Stratumn PostgreSQL Store"
+	Description = "Indigo's PostgreSQL Store"
 
 	// DefaultURL is the default URL of the database.
 	DefaultURL = "postgres://postgres@postgres/postgres?sslmode=disable"

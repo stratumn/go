@@ -88,7 +88,7 @@ func main() {
 	}
 
 	log.Infof("%s v%s@%s", bcbatchfossilizer.Description, version, commit[:7])
-	log.Info("Copyright (c) 2016 Stratumn SAS")
+	log.Info("Copyright (c) 2017 Stratumn SAS")
 	log.Info("All Rights Reserved")
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 

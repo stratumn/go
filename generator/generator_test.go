@@ -161,7 +161,7 @@ func TestGeneratorExec(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\nProcess1,Process2\n")
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2017\nStratumn\n2\nProcess1,Process2\n")
 
 	gen, err := NewFromDir("testdata/nodejs", &Options{Reader: r})
 	if err != nil {
@@ -322,7 +322,7 @@ func TestGeneratorExec_invalidPartial(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\nProcess1,Process2\n")
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2017\nStratumn\n2\nProcess1,Process2\n")
 
 	gen, err := NewFromDir("testdata/invalid_partial", &Options{Reader: r})
 	if err != nil {
@@ -341,7 +341,7 @@ func TestGeneratorExec_invalidPartialExec(t *testing.T) {
 	}
 	defer os.RemoveAll(dst)
 
-	r := strings.NewReader("test\nTest project\nStephan Florquin\n2016\nStratumn\n2\nProcess1,Process2\n")
+	r := strings.NewReader("test\nTest project\nStephan Florquin\n2017\nStratumn\n2\nProcess1,Process2\n")
 
 	gen, err := NewFromDir("testdata/invalid_partial_exec", &Options{Reader: r})
 	if err != nil {

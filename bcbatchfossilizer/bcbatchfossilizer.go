@@ -35,7 +35,7 @@ const (
 	Name = "bcbatch"
 
 	// Description is the description set in the fossilizer's information.
-	Description = "Stratumn Blockchain Batch Fossilizer"
+	Description = "Indigo's Blockchain Batch Fossilizer"
 )
 
 // Config contains configuration options for the fossilizer.
@@ -94,12 +94,14 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 		return nil, fmt.Errorf("Unexpected batchfossilizer info %#v", batchInfo)
 	}
 
+	timestamperInfo := a.config.HashTimestamper.GetInfo()
+
 	return &Info{
 		Name:        Name,
-		Description: Description,
+		Description: fmt.Sprintf("%s with %s", Description, timestamperInfo.Description),
 		Version:     info.Version,
 		Commit:      info.Commit,
-		Blockchain:  a.config.HashTimestamper.Network().String(),
+		Blockchain:  timestamperInfo.Network.String(),
 	}, nil
 }
 
@@ -124,7 +126,7 @@ func (a *Fossilizer) transform(evidence *cs.Evidence, data, meta []byte) (*fossi
 		a.lastTransactionID = txid
 	}
 
-	evidence.Provider = a.config.HashTimestamper.Network().String()
+	evidence.Provider = a.config.HashTimestamper.GetInfo().Network.String()
 	evidence.Backend = Name
 	evidence.Proof = &evidences.BcBatchProof{
 		Batch:         *evidence.Proof.(*evidences.BatchProof),

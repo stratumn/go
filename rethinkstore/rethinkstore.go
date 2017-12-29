@@ -41,7 +41,7 @@ const (
 	Name = "rethink"
 
 	// Description is the description set in the store's information.
-	Description = "Stratumn RethinkDB Store"
+	Description = "Indigo's RethinkDB Store"
 
 	// DefaultURL is the default URL of the database.
 	DefaultURL = "rethinkdb:28015"

@@ -34,7 +34,7 @@ const (
 	Name = "dummy"
 
 	// Description is the description set in the store's information.
-	Description = "Stratumn Dummy Store"
+	Description = "Indigo's Dummy Store"
 )
 
 // Config contains configuration options for the store.
