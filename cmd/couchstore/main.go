@@ -18,11 +18,13 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/sdk/couchstore"
 	_ "github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/store/storehttp"
+	"github.com/stratumn/sdk/utils"
 )
 
 var (
@@ -39,13 +41,27 @@ func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", couchstore.Description, version, commit[:7])
 
-	a, err := couchstore.New(&couchstore.Config{
-		Address: *endpoint,
-		Version: version,
-		Commit:  commit,
-	})
+	var a *couchstore.CouchStore
+	var storeErr error
+
+	err := utils.Retry(func(attempt int) (retry bool, err error) {
+		a, storeErr = couchstore.New(&couchstore.Config{
+			Address: *endpoint,
+			Version: version,
+			Commit:  commit,
+		})
+
+		if storeErr != nil {
+			log.Infof("Unable to connect to couchdb (%v). Retrying in 5s.", storeErr.Error())
+			time.Sleep(5 * time.Second)
+			return true, storeErr
+		}
+
+		return false, nil
+	}, 10)
+
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(storeErr)
 	}
 	storehttp.RunWithFlags(a)
 }
