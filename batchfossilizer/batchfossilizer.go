@@ -235,9 +235,9 @@ func (a *Fossilizer) Start() error {
 			timer.Reset(interval)
 			if len(a.pending.data) > 0 {
 				a.sendBatch()
-				log.WithField("interval", interval).Info("Requested new batch because the %s interval was reached")
+				log.WithField("interval", interval).Info("Requested new batch because the timer interval was reached")
 			} else {
-				log.WithField("interval", interval).Info("No batch is needed after the %s interval because there are no pending hashes")
+				log.WithField("interval", interval).Info("No batch is needed after the timer interval because there are no pending hashes")
 			}
 		case err := <-a.stopChan:
 			e := a.stop(err)

@@ -75,7 +75,7 @@ func New(c *Config) *Client {
 
 	return &Client{
 		config:    c,
-		api:       &gobcy.API{c.APIKey, "btc", parts[1]},
+		api:       &gobcy.API{Token: c.APIKey, Coin: "btc", Chain: parts[1]},
 		limiter:   limiter,
 		closeChan: make(chan struct{}),
 	}
@@ -126,7 +126,7 @@ TX_LOOP:
 	}
 
 	if total < amount {
-		return nil, 0, fmt.Errorf("could not get amount %d got %d", amount, total)
+		return nil, 0, fmt.Errorf("Not enough Bitcoins available on %s, expected at least %d satoshis got %d", addr, amount, total)
 	}
 
 	return outputs, total, nil
@@ -198,7 +198,7 @@ func (c *Client) wait() error {
 		break
 	}
 	if c.closeChan == nil {
-		return errors.New("client is stopped")
+		return errors.New("Client is stopped")
 	}
 	return nil
 }

@@ -91,7 +91,7 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 
 	info, ok := batchInfo.(*batchfossilizer.Info)
 	if !ok {
-		return nil, fmt.Errorf("unexpected batchfossilizer info %#v", batchInfo)
+		return nil, fmt.Errorf("Unexpected batchfossilizer info %#v", batchInfo)
 	}
 
 	return &Info{
