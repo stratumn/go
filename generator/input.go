@@ -20,10 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 const (
+	// IntInputID is the string identifying an int input.
+	IntInputID = "int"
+
 	// StringInputID is the string identifying a string input.
 	StringInputID = "string"
 
@@ -81,6 +85,12 @@ func UnmarshalJSONInput(data []byte) (Input, error) {
 		return nil, err
 	}
 	switch shared.Type {
+	case IntInputID:
+		var in IntInput
+		if err := json.Unmarshal(data, &in); err != nil {
+			return nil, err
+		}
+		return &in, nil
 	case StringInputID:
 		var in StringInput
 		if err := json.Unmarshal(data, &in); err != nil {
@@ -118,6 +128,48 @@ type InputShared struct {
 	// Prompt is the string that will be displayed to the user when asking
 	// the value.
 	Prompt string `json:"prompt"`
+}
+
+// IntInput contains properties for int inputs.
+type IntInput struct {
+	InputShared
+
+	Default int `json:"default"`
+
+	value int
+}
+
+// Set implements github.com/stratumn/sdk/generator.Input.
+func (in *IntInput) Set(val interface{}) error {
+	str, ok := val.(string)
+	if !ok {
+		return errors.New("value string could not be parsed")
+	}
+	if str == "" {
+		in.value = in.Default
+	} else {
+		i, err := strconv.ParseInt(str, 10, 0)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+
+		in.value = int(i)
+	}
+
+	return nil
+}
+
+// Get implements github.com/stratumn/sdk/generator.Input.
+func (in IntInput) Get() interface{} {
+	if in.value <= 0 {
+		return in.Default
+	}
+	return in.value
+}
+
+// Msg implements github.com/stratumn/sdk/generator.Input.
+func (in *IntInput) Msg() string {
+	return fmt.Sprintf("%s (default %d)\n", in.Prompt, in.Default)
 }
 
 // StringInput contains properties for string inputs.
