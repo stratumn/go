@@ -130,6 +130,7 @@ func New(config *Config) (*Store, error) {
 				"max":     connectAttempts,
 			}).Warn(fmt.Sprintf("Unable to connect to RethinkDB, retrying in %v", connectTimeout))
 			time.Sleep(connectTimeout)
+			return true, err
 		}
 		return false, err
 	}, connectAttempts)
@@ -139,6 +140,9 @@ func New(config *Config) (*Store, error) {
 	}
 
 	db := rethink.DB(config.DB)
+	db.Wait(rethink.WaitOpts{
+		Timeout: connectTimeout,
+	}).Run(session)
 	return &Store{
 		config:    config,
 		session:   session,
