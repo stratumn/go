@@ -100,9 +100,11 @@ func (c *CouchStore) createDatabase(dbName string) error {
 	}
 
 	if couchResponseStatus.Ok == false {
-		if couchResponseStatus.StatusCode != statusDBExists {
-			return couchResponseStatus.error()
+		if couchResponseStatus.StatusCode == statusDBExists {
+			return nil
 		}
+
+		return couchResponseStatus.error()
 	}
 
 	return utils.Retry(func(attempt int) (bool, error) {

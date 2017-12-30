@@ -17,9 +17,8 @@ package couchstore
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"sort"
-
-	"github.com/pkg/errors"
 
 	"github.com/stratumn/sdk/bufferedbatch"
 	"github.com/stratumn/sdk/cs"
@@ -39,6 +38,16 @@ const (
 type CouchStore struct {
 	config     *Config
 	eventChans []chan *store.Event
+}
+
+// CouchNotReadyError is returned when couchdb is not ready.
+type CouchNotReadyError struct {
+	originalError error
+}
+
+// Error implements error interface.
+func (e *CouchNotReadyError) Error() string {
+	return fmt.Sprintf("CouchDB not available: %v", e.originalError.Error())
 }
 
 // Config contains configuration options for the store.
@@ -66,13 +75,24 @@ func New(config *Config) (*CouchStore, error) {
 	couchstore := &CouchStore{
 		config: config,
 	}
+
 	_, couchResponseStatus, err := couchstore.get("/")
 	if err != nil {
-		return nil, errors.Errorf("No CouchDB running on %v", config.Address)
-
+		return nil, &CouchNotReadyError{originalError: err}
 	}
+
 	if couchResponseStatus.Ok == false {
 		return nil, couchResponseStatus.error()
+	}
+
+	// required couchdb system database
+	if err := couchstore.createDatabase("_users"); err != nil {
+		return nil, err
+	}
+
+	// required couchdb system database
+	if err := couchstore.createDatabase("_replicator"); err != nil {
+		return nil, err
 	}
 
 	if err := couchstore.createDatabase(dbLink); err != nil {

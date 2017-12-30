@@ -51,13 +51,17 @@ func main() {
 			Commit:  commit,
 		})
 
-		if storeErr != nil {
+		if storeErr == nil {
+			return false, nil
+		}
+
+		if _, ok := storeErr.(*couchstore.CouchNotReadyError); ok {
 			log.Infof("Unable to connect to couchdb (%v). Retrying in 5s.", storeErr.Error())
 			time.Sleep(5 * time.Second)
 			return true, storeErr
 		}
 
-		return false, nil
+		return false, storeErr
 	}, 10)
 
 	if err != nil {
