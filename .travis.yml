@@ -20,7 +20,7 @@ install:
   - go get -u github.com/golang/lint/golint
   - dep ensure
 script:
-  - make coverage && make lint
+  - make coverage lint test_headers
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 deploy:

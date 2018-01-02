@@ -67,7 +67,7 @@ DOCKER_PUSH_LIST=$(foreach command, $(COMMANDS), docker_push_$(command))
 CLEAN_LIST=$(foreach path, $(CLEAN_PATHS), clean_$(path))
 
 # == .PHONY ===================================================================
-.PHONY: test coverage benchmark lint build git_tag github_draft github_upload github_publish docker_images docker_push clean $(TEST_LIST) $(BENCHMARK_LIST) $(LINT_LIST) $(GITHUB_UPLOAD_LIST) $(DOCKER_IMAGE_LIST) $(DOCKER_PUSH_LIST) $(CLEAN_LIST)
+.PHONY: test coverage benchmark lint build git_tag github_draft github_upload github_publish docker_images docker_push clean test_headers $(TEST_LIST) $(BENCHMARK_LIST) $(LINT_LIST) $(GITHUB_UPLOAD_LIST) $(DOCKER_IMAGE_LIST) $(DOCKER_PUSH_LIST) $(CLEAN_LIST)
 
 # == all ======================================================================
 all: build
@@ -229,3 +229,6 @@ clean: $(CLEAN_LIST)
 
 $(CLEAN_LIST): clean_%:
 	rm -rf $*
+ 
+test_headers:
+	@ ./test_headers.sh $(LICENSED_FILES)
