@@ -15,7 +15,6 @@ var (
 // RegisterFlags registers the flags used by InitializeWithFlags.
 func RegisterFlags() {
 	flag.Int64Var(&fee, "fee", DefaultFee, "transaction fee (satoshis)")
-
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
