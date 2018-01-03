@@ -12,6 +12,9 @@ import (
 
 var agentURL = "http://localhost:3000"
 
+// StoreURL is used to connect to the agent underlying store.
+const StoreURL = "http://store:5000"
+
 // Factory wraps functions to create a client and a mock agent.
 // After its creation, the client is stored in the factory to avoid
 // re-creating it in every test.
@@ -35,6 +38,7 @@ func (f Factory) RunAgentClientTests(t *testing.T) {
 	}
 	f.Client, _ = f.NewClient(agentURL)
 
+	t.Run("TestUploadProcess", f.TestUploadProcess)
 	t.Run("Test creating map", f.TestCreateMap)
 	t.Run("Test creating segment", f.TestCreateSegment)
 	t.Run("Test find segments", f.TestFindSegments)
@@ -42,6 +46,11 @@ func (f Factory) RunAgentClientTests(t *testing.T) {
 	t.Run("Test getting a process", f.TestGetProcess)
 	t.Run("Test getting all the processes", f.TestGetProcesses)
 	t.Run("Test getting a segment", f.TestGetSegment)
+}
+
+// TestUploadProcess tests what happens when uploading a process with various inputs.
+func (f Factory) TestUploadProcess(t *testing.T) {
+	t.Run("TestUploadProcessOK", f.TestUploadProcessOK)
 }
 
 // TestCreateMap tests what happens when creating a map with various inputs.

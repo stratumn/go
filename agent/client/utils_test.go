@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stratumn/sdk/agent"
+	"github.com/stratumn/sdk/agent/agenttestcases"
 	"github.com/stratumn/sdk/agent/client"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/utils"
@@ -99,6 +101,27 @@ func (m *mockHTTPServer) mockCreateSegment(w http.ResponseWriter, r *http.Reques
 	m.sendResponse(w, http.StatusOK, &s)
 }
 
+func (m *mockHTTPServer) mockUploadProcess(w http.ResponseWriter, r *http.Request) {
+	uploadProcessBody := &client.UploadProcessBody{}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		m.sendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := json.Unmarshal(body, uploadProcessBody); err != nil {
+		m.sendError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	m.sendResponse(w, http.StatusOK, &agent.Processes{
+		&agent.Process{
+			Name: "test",
+		},
+	})
+}
+
 func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 	params, err := m.decodePostParams(r)
 	if err != nil {
@@ -172,27 +195,11 @@ func (m *mockHTTPServer) mockGetInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		Stores: []agent.StoreInfo{
 			{
-				"url": "http://localhost:5000",
+				"url": agenttestcases.StoreURL,
 			},
 		},
 		Fossilizers: []agent.FossilizerInfo{},
-		Plugins: []agent.PluginInfo{
-			{
-				Name:        "Agent URL",
-				Description: "Saves in segment meta the URL that can be used to retrieve a segment.",
-				ID:          "1",
-			},
-			{
-				Name:        "Action arguments",
-				Description: "Saves the action and its arguments in link meta information.",
-				ID:          "2",
-			},
-			{
-				Name:        "State Hash",
-				Description: "Computes and adds the hash of the state in meta.",
-				ID:          "3",
-			},
-		},
+		Plugins:     []agent.PluginInfo{},
 	}
 	m.sendResponse(w, http.StatusOK, info)
 }
@@ -258,6 +265,7 @@ func mockAgent(t *testing.T, address string) *agent.MockAgent {
 		mux.HandleFunc("/{process}/segments/{linkHash}", handler.mockGetSegment).Methods("GET")
 		mux.HandleFunc("/{process}/maps", handler.mockGetMapIds).Methods("GET")
 		mux.HandleFunc("/{process}/segments", handler.mockFindSegments).Methods("GET")
+		mux.HandleFunc("/{process}/upload", handler.mockUploadProcess).Methods("POST")
 		return &http.Server{
 			Addr:    url,
 			Handler: mux,

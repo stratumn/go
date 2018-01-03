@@ -17,27 +17,11 @@ func (f Factory) TestGetInfoOK(t *testing.T) {
 		},
 		Stores: []agent.StoreInfo{
 			agent.StoreInfo{
-				"url": "http://localhost:5000",
+				"url": StoreURL,
 			},
 		},
 		Fossilizers: []agent.FossilizerInfo{},
-		Plugins: []agent.PluginInfo{
-			agent.PluginInfo{
-				Name:        "Agent URL",
-				Description: "Saves in segment meta the URL that can be used to retrieve a segment.",
-				ID:          "1",
-			},
-			agent.PluginInfo{
-				Name:        "Action arguments",
-				Description: "Saves the action and its arguments in link meta information.",
-				ID:          "2",
-			},
-			agent.PluginInfo{
-				Name:        "State Hash",
-				Description: "Computes and adds the hash of the state in meta.",
-				ID:          "3",
-			},
-		},
+		Plugins:     []agent.PluginInfo{},
 	}
 	assert.NoError(t, err)
 	assert.NotNil(t, actual)

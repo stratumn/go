@@ -34,6 +34,7 @@ type ProcessOptions struct {
 // Agent is the interface of an agent
 type Agent interface {
 	AddProcess(process string, actions Actions, storeClient interface{}, fossilizerClients []interface{}, opts *ProcessOptions) (Process, error)
+	UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*Process, error)
 	FindSegments(filter store.SegmentFilter) (cs.SegmentSlice, error)
 	GetInfo() (*Info, error)
 	GetMapIds(filter store.MapFilter) ([]string, error)

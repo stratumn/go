@@ -2,9 +2,11 @@ package client
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -33,6 +35,7 @@ type SegmentRef struct {
 // AgentClient is the interface for an agent client
 // It can be used to access an agent's http endpoints.
 type AgentClient interface {
+	UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*agent.Process, error)
 	CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error)
 	CreateSegment(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
 	FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error)
@@ -70,6 +73,68 @@ func NewAgentClient(agentURL string) (AgentClient, error) {
 	}
 
 	return client, nil
+}
+
+// UploadProcessBody is the body that should be sent with upload process.
+type UploadProcessBody struct {
+	Actions     string   `json:"actions"`
+	StoreURL    urlObj   `json:"store"`
+	Fossilizers []urlObj `json:"fossilizers"`
+	Plugins     []idObj  `json:"plugins"`
+}
+
+type urlObj struct {
+	URL string `json:"url"`
+}
+
+type idObj struct {
+	ID string `json:"id"`
+}
+
+// UploadProcess creates a new process on the agent with the specified actions.
+func (a *agentClient) UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*agent.Process, error) {
+	queryURL := fmt.Sprintf("/%s/upload", processName)
+
+	actions, err := ioutil.ReadFile(actionsPath)
+	if err != nil {
+		return nil, err
+	}
+	actionsBase64 := base64.StdEncoding.EncodeToString(actions)
+
+	fossilizers := []urlObj{}
+	for _, u := range fossilizerURLs {
+		fossilizers = append(fossilizers, urlObj{URL: u})
+	}
+
+	plugins := []idObj{}
+	for _, p := range pluginIDs {
+		plugins = append(plugins, idObj{ID: p})
+	}
+
+	postBody := UploadProcessBody{
+		Actions:     actionsBase64,
+		StoreURL:    urlObj{URL: storeURL},
+		Fossilizers: fossilizers,
+		Plugins:     plugins,
+	}
+
+	data, err := json.Marshal(postBody)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := a.post(queryURL, data)
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	processes := &agent.Processes{}
+	if err := decoder.Decode(processes); err != nil {
+		return nil, jsonhttp.NewErrBadRequest(err.Error())
+	}
+
+	return processes.FindProcess(processName), nil
 }
 
 // CreateSegment sends a CreateSegment request to the agent and returns

@@ -48,6 +48,19 @@ func (mr *MockAgentMockRecorder) AddProcess(process, actions, storeClient, fossi
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProcess", reflect.TypeOf((*MockAgent)(nil).AddProcess), process, actions, storeClient, fossilizerClients, opts)
 }
 
+// UploadProcess mocks base method
+func (m *MockAgent) UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*Process, error) {
+	ret := m.ctrl.Call(m, "UploadProcess", processName, actionsPath, storeURL, fossilizerURLs, pluginIDs)
+	ret0, _ := ret[0].(*Process)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddProcess indicates an expected call of AddProcess
+func (mr *MockAgentMockRecorder) UploadProcess(processName, actionsPath, storeURL, fossilizerURLs, pluginIDs interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadProcess", reflect.TypeOf((*MockAgent)(nil).UploadProcess), processName, actionsPath, storeURL, fossilizerURLs, pluginIDs)
+}
+
 // FindSegments mocks base method
 func (m *MockAgent) FindSegments(process string, opts map[string]string) (cs.SegmentSlice, error) {
 	ret := m.ctrl.Call(m, "FindSegments", process, opts)
