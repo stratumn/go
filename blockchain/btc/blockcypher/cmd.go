@@ -25,7 +25,7 @@ func RegisterFlags() {
 	flag.IntVar(&limiterSize, "limitersize", DefaultLimiterSize, "BlockCypher API limiter size")
 }
 
-// RunWithFlags should be called after RegisterFlags and flag.Parse to intialize
+// RunWithFlags should be called after RegisterFlags and flag.Parse to initialize
 // a blockcypher client using flag values.
 func RunWithFlags(ctx context.Context, key string) *Client {
 	if key == "" {

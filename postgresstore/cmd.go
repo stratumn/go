@@ -94,7 +94,7 @@ func RegisterFlags() {
 	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL), "URL of the PostgreSQL database")
 }
 
-// InitializeWithFlags should be called after RegisterFlags and flag.Parse to intialize
+// InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
 // a postgres adapter using flag values.
 func InitializeWithFlags(version, commit string) *Store {
 	config := &Config{URL: url, Version: version, Commit: commit}

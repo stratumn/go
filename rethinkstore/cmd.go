@@ -76,7 +76,7 @@ func RegisterFlags() {
 	flag.BoolVar(&hard, "hard", DefaultHard, "whether to use hard durability")
 }
 
-// InitializeWithFlags should be called after RegisterFlags and flag.Parse to intialize
+// InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
 // a rethinkdb adapter using flag values.
 func InitializeWithFlags(version, commit string) *Store {
 	config := &Config{
