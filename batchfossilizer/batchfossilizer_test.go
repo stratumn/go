@@ -15,6 +15,7 @@
 package batchfossilizer
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"io/ioutil"
@@ -23,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
@@ -105,9 +107,10 @@ func TestStop_StopBatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		if err := a.Start(); err != nil {
+		if err := a.Start(ctx); err != nil && errors.Cause(err) != context.Canceled {
 			t.Fatalf("a.Start(): err: %s", err)
 		}
 	}()
@@ -128,7 +131,7 @@ func TestStop_StopBatch(t *testing.T) {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 
-	go a.Stop()
+	cancel()
 
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
@@ -180,8 +183,10 @@ func TestNew_recover(t *testing.T) {
 		t.Fatalf("New(): err: %s", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	go func() {
-		if err := a.Start(); err != nil {
+		if err := a.Start(ctx); err != nil && errors.Cause(err) != context.Canceled {
 			t.Fatalf("a.Start(): err: %s", err)
 		}
 	}()
@@ -203,7 +208,7 @@ func TestNew_recover(t *testing.T) {
 	}
 
 	<-a.Started()
-	a.Stop()
+	cancel()
 
 	a, err = New(&Config{Interval: interval, Path: path})
 	if err != nil {

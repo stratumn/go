@@ -27,7 +27,7 @@ import (
 	"github.com/stratumn/sdk/types"
 )
 
-const interval = 100 * time.Millisecond
+const testInterval = 100 * time.Millisecond
 
 var (
 	pathA0     types.Path

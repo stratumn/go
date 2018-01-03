@@ -15,6 +15,7 @@
 package batchfossilizer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -23,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs/evidences"
 	"github.com/stratumn/sdk/fossilizer"
 	"github.com/stratumn/sdk/testutil"
@@ -40,16 +42,22 @@ type fossilizeTest struct {
 func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, start bool, fossilize bool) (results []*fossilizer.Result) {
 	ec := make(chan *fossilizer.Event, 1)
 	a.AddFossilizerEventChan(ec)
+	var cancel context.CancelFunc
+	c := make(chan struct{}, 1)
 
 	if start {
+		var ctx context.Context
+		ctx, cancel = context.WithCancel(context.Background())
 		go func() {
-			if err := a.Start(); err != nil {
-				t.Errorf("a.Start(): err: %s", err)
+			if err := a.Start(ctx); err != nil {
+				if errors.Cause(err) != context.Canceled {
+					t.Errorf("a.Start(): err: %s", err)
+				}
+				c <- struct{}{}
 			}
 		}()
+		<-a.Started()
 	}
-
-	<-a.Started()
 
 	if fossilize {
 		for _, test := range tests {
@@ -95,8 +103,9 @@ RESULT_LOOP:
 		}
 	}
 
-	if start {
-		a.Stop()
+	if cancel != nil {
+		cancel()
+		<-c
 	}
 	return
 }
@@ -111,9 +120,10 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 
 	ec := make(chan *fossilizer.Event, 1)
 	a.AddFossilizerEventChan(ec)
+	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
-		if err := a.Start(); err != nil {
+		if err := a.Start(ctx); err != nil && errors.Cause(err) != context.Canceled {
 			b.Errorf("a.Start(): err: %s", err)
 		}
 	}()
@@ -134,7 +144,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 				b.Errorf("a.Fossilize(): err: %s", err)
 			}
 		}
-		a.Stop()
+		cancel()
 	}()
 
 	for i := 0; i < n; i++ {

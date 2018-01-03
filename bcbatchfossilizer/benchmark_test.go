@@ -28,7 +28,7 @@ func BenchmarkFossilize_MaxLeaves100(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 100,
 	})
 }
@@ -38,7 +38,7 @@ func BenchmarkFossilize_MaxLeaves1000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 1000,
 	})
 }
@@ -48,7 +48,7 @@ func BenchmarkFossilize_MaxLeaves10000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 10000,
 	})
 }
@@ -58,7 +58,7 @@ func BenchmarkFossilize_MaxLeaves100000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 100000,
 	})
 }
@@ -68,7 +68,7 @@ func BenchmarkFossilize_MaxLeaves1000000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 1000000,
 	})
 }
@@ -83,7 +83,7 @@ func BenchmarkFossilize_Path_MaxLeaves100(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 100,
 		Path:      path,
 	})
@@ -99,7 +99,7 @@ func BenchmarkFossilize_Path_MaxLeaves1000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 1000,
 		Path:      path,
 	})
@@ -115,7 +115,7 @@ func BenchmarkFossilize_Path_MaxLeaves10000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 10000,
 		Path:      path,
 	})
@@ -131,7 +131,7 @@ func BenchmarkFossilize_Path_MaxLeaves100000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 100000,
 		Path:      path,
 	})
@@ -147,7 +147,7 @@ func BenchmarkFossilize_Path_MaxLeaves1000000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 1000000,
 		Path:      path,
 	})
@@ -163,7 +163,7 @@ func BenchmarkFossilize_FSync_MaxLeaves100(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 100,
 		Path:      path,
 		FSync:     true,
@@ -180,7 +180,7 @@ func BenchmarkFossilize_FSync_MaxLeaves1000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 1000,
 		Path:      path,
 		FSync:     true,
@@ -197,7 +197,7 @@ func BenchmarkFossilize_FSync_MaxLeaves10000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 10000,
 		Path:      path,
 		FSync:     true,
@@ -214,7 +214,7 @@ func BenchmarkFossilize_FSync_MaxLeaves100000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 100000,
 		Path:      path,
 		FSync:     true,
@@ -231,7 +231,7 @@ func BenchmarkFossilize_FSync_MaxLeaves1000000(b *testing.B) {
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
 		StopBatch: true,
-		Interval:  interval,
+		Interval:  testInterval,
 		MaxLeaves: 1000000,
 		Path:      path,
 		FSync:     true,

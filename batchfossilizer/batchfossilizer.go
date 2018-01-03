@@ -18,6 +18,7 @@
 package batchfossilizer
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 	"io"
@@ -212,7 +213,7 @@ func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 }
 
 // Start starts the fossilizer.
-func (a *Fossilizer) Start() error {
+func (a *Fossilizer) Start(ctx context.Context) error {
 	var (
 		interval = a.config.GetInterval()
 		timer    = time.NewTimer(interval)
@@ -239,18 +240,11 @@ func (a *Fossilizer) Start() error {
 			} else {
 				log.WithField("interval", interval).Info("No batch is needed after the timer interval because there are no pending hashes")
 			}
-		case err := <-a.stopChan:
-			e := a.stop(err)
-			a.stopChan <- e
+		case <-ctx.Done():
+			e := a.stop(ctx.Err())
 			return e
 		}
 	}
-}
-
-// Stop stops the fossilizer.
-func (a *Fossilizer) Stop() {
-	a.stopChan <- nil
-	<-a.stopChan
 }
 
 // Started return a channel that will receive once the fossilizer has started.

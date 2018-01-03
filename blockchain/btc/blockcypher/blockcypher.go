@@ -16,8 +16,8 @@
 package blockcypher
 
 import (
+	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -58,7 +58,6 @@ type Client struct {
 	config    *Config
 	api       *gobcy.API
 	limiter   chan struct{}
-	closeChan chan struct{}
 	timer     *time.Timer
 	waitGroup sync.WaitGroup
 }
@@ -74,10 +73,9 @@ func New(c *Config) *Client {
 	limiter := make(chan struct{}, size)
 
 	return &Client{
-		config:    c,
-		api:       &gobcy.API{Token: c.APIKey, Coin: "btc", Chain: parts[1]},
-		limiter:   limiter,
-		closeChan: make(chan struct{}),
+		config:  c,
+		api:     &gobcy.API{Token: c.APIKey, Coin: "btc", Chain: parts[1]},
+		limiter: limiter,
 	}
 }
 
@@ -146,7 +144,7 @@ func (c *Client) Broadcast(raw []byte) error {
 }
 
 // Start starts the client.
-func (c *Client) Start() {
+func (c *Client) Start(ctx context.Context) {
 	size := c.config.LimiterSize
 	if size == 0 {
 		size = DefaultLimiterSize
@@ -162,28 +160,21 @@ func (c *Client) Start() {
 
 	c.timer = time.NewTimer(interval)
 
-	go func() {
-		for {
-			for range c.timer.C {
-				break
-			}
-			if c.closeChan == nil {
-				return
-			}
+	for {
+		select {
+		case <-c.timer.C:
 			c.timer = time.NewTimer(interval)
 			c.limiter <- struct{}{}
+		case <-ctx.Done():
+			c.stop()
+			return
 		}
-	}()
 
-	<-c.closeChan
+	}
 }
 
-// Stop stops the client.
-func (c *Client) Stop() {
-	c.closeChan <- struct{}{}
-	close(c.closeChan)
-	c.closeChan = nil
-
+// stop stops the client.
+func (c *Client) stop() {
 	if !c.timer.Stop() {
 		<-c.timer.C
 	}
@@ -191,14 +182,4 @@ func (c *Client) Stop() {
 	c.waitGroup.Wait()
 	<-c.limiter
 	close(c.limiter)
-}
-
-func (c *Client) wait() error {
-	for range c.limiter {
-		break
-	}
-	if c.closeChan == nil {
-		return errors.New("Client is stopped")
-	}
-	return nil
 }

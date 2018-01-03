@@ -15,6 +15,7 @@
 package blockcypher
 
 import (
+	"context"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -26,8 +27,10 @@ import (
 
 func TestFindUnspent(t *testing.T) {
 	bcy := New(&Config{Network: btc.NetworkTest3})
-	go bcy.Start()
-	defer bcy.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go bcy.Start(ctx)
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {
@@ -61,8 +64,10 @@ func TestFindUnspent(t *testing.T) {
 
 func TestFindUnspent_notEnough(t *testing.T) {
 	bcy := New(&Config{Network: btc.NetworkTest3})
-	go bcy.Start()
-	defer bcy.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go bcy.Start(ctx)
 
 	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
 	if err != nil {

@@ -49,7 +49,7 @@ func TestFossilize(t *testing.T) {
 	a, err := New(&Config{
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
-		Interval: interval,
+		Interval: testInterval,
 	})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
@@ -67,7 +67,7 @@ func TestBcBatchProof(t *testing.T) {
 	a, err := New(&Config{
 		HashTimestamper: dummytimestamper.Timestamper{},
 	}, &batchfossilizer.Config{
-		Interval: interval,
+		Interval: testInterval,
 	})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)

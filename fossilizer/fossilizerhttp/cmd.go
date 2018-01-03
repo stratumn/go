@@ -17,10 +17,8 @@ package fossilizerhttp
 import (
 	"context"
 	"flag"
-	"os"
-	"os/signal"
+	"net/http"
 	"runtime"
-	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -53,6 +51,7 @@ var (
 
 // Run launches a fossilizerhttp server.
 func Run(
+	ctx context.Context,
 	a fossilizer.Adapter,
 	config *Config,
 	httpConfig *jsonhttp.Config,
@@ -67,22 +66,16 @@ func Run(
 	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
 
 	go func() {
-		sigc := make(chan os.Signal)
-		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
-		sig := <-sigc
-		log.WithField("signal", sig).Info("Got exit signal")
+		<-ctx.Done()
 		log.Info("Cleaning up")
-		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-		defer cancel()
 		if err := h.Shutdown(ctx); err != nil {
 			log.WithField("error", err).Fatal("Failed to shutdown server")
 		}
 		log.Info("Stopped")
-		os.Exit(0)
 	}()
 
 	log.WithField("http", httpConfig.Address).Info("Listening")
-	if err := h.ListenAndServe(); err != nil {
+	if err := h.ListenAndServe(); err != http.ErrServerClosed {
 		log.WithField("error", err).Fatal("Server stopped")
 	}
 }
@@ -111,7 +104,7 @@ func RegisterFlags() {
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
 // a fossilizerhttp server configured using flag values.
-func RunWithFlags(a fossilizer.Adapter) {
+func RunWithFlags(ctx context.Context, a fossilizer.Adapter) {
 	config := &Config{
 		MinDataLen:              minDataLen,
 		MaxDataLen:              maxDataLen,
@@ -139,6 +132,7 @@ func RunWithFlags(a fossilizer.Adapter) {
 	}
 
 	Run(
+		ctx,
 		a,
 		config,
 		httpConfig,

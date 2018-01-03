@@ -17,12 +17,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/stratumn/sdk/dummyfossilizer"
 	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
+	"github.com/stratumn/sdk/utils"
 )
 
 var (
@@ -36,7 +38,11 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	ctx := context.Background()
+	ctx = utils.CancelOnInterrupt(ctx)
+
 	log.Infof("%s v%s@%s", dummyfossilizer.Description, version, commit[:7])
 	a := dummyfossilizer.New(&dummyfossilizer.Config{Version: version, Commit: commit})
-	fossilizerhttp.RunWithFlags(a)
+	fossilizerhttp.RunWithFlags(ctx, a)
 }
