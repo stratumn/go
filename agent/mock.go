@@ -56,7 +56,7 @@ func (m *MockAgent) UploadProcess(processName string, actionsPath string, storeU
 	return ret0, ret1
 }
 
-// AddProcess indicates an expected call of AddProcess
+// UploadProcess indicates an expected call of AddProcess
 func (mr *MockAgentMockRecorder) UploadProcess(processName, actionsPath, storeURL, fossilizerURLs, pluginIDs interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadProcess", reflect.TypeOf((*MockAgent)(nil).UploadProcess), processName, actionsPath, storeURL, fossilizerURLs, pluginIDs)
 }

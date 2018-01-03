@@ -1,7 +1,8 @@
 package agenttestcases
 
 import (
-	"os"
+	"fmt"
+	"go/build"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ import (
 func (f Factory) TestUploadProcessOK(t *testing.T) {
 	process, err := f.Client.UploadProcess(
 		"test",
-		os.Getenv("GOPATH")+"/src/github.com/stratumn/sdk/agent/agenttestcases/actions.js",
+		fmt.Sprintf("%v/src/github.com/stratumn/sdk/agent/agenttestcases/actions.js", build.Default.GOPATH),
 		StoreURL,
 		[]string{},
 		[]string{},
