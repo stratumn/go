@@ -2,6 +2,8 @@
 
 # Stratumn SDK
 
+[![Join the chat at https://gitter.im/stratumn/sdk](https://badges.gitter.im/stratumn/sdk.svg)](https://gitter.im/stratumn/sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [Stratumn](https://stratumn.com)'s SDK to create Indigo applications and networks.
 
 [![GoDoc](https://godoc.org/github.com/stratumn/sdk?status.svg)](https://godoc.org/github.com/stratumn/sdk)
