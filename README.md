@@ -8,6 +8,7 @@
 [![build status](https://travis-ci.org/stratumn/sdk.svg?branch=master)](https://travis-ci.org/stratumn/sdk)
 [![codecov](https://codecov.io/gh/stratumn/sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/stratumn/sdk)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/sdk)](https://goreportcard.com/report/github.com/stratumn/sdk)
+[![Join the chat at https://gitter.im/stratumn/sdk](https://badges.gitter.im/stratumn/sdk.svg)](https://gitter.im/stratumn/sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ---
 
