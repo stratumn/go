@@ -31,7 +31,6 @@ import (
 	"encoding/hex"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 
@@ -50,10 +49,6 @@ const (
 	// DefaultMaxDataLen is the default maximum fossilize data length.
 	DefaultMaxDataLen = 64
 
-	// DefaultCallbackTimeout is the default timeout of requests to the
-	// callback URLs.
-	DefaultCallbackTimeout = 10 * time.Second
-
 	// DefaultFossilizerEventChanSize is the default size of the fossilizer event channel.
 	DefaultFossilizerEventChanSize = 256
 )
@@ -65,9 +60,6 @@ type Config struct {
 
 	// The maximum fossilize data length.
 	MaxDataLen int
-
-	// The timeout of requests to the callback URLs.
-	CallbackTimeout time.Duration
 
 	// The size of the EventChan channel.
 	FossilizerEventChanSize int

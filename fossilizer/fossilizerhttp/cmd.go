@@ -42,7 +42,6 @@ var (
 	keyFile                 string
 	minDataLen              int
 	maxDataLen              int
-	callbackTimeout         time.Duration
 	readTimeout             time.Duration
 	writeTimeout            time.Duration
 	maxHeaderBytes          int
@@ -88,7 +87,6 @@ func RegisterFlags() {
 	flag.StringVar(&keyFile, "tls_key", "", "TLS private key file")
 	flag.IntVar(&minDataLen, "mindata", DefaultMinDataLen, "Minimum data length")
 	flag.IntVar(&maxDataLen, "maxdata", DefaultMaxDataLen, "Maximum data length")
-	flag.DurationVar(&callbackTimeout, "callbacktimeout", DefaultCallbackTimeout, "Callback request timeout")
 	flag.DurationVar(&readTimeout, "read_timeout", jsonhttp.DefaultReadTimeout, "Read timeout")
 	flag.DurationVar(&writeTimeout, "write_timeout", jsonhttp.DefaultWriteTimeout, "Write timeout")
 	flag.IntVar(&maxHeaderBytes, "max_header_bytes", jsonhttp.DefaultMaxHeaderBytes, "Maximum header bytes")
@@ -108,7 +106,6 @@ func RunWithFlags(ctx context.Context, a fossilizer.Adapter) {
 	config := &Config{
 		MinDataLen:              minDataLen,
 		MaxDataLen:              maxDataLen,
-		CallbackTimeout:         callbackTimeout,
 		FossilizerEventChanSize: fossilizerEventChanSize,
 	}
 	httpConfig := &jsonhttp.Config{
