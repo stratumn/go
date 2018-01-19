@@ -417,7 +417,6 @@ func (a *Fossilizer) stop(err error) error {
 	}
 
 	a.waitGroup.Wait()
-	a.SetTransformer(nil)
 
 	if a.pending.file != nil {
 		if e := a.pending.file.Close(); e != nil {
