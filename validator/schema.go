@@ -20,25 +20,27 @@ type schemaValidatorConfig struct {
 	Schema  *gojsonschema.Schema
 }
 
-// schemaValidator validates the json schema of a link's state.
-type schemaValidator struct {
-	Config *schemaValidatorConfig
-}
-
-// newSchemaValidator creates a schemaValidator for a given process and type.
-func newSchemaValidator(process, linkType string, schemaData []byte) (*schemaValidator, error) {
+// newSchemaValidatorConfig creates a schemaValidatorConfig for a given process and type.
+func newSchemaValidatorConfig(process, linkType string, schemaData []byte) (*schemaValidatorConfig, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
 		return nil, err
 	}
 
-	config := &schemaValidatorConfig{
+	return &schemaValidatorConfig{
 		Process: process,
 		Type:    linkType,
 		Schema:  schema,
-	}
+	}, nil
+}
 
-	return &schemaValidator{Config: config}, nil
+// schemaValidator validates the json schema of a link's state.
+type schemaValidator struct {
+	config *schemaValidatorConfig
+}
+
+func newSchemaValidator(config *schemaValidatorConfig) validator {
+	return &schemaValidator{config: config}
 }
 
 // shouldValidate returns true if the link matches the validator's process
@@ -51,7 +53,7 @@ func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkProcess != sv.Config.Process {
+	if linkProcess != sv.config.Process {
 		return false
 	}
 
@@ -61,7 +63,7 @@ func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkAction != sv.Config.Type {
+	if linkAction != sv.config.Type {
 		return false
 	}
 
@@ -80,7 +82,7 @@ func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	}
 
 	stateData := gojsonschema.NewBytesLoader(stateBytes)
-	result, err := sv.Config.Schema.Validate(stateData)
+	result, err := sv.config.Schema.Validate(stateData)
 	if err != nil {
 		return errors.WithStack(err)
 	}

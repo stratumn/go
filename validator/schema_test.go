@@ -34,8 +34,9 @@ const testSchema = `
 
 func TestSchemaValidator(t *testing.T) {
 	schema := []byte(testSchema)
-	sv, err := newSchemaValidator("p1", "sell", schema)
+	cfg, err := newSchemaValidatorConfig("p1", "sell", schema)
 	require.NoError(t, err)
+	sv := newSchemaValidator(cfg)
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
