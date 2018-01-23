@@ -23,9 +23,9 @@ var (
 // schemaValidatorConfig contains everything a schemaValidator needs to
 // validate links.
 type schemaValidatorConfig struct {
-	process  string
-	linkType string
-	schema   *gojsonschema.Schema
+	Process  string
+	LinkType string
+	Schema   *gojsonschema.Schema
 }
 
 // newSchemaValidatorConfig creates a schemaValidatorConfig for a given process and type.
@@ -44,9 +44,9 @@ func newSchemaValidatorConfig(process, linkType string, schemaData []byte) (*sch
 	}
 
 	return &schemaValidatorConfig{
-		process:  process,
-		linkType: linkType,
-		schema:   schema,
+		Process:  process,
+		LinkType: linkType,
+		Schema:   schema,
 	}, nil
 }
 
@@ -69,7 +69,7 @@ func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkProcess != sv.config.process {
+	if linkProcess != sv.config.Process {
 		return false
 	}
 
@@ -79,7 +79,7 @@ func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkAction != sv.config.linkType {
+	if linkAction != sv.config.LinkType {
 		return false
 	}
 
@@ -98,7 +98,7 @@ func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	}
 
 	stateData := gojsonschema.NewBytesLoader(stateBytes)
-	result, err := sv.config.schema.Validate(stateData)
+	result, err := sv.config.Schema.Validate(stateData)
 	if err != nil {
 		return errors.WithStack(err)
 	}
