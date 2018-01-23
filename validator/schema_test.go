@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const testSchema = `
+const testSellSchema = `
 {
 	"type": "object",
 	"properties": {
@@ -33,7 +33,7 @@ const testSchema = `
 }`
 
 func TestSchemaValidatorConfig(t *testing.T) {
-	validSchema := []byte(testSchema)
+	validSchema := []byte(testSellSchema)
 	process := "p1"
 	linkType := "sell"
 
@@ -98,7 +98,7 @@ func TestSchemaValidatorConfig(t *testing.T) {
 }
 
 func TestSchemaValidator(t *testing.T) {
-	schema := []byte(testSchema)
+	schema := []byte(testSellSchema)
 	cfg, err := newSchemaValidatorConfig("p1", "sell", schema)
 	require.NoError(t, err)
 	sv := newSchemaValidator(cfg)

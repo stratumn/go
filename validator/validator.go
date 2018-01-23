@@ -13,11 +13,18 @@ const (
 
 // validator defines the interface with single Validate() method
 type validator interface {
+	// Validate runs validations on a link and returns an error
+	// if the link is invalid.
 	Validate(store.SegmentReader, *cs.Link) error
 }
 
-// Validator defines a validator that can be identified by a hash
+// Validator defines a validator that has an internal state, identified by
+// its hash.
 type Validator interface {
 	validator
+
+	// Hash returns the hash of the validator's state.
+	// It can be used to know which set of validations were applied
+	// to a block.
 	Hash() *types.Bytes32
 }
