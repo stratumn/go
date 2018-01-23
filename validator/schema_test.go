@@ -32,6 +32,71 @@ const testSchema = `
 	]
 }`
 
+func TestSchemaValidatorConfig(t *testing.T) {
+	validSchema := []byte(testSchema)
+	process := "p1"
+	linkType := "sell"
+
+	type testCase struct {
+		name          string
+		process       string
+		linkType      string
+		schema        []byte
+		valid         bool
+		expectedError error
+	}
+
+	testCases := []testCase{{
+		name:          "missing-process",
+		process:       "",
+		linkType:      linkType,
+		schema:        validSchema,
+		valid:         false,
+		expectedError: ErrMissingProcess,
+	}, {
+		name:          "missing-link-type",
+		process:       process,
+		linkType:      "",
+		schema:        validSchema,
+		valid:         false,
+		expectedError: ErrMissingLinkType,
+	}, {
+		name:     "invalid-schema",
+		process:  process,
+		linkType: linkType,
+		schema:   []byte(`{"type": "object", "properties": {"malformed}}`),
+		valid:    false,
+	}, {
+		name:     "valid-config",
+		process:  process,
+		linkType: linkType,
+		schema:   validSchema,
+		valid:    true,
+	}}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := newSchemaValidatorConfig(
+				tt.process,
+				tt.linkType,
+				tt.schema,
+			)
+
+			if tt.valid {
+				assert.NotNil(t, cfg)
+				assert.NoError(t, err)
+			} else {
+				assert.Nil(t, cfg)
+				assert.Error(t, err)
+				if tt.expectedError != nil {
+					assert.EqualError(t, err, tt.expectedError.Error())
+				}
+
+			}
+		})
+	}
+}
+
 func TestSchemaValidator(t *testing.T) {
 	schema := []byte(testSchema)
 	cfg, err := newSchemaValidatorConfig("p1", "sell", schema)

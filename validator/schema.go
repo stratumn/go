@@ -12,25 +12,41 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+var (
+	// ErrMissingProcess is returned when the process name is missing for schema validation.
+	ErrMissingProcess = errors.New("schema validation requires a process")
+
+	// ErrMissingLinkType is returned when the link type is missing for schema validation.
+	ErrMissingLinkType = errors.New("schema validation requires a link type")
+)
+
 // schemaValidatorConfig contains everything a schemaValidator needs to
 // validate links.
 type schemaValidatorConfig struct {
-	Process string
-	Type    string
-	Schema  *gojsonschema.Schema
+	process  string
+	linkType string
+	schema   *gojsonschema.Schema
 }
 
 // newSchemaValidatorConfig creates a schemaValidatorConfig for a given process and type.
 func newSchemaValidatorConfig(process, linkType string, schemaData []byte) (*schemaValidatorConfig, error) {
+	if len(process) == 0 {
+		return nil, ErrMissingProcess
+	}
+
+	if len(linkType) == 0 {
+		return nil, ErrMissingLinkType
+	}
+
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	return &schemaValidatorConfig{
-		Process: process,
-		Type:    linkType,
-		Schema:  schema,
+		process:  process,
+		linkType: linkType,
+		schema:   schema,
 	}, nil
 }
 
@@ -53,7 +69,7 @@ func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkProcess != sv.config.Process {
+	if linkProcess != sv.config.process {
 		return false
 	}
 
@@ -63,7 +79,7 @@ func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkAction != sv.config.Type {
+	if linkAction != sv.config.linkType {
 		return false
 	}
 
@@ -82,7 +98,7 @@ func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	}
 
 	stateData := gojsonschema.NewBytesLoader(stateBytes)
-	result, err := sv.config.Schema.Validate(stateData)
+	result, err := sv.config.schema.Validate(stateData)
 	if err != nil {
 		return errors.WithStack(err)
 	}
