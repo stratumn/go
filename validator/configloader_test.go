@@ -55,10 +55,26 @@ const validJSONConfig = `
       }
     }
   ],
-  "chat": [{
-	"type": "message",
-	"schema": {}
-  }]
+  "chat": [
+    {
+      "type": "message",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "content"
+        ]   
+      }
+    }
+  ]
 }
 `
 
