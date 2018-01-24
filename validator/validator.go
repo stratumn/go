@@ -40,5 +40,5 @@ type Validator interface {
 	// Hash returns the hash of the validator's state.
 	// It can be used to know which set of validations were applied
 	// to a block.
-	Hash() *types.Bytes32
+	Hash() (*types.Bytes32, error)
 }

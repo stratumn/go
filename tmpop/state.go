@@ -131,7 +131,11 @@ func (s *State) Commit() (*types.Bytes32, []*cs.Link, error) {
 func (s *State) computeAppHash() (*types.Bytes32, error) {
 	var validatorHash *types.Bytes32
 	if s.validator != nil {
-		validatorHash = s.validator.Hash()
+		h, err := s.validator.Hash()
+		if err != nil {
+			return nil, err
+		}
+		validatorHash = h
 	}
 
 	var merkleRoot *types.Bytes32

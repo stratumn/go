@@ -39,7 +39,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 		},
 	})
 
-	h1 := mv1.Hash()
+	h1, err := mv1.Hash()
+	assert.NoError(t, err)
 	assert.NotNil(t, h1)
 
 	mv2 := NewMultiValidator(&MultiValidatorConfig{
@@ -47,7 +48,9 @@ func TestMultiValidator_Hash(t *testing.T) {
 			&schemaValidatorConfig{Process: "p"},
 		},
 	})
-	h2 := mv2.Hash()
+
+	h2, err := mv2.Hash()
+	assert.NoError(t, err)
 	assert.EqualValues(t, h1, h2)
 
 	mv3 := NewMultiValidator(&MultiValidatorConfig{
@@ -55,7 +58,9 @@ func TestMultiValidator_Hash(t *testing.T) {
 			&schemaValidatorConfig{Process: "p2"},
 		},
 	})
-	h3 := mv3.Hash()
+
+	h3, err := mv3.Hash()
+	assert.NoError(t, err)
 	assert.False(t, h1.Equals(h3))
 }
 

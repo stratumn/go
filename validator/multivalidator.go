@@ -18,7 +18,7 @@ import (
 	"crypto/sha256"
 
 	cj "github.com/gibson042/canonicaljson-go"
-	log "github.com/sirupsen/logrus"
+	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/types"
@@ -54,13 +54,13 @@ func NewMultiValidator(config *MultiValidatorConfig) Validator {
 	}
 }
 
-func (v multiValidator) Hash() *types.Bytes32 {
+func (v multiValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(v.config)
 	if err != nil {
-		log.Warnf("Could not compute validator hash: %s", err.Error())
+		return nil, errors.WithStack(err)
 	}
 	validationsHash := types.Bytes32(sha256.Sum256(b))
-	return &validationsHash
+	return &validationsHash, nil
 }
 
 func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
