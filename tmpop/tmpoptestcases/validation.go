@@ -15,26 +15,49 @@
 package tmpoptestcases
 
 import (
-	"path/filepath"
-	"runtime"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stratumn/sdk/tmpop"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func getTestFile(t *testing.T) string {
-	_, currentFilename, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatalf("Could not get information about the current context")
-	}
-	testFile := filepath.Join(filepath.Dir(currentFilename), "testdata/rules.json")
-	return testFile
+const testValidationConfig = `
+{
+  "testProcess": [
+    {
+      "type": "init",
+      "schema": {
+      	"type": "object",
+      	"properties": {
+      	  "string": {
+  	    "type": "string"
+      	  }
+      	}
+      }
+    }
+  ]
+}
+`
+
+func createValidationFile(t *testing.T) string {
+	tmpfile, err := ioutil.TempFile("", "validation-config")
+	require.NoError(t, err, "ioutil.TempFile()")
+
+	_, err = tmpfile.WriteString(testValidationConfig)
+	require.NoError(t, err, "tmpfile.WriteString()")
+
+	return tmpfile.Name()
 }
 
 // TestValidation tests what happens when validating a segment from a json-schema based validation file
 func (f Factory) TestValidation(t *testing.T) {
-	testFilename := getTestFile(t)
+	testFilename := createValidationFile(t)
+	defer os.Remove(testFilename)
+
 	h, req := f.newTMPop(t, &tmpop.Config{ValidatorFilename: testFilename})
 	defer f.free()
 
@@ -46,9 +69,7 @@ func (f Factory) TestValidation(t *testing.T) {
 	tx := makeCreateLinkTx(t, l)
 	res := h.DeliverTx(tx)
 
-	if res.IsErr() {
-		t.Errorf("a.DeliverTx(): failed: %v", res.Log)
-	}
+	assert.False(t, res.IsErr(), "a.DeliverTx(): failed")
 
 	l = cstesting.RandomLinkWithProcess("testProcess")
 	l.Meta["action"] = "init"
@@ -56,10 +77,6 @@ func (f Factory) TestValidation(t *testing.T) {
 	tx = makeCreateLinkTx(t, l)
 	res = h.DeliverTx(tx)
 
-	if !res.IsErr() {
-		t.Error("a.DeliverTx(): want error")
-	}
-	if res.Code != tmpop.CodeTypeValidation {
-		t.Errorf("res.Code = got %d want %d", res.Code, tmpop.CodeTypeValidation)
-	}
+	assert.True(t, res.IsErr(), "a.DeliverTx(): want error")
+	assert.Equal(t, tmpop.CodeTypeValidation, res.Code, "res.Code")
 }
