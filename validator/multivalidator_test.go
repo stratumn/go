@@ -8,39 +8,39 @@ import (
 )
 
 func TestMultiValidator_New(t *testing.T) {
-	mv := NewMultiValidator(&MultiValidatorConfig{&multiValidatorConfig{
+	mv := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
 			&schemaValidatorConfig{},
 			&schemaValidatorConfig{},
 		},
-	}})
+	})
 
 	assert.Len(t, mv.(*multiValidator).validators, 2)
 }
 
 func TestMultiValidator_Hash(t *testing.T) {
-	mv1 := NewMultiValidator(&MultiValidatorConfig{&multiValidatorConfig{
+	mv1 := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
 			&schemaValidatorConfig{Process: "p"},
 		},
-	}})
+	})
 
 	h1 := mv1.Hash()
 	assert.NotNil(t, h1)
 
-	mv2 := NewMultiValidator(&MultiValidatorConfig{&multiValidatorConfig{
+	mv2 := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
 			&schemaValidatorConfig{Process: "p"},
 		},
-	}})
+	})
 	h2 := mv2.Hash()
 	assert.EqualValues(t, h1, h2)
 
-	mv3 := NewMultiValidator(&MultiValidatorConfig{&multiValidatorConfig{
+	mv3 := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
 			&schemaValidatorConfig{Process: "p2"},
 		},
-	}})
+	})
 	h3 := mv3.Hash()
 	assert.False(t, h1.Equals(h3))
 }
@@ -62,9 +62,9 @@ func TestMultiValidator_Validate(t *testing.T) {
 	svCfg1, _ := newSchemaValidatorConfig("p", "a1", []byte(testMessageSchema))
 	svCfg2, _ := newSchemaValidatorConfig("p", "a2", []byte(testMessageSchema))
 
-	mv := NewMultiValidator(&MultiValidatorConfig{&multiValidatorConfig{
+	mv := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{svCfg1, svCfg2},
-	}})
+	})
 
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
 		err := mv.Validate(nil, cstesting.RandomLink())
