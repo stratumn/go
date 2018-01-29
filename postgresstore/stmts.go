@@ -148,9 +148,10 @@ const (
 		OFFSET $4 LIMIT $5
 	`
 	sqlGetMapIDs = `
-		SELECT DISTINCT map_id FROM links
+		SELECT l.map_id FROM links l
 		WHERE (length($3) = 0 OR process = $3)
-		ORDER BY map_id
+		GROUP BY l.map_id
+		ORDER BY MAX(l.updated_at) DESC
 		OFFSET $1 LIMIT $2
 	`
 	sqlSaveValue = `
