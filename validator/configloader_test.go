@@ -28,6 +28,7 @@ const validJSONConfig = `
   "auction": [
     {
       "type": "init",
+      "signatures": true,
       "schema": {
         "type": "object",
         "properties": {
@@ -72,6 +73,7 @@ const validJSONConfig = `
   "chat": [
     {
       "type": "message",
+      "signatures": false,
       "schema": {
         "type": "object",
         "properties": {
@@ -87,6 +89,10 @@ const validJSONConfig = `
           "content"
         ]   
       }
+    },
+    {
+	"type": "init",
+	"signatures": true    
     }
   ]
 }
@@ -107,6 +113,7 @@ func TestLoadConfig_Success(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	assert.Len(t, cfg.SchemaConfigs, 3)
+	assert.Len(t, cfg.SignatureConfigs, 2)
 }
 
 const invalidJSONConfig = `
@@ -144,5 +151,5 @@ func TestLoadConfig_Error(t *testing.T) {
 	cfg, err := LoadConfig(tmpfile.Name())
 
 	assert.Nil(t, cfg)
-	assert.EqualError(t, err, ErrMissingSchema.Error())
+	assert.EqualError(t, err, ErrInvalidValidator.Error())
 }

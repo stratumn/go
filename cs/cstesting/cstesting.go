@@ -44,7 +44,8 @@ func CreateLink(process, mapID, prevLinkHash string, tags []interface{}, priorit
 		State: map[string]interface{}{
 			"random": testutil.RandomString(12),
 		},
-		Meta: linkMeta,
+		Meta:       linkMeta,
+		Signatures: cs.Signatures{},
 	}
 
 	return link

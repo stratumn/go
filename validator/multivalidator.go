@@ -27,7 +27,8 @@ import (
 // MultiValidatorConfig sets the behavior of the validator.
 // Its hash can be used to know which validations were applied to a block.
 type MultiValidatorConfig struct {
-	SchemaConfigs []*schemaValidatorConfig
+	SchemaConfigs    []*schemaValidatorConfig
+	SignatureConfigs []*signatureValidatorConfig
 }
 
 type multiValidator struct {
@@ -46,6 +47,9 @@ func NewMultiValidator(config *MultiValidatorConfig) Validator {
 	var v []validator
 	for _, schemaCfg := range config.SchemaConfigs {
 		v = append(v, newSchemaValidator(schemaCfg))
+	}
+	for _, signatureCfg := range config.SignatureConfigs {
+		v = append(v, newSignatureValidator(signatureCfg))
 	}
 
 	return &multiValidator{

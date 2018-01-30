@@ -17,6 +17,7 @@ package cs
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -28,6 +29,7 @@ import (
 	"github.com/stratumn/sdk/types"
 
 	cj "github.com/gibson042/canonicaljson-go"
+	jmespath "github.com/jmespath/go-jmespath"
 )
 
 // Segment contains a link and meta data about the link.
@@ -125,8 +127,9 @@ func (s *SegmentMeta) FindEvidences(backend string) (res Evidences) {
 
 // Link contains a state and meta data about the state.
 type Link struct {
-	State map[string]interface{} `json:"state"`
-	Meta  map[string]interface{} `json:"meta"`
+	State      map[string]interface{} `json:"state"`
+	Meta       map[string]interface{} `json:"meta"`
+	Signatures []*Signature           `json:"signatures"`
 }
 
 // Hash hashes the link
@@ -220,6 +223,7 @@ func (l *Link) GetProcess() string {
 }
 
 // Validate checks for errors in a link.
+// It only validates the format of signatures, it does not verify their correctness
 func (l *Link) Validate(getSegment GetSegmentFunc) error {
 	if process, ok := l.Meta["process"].(string); !ok || process == "" {
 		return errors.New("link.meta.process should be a non empty string")
@@ -252,6 +256,10 @@ func (l *Link) Validate(getSegment GetSegmentFunc) error {
 	}
 
 	if _, err := l.Hash(); err != nil {
+		return err
+	}
+
+	if err := l.validateSignaturesFormat(); err != nil {
 		return err
 	}
 
@@ -294,6 +302,23 @@ func (l *Link) validateReferences(getSegment GetSegmentFunc) error {
 					}
 				}
 				// Segment from another process is not retrieved because it could be in another store
+			}
+		}
+	}
+	return nil
+}
+
+func (l *Link) validateSignaturesFormat() error {
+	if l.Signatures != nil {
+		for _, sig := range l.Signatures {
+			if sig.Type == "" {
+				return errors.New("signature.Type cannot be empty")
+			} else if _, err := hex.DecodeString(sig.PublicKey); err != nil || sig.PublicKey == "" {
+				return errors.Errorf("signature.PublicKey [%s] has to be an hex-encoded string", sig.PublicKey)
+			} else if _, err := hex.DecodeString(sig.Signature); err != nil || sig.Signature == "" {
+				return errors.Errorf("signature.Signature [%s] has to be an hex-encoded string", sig.Signature)
+			} else if _, err := jmespath.Compile(sig.Payload); err != nil {
+				return errors.Errorf("signature.Payload [%s] has to be a JMESPATH expression, got: %s", sig.Payload, err.Error())
 			}
 		}
 	}

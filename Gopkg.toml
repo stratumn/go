@@ -39,10 +39,6 @@
   version = "0.8.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/tendermint/merkleeyes"
-
-[[constraint]]
   name = "github.com/tendermint/go-wire"
   version = "0.7.2"
 
@@ -76,6 +72,10 @@
   
 [[constraint]]
   name = "github.com/google/go-querystring"
+  branch="master"
+
+[[constraint]]
+  name = "github.com/jmespath/go-jmespath"
   branch="master"
 
 [[override]] 

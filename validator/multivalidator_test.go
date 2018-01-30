@@ -17,6 +17,7 @@ package validator
 import (
 	"testing"
 
+	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,15 +28,23 @@ func TestMultiValidator_New(t *testing.T) {
 			&schemaValidatorConfig{},
 			&schemaValidatorConfig{},
 		},
+		SignatureConfigs: []*signatureValidatorConfig{
+			&signatureValidatorConfig{},
+		},
 	})
 
-	assert.Len(t, mv.(*multiValidator).validators, 2)
+	assert.Len(t, mv.(*multiValidator).validators, 3)
 }
 
 func TestMultiValidator_Hash(t *testing.T) {
 	mv1 := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
-			&schemaValidatorConfig{Process: "p"},
+			&schemaValidatorConfig{
+				validatorBaseConfig: validatorBaseConfig{Process: "p"},
+			},
+		},
+		SignatureConfigs: []*signatureValidatorConfig{
+			&signatureValidatorConfig{},
 		},
 	})
 
@@ -45,7 +54,12 @@ func TestMultiValidator_Hash(t *testing.T) {
 
 	mv2 := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
-			&schemaValidatorConfig{Process: "p"},
+			&schemaValidatorConfig{
+				validatorBaseConfig: validatorBaseConfig{Process: "p"},
+			},
+		},
+		SignatureConfigs: []*signatureValidatorConfig{
+			&signatureValidatorConfig{},
 		},
 	})
 
@@ -55,7 +69,12 @@ func TestMultiValidator_Hash(t *testing.T) {
 
 	mv3 := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs: []*schemaValidatorConfig{
-			&schemaValidatorConfig{Process: "p2"},
+			&schemaValidatorConfig{
+				validatorBaseConfig: validatorBaseConfig{Process: "p2"},
+			},
+		},
+		SignatureConfigs: []*signatureValidatorConfig{
+			&signatureValidatorConfig{},
 		},
 	})
 
@@ -81,21 +100,37 @@ func TestMultiValidator_Validate(t *testing.T) {
 	svCfg1, _ := newSchemaValidatorConfig("p", "a1", []byte(testMessageSchema))
 	svCfg2, _ := newSchemaValidatorConfig("p", "a2", []byte(testMessageSchema))
 
+	sigVCfg1, _ := newSignatureValidatorConfig("p", "a1")
+	sigVCfg2, _ := newSignatureValidatorConfig("p", "a2")
+
 	mv := NewMultiValidator(&MultiValidatorConfig{
-		SchemaConfigs: []*schemaValidatorConfig{svCfg1, svCfg2},
+		SchemaConfigs:    []*schemaValidatorConfig{svCfg1, svCfg2},
+		SignatureConfigs: []*signatureValidatorConfig{sigVCfg1, sigVCfg2},
 	})
 
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
-		err := mv.Validate(nil, cstesting.RandomLink())
+		l := cstesting.RandomLink()
+		l.Signatures = append(l.Signatures, &cs.Signature{})
+		err := mv.Validate(nil, l)
 		assert.NoError(t, err)
 	})
 
-	t.Run("Validate fails if one of the children fails", func(t *testing.T) {
+	t.Run("Validate fails if one of the children fails (schema)", func(t *testing.T) {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = "p"
 		l.Meta["action"] = "a2"
 
 		err := mv.Validate(nil, l)
-		assert.Error(t, err)
+		assert.EqualError(t, err, "link validation failed: [message: message is required]")
+	})
+
+	t.Run("Validate fails if one of the children fails (signature)", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Meta["process"] = "p"
+		l.Meta["action"] = "a2"
+		l.State["message"] = "test"
+
+		err := mv.Validate(nil, l)
+		assert.EqualError(t, err, ErrMissingSignature.Error())
 	})
 }

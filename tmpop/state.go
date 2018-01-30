@@ -73,6 +73,7 @@ func (s *State) Deliver(link *cs.Link) *ABCIError {
 	return res
 }
 
+// checkLinkAndAddToBatch validates the link's format and runs the validations (signatures, schema)
 func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIError {
 	err := link.Validate(batch.GetSegment)
 	if err != nil {

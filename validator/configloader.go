@@ -23,8 +23,8 @@ import (
 )
 
 var (
-	// ErrMissingSchema is returned when the schema is missing for schema validation.
-	ErrMissingSchema = errors.New("schema validation requires a schema")
+	// ErrInvalidValidator is returned when the schema and the signatures are both missing in a validator.
+	ErrInvalidValidator = errors.New("a validator requires a JSON schema or a signature criteria to be valid")
 )
 
 // LoadConfig loads the validators configuration from a json file.
@@ -40,46 +40,50 @@ func LoadConfig(path string) (*MultiValidatorConfig, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	schemaValidators, err := loadSchemaValidatorsConfig(data)
-	if err != nil {
-		return nil, err
-	}
-
-	return &MultiValidatorConfig{SchemaConfigs: schemaValidators}, nil
+	return loadValidatorsConfig(data)
 }
 
 type jsonSchemaData []struct {
-	Type   string           `json:"type"`
-	Schema *json.RawMessage `json:"schema"`
+	Type       string           `json:"type"`
+	Signatures *bool            `json:"signatures"`
+	Schema     *json.RawMessage `json:"schema"`
 }
 
-func loadSchemaValidatorsConfig(data []byte) ([]*schemaValidatorConfig, error) {
+func loadValidatorsConfig(data []byte) (*MultiValidatorConfig, error) {
 	var jsonStruct map[string]jsonSchemaData
 	err := json.Unmarshal(data, &jsonStruct)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	var schemaValidators []*schemaValidatorConfig
+	var validatorConfig MultiValidatorConfig
 	for process, jsonSchemaData := range jsonStruct {
 		for _, val := range jsonSchemaData {
-			if val.Schema == nil {
-				return nil, ErrMissingSchema
-			}
-
 			if val.Type == "" {
 				return nil, ErrMissingLinkType
+			} else if val.Signatures == nil && val.Schema == nil {
+				return nil, ErrInvalidValidator
 			}
 
-			schemaData, _ := val.Schema.MarshalJSON()
-			cfg, err := newSchemaValidatorConfig(process, val.Type, schemaData)
-			if err != nil {
-				return nil, err
+			if val.Signatures != nil && *val.Signatures {
+				cfg, err := newSignatureValidatorConfig(process, val.Type)
+				if err != nil {
+					return nil, err
+				}
+				validatorConfig.SignatureConfigs = append(validatorConfig.SignatureConfigs, cfg)
 			}
 
-			schemaValidators = append(schemaValidators, cfg)
+			if val.Schema != nil {
+				schemaData, _ := val.Schema.MarshalJSON()
+				cfg, err := newSchemaValidatorConfig(process, val.Type, schemaData)
+				if err != nil {
+					return nil, err
+				}
+				validatorConfig.SchemaConfigs = append(validatorConfig.SchemaConfigs, cfg)
+			}
+
 		}
 	}
 
-	return schemaValidators, nil
+	return &validatorConfig, nil
 }

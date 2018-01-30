@@ -254,6 +254,44 @@ func TestLinkValidate_refGoodNilLink(t *testing.T) {
 	}, "link.meta.refs[0] segment is nil")
 }
 
+func TestLinkValidate_emptySignatureType(t *testing.T) {
+	l := cstesting.RandomLink()
+	l.Signatures = append(l.Signatures, &cs.Signature{
+		Type: "",
+	})
+	testLinkValidateError(t, l, nil, "signature.Type cannot be empty")
+}
+
+func TestLinkValidate_wrongPublicKeyFormat(t *testing.T) {
+	l := cstesting.RandomLink()
+	l.Signatures = append(l.Signatures, &cs.Signature{
+		Type:      "ok",
+		PublicKey: "test",
+	})
+	testLinkValidateError(t, l, nil, "signature.PublicKey [test] has to be an hex-encoded string")
+}
+
+func TestLinkValidate_wrongSignatureFormat(t *testing.T) {
+	l := cstesting.RandomLink()
+	l.Signatures = append(l.Signatures, &cs.Signature{
+		Type:      "ok",
+		PublicKey: "deadbeef",
+		Signature: "test",
+	})
+	testLinkValidateError(t, l, nil, "signature.Signature [test] has to be an hex-encoded string")
+}
+
+func TestLinkValidate_wrongPaylodExpression(t *testing.T) {
+	l := cstesting.RandomLink()
+	l.Signatures = append(l.Signatures, &cs.Signature{
+		Type:      "ok",
+		PublicKey: "deadbeef",
+		Signature: "deadbeef",
+		Payload:   "",
+	})
+	testLinkValidateError(t, l, nil, "signature.Payload [] has to be a JMESPATH expression, got: SyntaxError: Incomplete expression")
+}
+
 func TestSegmentSliceSort_priority(t *testing.T) {
 	slice := cs.SegmentSlice{
 		&cs.Segment{Link: cs.Link{Meta: map[string]interface{}{"priority": 2.3}}},

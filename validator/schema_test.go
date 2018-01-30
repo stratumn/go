@@ -61,20 +61,6 @@ func TestSchemaValidatorConfig(t *testing.T) {
 	}
 
 	testCases := []testCase{{
-		name:          "missing-process",
-		process:       "",
-		linkType:      linkType,
-		schema:        validSchema,
-		valid:         false,
-		expectedError: ErrMissingProcess,
-	}, {
-		name:          "missing-link-type",
-		process:       process,
-		linkType:      "",
-		schema:        validSchema,
-		valid:         false,
-		expectedError: ErrMissingLinkType,
-	}, {
 		name:     "invalid-schema",
 		process:  process,
 		linkType: linkType,
