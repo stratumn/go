@@ -19,6 +19,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/sdk/validator/signature"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,7 +82,7 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "unsupported-signature-type",
 			valid: false,
-			err:   ErrUnsupportedSignatureType.Error(),
+			err:   "Unhandled signature scheme [test]: " + signature.ErrUnsupportedSignatureType.Error(),
 			link: func() *cs.Link {
 				l := createValidLink()
 				l.Signatures[0].Type = "test"
@@ -109,19 +110,9 @@ func TestSignatureValidator(t *testing.T) {
 			},
 		},
 		{
-			name:  "bad-public-key-length",
-			valid: false,
-			err:   "Ed25519 public key length must be 32, got 3",
-			link: func() *cs.Link {
-				l := createValidLink()
-				l.Signatures[0].PublicKey = "test"
-				return l
-			},
-		},
-		{
 			name:  "wrong-signature",
 			valid: false,
-			err:   "signature verification failed",
+			err:   signature.ErrInvalidSignature.Error(),
 			link: func() *cs.Link {
 				l := createValidLink()
 				l.Signatures[0].Signature = "test"
