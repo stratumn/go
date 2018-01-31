@@ -16,33 +16,20 @@ package validator
 
 import (
 	"encoding/base64"
-	"strings"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
 	"github.com/pkg/errors"
+
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
-	"golang.org/x/crypto/ed25519"
-)
-
-const (
-	// Ed25519 is the EdDSA signature scheme using SHA-512/256 and Curve25519.
-	Ed25519 = "ed25519"
+	"github.com/stratumn/sdk/validator/signature"
 )
 
 var (
-	// SupportedSignatureTypes is a list of the supported signature types.
-	SupportedSignatureTypes = []string{Ed25519}
 
 	// ErrMissingSignature is returned when there are no signatures in the link.
 	ErrMissingSignature = errors.New("signature validation requires link.signatures to contain at least one element")
-
-	// ErrInvalidSignature is returned when the signature verification failed.
-	ErrInvalidSignature = errors.New("signature verification failed")
-
-	// ErrUnsupportedSignatureType is returned when the signature type is not supported.
-	ErrUnsupportedSignatureType = errors.Errorf("signature type must be one of %v", SupportedSignatureTypes)
 
 	// ErrEmptyPayload is returned when the JMESPATH query didn't match any element of the link.
 	ErrEmptyPayload = errors.New("JMESPATH query does not match any link data")
@@ -73,15 +60,6 @@ func newSignatureValidator(config *signatureValidatorConfig) validator {
 	return &signatureValidator{config: config}
 }
 
-func (sv signatureValidator) isSignatureSupported(sigType string) bool {
-	for _, supportedSig := range SupportedSignatureTypes {
-		if strings.EqualFold(sigType, supportedSig) {
-			return true
-		}
-	}
-	return false
-}
-
 // Validate validates the signature of a link's state.
 func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	if !sv.config.shouldValidate(link) {
@@ -93,13 +71,10 @@ func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) erro
 	}
 
 	for _, sig := range link.Signatures {
-		if !sv.isSignatureSupported(sig.Type) {
-			return ErrUnsupportedSignatureType
-		}
 
 		// don't check decoding errors here, this is done in link.Validate() beforehand
-		bytesKey, _ := base64.StdEncoding.DecodeString(sig.PublicKey)
-		bytesSig, _ := base64.StdEncoding.DecodeString(sig.Signature)
+		keyBytes, _ := base64.StdEncoding.DecodeString(sig.PublicKey)
+		sigBytes, _ := base64.StdEncoding.DecodeString(sig.Signature)
 
 		payload, err := jmespath.Search(sig.Payload, link)
 		if err != nil {
@@ -114,15 +89,8 @@ func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) erro
 			return errors.WithStack(err)
 		}
 
-		switch sig.Type {
-		case Ed25519:
-			publicKey := ed25519.PublicKey(bytesKey)
-			if len(publicKey) != ed25519.PublicKeySize {
-				return errors.Errorf("Ed25519 public key length must be %d, got %d", ed25519.PublicKeySize, len(publicKey))
-			}
-			if !ed25519.Verify(publicKey, payloadBytes, bytesSig) {
-				return ErrInvalidSignature
-			}
+		if err := signature.Verify(sig.Type, keyBytes, sigBytes, payloadBytes); err != nil {
+			return errors.WithStack(err)
 		}
 	}
 	// TODO: check that
