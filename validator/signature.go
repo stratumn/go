@@ -27,24 +27,24 @@ import (
 )
 
 const (
-	// Ed25519 is the EdDSA signature scheme using SHA-512/256 and Curve25519
+	// Ed25519 is the EdDSA signature scheme using SHA-512/256 and Curve25519.
 	Ed25519 = "ed25519"
 )
 
 var (
-	// SupportedSignatureTypes is a list of the supported signature types
+	// SupportedSignatureTypes is a list of the supported signature types.
 	SupportedSignatureTypes = []string{Ed25519}
 
-	// ErrMissingSignature is returned when there are no signatures in the link
+	// ErrMissingSignature is returned when there are no signatures in the link.
 	ErrMissingSignature = errors.New("signature validation requires link.signatures to contain at least one element")
 
-	// ErrInvalidSignature is returned when the siganture verifcation failed
+	// ErrInvalidSignature is returned when the signature verification failed.
 	ErrInvalidSignature = errors.New("signature verification failed")
 
-	// ErrUnsupportedSignatureType is returned when the signature type is not supported
+	// ErrUnsupportedSignatureType is returned when the signature type is not supported.
 	ErrUnsupportedSignatureType = errors.Errorf("signature type must be one of %v", SupportedSignatureTypes)
 
-	// ErrEmptyPayload is returned when the JMESPATH query didn't match any element of the link
+	// ErrEmptyPayload is returned when the JMESPATH query didn't match any element of the link.
 	ErrEmptyPayload = errors.New("JMESPATH query does not match any link data")
 )
 
@@ -75,7 +75,7 @@ func newSignatureValidator(config *signatureValidatorConfig) validator {
 
 func (sv signatureValidator) isSignatureSupported(sigType string) bool {
 	for _, supportedSig := range SupportedSignatureTypes {
-		if strings.ToLower(sigType) == supportedSig {
+		if strings.EqualFold(sigType, supportedSig) {
 			return true
 		}
 	}
@@ -103,7 +103,7 @@ func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) erro
 
 		payload, err := jmespath.Search(sig.Payload, link)
 		if err != nil {
-			return errors.Errorf("failed to execute jmespath query : %s", err.Error())
+			return errors.Wrapf(err, "failed to execute jmespath query")
 		}
 		if payload == nil {
 			return ErrEmptyPayload
@@ -111,14 +111,14 @@ func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) erro
 
 		payloadBytes, err := cj.Marshal(payload)
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		switch sig.Type {
 		case Ed25519:
 			publicKey := ed25519.PublicKey(bytesKey)
 			if len(publicKey) != ed25519.PublicKeySize {
-				return errors.Errorf("Ed25519 public key lenght must be %d, got %d", ed25519.PublicKeySize, len(publicKey))
+				return errors.Errorf("Ed25519 public key length must be %d, got %d", ed25519.PublicKeySize, len(publicKey))
 			}
 			if !ed25519.Verify(publicKey, payloadBytes, bytesSig) {
 				return ErrInvalidSignature

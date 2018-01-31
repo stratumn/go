@@ -91,7 +91,7 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "wrong-jmespath-query",
 			valid: false,
-			err:   "failed to execute jmespath query : SyntaxError: Incomplete expression",
+			err:   "failed to execute jmespath query: SyntaxError: Incomplete expression",
 			link: func() *cs.Link {
 				l := createValidLink()
 				l.Signatures[0].Payload = ""
@@ -111,7 +111,7 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "bad-public-key-length",
 			valid: false,
-			err:   "Ed25519 public key lenght must be 32, got 3",
+			err:   "Ed25519 public key length must be 32, got 3",
 			link: func() *cs.Link {
 				l := createValidLink()
 				l.Signatures[0].PublicKey = "test"
