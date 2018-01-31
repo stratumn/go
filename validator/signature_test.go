@@ -24,55 +24,111 @@ import (
 )
 
 func TestSignatureValidator(t *testing.T) {
-	cfg, err := newSignatureValidatorConfig("p1", "test")
+	process := "p1"
+	action := "test"
+	cfg, err := newSignatureValidatorConfig(process, action)
 	require.NoError(t, err)
 	sv := newSignatureValidator(cfg)
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
-		l.Meta["process"] = "p1"
-		l.Meta["action"] = "test"
-		l.Signatures = append(l.Signatures, &cs.Signature{})
-		return l
-	}
-
-	createInvalidLink := func() *cs.Link {
-		l := createValidLink()
-		l.Signatures = nil
-		return l
+		l.Meta["process"] = process
+		l.Meta["action"] = action
+		return cstesting.SignLink(l)
 	}
 
 	type testCase struct {
 		name  string
 		link  func() *cs.Link
 		valid bool
+		err   string
 	}
 
-	testCases := []testCase{{
-		name:  "process-not-matched",
-		valid: true,
-		link: func() *cs.Link {
-			l := createInvalidLink()
-			l.Meta["process"] = "p2"
-			return l
+	testCases := []testCase{
+		{
+			name:  "valid-link",
+			valid: true,
+			link:  createValidLink,
 		},
-	}, {
-		name:  "type-not-matched",
-		valid: true,
-		link: func() *cs.Link {
-			l := createInvalidLink()
-			l.Meta["action"] = "buy"
-			return l
+		{
+			name:  "process-not-matched",
+			valid: true,
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Meta["process"] = "p2"
+				return l
+			},
 		},
-	}, {
-		name:  "valid-link",
-		valid: true,
-		link:  createValidLink,
-	}, {
-		name:  "invalid-link",
-		valid: false,
-		link:  createInvalidLink,
-	}}
+		{
+			name:  "type-not-matched",
+			valid: true,
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Meta["action"] = "buy"
+				return l
+			},
+		},
+		{
+			name:  "empty-signatures",
+			valid: false,
+			err:   ErrMissingSignature.Error(),
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Signatures = nil
+				return l
+			},
+		},
+		{
+			name:  "unsupported-signature-type",
+			valid: false,
+			err:   ErrUnsupportedSignatureType.Error(),
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Signatures[0].Type = "test"
+				return l
+			},
+		},
+		{
+			name:  "wrong-jmespath-query",
+			valid: false,
+			err:   "failed to execute jmespath query : SyntaxError: Incomplete expression",
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Signatures[0].Payload = ""
+				return l
+			},
+		},
+		{
+			name:  "empty-jmespath-query",
+			valid: false,
+			err:   ErrEmptyPayload.Error(),
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Signatures[0].Payload = "notfound"
+				return l
+			},
+		},
+		{
+			name:  "bad-public-key-length",
+			valid: false,
+			err:   "Ed25519 public key lenght must be 32, got 3",
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Signatures[0].PublicKey = "test"
+				return l
+			},
+		},
+		{
+			name:  "wrong-signature",
+			valid: false,
+			err:   "signature verification failed",
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Signatures[0].Signature = "test"
+				return l
+			},
+		},
+	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -80,7 +136,7 @@ func TestSignatureValidator(t *testing.T) {
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, ErrMissingSignature.Error())
+				assert.EqualError(t, err, tt.err)
 			}
 		})
 	}
