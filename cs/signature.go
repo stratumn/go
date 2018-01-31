@@ -26,8 +26,8 @@ type Signature struct {
 	// Signature is the hex encoded string containg the signature bytes
 	Signature string `json:"signature"`
 
-	// Paylaod describes what has been signed, It is expressed using the JMESPATH query language.
-	Payload string `json:"paylaod"`
+	// Payload describes what has been signed, It is expressed using the JMESPATH query language.
+	Payload string `json:"payload"`
 }
 
 // Signatures is a slice of Signature

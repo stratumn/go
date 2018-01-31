@@ -28,7 +28,7 @@ import (
 // schemaValidatorConfig contains everything a schemaValidator needs to
 // validate links.
 type schemaValidatorConfig struct {
-	validatorBaseConfig
+	*validatorBaseConfig
 	Schema *gojsonschema.Schema
 }
 
@@ -45,7 +45,7 @@ func newSchemaValidatorConfig(process, linkType string, schemaData []byte) (*sch
 	}
 
 	return &schemaValidatorConfig{
-		validatorBaseConfig: *baseConfig,
+		validatorBaseConfig: baseConfig,
 		Schema:              schema,
 	}, nil
 }
@@ -59,17 +59,9 @@ func newSchemaValidator(config *schemaValidatorConfig) validator {
 	return &schemaValidator{config: config}
 }
 
-// check that the process and link type match the validators' attributes
-func (sv schemaValidator) shouldValidate(link *cs.Link) bool {
-	if !sv.config.shouldValidate(link) {
-		return false
-	}
-	return true
-}
-
 // Validate validates the schema of a link's state.
 func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
-	if !sv.shouldValidate(link) {
+	if !sv.config.shouldValidate(link) {
 		return nil
 	}
 

@@ -16,8 +16,15 @@
 package cstesting
 
 import (
+	"crypto"
+	crand "crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"math/rand"
+
+	cj "github.com/gibson042/canonicaljson-go"
+	jmespath "github.com/jmespath/go-jmespath"
+	"golang.org/x/crypto/ed25519"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/testutil"
@@ -113,6 +120,24 @@ func RandomTags() []interface{} {
 		tags = append(tags, testutil.RandomString(12))
 	}
 	return tags
+}
+
+// SignLink adds a signature to a link.
+// The ed25519 signature algorithm is used.
+func SignLink(l *cs.Link) *cs.Link {
+	pub, priv, _ := ed25519.GenerateKey(crand.Reader)
+	payloadPath := "[state, meta]"
+	payload, _ := jmespath.Search(payloadPath, l)
+	payloadBytes, _ := cj.Marshal(payload)
+	sigBytes, _ := priv.Sign(crand.Reader, payloadBytes, crypto.Hash(0))
+	sig := cs.Signature{
+		Type:      "ed25519",
+		PublicKey: base64.StdEncoding.EncodeToString(pub),
+		Signature: base64.StdEncoding.EncodeToString(sigBytes),
+		Payload:   payloadPath,
+	}
+	l.Signatures = append(l.Signatures, &sig)
+	return l
 }
 
 // Clone clones a link.

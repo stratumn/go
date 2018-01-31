@@ -17,7 +17,7 @@ package cs
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -223,7 +223,7 @@ func (l *Link) GetProcess() string {
 }
 
 // Validate checks for errors in a link.
-// It only validates the format of signatures, it does not verify their correctness
+// It only validates the format of signatures, it does not verify their correctness.
 func (l *Link) Validate(getSegment GetSegmentFunc) error {
 	if process, ok := l.Meta["process"].(string); !ok || process == "" {
 		return errors.New("link.meta.process should be a non empty string")
@@ -313,10 +313,10 @@ func (l *Link) validateSignaturesFormat() error {
 		for _, sig := range l.Signatures {
 			if sig.Type == "" {
 				return errors.New("signature.Type cannot be empty")
-			} else if _, err := hex.DecodeString(sig.PublicKey); err != nil || sig.PublicKey == "" {
-				return errors.Errorf("signature.PublicKey [%s] has to be an hex-encoded string", sig.PublicKey)
-			} else if _, err := hex.DecodeString(sig.Signature); err != nil || sig.Signature == "" {
-				return errors.Errorf("signature.Signature [%s] has to be an hex-encoded string", sig.Signature)
+			} else if _, err := base64.StdEncoding.DecodeString(sig.PublicKey); err != nil || sig.PublicKey == "" {
+				return errors.Errorf("signature.PublicKey [%s] has to be a base64-encoded string", sig.PublicKey)
+			} else if _, err := base64.StdEncoding.DecodeString(sig.Signature); err != nil || sig.Signature == "" {
+				return errors.Errorf("signature.Signature [%s] has to be a base64-encoded string", sig.Signature)
 			} else if _, err := jmespath.Compile(sig.Payload); err != nil {
 				return errors.Errorf("signature.Payload [%s] has to be a JMESPATH expression, got: %s", sig.Payload, err.Error())
 			}

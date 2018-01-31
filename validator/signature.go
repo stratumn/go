@@ -28,7 +28,7 @@ var (
 // signatureValidatorConfig contains everything a signatureValidator needs to
 // validate links.
 type signatureValidatorConfig struct {
-	validatorBaseConfig
+	*validatorBaseConfig
 }
 
 // newSignatureValidatorConfig creates a signatureValidatorConfig for a given process and type.
@@ -38,7 +38,7 @@ func newSignatureValidatorConfig(process, linkType string) (*signatureValidatorC
 		return nil, errors.WithStack(err)
 	}
 
-	return &signatureValidatorConfig{*baseConfig}, nil
+	return &signatureValidatorConfig{baseConfig}, nil
 }
 
 // signatureValidator validates the json signature of a link's state.
@@ -50,17 +50,9 @@ func newSignatureValidator(config *signatureValidatorConfig) validator {
 	return &signatureValidator{config: config}
 }
 
-// check that the process and link type match the validators' attributes
-func (sv signatureValidator) shouldValidate(link *cs.Link) bool {
-	if !sv.config.shouldValidate(link) {
-		return false
-	}
-	return true
-}
-
 // Validate validates the signature of a link's state.
 func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
-	if !sv.shouldValidate(link) {
+	if !sv.config.shouldValidate(link) {
 		return nil
 	}
 
