@@ -20,14 +20,14 @@ type Signature struct {
 	// Type of the signature (eg: "EdDSA")
 	Type string `json:"type"`
 
-	// PublicKey is the hex encoded public key that signed the payload
+	// PublicKey is the base64 encoded public key that signed the payload
 	PublicKey string `json:"publicKey"`
 
-	// Signature is the hex encoded string containg the signature bytes
+	// Signature is the base64 encoded string containg the signature bytes
 	Signature string `json:"signature"`
 
-	// Paylaod describes what has been signed, It is expressed using the JMESPATH query language.
-	Payload string `json:"paylaod"`
+	// Payload describes what has been signed, It is expressed using the JMESPATH query language.
+	Payload string `json:"payload"`
 }
 
 // Signatures is a slice of Signature

@@ -37,50 +37,78 @@ func TestMultiValidator_New(t *testing.T) {
 }
 
 func TestMultiValidator_Hash(t *testing.T) {
-	mv1 := NewMultiValidator(&MultiValidatorConfig{
-		SchemaConfigs: []*schemaValidatorConfig{
-			&schemaValidatorConfig{
-				validatorBaseConfig: validatorBaseConfig{Process: "p"},
-			},
-		},
-		SignatureConfigs: []*signatureValidatorConfig{
-			&signatureValidatorConfig{},
-		},
+	baseConfig1 := &validatorBaseConfig{Process: "p"}
+	baseConfig2 := &validatorBaseConfig{Process: "p2"}
+
+	t.Run("With schema validator", func(t *testing.T) {
+		mv1 := NewMultiValidator(&MultiValidatorConfig{
+			SchemaConfigs: []*schemaValidatorConfig{
+				&schemaValidatorConfig{
+					validatorBaseConfig: baseConfig1,
+				}},
+		})
+
+		h1, err := mv1.Hash()
+		assert.NoError(t, err)
+		assert.NotNil(t, h1)
+
+		mv2 := NewMultiValidator(&MultiValidatorConfig{
+			SchemaConfigs: []*schemaValidatorConfig{
+				&schemaValidatorConfig{
+					validatorBaseConfig: baseConfig1,
+				}},
+		})
+
+		h2, err := mv2.Hash()
+		assert.NoError(t, err)
+		assert.EqualValues(t, h1, h2)
+
+		mv3 := NewMultiValidator(&MultiValidatorConfig{
+			SchemaConfigs: []*schemaValidatorConfig{
+				&schemaValidatorConfig{
+					validatorBaseConfig: baseConfig2,
+				}},
+		})
+
+		h3, err := mv3.Hash()
+		assert.NoError(t, err)
+		assert.False(t, h1.Equals(h3))
 	})
 
-	h1, err := mv1.Hash()
-	assert.NoError(t, err)
-	assert.NotNil(t, h1)
+	t.Run("With signature validator", func(t *testing.T) {
+		mv1 := NewMultiValidator(&MultiValidatorConfig{
+			SignatureConfigs: []*signatureValidatorConfig{
+				&signatureValidatorConfig{
+					validatorBaseConfig: baseConfig1,
+				}},
+		})
 
-	mv2 := NewMultiValidator(&MultiValidatorConfig{
-		SchemaConfigs: []*schemaValidatorConfig{
-			&schemaValidatorConfig{
-				validatorBaseConfig: validatorBaseConfig{Process: "p"},
-			},
-		},
-		SignatureConfigs: []*signatureValidatorConfig{
-			&signatureValidatorConfig{},
-		},
+		h1, err := mv1.Hash()
+		assert.NoError(t, err)
+		assert.NotNil(t, h1)
+
+		mv2 := NewMultiValidator(&MultiValidatorConfig{
+			SignatureConfigs: []*signatureValidatorConfig{
+				&signatureValidatorConfig{
+					validatorBaseConfig: baseConfig1,
+				}},
+		})
+
+		h2, err := mv2.Hash()
+		assert.NoError(t, err)
+		assert.EqualValues(t, h1, h2)
+
+		mv3 := NewMultiValidator(&MultiValidatorConfig{
+			SignatureConfigs: []*signatureValidatorConfig{
+				&signatureValidatorConfig{
+					validatorBaseConfig: baseConfig2,
+				}},
+		})
+
+		h3, err := mv3.Hash()
+		assert.NoError(t, err)
+		assert.False(t, h1.Equals(h3))
 	})
-
-	h2, err := mv2.Hash()
-	assert.NoError(t, err)
-	assert.EqualValues(t, h1, h2)
-
-	mv3 := NewMultiValidator(&MultiValidatorConfig{
-		SchemaConfigs: []*schemaValidatorConfig{
-			&schemaValidatorConfig{
-				validatorBaseConfig: validatorBaseConfig{Process: "p2"},
-			},
-		},
-		SignatureConfigs: []*signatureValidatorConfig{
-			&signatureValidatorConfig{},
-		},
-	})
-
-	h3, err := mv3.Hash()
-	assert.NoError(t, err)
-	assert.False(t, h1.Equals(h3))
 }
 
 const testMessageSchema = `

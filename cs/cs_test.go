@@ -254,6 +254,12 @@ func TestLinkValidate_refGoodNilLink(t *testing.T) {
 	}, "link.meta.refs[0] segment is nil")
 }
 
+func TestLinkValidate_validSignature(t *testing.T) {
+	l := cstesting.SignLink(cstesting.RandomLink())
+	err := l.Validate(nil)
+	assert.NoError(t, err, "l.Validate()")
+}
+
 func TestLinkValidate_emptySignatureType(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
@@ -266,19 +272,19 @@ func TestLinkValidate_wrongPublicKeyFormat(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
 		Type:      "ok",
-		PublicKey: "test",
+		PublicKey: "*test*",
 	})
-	testLinkValidateError(t, l, nil, "signature.PublicKey [test] has to be an hex-encoded string")
+	testLinkValidateError(t, l, nil, "signature.PublicKey [*test*] has to be a base64-encoded string")
 }
 
 func TestLinkValidate_wrongSignatureFormat(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
 		Type:      "ok",
-		PublicKey: "deadbeef",
-		Signature: "test",
+		PublicKey: "AeZ4",
+		Signature: "*test*",
 	})
-	testLinkValidateError(t, l, nil, "signature.Signature [test] has to be an hex-encoded string")
+	testLinkValidateError(t, l, nil, "signature.Signature [*test*] has to be a base64-encoded string")
 }
 
 func TestLinkValidate_wrongPaylodExpression(t *testing.T) {

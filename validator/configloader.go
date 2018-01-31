@@ -61,7 +61,8 @@ func loadValidatorsConfig(data []byte) (*MultiValidatorConfig, error) {
 		for _, val := range jsonSchemaData {
 			if val.Type == "" {
 				return nil, ErrMissingLinkType
-			} else if val.Signatures == nil && val.Schema == nil {
+			}
+			if val.Signatures == nil && val.Schema == nil {
 				return nil, ErrInvalidValidator
 			}
 
