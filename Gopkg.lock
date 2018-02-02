@@ -72,16 +72,16 @@
   version = "v1.1.0"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/chzyer/readline"
   packages = ["."]
   revision = "a4d5111b617813c5d09df1ba6d76394ed71b1644"
+
+[[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/docker/distribution"
@@ -258,7 +258,10 @@
 [[projects]]
   branch = "master"
   name = "github.com/juju/ansiterm"
-  packages = [".","tabwriter"]
+  packages = [
+    ".",
+    "tabwriter"
+  ]
   revision = "35c59b9e0fe275705a71bf5d58ee293f27efbbc4"
 
 [[projects]]
@@ -289,6 +292,12 @@
   revision = "88edab0803230a3898347e77b474f8c1820a1f20"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lunixbochs/vtclean"
+  packages = ["."]
+  revision = "d14193dfc626125c831501c1c42340b4248e1f5a"
+
+[[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
   revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
@@ -296,7 +305,11 @@
 
 [[projects]]
   name = "github.com/manifoldco/promptui"
-  packages = [".","list","screenbuf"]
+  packages = [
+    ".",
+    "list",
+    "screenbuf"
+  ]
   revision = "3325f5fcbce567f6c36fe4899b67c1f597453792"
   version = "v0.2.0"
 
@@ -748,6 +761,10 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
+<<<<<<< HEAD
   inputs-digest = "172d58ef7882272ffb253facbe4375e887020ee80d9c00bfd55128ec642b8559"
+=======
+  inputs-digest = "b258bff237606ba252fa1d413c73abea75c8e4116c5762d2a7fac1ab6f273d88"
+>>>>>>> strat: update to indigo framework 0.2
   solver-name = "gps-cdcl"
   solver-version = 1
