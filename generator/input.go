@@ -62,7 +62,7 @@ func (im *InputMap) UnmarshalJSON(data []byte) error {
 	for k, v := range raw {
 		in, err := UnmarshalJSONInput(v)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "cannot unmarshall input file %s", v)
 		}
 		inputs[k] = in
 	}
@@ -127,41 +127,17 @@ type IntInput struct {
 	InputShared
 
 	Default int `json:"default"`
-
-	value int
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
-func (in *IntInput) Set(val interface{}) error {
-	str, ok := val.(string)
-	if !ok {
-		return errors.New("value string could not be parsed")
+// Run implements github.com/stratumn/sdk/generator.Input.
+func (in *IntInput) Run() (interface{}, error) {
+	prompt := createStringPrompt(in.Prompt, "^[0-9]+$", fmt.Sprintf("%d", in.Default))
+	txt, err := prompt.Run()
+	if err != nil {
+		return nil, err
 	}
-	if str == "" {
-		in.value = in.Default
-	} else {
-		i, err := strconv.ParseInt(str, 10, 0)
-		if err != nil {
-			return errors.New(err.Error())
-		}
-
-		in.value = int(i)
-	}
-
-	return nil
-}
-
-// Get implements github.com/stratumn/sdk/generator.Input.
-func (in IntInput) Get() interface{} {
-	if in.value <= 0 {
-		return in.Default
-	}
-	return in.value
-}
-
-// Msg implements github.com/stratumn/sdk/generator.Input.
-func (in *IntInput) Msg() string {
-	return fmt.Sprintf("%s (default %d)\n", in.Prompt, in.Default)
+	i, err := strconv.ParseInt(txt, 10, 0)
+	return int(i),err
 }
 
 // StringInput contains properties for string inputs.
@@ -173,8 +149,6 @@ type StringInput struct {
 
 	// Format is a string containing a regexp the value must have.
 	Format string `json:"format"`
-
-	value string
 }
 
 func createStringPrompt(label, format, defaultValue string) promptui.Prompt {
@@ -214,8 +188,6 @@ type StringSelect struct {
 
 	// Options is an array of possible values.
 	Options StringSelectOptionSlice `json:"options"`
-
-	value string
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
@@ -290,8 +262,6 @@ type StringSelectMulti struct {
 
 	// Separator is a string used to split the input to list.
 	Separator string `json:"separator"`
-
-	values []string
 }
 
 func appendIfNotSelected(value string, input, output []string) []string {
@@ -352,8 +322,6 @@ type StringSlice struct {
 
 	// Separator is a string used to split the input to list.
 	Separator string `json:"separator"`
-
-	values []string
 }
 
 func createListPrompt(label, format, defaultValue string) promptui.Prompt {
