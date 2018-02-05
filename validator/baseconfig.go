@@ -50,7 +50,7 @@ func newValidatorBaseConfig(process, id, linkType string) (*validatorBaseConfig,
 	if len(linkType) == 0 {
 		return nil, ErrMissingLinkType
 	}
-	return &validatorBaseConfig{Process: process, LinkType: linkType}, nil
+	return &validatorBaseConfig{Process: process, LinkType: linkType, ID: id}, nil
 }
 
 // shouldValidate returns true if the link matches the validator's process

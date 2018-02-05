@@ -16,6 +16,7 @@ package validator
 
 import (
 	"encoding/base64"
+	"strings"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
@@ -39,36 +40,92 @@ var (
 // validate links.
 type signatureValidatorConfig struct {
 	*validatorBaseConfig
-	pki *PKI
+	requiredSignatures []string
+	pki                *PKI
 }
 
 // newSignatureValidatorConfig creates a signatureValidatorConfig for a given process and type.
-func newSignatureValidatorConfig(process, id, linkType string, pki *PKI) (*signatureValidatorConfig, error) {
+func newSignatureValidatorConfig(process, id, linkType string, required []string, pki *PKI) (*signatureValidatorConfig, error) {
 	baseConfig, err := newValidatorBaseConfig(process, id, linkType)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return &signatureValidatorConfig{validatorBaseConfig: baseConfig, pki: pki}, nil
+	return &signatureValidatorConfig{
+		validatorBaseConfig: baseConfig,
+		requiredSignatures:  required,
+		pki:                 pki,
+	}, nil
 }
 
 // signatureValidator validates the json signature of a link's state.
 type signatureValidator struct {
-	config *signatureValidatorConfig
+	*signatureValidatorConfig
 }
 
 func newSignatureValidator(config *signatureValidatorConfig) validator {
-	return &signatureValidator{config: config}
+	return &signatureValidator{config}
+}
+
+func (sv signatureValidator) matchRequirement(requirement, publicKey string) bool {
+	if requirement == publicKey {
+		return true
+	}
+
+	identity, ok := (*sv.pki)[publicKey]
+	if !ok {
+		return false
+	}
+	if strings.EqualFold(identity.Name, requirement) {
+		return true
+	}
+	for _, role := range identity.Roles {
+		if strings.EqualFold(role, requirement) {
+			return true
+		}
+	}
+	return false
+}
+
+func (sv signatureValidator) isSignatureRequired(publicKey string) bool {
+	for _, required := range sv.requiredSignatures {
+		if sv.matchRequirement(required, publicKey) {
+			return true
+		}
+	}
+	return false
+}
+
+// missingSignatory checks that the provided dignatures match the required ones.
+// a requirement can either be : a public key, a name defined in PKI, a role defined in PKI
+func (sv signatureValidator) missingSignatory(signatures cs.Signatures) error {
+	for _, required := range sv.requiredSignatures {
+		fulfilled := false
+		for _, sig := range signatures {
+			if sv.matchRequirement(required, sig.PublicKey) {
+				fulfilled = true
+				break
+			}
+		}
+		if !fulfilled {
+			return errors.Errorf("A signature from %s is required", required)
+		}
+	}
+	return nil
 }
 
 // Validate validates the signature of a link's state.
 func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
-	if !sv.config.shouldValidate(link) {
+	if !sv.shouldValidate(link) {
 		return nil
 	}
 
 	if len(link.Signatures) == 0 {
 		return ErrMissingSignature
+	}
+
+	if err := sv.missingSignatory(link.Signatures); err != nil {
+		return errors.Wrapf(err, "Missing signatory for validator %s", sv.ID)
 	}
 
 	for _, sig := range link.Signatures {
@@ -94,9 +151,6 @@ func (sv signatureValidator) Validate(_ store.SegmentReader, link *cs.Link) erro
 			return errors.WithStack(err)
 		}
 	}
-	// TODO: check that
-	// - public keys match PKI of rules.json
-	// - required signatures for this action are present/valid
 
 	return nil
 }

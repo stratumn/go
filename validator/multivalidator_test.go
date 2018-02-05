@@ -128,8 +128,8 @@ func TestMultiValidator_Validate(t *testing.T) {
 	svCfg1, _ := newSchemaValidatorConfig("p", "id1", "a1", []byte(testMessageSchema))
 	svCfg2, _ := newSchemaValidatorConfig("p", "id2", "a2", []byte(testMessageSchema))
 
-	sigVCfg1, _ := newSignatureValidatorConfig("p", "id3", "a1", &PKI{})
-	sigVCfg2, _ := newSignatureValidatorConfig("p", "id4", "a2", &PKI{})
+	sigVCfg1, _ := newSignatureValidatorConfig("p", "id3", "a1", []string{}, &PKI{})
+	sigVCfg2, _ := newSignatureValidatorConfig("p", "id4", "a2", []string{}, &PKI{})
 
 	mv := NewMultiValidator(&MultiValidatorConfig{
 		SchemaConfigs:    []*schemaValidatorConfig{svCfg1, svCfg2},

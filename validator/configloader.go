@@ -69,7 +69,7 @@ func LoadConfig(path string) (*MultiValidatorConfig, error) {
 // PKI maps a public key to an identity.
 // It lists all legimate keys, assign real names to public keys
 // and establishes n-to-n relationships between users and roles.
-type PKI map[string]Identity
+type PKI map[string]*Identity
 
 // Identity represents an actor of an indigo network
 type Identity struct {
@@ -83,29 +83,29 @@ func loadPKIConfig(data json.RawMessage) (*PKI, error) {
 		return nil, ErrNoPKI
 	}
 
-	var jsonStruct PKI
-	err := json.Unmarshal(data, &jsonStruct)
+	var jsonData PKI
+	err := json.Unmarshal(data, &jsonData)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	for key := range jsonStruct {
+	for key := range jsonData {
 		if _, err := base64.StdEncoding.DecodeString(key); key == "" || err != nil {
 			return nil, errors.Wrap(ErrBadPublicKey, "Error while parsing PKI")
 		}
 	}
-	return &jsonStruct, nil
+	return &jsonData, nil
 }
 
-type jsonSchemaData []struct {
+type jsonValidatorData []struct {
 	ID         string           `json:"id"`
 	Type       string           `json:"type"`
-	Signatures *bool            `json:"signatures"`
+	Signatures []string         `json:"signatures"`
 	Schema     *json.RawMessage `json:"schema"`
 }
 
 func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig, error) {
-	var jsonStruct map[string]jsonSchemaData
+	var jsonStruct map[string]jsonValidatorData
 	err := json.Unmarshal(data, &jsonStruct)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -120,12 +120,12 @@ func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig
 			if val.Type == "" {
 				return nil, ErrMissingLinkType
 			}
-			if val.Signatures == nil && val.Schema == nil {
+			if len(val.Signatures) == 0 && val.Schema == nil {
 				return nil, ErrInvalidValidator
 			}
 
-			if val.Signatures != nil && *val.Signatures {
-				cfg, err := newSignatureValidatorConfig(process, val.ID, val.Type, pki)
+			if len(val.Signatures) > 0 {
+				cfg, err := newSignatureValidatorConfig(process, val.ID, val.Type, val.Signatures, pki)
 				if err != nil {
 					return nil, err
 				}

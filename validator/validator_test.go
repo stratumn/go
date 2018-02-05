@@ -47,7 +47,7 @@ const validJSONConfig = `
 		{
 		    "id": "initFormat",	
 		    "type": "init",
-		    "signatures": true,
+		    "signatures": ["Alice Van den Budenmayer"],
 		    "schema": {
 			"type": "object",
 			"properties": {
@@ -94,7 +94,7 @@ const validJSONConfig = `
 		{
 		    "id": "messageFormat",	
 		    "type": "message",
-		    "signatures": false,
+		    "signatures": null,
 		    "schema": {
 			"type": "object",
 			"properties": {
@@ -114,7 +114,7 @@ const validJSONConfig = `
 		{
 		    "id": "initSigned",
 		    "type": "init",
-		    "signatures": true
+		    "signatures": ["manager"]
 		}
 	    ]
 	}

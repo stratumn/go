@@ -45,7 +45,7 @@ func TestBaseConfig(t *testing.T) {
 		linkType:      linkType,
 		valid:         false,
 		expectedError: ErrMissingIdentifier,
-	}, {}, {
+	}, {
 		id:            "missing-link-type",
 		process:       process,
 		linkType:      "",

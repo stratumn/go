@@ -23,118 +23,202 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const validJSONConfig = `
-{
-	"pki": {
-	    "TESTKEY1": {
-		"name": "Alice Van den Budenmayer",
-		"roles": [
-		    "employee"
-		]
-	    },
-	    "TESTKEY2": {
-		"name": "Bob Wagner",
-		"roles": [
-		    "manager",
-		    "it"
-		]
-	    }
-	},
-	"validators": {
-	    "auction": [
-		{
-		    "id": "initFormat",	
-		    "type": "init",
-		    "signatures": true,
-		    "schema": {
-			"type": "object",
-			"properties": {
-			    "seller": {
-				"type": "string"
-			    },
-			    "lot": {
-				"type": "string"
-			    },
-			    "initialPrice": {
-				"type": "integer",
-				"minimum": 0
-			    }
-			},
-			"required": [
-			    "seller",
-			    "lot",
-			    "initialPrice"
-			]
-		    }
-		},
-		{
-    		    "id": "bidFormat",	
-	  	    "type": "bid",
-		    "schema": {
-			"type": "object",
-			"properties": {
-			    "buyer": {
-				"type": "string"
-			    },
-			    "bidPrice": {
-				"type": "integer",
-				"minimum": 0
-			    }
-			},
-			"required": [
-			    "buyer",
-			    "bidPrice"
-			]
-		    }
-		}
-	    ],
-	    "chat": [
-		{
-		    "id": "messageFormat",	
-		    "type": "message",
-		    "signatures": false,
-		    "schema": {
-			"type": "object",
-			"properties": {
-			    "to": {
-				"type": "string"
-			    },
-			    "content": {
-				"type": "string"
-			    }
-			},
-			"required": [
-			    "to",
-			    "content"
-			]
-		    }
-		},
-		{
-		    "id": "initSigned",
-		    "type": "init",
-		    "signatures": true
-		}
-	    ]
-	}
-    }
-`
-
 func TestLoadConfig_Success(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "valid-config")
-	require.NoError(t, err, "ioutil.TempFile()")
 
-	defer os.Remove(tmpfile.Name())
+	t.Run("schema & signatures", func(T *testing.T) {
+		const validJSONConfig = `
+		{
+			"pki": {
+			    "TESTKEY1": {
+				"name": "Alice Van den Budenmayer",
+				"roles": [
+				    "employee"
+				]
+			    },
+			    "TESTKEY2": {
+				"name": "Bob Wagner",
+				"roles": [
+				    "manager",
+				    "it"
+				]
+			    }
+			},
+			"validators": {
+			    "auction": [
+				{
+				    "id": "initFormat",	
+				    "type": "init",
+				    "signatures": ["Alice Van den Budenmayer"],
+				    "schema": {
+					"type": "object",
+					"properties": {
+					    "seller": {
+						"type": "string"
+					    },
+					    "lot": {
+						"type": "string"
+					    },
+					    "initialPrice": {
+						"type": "integer",
+						"minimum": 0
+					    }
+					},
+					"required": [
+					    "seller",
+					    "lot",
+					    "initialPrice"
+					]
+				    }
+				},
+				{
+					"id": "bidFormat",	
+				      "type": "bid",
+				    "schema": {
+					"type": "object",
+					"properties": {
+					    "buyer": {
+						"type": "string"
+					    },
+					    "bidPrice": {
+						"type": "integer",
+						"minimum": 0
+					    }
+					},
+					"required": [
+					    "buyer",
+					    "bidPrice"
+					]
+				    }
+				}
+			    ],
+			    "chat": [
+				{
+				    "id": "messageFormat",	
+				    "type": "message",
+				    "signatures": null,
+				    "schema": {
+					"type": "object",
+					"properties": {
+					    "to": {
+						"type": "string"
+					    },
+					    "content": {
+						"type": "string"
+					    }
+					},
+					"required": [
+					    "to",
+					    "content"
+					]
+				    }
+				},
+				{
+				    "id": "initSigned",
+				    "type": "init",
+				    "signatures": ["manager", "it"]
+				}
+			    ]
+			}
+		    }
+		`
 
-	_, err = tmpfile.WriteString(validJSONConfig)
-	require.NoError(t, err, "tmpfile.WriteString()")
+		testFile := createTMPFile(t, validJSONConfig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
 
-	cfg, err := LoadConfig(tmpfile.Name())
+		assert.NoError(t, err, "LoadConfig()")
+		assert.NotNil(t, cfg)
 
-	assert.NoError(t, err, "LoadConfig()")
-	assert.NotNil(t, cfg)
+		assert.Len(t, cfg.SchemaConfigs, 3)
+		assert.Len(t, cfg.SignatureConfigs, 2)
+	})
 
-	assert.Len(t, cfg.SchemaConfigs, 3)
-	assert.Len(t, cfg.SignatureConfigs, 2)
+	t.Run("Null signatures", func(T *testing.T) {
+
+		const validJSONSig = `
+		{
+			"pki": {
+			    "TESTKEY1": {
+				"name": "Alice Van den Budenmayer",
+				"roles": [
+				    "employee"
+				]
+			    },
+			    "TESTKEY2": {
+				"name": "Bob Wagner",
+				"roles": [
+				    "manager",
+				    "it"
+				]
+			    }
+			},
+			"validators": {
+			    "test": [
+				{
+				    "id": "initSigned",
+				    "type": "init",
+				    "signatures": null,
+				    "schema": {}
+				}
+			    ]
+			}
+		    }
+	`
+
+		testFile := createTMPFile(t, validJSONSig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
+
+		require.NoError(t, err, "LoadConfig()")
+		assert.NotNil(t, cfg)
+
+		assert.Len(t, cfg.SchemaConfigs, 1)
+		require.Len(t, cfg.SignatureConfigs, 0)
+	})
+
+	t.Run("Empty signatures", func(T *testing.T) {
+
+		const validJSONSig = `
+		{
+			"pki": {
+			    "TESTKEY1": {
+				"name": "Alice Van den Budenmayer",
+				"roles": [
+				    "employee"
+				]
+			    },
+			    "TESTKEY2": {
+				"name": "Bob Wagner",
+				"roles": [
+				    "manager",
+				    "it"
+				]
+			    }
+			},
+			"validators": {
+			    "test": [
+				{
+				    "id": "initSigned",
+				    "type": "init",
+				    "signatures": [],
+				    "schema": {}
+				}
+			    ]
+			}
+		    }
+	`
+
+		testFile := createTMPFile(t, validJSONSig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
+
+		require.NoError(t, err, "LoadConfig()")
+		assert.NotNil(t, cfg)
+
+		assert.Len(t, cfg.SchemaConfigs, 1)
+		require.Len(t, cfg.SignatureConfigs, 0)
+	})
+
 }
 
 func TestLoadValidators_Error(t *testing.T) {
@@ -152,15 +236,8 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		    }
 		`
-		tmpfile, err := ioutil.TempFile("", "invalid-config")
-		require.NoError(t, err, "ioutil.TempFile()")
-
-		defer os.Remove(tmpfile.Name())
-
-		_, err = tmpfile.WriteString(invalidValidatorConfig)
-		require.NoError(t, err, "tmpfile.WriteString()")
-
-		cfg, err := LoadConfig(tmpfile.Name())
+		testFile := createTMPFile(t, invalidValidatorConfig)
+		cfg, err := LoadConfig(testFile)
 
 		assert.Nil(t, cfg)
 		assert.EqualError(t, err, ErrInvalidValidator.Error())
@@ -191,15 +268,9 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		    }
 		`
-		tmpfile, err := ioutil.TempFile("", "invalid-config")
-		require.NoError(t, err, "ioutil.TempFile()")
-
-		defer os.Remove(tmpfile.Name())
-
-		_, err = tmpfile.WriteString(invalidValidatorConfig)
-		require.NoError(t, err, "tmpfile.WriteString()")
-
-		cfg, err := LoadConfig(tmpfile.Name())
+		testFile := createTMPFile(t, invalidValidatorConfig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
 
 		assert.Nil(t, cfg)
 		assert.EqualError(t, err, ErrMissingIdentifier.Error())
@@ -230,45 +301,56 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		    }
 		`
-		tmpfile, err := ioutil.TempFile("", "invalid-config")
-		require.NoError(t, err, "ioutil.TempFile()")
-
-		defer os.Remove(tmpfile.Name())
-
-		_, err = tmpfile.WriteString(invalidValidatorConfig)
-		require.NoError(t, err, "tmpfile.WriteString()")
-
-		cfg, err := LoadConfig(tmpfile.Name())
+		testFile := createTMPFile(t, invalidValidatorConfig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
 
 		assert.Nil(t, cfg)
 		assert.EqualError(t, err, ErrMissingLinkType.Error())
+	})
+
+	t.Run("Bad signature validator", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"pki": {},
+			"validators": {
+			    "auction": [
+				{
+				    "id": "missingType",
+				    "type": "action",	
+				    "signatures": "test"
+				}
+			    ]
+			}
+		    }
+		`
+		testFile := createTMPFile(t, invalidValidatorConfig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
+
+		assert.Nil(t, cfg)
+		assert.Error(t, err)
 	})
 }
 
 func TestLoadPKI_Error(t *testing.T) {
 
 	t.Run("No PKI", func(T *testing.T) {
-		const NoPKIConfig = `
+		const noPKIConfig = `
 		{
 			"validators": {}
 		}
 		`
-		tmpfile, err := ioutil.TempFile("", "invalid-config")
-		require.NoError(t, err, "ioutil.TempFile()")
-
-		defer os.Remove(tmpfile.Name())
-
-		_, err = tmpfile.WriteString(NoPKIConfig)
-		require.NoError(t, err, "tmpfile.WriteString()")
-
-		cfg, err := LoadConfig(tmpfile.Name())
+		testFile := createTMPFile(t, noPKIConfig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
 
 		assert.Nil(t, cfg)
 		assert.EqualError(t, err, "rules.json needs a 'pki' field to list authorized public keys")
 	})
 
 	t.Run("Bad public key", func(T *testing.T) {
-		const InvalidPKIConfig = `
+		const invalidPKIConfig = `
 		{
 			"pki": {
 				"": {
@@ -281,17 +363,20 @@ func TestLoadPKI_Error(t *testing.T) {
 			"validators": {}
 		}
 		`
-		tmpfile, err := ioutil.TempFile("", "invalid-config")
-		require.NoError(t, err, "ioutil.TempFile()")
-
-		defer os.Remove(tmpfile.Name())
-
-		_, err = tmpfile.WriteString(InvalidPKIConfig)
-		require.NoError(t, err, "tmpfile.WriteString()")
-
-		cfg, err := LoadConfig(tmpfile.Name())
+		testFile := createTMPFile(t, invalidPKIConfig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
 
 		assert.Nil(t, cfg)
 		assert.EqualError(t, err, "Error while parsing PKI: Public key must be a non-null base64 encoded string")
 	})
+}
+
+func createTMPFile(t *testing.T, data string) string {
+	tmpfile, err := ioutil.TempFile("", "invalid-config")
+	require.NoError(t, err, "ioutil.TempFile()")
+
+	_, err = tmpfile.WriteString(data)
+	require.NoError(t, err, "tmpfile.WriteString()")
+	return tmpfile.Name()
 }

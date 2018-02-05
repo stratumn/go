@@ -52,16 +52,16 @@ func newSchemaValidatorConfig(process, id, linkType string, schemaData []byte) (
 
 // schemaValidator validates the json schema of a link's state.
 type schemaValidator struct {
-	config *schemaValidatorConfig
+	*schemaValidatorConfig
 }
 
 func newSchemaValidator(config *schemaValidatorConfig) validator {
-	return &schemaValidator{config: config}
+	return &schemaValidator{config}
 }
 
 // Validate validates the schema of a link's state.
 func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
-	if !sv.config.shouldValidate(link) {
+	if !sv.shouldValidate(link) {
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	}
 
 	stateData := gojsonschema.NewBytesLoader(stateBytes)
-	result, err := sv.config.Schema.Validate(stateData)
+	result, err := sv.Schema.Validate(stateData)
 	if err != nil {
 		return errors.WithStack(err)
 	}
