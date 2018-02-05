@@ -27,71 +27,98 @@ import (
 
 const validJSONConfig = `
 {
-  "auction": [
-    {
-      "type": "init",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "seller": {
-            "type": "string"
-          },
-          "lot": {
-            "type": "string"
-          },
-          "initialPrice": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "seller",
-          "lot",
-          "initialPrice"
-        ]
-      }
-    },
-    {
-      "type": "bid",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "buyer": {
-            "type": "string"
-          },
-          "bidPrice": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "buyer",
-          "bidPrice"
-        ]
-      }
+	"pki": {
+	    "TESTKEY1": {
+		"name": "Alice Van den Budenmayer",
+		"roles": [
+		    "employee"
+		]
+	    },
+	    "TESTKEY2": {
+		"name": "Bob Wagner",
+		"roles": [
+		    "manager",
+		    "it"
+		]
+	    }
+	},
+	"validators": {
+	    "auction": [
+		{
+		    "id": "initFormat",	
+		    "type": "init",
+		    "signatures": true,
+		    "schema": {
+			"type": "object",
+			"properties": {
+			    "seller": {
+				"type": "string"
+			    },
+			    "lot": {
+				"type": "string"
+			    },
+			    "initialPrice": {
+				"type": "integer",
+				"minimum": 0
+			    }
+			},
+			"required": [
+			    "seller",
+			    "lot",
+			    "initialPrice"
+			]
+		    }
+		},
+		{
+    		    "id": "bidFormat",	
+	  	    "type": "bid",
+		    "schema": {
+			"type": "object",
+			"properties": {
+			    "buyer": {
+				"type": "string"
+			    },
+			    "bidPrice": {
+				"type": "integer",
+				"minimum": 0
+			    }
+			},
+			"required": [
+			    "buyer",
+			    "bidPrice"
+			]
+		    }
+		}
+	    ],
+	    "chat": [
+		{
+		    "id": "messageFormat",	
+		    "type": "message",
+		    "signatures": false,
+		    "schema": {
+			"type": "object",
+			"properties": {
+			    "to": {
+				"type": "string"
+			    },
+			    "content": {
+				"type": "string"
+			    }
+			},
+			"required": [
+			    "to",
+			    "content"
+			]
+		    }
+		},
+		{
+		    "id": "initSigned",
+		    "type": "init",
+		    "signatures": true
+		}
+	    ]
+	}
     }
-  ],
-  "chat": [
-    {
-      "type": "message",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "to": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "to",
-          "content"
-        ]   
-      }
-    }
-  ]
-}
 `
 
 type testCase struct {

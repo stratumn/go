@@ -33,8 +33,8 @@ type schemaValidatorConfig struct {
 }
 
 // newSchemaValidatorConfig creates a schemaValidatorConfig for a given process and type.
-func newSchemaValidatorConfig(process, linkType string, schemaData []byte) (*schemaValidatorConfig, error) {
-	baseConfig, err := newValidatorBaseConfig(process, linkType)
+func newSchemaValidatorConfig(process, id, linkType string, schemaData []byte) (*schemaValidatorConfig, error) {
+	baseConfig, err := newValidatorBaseConfig(process, id, linkType)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

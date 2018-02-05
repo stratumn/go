@@ -22,21 +22,29 @@ import (
 )
 
 var (
-	// ErrMissingProcess is returned when the process name is missing for schema validation.
-	ErrMissingProcess = errors.New("schema validation requires a process")
+	// ErrMissingProcess is returned when the process name is missing for validation.
+	ErrMissingProcess = errors.New("validator requires a process")
 
-	// ErrMissingLinkType is returned when the link type is missing for schema validation.
-	ErrMissingLinkType = errors.New("schema validation requires a link type")
+	// ErrMissingLinkType is returned when the link type is missing for validation.
+	ErrMissingLinkType = errors.New("validator requires a link type")
+
+	// ErrMissingIdentifier is returned when the link identifier is missing for validation.
+	ErrMissingIdentifier = errors.New("validator requires an identifier")
 )
 
 type validatorBaseConfig struct {
+	ID       string
 	Process  string
 	LinkType string
 }
 
-func newValidatorBaseConfig(process, linkType string) (*validatorBaseConfig, error) {
+func newValidatorBaseConfig(process, id, linkType string) (*validatorBaseConfig, error) {
 	if len(process) == 0 {
 		return nil, ErrMissingProcess
+	}
+
+	if len(id) == 0 {
+		return nil, ErrMissingIdentifier
 	}
 
 	if len(linkType) == 0 {

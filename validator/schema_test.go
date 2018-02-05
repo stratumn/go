@@ -78,6 +78,7 @@ func TestSchemaValidatorConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg, err := newSchemaValidatorConfig(
 				tt.process,
+				tt.name,
 				tt.linkType,
 				tt.schema,
 			)
@@ -99,7 +100,7 @@ func TestSchemaValidatorConfig(t *testing.T) {
 
 func TestSchemaValidator(t *testing.T) {
 	schema := []byte(testSellSchema)
-	cfg, err := newSchemaValidatorConfig("p1", "sell", schema)
+	cfg, err := newSchemaValidatorConfig("p1", "id1", "sell", schema)
 	require.NoError(t, err)
 	sv := newSchemaValidator(cfg)
 

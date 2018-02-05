@@ -39,16 +39,17 @@ var (
 // validate links.
 type signatureValidatorConfig struct {
 	*validatorBaseConfig
+	pki *PKI
 }
 
 // newSignatureValidatorConfig creates a signatureValidatorConfig for a given process and type.
-func newSignatureValidatorConfig(process, linkType string) (*signatureValidatorConfig, error) {
-	baseConfig, err := newValidatorBaseConfig(process, linkType)
+func newSignatureValidatorConfig(process, id, linkType string, pki *PKI) (*signatureValidatorConfig, error) {
+	baseConfig, err := newValidatorBaseConfig(process, id, linkType)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return &signatureValidatorConfig{baseConfig}, nil
+	return &signatureValidatorConfig{validatorBaseConfig: baseConfig, pki: pki}, nil
 }
 
 // signatureValidator validates the json signature of a link's state.

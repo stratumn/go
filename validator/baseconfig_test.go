@@ -25,7 +25,7 @@ func TestBaseConfig(t *testing.T) {
 	linkType := "sell"
 
 	type testCaseCfg struct {
-		name          string
+		id            string
 		process       string
 		linkType      string
 		schema        []byte
@@ -34,19 +34,25 @@ func TestBaseConfig(t *testing.T) {
 	}
 
 	testCases := []testCaseCfg{{
-		name:          "missing-process",
+		id:            "missing-process",
 		process:       "",
 		linkType:      linkType,
 		valid:         false,
 		expectedError: ErrMissingProcess,
 	}, {
-		name:          "missing-link-type",
+		id:            "",
+		process:       process,
+		linkType:      linkType,
+		valid:         false,
+		expectedError: ErrMissingIdentifier,
+	}, {}, {
+		id:            "missing-link-type",
 		process:       process,
 		linkType:      "",
 		valid:         false,
 		expectedError: ErrMissingLinkType,
 	}, {
-		name:     "valid-config",
+		id:       "valid-config",
 		process:  process,
 		linkType: linkType,
 		valid:    true,
@@ -54,9 +60,10 @@ func TestBaseConfig(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.id, func(t *testing.T) {
 			cfg, err := newValidatorBaseConfig(
 				tt.process,
+				tt.id,
 				tt.linkType,
 			)
 
@@ -69,7 +76,6 @@ func TestBaseConfig(t *testing.T) {
 				if tt.expectedError != nil {
 					assert.EqualError(t, err, tt.expectedError.Error())
 				}
-
 			}
 		})
 	}

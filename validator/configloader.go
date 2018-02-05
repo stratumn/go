@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -25,7 +26,18 @@ import (
 var (
 	// ErrInvalidValidator is returned when the schema and the signatures are both missing in a validator.
 	ErrInvalidValidator = errors.New("a validator requires a JSON schema or a signature criteria to be valid")
+
+	// ErrBadPublicKey is returned when a public key is empty or not base64-encoded
+	ErrBadPublicKey = errors.New("Public key must be a non-null base64 encoded string")
+
+	// ErrNoPKI is returned when rules.json doesn't contain a `pki` field
+	ErrNoPKI = errors.New("rules.json needs a 'pki' field to list authorized public keys")
 )
+
+type rulesSchema struct {
+	PKI        json.RawMessage `json:"pki"`
+	Validators json.RawMessage `json:"validators"`
+}
 
 // LoadConfig loads the validators configuration from a json file.
 // The configuration returned can be then be used in NewMultiValidator().
@@ -40,16 +52,59 @@ func LoadConfig(path string) (*MultiValidatorConfig, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	return loadValidatorsConfig(data)
+	var rules rulesSchema
+	err = json.Unmarshal(data, &rules)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	pki, err := loadPKIConfig(rules.PKI)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return loadValidatorsConfig(rules.Validators, pki)
+}
+
+// PKI maps a public key to an identity.
+// It lists all legimate keys, assign real names to public keys
+// and establishes n-to-n relationships between users and roles.
+type PKI map[string]Identity
+
+// Identity represents an actor of an indigo network
+type Identity struct {
+	Name  string
+	Roles []string
+}
+
+// loadPKIConfig deserializes json into a PKI struct. It checks that public keys
+func loadPKIConfig(data json.RawMessage) (*PKI, error) {
+	if len(data) == 0 {
+		return nil, ErrNoPKI
+	}
+
+	var jsonStruct PKI
+	err := json.Unmarshal(data, &jsonStruct)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	for key := range jsonStruct {
+		if _, err := base64.StdEncoding.DecodeString(key); key == "" || err != nil {
+			return nil, errors.Wrap(ErrBadPublicKey, "Error while parsing PKI")
+		}
+	}
+	return &jsonStruct, nil
 }
 
 type jsonSchemaData []struct {
+	ID         string           `json:"id"`
 	Type       string           `json:"type"`
 	Signatures *bool            `json:"signatures"`
 	Schema     *json.RawMessage `json:"schema"`
 }
 
-func loadValidatorsConfig(data []byte) (*MultiValidatorConfig, error) {
+func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig, error) {
 	var jsonStruct map[string]jsonSchemaData
 	err := json.Unmarshal(data, &jsonStruct)
 	if err != nil {
@@ -59,6 +114,9 @@ func loadValidatorsConfig(data []byte) (*MultiValidatorConfig, error) {
 	var validatorConfig MultiValidatorConfig
 	for process, jsonSchemaData := range jsonStruct {
 		for _, val := range jsonSchemaData {
+			if val.ID == "" {
+				return nil, ErrMissingIdentifier
+			}
 			if val.Type == "" {
 				return nil, ErrMissingLinkType
 			}
@@ -67,7 +125,7 @@ func loadValidatorsConfig(data []byte) (*MultiValidatorConfig, error) {
 			}
 
 			if val.Signatures != nil && *val.Signatures {
-				cfg, err := newSignatureValidatorConfig(process, val.Type)
+				cfg, err := newSignatureValidatorConfig(process, val.ID, val.Type, pki)
 				if err != nil {
 					return nil, err
 				}
@@ -76,7 +134,7 @@ func loadValidatorsConfig(data []byte) (*MultiValidatorConfig, error) {
 
 			if val.Schema != nil {
 				schemaData, _ := val.Schema.MarshalJSON()
-				cfg, err := newSchemaValidatorConfig(process, val.Type, schemaData)
+				cfg, err := newSchemaValidatorConfig(process, val.ID, val.Type, schemaData)
 				if err != nil {
 					return nil, err
 				}

@@ -25,77 +25,98 @@ import (
 
 const validJSONConfig = `
 {
-  "auction": [
-    {
-      "type": "init",
-      "signatures": true,
-      "schema": {
-        "type": "object",
-        "properties": {
-          "seller": {
-            "type": "string"
-          },
-          "lot": {
-            "type": "string"
-          },
-          "initialPrice": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "seller",
-          "lot",
-          "initialPrice"
-        ]
-      }
-    },
-    {
-      "type": "bid",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "buyer": {
-            "type": "string"
-          },
-          "bidPrice": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": [
-          "buyer",
-          "bidPrice"
-        ]
-      }
+	"pki": {
+	    "TESTKEY1": {
+		"name": "Alice Van den Budenmayer",
+		"roles": [
+		    "employee"
+		]
+	    },
+	    "TESTKEY2": {
+		"name": "Bob Wagner",
+		"roles": [
+		    "manager",
+		    "it"
+		]
+	    }
+	},
+	"validators": {
+	    "auction": [
+		{
+		    "id": "initFormat",	
+		    "type": "init",
+		    "signatures": true,
+		    "schema": {
+			"type": "object",
+			"properties": {
+			    "seller": {
+				"type": "string"
+			    },
+			    "lot": {
+				"type": "string"
+			    },
+			    "initialPrice": {
+				"type": "integer",
+				"minimum": 0
+			    }
+			},
+			"required": [
+			    "seller",
+			    "lot",
+			    "initialPrice"
+			]
+		    }
+		},
+		{
+    		    "id": "bidFormat",	
+	  	    "type": "bid",
+		    "schema": {
+			"type": "object",
+			"properties": {
+			    "buyer": {
+				"type": "string"
+			    },
+			    "bidPrice": {
+				"type": "integer",
+				"minimum": 0
+			    }
+			},
+			"required": [
+			    "buyer",
+			    "bidPrice"
+			]
+		    }
+		}
+	    ],
+	    "chat": [
+		{
+		    "id": "messageFormat",	
+		    "type": "message",
+		    "signatures": false,
+		    "schema": {
+			"type": "object",
+			"properties": {
+			    "to": {
+				"type": "string"
+			    },
+			    "content": {
+				"type": "string"
+			    }
+			},
+			"required": [
+			    "to",
+			    "content"
+			]
+		    }
+		},
+		{
+		    "id": "initSigned",
+		    "type": "init",
+		    "signatures": true
+		}
+	    ]
+	}
     }
-  ],
-  "chat": [
-    {
-      "type": "message",
-      "signatures": false,
-      "schema": {
-        "type": "object",
-        "properties": {
-          "to": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "to",
-          "content"
-        ]   
-      }
-    },
-    {
-	"type": "init",
-	"signatures": true    
-    }
-  ]
-}
 `
 
 func TestLoadConfig_Success(t *testing.T) {
@@ -116,40 +137,161 @@ func TestLoadConfig_Success(t *testing.T) {
 	assert.Len(t, cfg.SignatureConfigs, 2)
 }
 
-const invalidJSONConfig = `
-{
-  "auction": [
-  {
-    "type": "init"
-  },
-  {
-    "type": "bid",
-    "schema": {
-      "type": "object",
-      "properties": {
-        "buyer": {
-    	  "type": "string"
-        }
-      },
-      "required": [
-        "buyer"
-      ]
-    }
-  }]
+func TestLoadValidators_Error(t *testing.T) {
+	t.Run("Missing schema", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"pki": {},
+			"validators": {
+			    "auction": [
+				{
+				    "id": "wrongValidator",
+				    "type": "init"
+				}
+			    ]
+			}
+		    }
+		`
+		tmpfile, err := ioutil.TempFile("", "invalid-config")
+		require.NoError(t, err, "ioutil.TempFile()")
+
+		defer os.Remove(tmpfile.Name())
+
+		_, err = tmpfile.WriteString(invalidValidatorConfig)
+		require.NoError(t, err, "tmpfile.WriteString()")
+
+		cfg, err := LoadConfig(tmpfile.Name())
+
+		assert.Nil(t, cfg)
+		assert.EqualError(t, err, ErrInvalidValidator.Error())
+	})
+
+	t.Run("Missing identifier", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"pki": {},
+			"validators": {
+			    "auction": [
+				{
+				    "type": "init",
+				    "schema": {
+					"type": "object",
+					"properties": {
+					    "buyer": {
+						"type": "string"
+					    },
+					    "bidPrice": {
+						"type": "integer",
+						"minimum": 0
+					    }
+					}
+				    }
+				}
+			    ]
+			}
+		    }
+		`
+		tmpfile, err := ioutil.TempFile("", "invalid-config")
+		require.NoError(t, err, "ioutil.TempFile()")
+
+		defer os.Remove(tmpfile.Name())
+
+		_, err = tmpfile.WriteString(invalidValidatorConfig)
+		require.NoError(t, err, "tmpfile.WriteString()")
+
+		cfg, err := LoadConfig(tmpfile.Name())
+
+		assert.Nil(t, cfg)
+		assert.EqualError(t, err, ErrMissingIdentifier.Error())
+	})
+
+	t.Run("Missing type", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"pki": {},
+			"validators": {
+			    "auction": [
+				{
+				    "id": "missingType",
+				    "schema": {
+					"type": "object",
+					"properties": {
+					    "buyer": {
+						"type": "string"
+					    },
+					    "bidPrice": {
+						"type": "integer",
+						"minimum": 0
+					    }
+					}
+				    }
+				}
+			    ]
+			}
+		    }
+		`
+		tmpfile, err := ioutil.TempFile("", "invalid-config")
+		require.NoError(t, err, "ioutil.TempFile()")
+
+		defer os.Remove(tmpfile.Name())
+
+		_, err = tmpfile.WriteString(invalidValidatorConfig)
+		require.NoError(t, err, "tmpfile.WriteString()")
+
+		cfg, err := LoadConfig(tmpfile.Name())
+
+		assert.Nil(t, cfg)
+		assert.EqualError(t, err, ErrMissingLinkType.Error())
+	})
 }
-`
 
-func TestLoadConfig_Error(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "invalid-config")
-	require.NoError(t, err, "ioutil.TempFile()")
+func TestLoadPKI_Error(t *testing.T) {
 
-	defer os.Remove(tmpfile.Name())
+	t.Run("No PKI", func(T *testing.T) {
+		const NoPKIConfig = `
+		{
+			"validators": {}
+		}
+		`
+		tmpfile, err := ioutil.TempFile("", "invalid-config")
+		require.NoError(t, err, "ioutil.TempFile()")
 
-	_, err = tmpfile.WriteString(invalidJSONConfig)
-	require.NoError(t, err, "tmpfile.WriteString()")
+		defer os.Remove(tmpfile.Name())
 
-	cfg, err := LoadConfig(tmpfile.Name())
+		_, err = tmpfile.WriteString(NoPKIConfig)
+		require.NoError(t, err, "tmpfile.WriteString()")
 
-	assert.Nil(t, cfg)
-	assert.EqualError(t, err, ErrInvalidValidator.Error())
+		cfg, err := LoadConfig(tmpfile.Name())
+
+		assert.Nil(t, cfg)
+		assert.EqualError(t, err, "rules.json needs a 'pki' field to list authorized public keys")
+	})
+
+	t.Run("Bad public key", func(T *testing.T) {
+		const InvalidPKIConfig = `
+		{
+			"pki": {
+				"": {
+				    "name": "Alice Van den Budenmayer",
+				    "roles": [
+					"employee"
+				    ]
+				}
+			},
+			"validators": {}
+		}
+		`
+		tmpfile, err := ioutil.TempFile("", "invalid-config")
+		require.NoError(t, err, "ioutil.TempFile()")
+
+		defer os.Remove(tmpfile.Name())
+
+		_, err = tmpfile.WriteString(InvalidPKIConfig)
+		require.NoError(t, err, "tmpfile.WriteString()")
+
+		cfg, err := LoadConfig(tmpfile.Name())
+
+		assert.Nil(t, cfg)
+		assert.EqualError(t, err, "Error while parsing PKI: Public key must be a non-null base64 encoded string")
+	})
 }

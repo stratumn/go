@@ -26,8 +26,9 @@ import (
 
 func TestSignatureValidator(t *testing.T) {
 	process := "p1"
+	id := "id1"
 	action := "test"
-	cfg, err := newSignatureValidatorConfig(process, action)
+	cfg, err := newSignatureValidatorConfig(process, id, action, &PKI{})
 	require.NoError(t, err)
 	sv := newSignatureValidator(cfg)
 
