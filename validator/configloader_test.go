@@ -130,7 +130,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NotNil(t, cfg)
 
 		assert.Len(t, cfg.SchemaConfigs, 3)
-		assert.Len(t, cfg.SignatureConfigs, 2)
+		assert.Len(t, cfg.PkiConfigs, 2)
 	})
 
 	t.Run("Null signatures", func(T *testing.T) {
@@ -173,7 +173,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NotNil(t, cfg)
 
 		assert.Len(t, cfg.SchemaConfigs, 1)
-		require.Len(t, cfg.SignatureConfigs, 0)
+		require.Len(t, cfg.PkiConfigs, 0)
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -216,7 +216,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NotNil(t, cfg)
 
 		assert.Len(t, cfg.SchemaConfigs, 1)
-		require.Len(t, cfg.SignatureConfigs, 0)
+		require.Len(t, cfg.PkiConfigs, 0)
 	})
 
 }

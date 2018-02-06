@@ -127,30 +127,6 @@ func TestSchemaValidator(t *testing.T) {
 	}
 
 	testCases := []testCase{{
-		name:  "process-not-matched",
-		valid: true,
-		link: func() *cs.Link {
-			l := createInvalidLink()
-			l.Meta["process"] = "p2"
-			return l
-		},
-	}, {
-		name:  "type-not-matched",
-		valid: true,
-		link: func() *cs.Link {
-			l := createInvalidLink()
-			l.Meta["action"] = "buy"
-			return l
-		},
-	}, {
-		name:  "missing-action",
-		valid: true,
-		link: func() *cs.Link {
-			l := createInvalidLink()
-			delete(l.Meta, "action")
-			return l
-		},
-	}, {
 		name:  "valid-link",
 		valid: true,
 		link:  createValidLink,

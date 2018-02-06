@@ -32,6 +32,14 @@ type validator interface {
 	Validate(store.SegmentReader, *cs.Link) error
 }
 
+// childValidator defines an interface that have to be implemented by a custom validator (eg: signature, schema, state...)
+type childValidator interface {
+	validator
+
+	// ShouldValidate returns a boolean whether the link should be checked
+	ShouldValidate(*cs.Link) bool
+}
+
 // Validator defines a validator that has an internal state, identified by
 // its hash.
 type Validator interface {

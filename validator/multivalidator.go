@@ -27,13 +27,14 @@ import (
 // MultiValidatorConfig sets the behavior of the validator.
 // Its hash can be used to know which validations were applied to a block.
 type MultiValidatorConfig struct {
-	SchemaConfigs    []*schemaValidatorConfig
-	SignatureConfigs []*signatureValidatorConfig
+	SchemaConfigs []*schemaValidatorConfig
+	PkiConfigs    []*pkiValidatorConfig
 }
 
 type multiValidator struct {
-	config     *MultiValidatorConfig
-	validators []validator
+	config           *MultiValidatorConfig
+	validators       []childValidator
+	defaultValidator childValidator
 }
 
 // NewMultiValidator creates a validator that will simply be a collection
@@ -44,17 +45,19 @@ func NewMultiValidator(config *MultiValidatorConfig) Validator {
 		return &multiValidator{}
 	}
 
-	var v []validator
+	var v []childValidator
 	for _, schemaCfg := range config.SchemaConfigs {
 		v = append(v, newSchemaValidator(schemaCfg))
 	}
-	for _, signatureCfg := range config.SignatureConfigs {
-		v = append(v, newSignatureValidator(signatureCfg))
+	for _, pkiCfg := range config.PkiConfigs {
+		v = append(v, newPkiValidator(pkiCfg))
 	}
+	defaultValidator := newSignatureValidator(&signatureValidatorConfig{})
 
 	return &multiValidator{
-		config:     config,
-		validators: v,
+		config:           config,
+		validators:       v,
+		defaultValidator: defaultValidator,
 	}
 }
 
@@ -67,13 +70,25 @@ func (v multiValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
+func (v multiValidator) matchValidators(l *cs.Link) (linkValidators []childValidator) {
 	for _, child := range v.validators {
+		if child.ShouldValidate(l) {
+			linkValidators = append(linkValidators, child)
+		}
+	}
+	return
+}
+
+// Validate runs the validation on every child validator matching the provided link.
+// It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
+func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
+	linkValidators := v.matchValidators(l)
+	for _, child := range linkValidators {
 		err := child.Validate(r, l)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return v.defaultValidator.Validate(r, l)
 }

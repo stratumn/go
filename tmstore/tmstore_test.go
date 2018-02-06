@@ -81,15 +81,31 @@ func TestValidation(t *testing.T) {
 	tmstore, err := newTestTMStore()
 	assert.NoError(t, err)
 
-	l := cstesting.RandomLink()
-	l.Meta["process"] = "testProcess"
-	l.Meta["action"] = "init"
-	l.State["string"] = 42
+	t.Run("Schema validation failed", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Meta["process"] = "testProcess"
+		l.Meta["action"] = "init"
+		l.State["string"] = 42
 
-	_, err = tmstore.CreateLink(l)
-	assert.Error(t, err, "A validation error is expected")
+		_, err = tmstore.CreateLink(l)
+		assert.Error(t, err, "A validation error is expected")
 
-	errHTTP, ok := err.(jsonhttp.ErrHTTP)
-	assert.True(t, ok, "Invalid error received: want ErrHTTP")
-	assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+		errHTTP, ok := err.(jsonhttp.ErrHTTP)
+		assert.True(t, ok, "Invalid error received: want ErrHTTP")
+		assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+	})
+
+	t.Run("Signature validation failed", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Meta["process"] = "testProcess"
+		l.Meta["action"] = "init"
+		l.State["string"] = "test"
+
+		_, err = tmstore.CreateLink(l)
+		assert.Error(t, err, "A validation error is expected")
+
+		errHTTP, ok := err.(jsonhttp.ErrHTTP)
+		assert.True(t, ok, "Invalid error received: want ErrHTTP")
+		assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+	})
 }

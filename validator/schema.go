@@ -55,16 +55,12 @@ type schemaValidator struct {
 	*schemaValidatorConfig
 }
 
-func newSchemaValidator(config *schemaValidatorConfig) validator {
+func newSchemaValidator(config *schemaValidatorConfig) childValidator {
 	return &schemaValidator{config}
 }
 
 // Validate validates the schema of a link's state.
 func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
-	if !sv.shouldValidate(link) {
-		return nil
-	}
-
 	stateBytes, err := json.Marshal(link.State)
 	if err != nil {
 		return errors.WithStack(err)

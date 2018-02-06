@@ -1,15 +1,29 @@
 {
-  "testProcess": [
-    {
-      "type": "init",
-      "schema": {
-        "type": "object",
-        "properties": {
-          "string": {
-            "type": "string"
+  "pki": {
+    "TESTKEY1": {
+      "name": "Alice Van den Budenmayer",
+      "roles": ["employee"]
+    },
+    "TESTKEY2": {
+      "name": "Bob Wagner",
+      "roles": ["manager", "it"]
+    }
+  },
+  "validators": {
+    "testProcess": [
+      {
+        "id": "testProcess-schema",
+        "type": "init",
+        "signatures": ["it"],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "string": {
+              "type": "string"
+            }
           }
         }
       }
-    }
-  ]
+    ]
+  }
 }

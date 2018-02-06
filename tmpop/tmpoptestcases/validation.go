@@ -27,20 +27,30 @@ import (
 
 const testValidationConfig = `
 {
-  "testProcess": [
-    {
-      "type": "init",
-      "schema": {
-      	"type": "object",
-      	"properties": {
-      	  "string": {
-  	    "type": "string"
-      	  }
-      	}
-      }
-    }
-  ]
-}
+	"pki": {
+	  "TESTKEY1": {
+	    "name": "Alice Van den Budenmayer",
+	    "roles": ["employee"]
+	  }
+	},
+	"validators": {
+	  "testProcess": [
+	    {
+	      "id": "testProcess-schema",
+	      "type": "init",
+	      "signatures": null,
+	      "schema": {
+		"type": "object",
+		"properties": {
+		  "string": {
+		    "type": "string"
+		  }
+		}
+	      }
+	    }
+	  ]
+	}
+} 
 `
 
 func createValidationFile(t *testing.T) string {
@@ -63,20 +73,40 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	h.BeginBlock(req)
 
-	l := cstesting.RandomLinkWithProcess("testProcess")
-	l.Meta["action"] = "init"
-	l.State["string"] = "test"
-	tx := makeCreateLinkTx(t, l)
-	res := h.DeliverTx(tx)
+	t.Run("Validation succeeded", func(t *testing.T) {
+		l := cstesting.RandomLinkWithProcess("testProcess")
+		l.Meta["action"] = "init"
+		l.State["string"] = "test"
+		l = cstesting.SignLink(l)
+		tx := makeCreateLinkTx(t, l)
+		res := h.DeliverTx(tx)
 
-	assert.False(t, res.IsErr(), "a.DeliverTx(): failed")
+		assert.False(t, res.IsErr(), "a.DeliverTx(): failed")
+	})
 
-	l = cstesting.RandomLinkWithProcess("testProcess")
-	l.Meta["action"] = "init"
-	l.State["string"] = 42
-	tx = makeCreateLinkTx(t, l)
-	res = h.DeliverTx(tx)
+	t.Run("Schema validation failed", func(t *testing.T) {
+		l := cstesting.RandomLinkWithProcess("testProcess")
+		l.Meta["action"] = "init"
+		l.State["string"] = 42
+		tx := makeCreateLinkTx(t, l)
+		res := h.DeliverTx(tx)
 
-	assert.True(t, res.IsErr(), "a.DeliverTx(): want error")
-	assert.Equal(t, tmpop.CodeTypeValidation, res.Code, "res.Code")
+		assert.True(t, res.IsErr(), "a.DeliverTx(): want error")
+		assert.Equal(t, tmpop.CodeTypeValidation, res.Code, "res.Code")
+	})
+
+	t.Run("Signature validation failed", func(t *testing.T) {
+		l := cstesting.RandomLinkWithProcess("testProcess")
+		l.Meta["action"] = "init"
+		l.State["string"] = "test"
+		l = cstesting.SignLink(l)
+		l.Signatures[0].Signature = "test"
+		tx := makeCreateLinkTx(t, l)
+		res := h.DeliverTx(tx)
+
+		assert.True(t, res.IsErr(), "a.DeliverTx(): want error")
+		assert.Equal(t, tmpop.CodeTypeValidation, res.Code, "res.Code")
+
+	})
+
 }

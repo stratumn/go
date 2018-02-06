@@ -125,11 +125,11 @@ func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig
 			}
 
 			if len(val.Signatures) > 0 {
-				cfg, err := newSignatureValidatorConfig(process, val.ID, val.Type, val.Signatures, pki)
+				cfg, err := newPkiValidatorConfig(process, val.ID, val.Type, val.Signatures, pki)
 				if err != nil {
 					return nil, err
 				}
-				validatorConfig.SignatureConfigs = append(validatorConfig.SignatureConfigs, cfg)
+				validatorConfig.PkiConfigs = append(validatorConfig.PkiConfigs, cfg)
 			}
 
 			if val.Schema != nil {

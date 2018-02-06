@@ -28,8 +28,8 @@ func TestMultiValidator_New(t *testing.T) {
 			&schemaValidatorConfig{},
 			&schemaValidatorConfig{},
 		},
-		SignatureConfigs: []*signatureValidatorConfig{
-			&signatureValidatorConfig{},
+		PkiConfigs: []*pkiValidatorConfig{
+			&pkiValidatorConfig{},
 		},
 	})
 
@@ -77,8 +77,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 
 	t.Run("With signature validator", func(t *testing.T) {
 		mv1 := NewMultiValidator(&MultiValidatorConfig{
-			SignatureConfigs: []*signatureValidatorConfig{
-				&signatureValidatorConfig{
+			PkiConfigs: []*pkiValidatorConfig{
+				&pkiValidatorConfig{
 					validatorBaseConfig: baseConfig1,
 				}},
 		})
@@ -88,8 +88,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 		assert.NotNil(t, h1)
 
 		mv2 := NewMultiValidator(&MultiValidatorConfig{
-			SignatureConfigs: []*signatureValidatorConfig{
-				&signatureValidatorConfig{
+			PkiConfigs: []*pkiValidatorConfig{
+				&pkiValidatorConfig{
 					validatorBaseConfig: baseConfig1,
 				}},
 		})
@@ -99,8 +99,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 		assert.EqualValues(t, h1, h2)
 
 		mv3 := NewMultiValidator(&MultiValidatorConfig{
-			SignatureConfigs: []*signatureValidatorConfig{
-				&signatureValidatorConfig{
+			PkiConfigs: []*pkiValidatorConfig{
+				&pkiValidatorConfig{
 					validatorBaseConfig: baseConfig2,
 				}},
 		})
@@ -128,19 +128,25 @@ func TestMultiValidator_Validate(t *testing.T) {
 	svCfg1, _ := newSchemaValidatorConfig("p", "id1", "a1", []byte(testMessageSchema))
 	svCfg2, _ := newSchemaValidatorConfig("p", "id2", "a2", []byte(testMessageSchema))
 
-	sigVCfg1, _ := newSignatureValidatorConfig("p", "id3", "a1", []string{}, &PKI{})
-	sigVCfg2, _ := newSignatureValidatorConfig("p", "id4", "a2", []string{}, &PKI{})
+	sigVCfg1, _ := newPkiValidatorConfig("p", "id3", "a1", []string{}, &PKI{})
+	sigVCfg2, _ := newPkiValidatorConfig("p", "id4", "a2", []string{}, &PKI{})
 
 	mv := NewMultiValidator(&MultiValidatorConfig{
-		SchemaConfigs:    []*schemaValidatorConfig{svCfg1, svCfg2},
-		SignatureConfigs: []*signatureValidatorConfig{sigVCfg1, sigVCfg2},
+		SchemaConfigs: []*schemaValidatorConfig{svCfg1, svCfg2},
+		PkiConfigs:    []*pkiValidatorConfig{sigVCfg1, sigVCfg2},
 	})
 
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
 		l := cstesting.RandomLink()
-		l.Signatures = append(l.Signatures, &cs.Signature{})
 		err := mv.Validate(nil, l)
 		assert.NoError(t, err)
+	})
+
+	t.Run("Run the default signature validator when no match is found", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Signatures = append(l.Signatures, &cs.Signature{})
+		err := mv.Validate(nil, l)
+		assert.Error(t, err)
 	})
 
 	t.Run("Validate fails if one of the children fails (schema)", func(t *testing.T) {
@@ -154,11 +160,12 @@ func TestMultiValidator_Validate(t *testing.T) {
 
 	t.Run("Validate fails if one of the children fails (signature)", func(t *testing.T) {
 		l := cstesting.RandomLink()
+		l.Signatures = append(l.Signatures, &cs.Signature{})
 		l.Meta["process"] = "p"
 		l.Meta["action"] = "a2"
 		l.State["message"] = "test"
 
 		err := mv.Validate(nil, l)
-		assert.EqualError(t, err, ErrMissingSignature.Error())
+		assert.Error(t, err)
 	})
 }

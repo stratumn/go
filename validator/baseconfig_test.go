@@ -17,17 +17,20 @@ package validator
 import (
 	"testing"
 
+	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/sdk/cs/cstesting"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBaseConfig(t *testing.T) {
 	process := "p1"
-	linkType := "sell"
+	action := "sell"
 
 	type testCaseCfg struct {
 		id            string
 		process       string
-		linkType      string
+		action        string
 		schema        []byte
 		valid         bool
 		expectedError error
@@ -36,26 +39,26 @@ func TestBaseConfig(t *testing.T) {
 	testCases := []testCaseCfg{{
 		id:            "missing-process",
 		process:       "",
-		linkType:      linkType,
+		action:        action,
 		valid:         false,
 		expectedError: ErrMissingProcess,
 	}, {
 		id:            "",
 		process:       process,
-		linkType:      linkType,
+		action:        action,
 		valid:         false,
 		expectedError: ErrMissingIdentifier,
 	}, {
 		id:            "missing-link-type",
 		process:       process,
-		linkType:      "",
+		action:        "",
 		valid:         false,
 		expectedError: ErrMissingLinkType,
 	}, {
-		id:       "valid-config",
-		process:  process,
-		linkType: linkType,
-		valid:    true,
+		id:      "valid-config",
+		process: process,
+		action:  action,
+		valid:   true,
 	},
 	}
 
@@ -64,7 +67,7 @@ func TestBaseConfig(t *testing.T) {
 			cfg, err := newValidatorBaseConfig(
 				tt.process,
 				tt.id,
-				tt.linkType,
+				tt.action,
 			)
 
 			if tt.valid {
@@ -77,6 +80,80 @@ func TestBaseConfig(t *testing.T) {
 					assert.EqualError(t, err, tt.expectedError.Error())
 				}
 			}
+		})
+	}
+}
+
+func TestBaseConfig_ShouldValidate(t *testing.T) {
+	process := "p1"
+	action := "sell"
+	cfg, err := newValidatorBaseConfig(
+		process,
+		"test",
+		action,
+	)
+	require.NoError(t, err)
+
+	createValidLink := func() *cs.Link {
+		l := cstesting.RandomLink()
+		l.Meta["process"] = process
+		l.Meta["action"] = action
+		return cstesting.SignLink(l)
+	}
+	type testCase struct {
+		name           string
+		link           func() *cs.Link
+		shouldValidate bool
+	}
+
+	testCases := []testCase{
+		{
+			name:           "valid-link",
+			shouldValidate: true,
+			link:           createValidLink,
+		},
+		{
+			name:           "no-process",
+			shouldValidate: false,
+			link: func() *cs.Link {
+				l := createValidLink()
+				delete(l.Meta, "process")
+				return l
+			},
+		},
+		{
+			name:           "process-no-match",
+			shouldValidate: false,
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Meta["process"] = "test"
+				return l
+			},
+		},
+		{
+			name:           "no-action",
+			shouldValidate: false,
+			link: func() *cs.Link {
+				l := createValidLink()
+				delete(l.Meta, "action")
+				return l
+			},
+		},
+		{
+			name:           "action-no-match",
+			shouldValidate: false,
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Meta["action"] = "test"
+				return l
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			res := cfg.ShouldValidate(tt.link())
+			assert.Equal(t, tt.shouldValidate, res)
 		})
 	}
 }

@@ -53,10 +53,10 @@ func newValidatorBaseConfig(process, id, linkType string) (*validatorBaseConfig,
 	return &validatorBaseConfig{Process: process, LinkType: linkType, ID: id}, nil
 }
 
-// shouldValidate returns true if the link matches the validator's process
+// ShouldValidate returns true if the link matches the validator's process
 // and type. Otherwise the link is considered valid because this validator
 // doesn't apply to it.
-func (bv *validatorBaseConfig) shouldValidate(link *cs.Link) bool {
+func (bv *validatorBaseConfig) ShouldValidate(link *cs.Link) bool {
 	linkProcess, ok := link.Meta["process"].(string)
 	if !ok {
 		log.Debug("No process found in link %v", link)
