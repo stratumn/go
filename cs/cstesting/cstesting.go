@@ -143,7 +143,7 @@ func SignLink(l *cs.Link) *cs.Link {
 // SignLinkWithKey signs the link with the provided private key.
 // The key must be an instance of ed25519.PrivateKey
 func SignLinkWithKey(l *cs.Link, priv ed25519.PrivateKey) *cs.Link {
-	pub := priv[32:]
+	pub := priv.Public().(ed25519.PublicKey)
 	payloadPath := "[state, meta]"
 	payload, _ := jmespath.Search(payloadPath, l)
 	payloadBytes, _ := cj.Marshal(payload)

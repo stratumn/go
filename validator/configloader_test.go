@@ -405,7 +405,7 @@ func TestLoadPKI_Error(t *testing.T) {
 		cfg, err := LoadConfig(testFile)
 
 		assert.Nil(t, cfg)
-		assert.EqualError(t, err, "Error while parsing PKI: Public key must be a non-null base64 encoded string")
+		assert.EqualError(t, err, "Error while parsing PKI: public key must be a non null base64 encoded string")
 	})
 }
 
