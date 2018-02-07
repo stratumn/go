@@ -28,7 +28,7 @@ var (
 	ErrInvalidValidator = errors.New("a validator requires a JSON schema or a signature criteria to be valid")
 
 	// ErrBadPublicKey is returned when a public key is empty or not base64-encoded
-	ErrBadPublicKey = errors.New("Public key must be a non-null base64 encoded string")
+	ErrBadPublicKey = errors.New("public key must be a non null base64 encoded string")
 
 	// ErrNoPKI is returned when rules.json doesn't contain a `pki` field
 	ErrNoPKI = errors.New("rules.json needs a 'pki' field to list authorized public keys")
@@ -40,7 +40,7 @@ type rulesSchema struct {
 }
 
 // LoadConfig loads the validators configuration from a json file.
-// The configuration returned can be then be used in NewMultiValidator().
+// The configuration returned can then be used in NewMultiValidator().
 func LoadConfig(path string) (*MultiValidatorConfig, error) {
 	f, err := os.Open(path)
 	if err != nil {
