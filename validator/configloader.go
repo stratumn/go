@@ -58,31 +58,20 @@ func LoadConfig(path string) (*MultiValidatorConfig, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	pki, err := loadPKIConfig(rules.PKI)
-	if err != nil {
-		return nil, errors.WithStack(err)
+	var pki *PKI
+	if rules.PKI != nil {
+		pki, err = loadPKIConfig(rules.PKI)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 	}
 
 	return loadValidatorsConfig(rules.Validators, pki)
 }
 
-// PKI maps a public key to an identity.
-// It lists all legimate keys, assign real names to public keys
-// and establishes n-to-n relationships between users and roles.
-type PKI map[string]*Identity
-
-// Identity represents an actor of an indigo network
-type Identity struct {
-	Name  string
-	Roles []string
-}
-
-// loadPKIConfig deserializes json into a PKI struct. It checks that public keys
+// loadPKIConfig deserializes json into a PKI struct.
+// It checks that public keys are base64 encoded.
 func loadPKIConfig(data json.RawMessage) (*PKI, error) {
-	if len(data) == 0 {
-		return nil, ErrNoPKI
-	}
-
 	var jsonData PKI
 	err := json.Unmarshal(data, &jsonData)
 	if err != nil {
@@ -125,6 +114,10 @@ func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig
 			}
 
 			if len(val.Signatures) > 0 {
+				// if no PKI was provided, one cannot require signatures.
+				if pki == nil {
+					return nil, ErrNoPKI
+				}
 				cfg, err := newPkiValidatorConfig(process, val.ID, val.Type, val.Signatures, pki)
 				if err != nil {
 					return nil, err

@@ -219,6 +219,35 @@ func TestLoadConfig_Success(t *testing.T) {
 		require.Len(t, cfg.PkiConfigs, 0)
 	})
 
+	t.Run("No PKI", func(T *testing.T) {
+
+		const validJSONSig = `
+		{
+			"validators": {
+			    "test": [
+				{
+				    "id": "initSigned",
+				    "type": "init",
+				    "schema": {
+					"type": "object"
+				    }
+				}
+			    ]
+			}
+		    }
+		`
+
+		testFile := createTMPFile(t, validJSONSig)
+		defer os.Remove(testFile)
+		cfg, err := LoadConfig(testFile)
+
+		require.NoError(t, err, "LoadConfig()")
+		assert.NotNil(t, cfg)
+
+		assert.Len(t, cfg.SchemaConfigs, 1)
+		require.Len(t, cfg.PkiConfigs, 0)
+	})
+
 }
 
 func TestLoadValidators_Error(t *testing.T) {
@@ -338,8 +367,16 @@ func TestLoadPKI_Error(t *testing.T) {
 	t.Run("No PKI", func(T *testing.T) {
 		const noPKIConfig = `
 		{
-			"validators": {}
-		}
+			"validators": {
+				"auction": [
+				    {
+					"id": "missingType",
+					"type": "action",	
+					"signatures": ["test"]
+				    }
+				]
+			    }
+		    }
 		`
 		testFile := createTMPFile(t, noPKIConfig)
 		defer os.Remove(testFile)

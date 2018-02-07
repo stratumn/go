@@ -23,6 +23,38 @@ import (
 	"github.com/stratumn/sdk/store"
 )
 
+// PKI maps a public key to an identity.
+// It lists all legimate keys, assign real names to public keys
+// and establishes n-to-n relationships between users and roles.
+type PKI map[string]*Identity
+
+func (p PKI) matchRequirement(requirement, publicKey string) bool {
+	if requirement == publicKey {
+		return true
+	}
+
+	identity, ok := p[publicKey]
+	if !ok {
+		return false
+	}
+	if strings.EqualFold(identity.Name, requirement) {
+		return true
+	}
+	for _, role := range identity.Roles {
+		if strings.EqualFold(role, requirement) {
+			return true
+		}
+	}
+	return false
+
+}
+
+// Identity represents an actor of an indigo network
+type Identity struct {
+	Name  string
+	Roles []string
+}
+
 // pkiValidatorConfig contains everything a pkiValidator needs to
 // validate links.
 type pkiValidatorConfig struct {
@@ -54,29 +86,9 @@ func newPkiValidator(config *pkiValidatorConfig) childValidator {
 	return &pkiValidator{config}
 }
 
-func (pv pkiValidator) matchRequirement(requirement, publicKey string) bool {
-	if requirement == publicKey {
-		return true
-	}
-
-	identity, ok := (*pv.pki)[publicKey]
-	if !ok {
-		return false
-	}
-	if strings.EqualFold(identity.Name, requirement) {
-		return true
-	}
-	for _, role := range identity.Roles {
-		if strings.EqualFold(role, requirement) {
-			return true
-		}
-	}
-	return false
-}
-
 func (pv pkiValidator) isSignatureRequired(publicKey string) bool {
 	for _, required := range pv.requiredSignatures {
-		if pv.matchRequirement(required, publicKey) {
+		if pv.pki.matchRequirement(required, publicKey) {
 			return true
 		}
 	}
@@ -84,12 +96,12 @@ func (pv pkiValidator) isSignatureRequired(publicKey string) bool {
 }
 
 // Validate checks that the provided dignatures match the required ones.
-// a requirement can either be : a public key, a name defined in PKI, a role defined in PKI
+// a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
 func (pv pkiValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	for _, required := range pv.requiredSignatures {
 		fulfilled := false
 		for _, sig := range link.Signatures {
-			if pv.matchRequirement(required, sig.PublicKey) {
+			if pv.pki.matchRequirement(required, sig.PublicKey) {
 				fulfilled = true
 				break
 			}
