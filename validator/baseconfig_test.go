@@ -94,6 +94,13 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	wildcardCfg, err := newValidatorBaseConfig(
+		process,
+		"wildcard-validator",
+		"*",
+	)
+	require.NoError(t, err)
+
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = process
@@ -102,6 +109,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 	}
 	type testCase struct {
 		name           string
+		cfg            *validatorBaseConfig
 		link           func() *cs.Link
 		shouldValidate bool
 	}
@@ -109,11 +117,13 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 	testCases := []testCase{
 		{
 			name:           "valid-link",
+			cfg:            cfg,
 			shouldValidate: true,
 			link:           createValidLink,
 		},
 		{
 			name:           "no-process",
+			cfg:            cfg,
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
@@ -123,6 +133,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 		},
 		{
 			name:           "process-no-match",
+			cfg:            cfg,
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
@@ -132,6 +143,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 		},
 		{
 			name:           "no-action",
+			cfg:            cfg,
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
@@ -141,7 +153,18 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 		},
 		{
 			name:           "action-no-match",
+			cfg:            cfg,
 			shouldValidate: false,
+			link: func() *cs.Link {
+				l := createValidLink()
+				l.Meta["action"] = "test"
+				return l
+			},
+		},
+		{
+			name:           "wildcard-match",
+			cfg:            wildcardCfg,
+			shouldValidate: true,
 			link: func() *cs.Link {
 				l := createValidLink()
 				l.Meta["action"] = "test"
@@ -152,7 +175,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			res := cfg.ShouldValidate(tt.link())
+			res := tt.cfg.ShouldValidate(tt.link())
 			assert.Equal(t, tt.shouldValidate, res)
 		})
 	}

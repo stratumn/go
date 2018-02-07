@@ -14,7 +14,6 @@
       {
         "id": "testProcess-schema",
         "type": "init",
-        "signatures": ["it"],
         "schema": {
           "type": "object",
           "properties": {
@@ -23,6 +22,11 @@
             }
           }
         }
+      },
+      {
+        "id": "testProcess-signed-by-it",
+        "type": "*",
+        "signatures": ["it"]
       }
     ]
   }
