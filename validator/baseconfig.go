@@ -73,7 +73,8 @@ func (bv *validatorBaseConfig) ShouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	if linkAction != bv.LinkType {
+	if bv.LinkType != "*" &&
+		linkAction != bv.LinkType {
 		return false
 	}
 
