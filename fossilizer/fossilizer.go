@@ -16,7 +16,7 @@
 package fossilizer
 
 import (
-	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/go-indigocore/cs"
 )
 
 // Adapter must be implemented by a fossilier.

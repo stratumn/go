@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/sdk/agent/agenttestcases"
-	"github.com/stratumn/sdk/agent/client"
+	"github.com/stratumn/go-indigocore/agent/agenttestcases"
+	"github.com/stratumn/go-indigocore/agent/client"
 	"github.com/stretchr/testify/assert"
 )
 

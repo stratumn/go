@@ -24,11 +24,11 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/sdk/bufferedbatch"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/bufferedbatch"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/utils"
 	rethink "gopkg.in/dancannon/gorethink.v3"
 )
 
@@ -83,7 +83,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// Store is the type that implements github.com/stratumn/sdk/store.Adapter.
+// Store is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
 type Store struct {
 	config     *Config
 	eventChans []chan *store.Event
@@ -153,12 +153,12 @@ func New(config *Config) (*Store, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel.
+// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
 func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
 func (a *Store) GetInfo() (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -168,7 +168,7 @@ func (a *Store) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	prevLinkHash := link.GetPrevLinkHash()
 
@@ -209,7 +209,7 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return linkHash, nil
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
 func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	cur, err := a.links.Get(linkHash[:]).Run(a.session)
 
@@ -234,7 +234,7 @@ func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	return segment, nil
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
 func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var prevLinkHash []byte
 	q := a.links
@@ -328,7 +328,7 @@ func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 	return segments, nil
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
 func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	q := a.links
 	if process := filter.Process; len(process) > 0 {
@@ -371,7 +371,7 @@ func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return mapIDs, nil
 }
 
-// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
@@ -413,7 +413,7 @@ func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) erro
 	return nil
 }
 
-// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
 func (a *Store) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
@@ -431,7 +431,7 @@ func (a *Store) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
 	return ew.Content, nil
 }
 
-// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
 func (a *Store) GetValue(key []byte) ([]byte, error) {
 	cur, err := a.values.Get(key).Run(a.session)
 	if err != nil {
@@ -450,7 +450,7 @@ func (a *Store) GetValue(key []byte) ([]byte, error) {
 	return w.Value, nil
 }
 
-// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
 func (a *Store) SetValue(key, value []byte) error {
 	v := &valueWrapper{
 		ID:    key,
@@ -460,7 +460,7 @@ func (a *Store) SetValue(key, value []byte) error {
 	return a.values.Get(key).Replace(&v).Exec(a.session)
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
 func (a *Store) DeleteValue(key []byte) ([]byte, error) {
 	res, err := a.values.
 		Get(key).
@@ -485,7 +485,7 @@ func (a *Store) DeleteValue(key []byte) ([]byte, error) {
 	return w.Value, nil
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (a *Store) NewBatch() (store.Batch, error) {
 	return bufferedbatch.NewBatch(a), nil
 }

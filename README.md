@@ -1,18 +1,18 @@
 [![Logo](logo.png)](https://indigoframework.com)
 
-# Stratumn SDK
+# IndigoCore
 
-[Stratumn](https://stratumn.com)'s SDK to create Indigo applications and networks.
+[Stratumn](https://stratumn.com)'s open-source SDK to create Indigo applications and networks.
 
-[![GoDoc](https://godoc.org/github.com/stratumn/sdk?status.svg)](https://godoc.org/github.com/stratumn/sdk)
-[![build status](https://travis-ci.org/stratumn/sdk.svg?branch=master)](https://travis-ci.org/stratumn/sdk)
-[![codecov](https://codecov.io/gh/stratumn/sdk/branch/master/graph/badge.svg)](https://codecov.io/gh/stratumn/sdk)
-[![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/sdk)](https://goreportcard.com/report/github.com/stratumn/sdk)
-[![Join the chat at https://gitter.im/stratumn/sdk](https://badges.gitter.im/stratumn/sdk.svg)](https://gitter.im/stratumn/sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![GoDoc](https://godoc.org/github.com/stratumn/go-indigocore?status.svg)](https://godoc.org/github.com/stratumn/go-indigocore)
+[![build status](https://travis-ci.org/stratumn/go-indigocore.svg?branch=master)](https://travis-ci.org/stratumn/go-indigocore)
+[![codecov](https://codecov.io/gh/stratumn/go-indigocore/branch/master/graph/badge.svg)](https://codecov.io/gh/stratumn/go-indigocore)
+[![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/go-indigocore)](https://goreportcard.com/report/github.com/stratumn/go-indigocore)
+[![Join the chat at https://gitter.im/stratumn/go-indigocore](https://badges.gitter.im/stratumn/go-indigocore.svg)](https://gitter.im/stratumn/go-indigocore?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ---
 
-The SDK includes tools to build [Proof of Process Networks](https://proofofprocess.org) using the [Indigo Framework](https://indigoframework.com).
+This repository includes tools to build [Proof of Process Networks](https://proofofprocess.org) using the [Indigo Framework](https://indigoframework.com).
 
 To get started, visit the Indigo Framework website:
 https://indigoframework.com
@@ -59,7 +59,7 @@ make docker_images
 
 ## Releasing a new version
 
-If you want to release a new version of the Stratumn SDK, here is what you need to do.
+If you want to release a new version of IndigoCore, here is what you need to do.
 You need to install:
 
 * [Docker](https://www.docker.com/)

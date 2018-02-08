@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

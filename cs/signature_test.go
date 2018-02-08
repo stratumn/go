@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/go-indigocore/cs"
 )
 
 func TestGetSignatures(t *testing.T) {

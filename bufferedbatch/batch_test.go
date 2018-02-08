@@ -19,12 +19,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/store/storetesting"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/store/storetesting"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 func TestBatch_CreateLink(t *testing.T) {

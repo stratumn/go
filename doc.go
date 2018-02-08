@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sdk contains Stratumn tools and functionality to create Indigo
+// Package indigocore contains Stratumn tools and functionality to create Indigo
 // applications and networks.
 //
 // Unless otherwise noted, the source files are distributed under the Apache
@@ -20,4 +20,4 @@
 //
 // Third party dependencies included in the vendor directory are distributed
 // under their respective licenses.
-package sdk
+package indigocore

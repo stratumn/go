@@ -19,10 +19,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

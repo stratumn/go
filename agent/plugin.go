@@ -14,7 +14,7 @@
 
 package agent
 
-import "github.com/stratumn/sdk/cs"
+import "github.com/stratumn/go-indigocore/cs"
 
 // PluginInfo is the data structure used by the agent when returning
 // informations about a process' plugins

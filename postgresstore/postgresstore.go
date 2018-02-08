@@ -21,9 +21,9 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 const (
@@ -60,7 +60,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// Store is the type that implements github.com/stratumn/sdk/store.Adapter.
+// Store is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
 type Store struct {
 	*reader
 	*writer
@@ -81,7 +81,7 @@ func New(config *Config) (*Store, error) {
 	return &Store{config: config, db: db, batches: make(map[*Batch]*sql.Tx)}, nil
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
 func (a *Store) GetInfo() (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -91,7 +91,7 @@ func (a *Store) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (a *Store) NewBatch() (store.Batch, error) {
 	for b := range a.batches {
 		if b.done {
@@ -112,12 +112,12 @@ func (a *Store) NewBatch() (store.Batch, error) {
 	return b, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel
 func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := a.writer.CreateLink(link)
 	if err != nil {
@@ -132,7 +132,7 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return linkHash, nil
 }
 
-// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	data, err := json.Marshal(evidence)
 	if err != nil {

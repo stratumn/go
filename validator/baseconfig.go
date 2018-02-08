@@ -18,7 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/go-indigocore/cs"
 )
 
 var (

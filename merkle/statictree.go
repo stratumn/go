@@ -19,7 +19,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // StaticTree is designed for Merkle trees with leaves that do not change.

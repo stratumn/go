@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

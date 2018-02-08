@@ -27,9 +27,9 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/stratumn/sdk/blockchain"
-	"github.com/stratumn/sdk/blockchain/btc"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/blockchain"
+	"github.com/stratumn/go-indigocore/blockchain/btc"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 const (
@@ -56,7 +56,7 @@ type Config struct {
 }
 
 // Timestamper is the type that implements
-// github.com/stratumn/sdk/blockchain.Timestamper.
+// github.com/stratumn/go-indigocore/blockchain.Timestamper.
 type Timestamper struct {
 	config    *Config
 	net       btc.Network
@@ -106,7 +106,7 @@ func (ts *Timestamper) Network() blockchain.Network {
 }
 
 // GetInfo implements
-// github.com/stratumn/sdk/blockchain.HashTimestamper.
+// github.com/stratumn/go-indigocore/blockchain.HashTimestamper.
 func (ts *Timestamper) GetInfo() *blockchain.Info {
 	return &blockchain.Info{
 		Network:     ts.net,
@@ -115,7 +115,7 @@ func (ts *Timestamper) GetInfo() *blockchain.Info {
 }
 
 // TimestampHash implements
-// github.com/stratumn/sdk/blockchain.HashTimestamper.
+// github.com/stratumn/go-indigocore/blockchain.HashTimestamper.
 func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
 	var prevPKScripts [][]byte
 

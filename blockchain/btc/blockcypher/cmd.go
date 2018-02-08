@@ -21,7 +21,7 @@ import (
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
-	"github.com/stratumn/sdk/blockchain/btc"
+	"github.com/stratumn/go-indigocore/blockchain/btc"
 
 	log "github.com/sirupsen/logrus"
 )

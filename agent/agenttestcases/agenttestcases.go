@@ -21,7 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/sdk/agent/client"
+	"github.com/stratumn/go-indigocore/agent/client"
 )
 
 var agentURL = "http://localhost:3000"

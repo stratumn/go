@@ -19,11 +19,11 @@ import (
 	"flag"
 
 	log "github.com/sirupsen/logrus"
-	_ "github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/filestore"
-	"github.com/stratumn/sdk/tendermint"
-	"github.com/stratumn/sdk/tmpop"
-	"github.com/stratumn/sdk/validator"
+	_ "github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/filestore"
+	"github.com/stratumn/go-indigocore/tendermint"
+	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-indigocore/validator"
 )
 
 var (

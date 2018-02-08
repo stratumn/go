@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 func loadPath(filename string, path *types.Path) error {

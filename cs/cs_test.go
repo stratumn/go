@@ -20,10 +20,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
 

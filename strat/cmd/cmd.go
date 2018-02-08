@@ -34,7 +34,7 @@ const (
 	Owner = "stratumn"
 
 	// Repo is the name of the CLI's Github repository.
-	Repo = "sdk"
+	Repo = "go-indigocore"
 
 	// AssetFormat is the format of the CLI GIthub asset.
 	AssetFormat = "strat-%s-%s.zip"
@@ -121,7 +121,7 @@ const (
 var (
 	nixShell    = []string{"sh", "-i", "-c"}
 	winShell    = []string{"cmd", "/C"}
-	brewInfoCmd = []string{"brew", "info", "--json=v1", "stratumn/sdk/strat"}
+	brewInfoCmd = []string{"brew", "info", "--json=v1", "stratumn/go-indigocore/strat"}
 )
 
 // Project describes a project.

@@ -15,12 +15,12 @@
 package fossilizertesting
 
 import (
-	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/go-indigocore/fossilizer"
 )
 
 // MockAdapter is used to mock a fossilizer.
 //
-// It implements github.com/stratumn/sdk/fossilizer.Adapter.
+// It implements github.com/stratumn/go-indigocore/fossilizer.Adapter.
 type MockAdapter struct {
 	// The mock for the GetInfo function.
 	MockGetInfo MockGetInfo
@@ -77,7 +77,7 @@ type MockFossilize struct {
 	Fn func([]byte, []byte) error
 }
 
-// GetInfo implements github.com/stratumn/sdk/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *MockAdapter) GetInfo() (interface{}, error) {
 	a.MockGetInfo.CalledCount++
 
@@ -89,7 +89,7 @@ func (a *MockAdapter) GetInfo() (interface{}, error) {
 }
 
 // AddFossilizerEventChan implements
-// github.com/stratumn/sdk/fossilizer.Adapter.AddFossilizerEventChan.
+// github.com/stratumn/go-indigocore/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *MockAdapter) AddFossilizerEventChan(eventChan chan *fossilizer.Event) {
 	a.MockAddFossilizerEventChan.CalledCount++
 	a.MockAddFossilizerEventChan.CalledWith = append(a.MockAddFossilizerEventChan.CalledWith, eventChan)
@@ -100,7 +100,7 @@ func (a *MockAdapter) AddFossilizerEventChan(eventChan chan *fossilizer.Event) {
 	}
 }
 
-// Fossilize implements github.com/stratumn/sdk/fossilizer.Adapter.Fossilize.
+// Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *MockAdapter) Fossilize(data []byte, meta []byte) error {
 	a.MockFossilize.CalledCount++
 	a.MockFossilize.CalledWithData = append(a.MockFossilize.CalledWithData, data)

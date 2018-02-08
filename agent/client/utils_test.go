@@ -29,11 +29,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
-	"github.com/stratumn/sdk/agent"
-	"github.com/stratumn/sdk/agent/agenttestcases"
-	"github.com/stratumn/sdk/agent/client"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/agent"
+	"github.com/stratumn/go-indigocore/agent/agenttestcases"
+	"github.com/stratumn/go-indigocore/agent/client"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 type mockHTTPServer struct{}

@@ -17,9 +17,9 @@ package agent
 import (
 	"net/http"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // Info is the data structure returned by Agent.GetInfo()

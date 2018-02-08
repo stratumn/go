@@ -20,16 +20,16 @@ import (
 	"encoding/json"
 
 	"github.com/lib/pq"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 type reader struct {
 	stmts readStmts
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
 func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	var segments = make(cs.SegmentSlice, 0, 1)
 
@@ -49,7 +49,7 @@ func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	return segments[0], nil
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
 func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var (
 		rows         *sql.Rows
@@ -179,7 +179,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 	return nil
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
 func (a *reader) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	rows, err := a.stmts.GetMapIDs.Query(filter.Pagination.Offset, filter.Pagination.Limit, filter.Process)
 	if err != nil {
@@ -202,7 +202,7 @@ func (a *reader) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return mapIDs, nil
 }
 
-// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
 func (a *reader) GetValue(key []byte) ([]byte, error) {
 	var data []byte
 
@@ -216,7 +216,7 @@ func (a *reader) GetValue(key []byte) ([]byte, error) {
 	return data, nil
 }
 
-// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
 func (a *reader) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
 	var evidences cs.Evidences
 

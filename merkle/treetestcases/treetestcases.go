@@ -24,9 +24,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/sdk/merkle"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 var (

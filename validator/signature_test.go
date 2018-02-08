@@ -17,9 +17,9 @@ package validator
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/validator/signature"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/validator/signature"
 	"github.com/stretchr/testify/assert"
 )
 

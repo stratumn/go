@@ -20,8 +20,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/tendermint/tendermint/rpc/client"
 
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/tendermint"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/tendermint"
 )
 
 // Run launches a TMPop Tendermint App

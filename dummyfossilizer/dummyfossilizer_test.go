@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/go-indigocore/fossilizer"
 )
 
 func TestGetInfo(t *testing.T) {

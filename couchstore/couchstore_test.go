@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/store/storetestcases"
-	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/store/storetestcases"
+	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 var (

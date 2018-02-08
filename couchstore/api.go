@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 const (

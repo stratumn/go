@@ -18,10 +18,10 @@ package main
 import (
 	"flag"
 
-	"github.com/stratumn/sdk/dummystore"
-	"github.com/stratumn/sdk/tendermint"
-	"github.com/stratumn/sdk/tmpop"
-	"github.com/stratumn/sdk/validator"
+	"github.com/stratumn/go-indigocore/dummystore"
+	"github.com/stratumn/go-indigocore/tendermint"
+	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-indigocore/validator"
 )
 
 var (

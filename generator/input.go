@@ -139,7 +139,7 @@ type IntInput struct {
 	value int
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
+// Set implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *IntInput) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
@@ -159,7 +159,7 @@ func (in *IntInput) Set(val interface{}) error {
 	return nil
 }
 
-// Get implements github.com/stratumn/sdk/generator.Input.
+// Get implements github.com/stratumn/go-indigocore/generator.Input.
 func (in IntInput) Get() interface{} {
 	if in.value <= 0 {
 		return in.Default
@@ -167,7 +167,7 @@ func (in IntInput) Get() interface{} {
 	return in.value
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Input.
+// Msg implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *IntInput) Msg() string {
 	return fmt.Sprintf("%s (default %d)\n", in.Prompt, in.Default)
 }
@@ -185,7 +185,7 @@ type StringInput struct {
 	value string
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
+// Set implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringInput) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
@@ -207,7 +207,7 @@ func (in *StringInput) Set(val interface{}) error {
 	return nil
 }
 
-// Get implements github.com/stratumn/sdk/generator.Input.
+// Get implements github.com/stratumn/go-indigocore/generator.Input.
 func (in StringInput) Get() interface{} {
 	if in.value == "" && in.Default != noValue {
 		return in.Default
@@ -215,7 +215,7 @@ func (in StringInput) Get() interface{} {
 	return in.value
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Input.
+// Msg implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringInput) Msg() string {
 	if in.Default != "" && in.Default != noValue {
 		return fmt.Sprintf("%s (default %q)\n", in.Prompt, in.Default)
@@ -236,7 +236,7 @@ type StringSelect struct {
 	value string
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
+// Set implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringSelect) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
@@ -259,7 +259,7 @@ func (in *StringSelect) Set(val interface{}) error {
 	return fmt.Errorf("invalid value %q", str)
 }
 
-// Get implements github.com/stratumn/sdk/generator.Input.
+// Get implements github.com/stratumn/go-indigocore/generator.Input.
 func (in StringSelect) Get() interface{} {
 	if in.value == "" && in.Default != noValue {
 		return in.Default
@@ -267,7 +267,7 @@ func (in StringSelect) Get() interface{} {
 	return in.value
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Input.
+// Msg implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringSelect) Msg() string {
 	p := in.Prompt + "\n"
 	for _, v := range in.Options {
@@ -311,7 +311,7 @@ type StringSelectMulti struct {
 	values []string
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
+// Set implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringSelectMulti) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
@@ -344,7 +344,7 @@ PARSE_LOOP:
 	return nil
 }
 
-// Get implements github.com/stratumn/sdk/generator.Input.
+// Get implements github.com/stratumn/go-indigocore/generator.Input.
 func (in StringSelectMulti) Get() interface{} {
 	if len(in.values) == 0 && in.Default != noValue && in.Default != "" && in.Separator != "" {
 		return strings.Split(in.Default, in.Separator)
@@ -352,7 +352,7 @@ func (in StringSelectMulti) Get() interface{} {
 	return in.values
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Input.
+// Msg implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringSelectMulti) Msg() string {
 	p := fmt.Sprintf("%s (separator %q)", in.Prompt, in.Separator)
 	if in.Default == "" && in.IsRequired == false {
@@ -385,7 +385,7 @@ type StringSlice struct {
 	values []string
 }
 
-// Set implements github.com/stratumn/sdk/generator.Input.
+// Set implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringSlice) Set(val interface{}) error {
 	str, ok := val.(string)
 	if !ok {
@@ -415,7 +415,7 @@ func (in *StringSlice) Set(val interface{}) error {
 	return nil
 }
 
-// Get implements github.com/stratumn/sdk/generator.Input.
+// Get implements github.com/stratumn/go-indigocore/generator.Input.
 func (in StringSlice) Get() interface{} {
 	if len(in.values) == 0 && in.Default != noValue && in.Separator != "" {
 		return strings.Split(in.Default, in.Separator)
@@ -423,7 +423,7 @@ func (in StringSlice) Get() interface{} {
 	return in.values
 }
 
-// Msg implements github.com/stratumn/sdk/generator.Input.
+// Msg implements github.com/stratumn/go-indigocore/generator.Input.
 func (in *StringSlice) Msg() string {
 	ret := fmt.Sprintf("%s (separator %q)\n", in.Prompt, in.Separator)
 	if in.Default != "" && in.Default != noValue {

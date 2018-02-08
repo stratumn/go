@@ -17,7 +17,7 @@ package tmpoptestcases
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/tmpop"
+	"github.com/stratumn/go-indigocore/tmpop"
 )
 
 // TestLastBlock tests if tmpop correctly stores information

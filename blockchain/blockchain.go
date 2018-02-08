@@ -18,7 +18,7 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // Info is the info returned by GetInfo.

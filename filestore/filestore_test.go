@@ -17,8 +17,8 @@ package filestore
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/store/storetestcases"
-	"github.com/stratumn/sdk/tmpop/tmpoptestcases"
+	"github.com/stratumn/go-indigocore/store/storetestcases"
+	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
 )
 
 func TestFilestore(t *testing.T) {

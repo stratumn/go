@@ -17,7 +17,7 @@ package filestore
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stratumn/go-indigocore/store/storetestcases"
 )
 
 func BenchmarkFilestore(b *testing.B) {

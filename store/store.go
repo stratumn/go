@@ -16,8 +16,8 @@
 package store
 
 import (
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 const (

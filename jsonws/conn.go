@@ -54,13 +54,13 @@ type PingableConn interface {
 	Ping() error
 }
 
-// GorrilaConn implements github.com/stratumn/sdk/jsonws/Conn using a Gorrila
+// GorrilaConn implements github.com/stratumn/go-indigocore/jsonws/Conn using a Gorrila
 // web socket connection.
 type GorrilaConn struct {
 	*websocket.Conn
 }
 
-// Ping implements github.com/stratumn/sdk/jsonws/Conn.Ping.
+// Ping implements github.com/stratumn/go-indigocore/jsonws/Conn.Ping.
 func (c GorrilaConn) Ping() error {
 	return c.WriteMessage(websocket.PingMessage, []byte{})
 }

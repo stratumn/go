@@ -20,9 +20,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/sdk/store/storehttp"
+	"github.com/stratumn/go-indigocore/store/storehttp"
 
-	"github.com/stratumn/sdk/rethinkstore"
+	"github.com/stratumn/go-indigocore/rethinkstore"
 )
 
 var (

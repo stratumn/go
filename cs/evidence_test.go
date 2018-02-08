@@ -20,11 +20,11 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/merkle"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/abci/types"
 )

@@ -21,10 +21,10 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/sdk/couchstore"
-	_ "github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/store/storehttp"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/couchstore"
+	_ "github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/store/storehttp"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 var (

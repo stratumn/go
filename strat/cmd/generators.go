@@ -21,7 +21,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
-	"github.com/stratumn/sdk/generator/repo"
+	"github.com/stratumn/go-indigocore/generator/repo"
 )
 
 // generatorsCmd represents the generators command

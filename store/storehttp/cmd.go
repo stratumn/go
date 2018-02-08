@@ -25,9 +25,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/sdk/jsonhttp"
-	"github.com/stratumn/sdk/jsonws"
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-indigocore/jsonws"
+	"github.com/stratumn/go-indigocore/store"
 )
 
 var (

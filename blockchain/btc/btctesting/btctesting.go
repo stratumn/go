@@ -16,13 +16,13 @@
 package btctesting
 
 import (
-	"github.com/stratumn/sdk/blockchain/btc"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/blockchain/btc"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // Mock is used to mock a UnspentFinder and Broadcaster.
 //
-// It implements github.com/stratumn/sdk/fossilizer.Adapter.
+// It implements github.com/stratumn/go-indigocore/fossilizer.Adapter.
 type Mock struct {
 	// The mock for the FindUnspent function.
 	MockFindUnspent MockFindUnspent
@@ -68,7 +68,7 @@ type MockBroadcast struct {
 }
 
 // FindUnspent implements
-// github.com/stratumn/sdk/blockchain/btc.UnspentFinder.FindUnspent.
+// github.com/stratumn/go-indigocore/blockchain/btc.UnspentFinder.FindUnspent.
 func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
 	a.MockFindUnspent.CalledCount++
 	a.MockFindUnspent.CalledWithAddress = append(a.MockFindUnspent.CalledWithAddress, address)
@@ -84,7 +84,7 @@ func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.
 }
 
 // Broadcast implements
-// github.com/stratumn/sdk/blockchain/btc.Broadcaster.Broadcast.
+// github.com/stratumn/go-indigocore/blockchain/btc.Broadcaster.Broadcast.
 func (a *Mock) Broadcast(raw []byte) error {
 	a.MockBroadcast.CalledCount++
 	a.MockBroadcast.CalledWith = append(a.MockBroadcast.CalledWith, raw)

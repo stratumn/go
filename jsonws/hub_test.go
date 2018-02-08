@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/sdk/jsonws/jsonwstesting"
+	"github.com/stratumn/go-indigocore/jsonws/jsonwstesting"
 )
 
 func TestHubBroadcast(t *testing.T) {

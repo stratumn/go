@@ -18,8 +18,8 @@ import "time"
 
 // MockConn is used to mock a connection.
 //
-// It implements github.com/stratumn/sdk/jsonws.Conn and
-// github.com/stratumn/sdk/jsonws.PingableConn.
+// It implements github.com/stratumn/go-indigocore/jsonws.Conn and
+// github.com/stratumn/go-indigocore/jsonws.PingableConn.
 type MockConn struct {
 	// The mock for the Close function.
 	MockClose MockClose
@@ -155,7 +155,7 @@ type MockPing struct {
 }
 
 // Close implements
-// github.com/stratumn/sdk/jsonws.Conn.Close.
+// github.com/stratumn/go-indigocore/jsonws.Conn.Close.
 func (a *MockConn) Close() error {
 	a.MockClose.CalledCount++
 
@@ -167,7 +167,7 @@ func (a *MockConn) Close() error {
 }
 
 // WriteJSON implements
-// github.com/stratumn/sdk/jsonws.Conn.WriteJSON.
+// github.com/stratumn/go-indigocore/jsonws.Conn.WriteJSON.
 func (a *MockConn) WriteJSON(msg interface{}) error {
 	a.MockWriteJSON.CalledCount++
 	a.MockWriteJSON.CalledWith = append(a.MockWriteJSON.CalledWith, msg)
@@ -181,7 +181,7 @@ func (a *MockConn) WriteJSON(msg interface{}) error {
 }
 
 // ReadJSON implements
-// github.com/stratumn/sdk/jsonws.Conn.ReadJSON.
+// github.com/stratumn/go-indigocore/jsonws.Conn.ReadJSON.
 func (a *MockConn) ReadJSON(msg interface{}) error {
 	a.MockReadJSON.CalledCount++
 	a.MockReadJSON.CalledWith = append(a.MockReadJSON.CalledWith, msg)
@@ -195,7 +195,7 @@ func (a *MockConn) ReadJSON(msg interface{}) error {
 }
 
 // SetReadLimit implements
-// github.com/stratumn/sdk/jsonws.Conn.SetReadLimit.
+// github.com/stratumn/go-indigocore/jsonws.Conn.SetReadLimit.
 func (a *MockConn) SetReadLimit(limit int64) {
 	a.MockSetReadLimit.CalledCount++
 	a.MockSetReadLimit.CalledWith = append(a.MockSetReadLimit.CalledWith, limit)
@@ -207,7 +207,7 @@ func (a *MockConn) SetReadLimit(limit int64) {
 }
 
 // SetReadDeadline implements
-// github.com/stratumn/sdk/jsonws.Conn.SetReadDeadline.
+// github.com/stratumn/go-indigocore/jsonws.Conn.SetReadDeadline.
 func (a *MockConn) SetReadDeadline(t time.Time) error {
 	a.MockSetReadDeadline.CalledCount++
 	a.MockSetReadDeadline.CalledWith = append(a.MockSetReadDeadline.CalledWith, t)
@@ -221,7 +221,7 @@ func (a *MockConn) SetReadDeadline(t time.Time) error {
 }
 
 // SetWriteDeadline implements
-// github.com/stratumn/sdk/jsonws.Conn.SetWriteDeadline.
+// github.com/stratumn/go-indigocore/jsonws.Conn.SetWriteDeadline.
 func (a *MockConn) SetWriteDeadline(t time.Time) error {
 	a.MockSetWriteDeadline.CalledCount++
 	a.MockSetWriteDeadline.CalledWith = append(a.MockSetWriteDeadline.CalledWith, t)
@@ -235,7 +235,7 @@ func (a *MockConn) SetWriteDeadline(t time.Time) error {
 }
 
 // SetPongHandler implements
-// github.com/stratumn/sdk/jsonws.Conn.SetPongHandler.
+// github.com/stratumn/go-indigocore/jsonws.Conn.SetPongHandler.
 func (a *MockConn) SetPongHandler(h func(string) error) {
 	a.MockSetPongHandler.CalledCount++
 	a.MockSetPongHandler.CalledWith = append(a.MockSetPongHandler.CalledWith, h)
@@ -246,7 +246,7 @@ func (a *MockConn) SetPongHandler(h func(string) error) {
 	}
 }
 
-// Ping implements github.com/stratumn/sdk/jsonws.PingableConn.Ping.
+// Ping implements github.com/stratumn/go-indigocore/jsonws.PingableConn.Ping.
 func (a *MockConn) Ping() error {
 	a.MockPing.CalledCount++
 

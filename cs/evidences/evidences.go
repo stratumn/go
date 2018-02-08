@@ -21,11 +21,11 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 
-	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/go-indigocore/cs"
 	// This package imports every package defining its own implementation of the cs.Proof interface
 	// The init() function of each package gets called hence providing a way for cs.Evidence.UnmarshalJSON to deserialize any kind of proof
-	_ "github.com/stratumn/sdk/dummyfossilizer"
-	"github.com/stratumn/sdk/types"
+	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
+	"github.com/stratumn/go-indigocore/types"
 
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-crypto"

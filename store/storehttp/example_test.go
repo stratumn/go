@@ -24,10 +24,10 @@ import (
 
 	"time"
 
-	"github.com/stratumn/sdk/dummystore"
-	"github.com/stratumn/sdk/jsonhttp"
-	"github.com/stratumn/sdk/jsonws"
-	"github.com/stratumn/sdk/store/storehttp"
+	"github.com/stratumn/go-indigocore/dummystore"
+	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-indigocore/jsonws"
+	"github.com/stratumn/go-indigocore/store/storehttp"
 )
 
 // This example shows how to create a server from a dummystore.

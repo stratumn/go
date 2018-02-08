@@ -19,12 +19,12 @@ import (
 	"flag"
 	"os"
 
-	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/fossilizer/fossilizerhttp"
+	"github.com/stratumn/go-indigocore/utils"
 
-	"github.com/stratumn/sdk/bcbatchfossilizer"
-	"github.com/stratumn/sdk/blockchain/btc/blockcypher"
-	"github.com/stratumn/sdk/blockchain/btc/btctimestamper"
+	"github.com/stratumn/go-indigocore/bcbatchfossilizer"
+	"github.com/stratumn/go-indigocore/blockchain/btc/blockcypher"
+	"github.com/stratumn/go-indigocore/blockchain/btc/btctimestamper"
 )
 
 var (

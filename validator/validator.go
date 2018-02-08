@@ -15,9 +15,9 @@
 package validator
 
 import (
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 const (

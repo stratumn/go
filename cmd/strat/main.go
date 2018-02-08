@@ -15,7 +15,7 @@
 // The command strat contains various subcommands for the Stratumn SDK.
 package main
 
-import "github.com/stratumn/sdk/strat/cmd"
+import "github.com/stratumn/go-indigocore/strat/cmd"
 
 var (
 	version = "x.x.x"
