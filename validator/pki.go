@@ -55,35 +55,23 @@ type Identity struct {
 	Roles []string
 }
 
-// pkiValidatorConfig contains everything a pkiValidator needs to
-// validate links.
-type pkiValidatorConfig struct {
-	*validatorBaseConfig
+// pkiValidator validates the json signature of a link's state.
+type pkiValidator struct {
+	Config             *validatorBaseConfig
 	requiredSignatures []string
 	pki                *PKI
 }
 
-// newSignatureValidatorConfig creates a pkiValidatorConfig for a given process and type.
-func newPkiValidatorConfig(process, id, linkType string, required []string, pki *PKI) (*pkiValidatorConfig, error) {
-	baseConfig, err := newValidatorBaseConfig(process, id, linkType)
-	if err != nil {
-		return nil, errors.WithStack(err)
+func newPkiValidator(baseConfig *validatorBaseConfig, required []string, pki *PKI) childValidator {
+	return &pkiValidator{
+		Config:             baseConfig,
+		requiredSignatures: required,
+		pki:                pki,
 	}
-
-	return &pkiValidatorConfig{
-		validatorBaseConfig: baseConfig,
-		requiredSignatures:  required,
-		pki:                 pki,
-	}, nil
 }
 
-// pkiValidator validates the json signature of a link's state.
-type pkiValidator struct {
-	*pkiValidatorConfig
-}
-
-func newPkiValidator(config *pkiValidatorConfig) childValidator {
-	return &pkiValidator{config}
+func (pv pkiValidator) ShouldValidate(link *cs.Link) bool {
+	return pv.Config.ShouldValidate(link)
 }
 
 func (pv pkiValidator) isSignatureRequired(publicKey string) bool {
@@ -107,7 +95,7 @@ func (pv pkiValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 			}
 		}
 		if !fulfilled {
-			return errors.Errorf("Missing signatory for validator %s: signature from %s is required", pv.ID, required)
+			return errors.Errorf("Missing signatory for validator %s: signature from %s is required", pv.Config.ID, required)
 		}
 	}
 	return nil

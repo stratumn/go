@@ -24,45 +24,26 @@ import (
 	"github.com/stratumn/sdk/types"
 )
 
-// MultiValidatorConfig sets the behavior of the validator.
-// Its hash can be used to know which validations were applied to a block.
-type MultiValidatorConfig struct {
-	SchemaConfigs []*schemaValidatorConfig
-	PkiConfigs    []*pkiValidatorConfig
-}
-
 type multiValidator struct {
-	config           *MultiValidatorConfig
-	validators       []childValidator
-	defaultValidator childValidator
+	validators []childValidator
 }
 
 // NewMultiValidator creates a validator that will simply be a collection
 // of single-purpose validators.
 // The configuration should be loaded from a JSON file via validator.LoadConfig().
-func NewMultiValidator(config *MultiValidatorConfig) Validator {
-	if config == nil {
-		return &multiValidator{}
+func NewMultiValidator(path string) (Validator, error) {
+	validators, err := loadConfig(path)
+	if err != nil {
+		return nil, err
 	}
-
-	var v []childValidator
-	for _, schemaCfg := range config.SchemaConfigs {
-		v = append(v, newSchemaValidator(schemaCfg))
-	}
-	for _, pkiCfg := range config.PkiConfigs {
-		v = append(v, newPkiValidator(pkiCfg))
-	}
-	defaultValidator := newSignatureValidator(&signatureValidatorConfig{})
-
+	v := append(validators, newSignatureValidator())
 	return &multiValidator{
-		config:           config,
-		validators:       v,
-		defaultValidator: defaultValidator,
-	}
+		validators: v,
+	}, nil
 }
 
 func (v multiValidator) Hash() (*types.Bytes32, error) {
-	b, err := cj.Marshal(v.config)
+	b, err := cj.Marshal(v.validators)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -89,6 +70,5 @@ func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
 			return err
 		}
 	}
-
-	return v.defaultValidator.Validate(r, l)
+	return nil
 }

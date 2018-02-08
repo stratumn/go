@@ -15,6 +15,7 @@
 package tmstore
 
 import (
+	"encoding/base64"
 	"net/http"
 	"testing"
 
@@ -23,6 +24,8 @@ import (
 	"github.com/stratumn/sdk/store"
 	"github.com/stratumn/sdk/store/storetestcases"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ed25519"
 )
 
 var (
@@ -38,13 +41,65 @@ func TestTMStore(t *testing.T) {
 
 func newTestTMStore() (store.Adapter, error) {
 	tmstore = NewTestClient()
-	tmstore.RetryStartWebsocket(DefaultWsRetryInterval)
+	err := tmstore.RetryStartWebsocket(DefaultWsRetryInterval)
+	if err != nil {
+		return nil, err
+	}
 
 	return tmstore, nil
 }
 
 func resetTMPop(_ store.Adapter) {
 	ResetNode()
+}
+
+// TestValidation tests custom validation rules
+func TestValidation(t *testing.T) {
+	tmstore, err := newTestTMStore()
+	require.NoError(t, err)
+
+	t.Run("Validation succeeds", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Meta["process"] = "testProcess"
+		l.Meta["action"] = "init"
+		l.State["string"] = "test"
+
+		privBytes, _ := base64.StdEncoding.DecodeString("3t39DaJp54JXnBuBR31K889hqAFNms3V5U5cWqaY5VmGbG8T5z0/AZRIRVlDXRE9pM/lKS5NHrSkn4GHCqKHjw==")
+		ITPrivateKey := ed25519.PrivateKey(privBytes)
+		l = cstesting.SignLinkWithKey(l, ITPrivateKey)
+
+		_, err = tmstore.CreateLink(l)
+		assert.NoError(t, err, "CreateLink() failed")
+	})
+
+	t.Run("Schema validation failed", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Meta["process"] = "testProcess"
+		l.Meta["action"] = "init"
+		l.State["string"] = 42
+
+		_, err = tmstore.CreateLink(l)
+		assert.Error(t, err, "A validation error is expected")
+
+		errHTTP, ok := err.(jsonhttp.ErrHTTP)
+		assert.True(t, ok, "Invalid error received: want ErrHTTP")
+		assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+	})
+
+	t.Run("Signature validation failed", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l = cstesting.SignLink(l)
+		l.Meta["process"] = "testProcess"
+		l.Meta["action"] = "init"
+		l.State["string"] = "test"
+
+		_, err = tmstore.CreateLink(l)
+		assert.Error(t, err, "A validation error is expected")
+
+		errHTTP, ok := err.(jsonhttp.ErrHTTP)
+		assert.True(t, ok, "Invalid error received: want ErrHTTP")
+		assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+	})
 }
 
 // TestWebSocket tests how the web socket with Tendermint behaves
@@ -73,39 +128,5 @@ func TestWebSocket(t *testing.T) {
 	t.Run("Stop already stopped websocket", func(t *testing.T) {
 		err := tmstore.StopWebsocket()
 		assert.NoError(t, err)
-	})
-}
-
-// TestValidation tests custom validation rules
-func TestValidation(t *testing.T) {
-	tmstore, err := newTestTMStore()
-	assert.NoError(t, err)
-
-	t.Run("Schema validation failed", func(t *testing.T) {
-		l := cstesting.RandomLink()
-		l.Meta["process"] = "testProcess"
-		l.Meta["action"] = "init"
-		l.State["string"] = 42
-
-		_, err = tmstore.CreateLink(l)
-		assert.Error(t, err, "A validation error is expected")
-
-		errHTTP, ok := err.(jsonhttp.ErrHTTP)
-		assert.True(t, ok, "Invalid error received: want ErrHTTP")
-		assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
-	})
-
-	t.Run("Signature validation failed", func(t *testing.T) {
-		l := cstesting.RandomLink()
-		l.Meta["process"] = "testProcess"
-		l.Meta["action"] = "init"
-		l.State["string"] = "test"
-
-		_, err = tmstore.CreateLink(l)
-		assert.Error(t, err, "A validation error is expected")
-
-		errHTTP, ok := err.(jsonhttp.ErrHTTP)
-		assert.True(t, ok, "Invalid error received: want ErrHTTP")
-		assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
 	})
 }

@@ -125,9 +125,9 @@ func TestPKIValidator(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		cfg, err := newPkiValidatorConfig(process, tt.name, action, tt.requiredSignatures, pki)
+		baseCfg, err := newValidatorBaseConfig(process, tt.name, action)
 		require.NoError(t, err)
-		sv := newPkiValidator(cfg)
+		sv := newPkiValidator(baseCfg, tt.requiredSignatures, pki)
 
 		t.Run(tt.name, func(t *testing.T) {
 			err := sv.Validate(nil, tt.link())

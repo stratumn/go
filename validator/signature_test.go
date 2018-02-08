@@ -91,7 +91,7 @@ func TestSignatureValidator(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		sv := newSignatureValidator(&signatureValidatorConfig{})
+		sv := newSignatureValidator()
 
 		t.Run(tt.name, func(t *testing.T) {
 			err := sv.Validate(nil, tt.link())

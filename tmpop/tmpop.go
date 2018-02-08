@@ -173,11 +173,9 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// TODO: we don't need to re-load the file for each block, it's expensive.
 	// We should improve this and only reload when a config update was committed.
 	if t.config.ValidatorFilename != "" {
-		cfg, err := validator.LoadConfig(t.config.ValidatorFilename)
-		if err != nil {
+		var err error
+		if t.state.validator, err = validator.NewMultiValidator(t.config.ValidatorFilename); err != nil {
 			log.Warnf("Could not load validator configuration: %s", err.Error())
-		} else {
-			t.state.validator = validator.NewMultiValidator(cfg)
 		}
 	}
 

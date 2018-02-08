@@ -124,13 +124,12 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := createTMPFile(t, validJSONConfig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
 		assert.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, cfg)
+		assert.NotNil(t, validators)
 
-		assert.Len(t, cfg.SchemaConfigs, 3)
-		assert.Len(t, cfg.PkiConfigs, 2)
+		assert.Len(t, validators, 5)
 	})
 
 	t.Run("Null signatures", func(T *testing.T) {
@@ -167,13 +166,12 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := createTMPFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, cfg)
+		assert.NotNil(t, validators)
 
-		assert.Len(t, cfg.SchemaConfigs, 1)
-		require.Len(t, cfg.PkiConfigs, 0)
+		assert.Len(t, validators, 1)
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -210,13 +208,12 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := createTMPFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, cfg)
+		assert.NotNil(t, validators)
 
-		assert.Len(t, cfg.SchemaConfigs, 1)
-		require.Len(t, cfg.PkiConfigs, 0)
+		assert.Len(t, validators, 1)
 	})
 
 	t.Run("No PKI", func(T *testing.T) {
@@ -239,13 +236,12 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := createTMPFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, cfg)
+		assert.NotNil(t, validators)
 
-		assert.Len(t, cfg.SchemaConfigs, 1)
-		require.Len(t, cfg.PkiConfigs, 0)
+		assert.Len(t, validators, 1)
 	})
 
 }
@@ -266,9 +262,9 @@ func TestLoadValidators_Error(t *testing.T) {
 		    }
 		`
 		testFile := createTMPFile(t, invalidValidatorConfig)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
-		assert.Nil(t, cfg)
+		assert.Nil(t, validators)
 		assert.EqualError(t, err, ErrInvalidValidator.Error())
 	})
 
@@ -299,9 +295,9 @@ func TestLoadValidators_Error(t *testing.T) {
 		`
 		testFile := createTMPFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
-		assert.Nil(t, cfg)
+		assert.Nil(t, validators)
 		assert.EqualError(t, err, ErrMissingIdentifier.Error())
 	})
 
@@ -332,9 +328,9 @@ func TestLoadValidators_Error(t *testing.T) {
 		`
 		testFile := createTMPFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
-		assert.Nil(t, cfg)
+		assert.Nil(t, validators)
 		assert.EqualError(t, err, ErrMissingLinkType.Error())
 	})
 
@@ -355,9 +351,9 @@ func TestLoadValidators_Error(t *testing.T) {
 		`
 		testFile := createTMPFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
-		assert.Nil(t, cfg)
+		assert.Nil(t, validators)
 		assert.Error(t, err)
 	})
 }
@@ -380,9 +376,9 @@ func TestLoadPKI_Error(t *testing.T) {
 		`
 		testFile := createTMPFile(t, noPKIConfig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
-		assert.Nil(t, cfg)
+		assert.Nil(t, validators)
 		assert.EqualError(t, err, "rules.json needs a 'pki' field to list authorized public keys")
 	})
 
@@ -402,9 +398,9 @@ func TestLoadPKI_Error(t *testing.T) {
 		`
 		testFile := createTMPFile(t, invalidPKIConfig)
 		defer os.Remove(testFile)
-		cfg, err := LoadConfig(testFile)
+		validators, err := loadConfig(testFile)
 
-		assert.Nil(t, cfg)
+		assert.Nil(t, validators)
 		assert.EqualError(t, err, "Error while parsing PKI: public key must be a non null base64 encoded string")
 	})
 }
