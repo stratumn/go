@@ -35,22 +35,16 @@ var (
 	ErrEmptyPayload = errors.New("JMESPATH query does not match any link data")
 )
 
-// signatureValidatorConfig contains everything a signatureValidator needs to
-// validate links.
-type signatureValidatorConfig struct {
-}
-
-func (bv *signatureValidatorConfig) ShouldValidate(_ *cs.Link) bool {
-	return true
-}
-
 // signatureValidator validates the json signature of a link's state.
 type signatureValidator struct {
-	*signatureValidatorConfig
 }
 
-func newSignatureValidator(config *signatureValidatorConfig) childValidator {
-	return &signatureValidator{config}
+func newSignatureValidator() ChildValidator {
+	return &signatureValidator{}
+}
+
+func (sv *signatureValidator) ShouldValidate(link *cs.Link) bool {
+	return true
 }
 
 // Validate validates the signature of a link's state.

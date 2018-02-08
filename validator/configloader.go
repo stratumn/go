@@ -41,7 +41,7 @@ type rulesSchema struct {
 
 // LoadConfig loads the validators configuration from a json file.
 // The configuration returned can then be used in NewMultiValidator().
-func LoadConfig(path string) (*MultiValidatorConfig, error) {
+func LoadConfig(path string) ([]ChildValidator, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -93,14 +93,14 @@ type jsonValidatorData []struct {
 	Schema     *json.RawMessage `json:"schema"`
 }
 
-func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig, error) {
+func loadValidatorsConfig(data json.RawMessage, pki *PKI) ([]ChildValidator, error) {
 	var jsonStruct map[string]jsonValidatorData
 	err := json.Unmarshal(data, &jsonStruct)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	var validatorConfig MultiValidatorConfig
+	var validators []ChildValidator
 	for process, jsonSchemaData := range jsonStruct {
 		for _, val := range jsonSchemaData {
 			if val.ID == "" {
@@ -113,29 +113,29 @@ func loadValidatorsConfig(data json.RawMessage, pki *PKI) (*MultiValidatorConfig
 				return nil, ErrInvalidValidator
 			}
 
+			baseConfig, err := newValidatorBaseConfig(process, val.ID, val.Type)
+			if err != nil {
+				return nil, err
+			}
 			if len(val.Signatures) > 0 {
 				// if no PKI was provided, one cannot require signatures.
 				if pki == nil {
 					return nil, ErrNoPKI
 				}
-				cfg, err := newPkiValidatorConfig(process, val.ID, val.Type, val.Signatures, pki)
-				if err != nil {
-					return nil, err
-				}
-				validatorConfig.PkiConfigs = append(validatorConfig.PkiConfigs, cfg)
+				validators = append(validators, newPkiValidator(baseConfig, val.Signatures, pki))
 			}
 
 			if val.Schema != nil {
 				schemaData, _ := val.Schema.MarshalJSON()
-				cfg, err := newSchemaValidatorConfig(process, val.ID, val.Type, schemaData)
+				schemaValidator, err := newSchemaValidator(baseConfig, schemaData)
 				if err != nil {
 					return nil, err
 				}
-				validatorConfig.SchemaConfigs = append(validatorConfig.SchemaConfigs, cfg)
+				validators = append(validators, schemaValidator)
 			}
 
 		}
 	}
 
-	return &validatorConfig, nil
+	return validators, nil
 }

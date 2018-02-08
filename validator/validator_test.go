@@ -185,11 +185,10 @@ func TestValidator(t *testing.T) {
 	_, err = tmpfile.WriteString(validJSONConfig)
 	require.NoError(t, err, "tmpfile.WriteString()")
 
-	cfg, err := validator.LoadConfig(tmpfile.Name())
+	children, err := validator.LoadConfig(tmpfile.Name())
 	assert.NoError(t, err, "validator.LoadConfig()")
 
-	v := validator.NewMultiValidator(cfg)
-	assert.NotNil(t, v, "validator.NewMultiValidator()")
+	v := validator.NewMultiValidator(children)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {

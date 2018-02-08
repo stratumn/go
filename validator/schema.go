@@ -25,38 +25,25 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// schemaValidatorConfig contains everything a schemaValidator needs to
-// validate links.
-type schemaValidatorConfig struct {
-	*validatorBaseConfig
+// schemaValidator validates the json schema of a link's state.
+type schemaValidator struct {
+	Config *validatorBaseConfig
 	Schema *gojsonschema.Schema
 }
 
-// newSchemaValidatorConfig creates a schemaValidatorConfig for a given process and type.
-func newSchemaValidatorConfig(process, id, linkType string, schemaData []byte) (*schemaValidatorConfig, error) {
-	baseConfig, err := newValidatorBaseConfig(process, id, linkType)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
+func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (ChildValidator, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return &schemaValidatorConfig{
-		validatorBaseConfig: baseConfig,
-		Schema:              schema,
+	return &schemaValidator{
+		Config: baseConfig,
+		Schema: schema,
 	}, nil
 }
-
-// schemaValidator validates the json schema of a link's state.
-type schemaValidator struct {
-	*schemaValidatorConfig
-}
-
-func newSchemaValidator(config *schemaValidatorConfig) childValidator {
-	return &schemaValidator{config}
+func (sv schemaValidator) ShouldValidate(link *cs.Link) bool {
+	return sv.Config.ShouldValidate(link)
 }
 
 // Validate validates the schema of a link's state.
