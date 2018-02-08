@@ -15,12 +15,15 @@
 package validator
 
 import (
+	"crypto/sha256"
 	"strings"
 
+	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 )
 
 // PKI maps a public key to an identity.
@@ -62,7 +65,7 @@ type pkiValidator struct {
 	pki                *PKI
 }
 
-func newPkiValidator(baseConfig *validatorBaseConfig, required []string, pki *PKI) ChildValidator {
+func newPkiValidator(baseConfig *validatorBaseConfig, required []string, pki *PKI) Validator {
 	return &pkiValidator{
 		Config:             baseConfig,
 		requiredSignatures: required,
@@ -70,6 +73,14 @@ func newPkiValidator(baseConfig *validatorBaseConfig, required []string, pki *PK
 	}
 }
 
+func (pv pkiValidator) Hash() (*types.Bytes32, error) {
+	b, err := cj.Marshal(pv)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	validationsHash := types.Bytes32(sha256.Sum256(b))
+	return &validationsHash, nil
+}
 func (pv pkiValidator) ShouldValidate(link *cs.Link) bool {
 	return pv.Config.ShouldValidate(link)
 }

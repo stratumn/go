@@ -129,7 +129,16 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		assert.Len(t, validators, 5)
+		var schemaValidatorCount, pkiValidatorCount int
+		for _, v := range validators {
+			if _, ok := v.(*pkiValidator); ok {
+				pkiValidatorCount++
+			} else if _, ok := v.(*schemaValidator); ok {
+				schemaValidatorCount++
+			}
+		}
+		assert.Equal(t, 3, schemaValidatorCount)
+		assert.Equal(t, 2, pkiValidatorCount)
 	})
 
 	t.Run("Null signatures", func(T *testing.T) {
@@ -171,7 +180,9 @@ func TestLoadConfig_Success(t *testing.T) {
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		assert.Len(t, validators, 1)
+		require.Len(t, validators, 1)
+		_, ok := validators[0].(*schemaValidator)
+		assert.True(t, ok)
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -213,7 +224,9 @@ func TestLoadConfig_Success(t *testing.T) {
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		assert.Len(t, validators, 1)
+		require.Len(t, validators, 1)
+		_, ok := validators[0].(*schemaValidator)
+		assert.True(t, ok)
 	})
 
 	t.Run("No PKI", func(T *testing.T) {
@@ -242,6 +255,9 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NotNil(t, validators)
 
 		assert.Len(t, validators, 1)
+		require.Len(t, validators, 1)
+		_, ok := validators[0].(*schemaValidator)
+		assert.True(t, ok)
 	})
 
 }

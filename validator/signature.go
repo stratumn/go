@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 
 	cj "github.com/gibson042/canonicaljson-go"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 	"github.com/stratumn/sdk/validator/signature"
 )
 
@@ -39,11 +41,20 @@ var (
 type signatureValidator struct {
 }
 
-func newSignatureValidator() ChildValidator {
+func newSignatureValidator() Validator {
 	return &signatureValidator{}
 }
 
-func (sv *signatureValidator) ShouldValidate(link *cs.Link) bool {
+func (sv signatureValidator) Hash() (*types.Bytes32, error) {
+	b, err := cj.Marshal(sv)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	validationsHash := types.Bytes32(sha256.Sum256(b))
+	return &validationsHash, nil
+}
+
+func (sv signatureValidator) ShouldValidate(link *cs.Link) bool {
 	return true
 }
 

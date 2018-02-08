@@ -41,7 +41,7 @@ type rulesSchema struct {
 
 // LoadConfig loads the validators configuration from a json file.
 // The configuration returned can then be used in NewMultiValidator().
-func LoadConfig(path string) ([]ChildValidator, error) {
+func LoadConfig(path string) ([]Validator, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -93,14 +93,14 @@ type jsonValidatorData []struct {
 	Schema     *json.RawMessage `json:"schema"`
 }
 
-func loadValidatorsConfig(data json.RawMessage, pki *PKI) ([]ChildValidator, error) {
+func loadValidatorsConfig(data json.RawMessage, pki *PKI) ([]Validator, error) {
 	var jsonStruct map[string]jsonValidatorData
 	err := json.Unmarshal(data, &jsonStruct)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	var validators []ChildValidator
+	var validators []Validator
 	for process, jsonSchemaData := range jsonStruct {
 		for _, val := range jsonSchemaData {
 			if val.ID == "" {

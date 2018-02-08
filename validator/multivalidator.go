@@ -25,16 +25,20 @@ import (
 )
 
 type multiValidator struct {
-	validators []ChildValidator
+	validators []Validator
 }
 
 // NewMultiValidator creates a validator that will simply be a collection
 // of single-purpose validators.
-// The configuration should be loaded from a JSON file via validator.LoadConfig().
-func NewMultiValidator(validators []ChildValidator) Validator {
+// The slice of validators should be loaded from a JSON file via validator.LoadConfig().
+func NewMultiValidator(validators []Validator) Validator {
 	return &multiValidator{
 		validators: append(validators, newSignatureValidator()),
 	}
+}
+
+func (v multiValidator) ShouldValidate(link *cs.Link) bool {
+	return true
 }
 
 func (v multiValidator) Hash() (*types.Bytes32, error) {
@@ -46,7 +50,7 @@ func (v multiValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-func (v multiValidator) matchValidators(l *cs.Link) (linkValidators []ChildValidator) {
+func (v multiValidator) matchValidators(l *cs.Link) (linkValidators []Validator) {
 	for _, child := range v.validators {
 		if child.ShouldValidate(l) {
 			linkValidators = append(linkValidators, child)

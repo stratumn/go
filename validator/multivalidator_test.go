@@ -32,7 +32,7 @@ const validJSON = `
 `
 
 func TestMultiValidator_New(t *testing.T) {
-	mv := NewMultiValidator([]ChildValidator{})
+	mv := NewMultiValidator([]Validator{})
 
 	assert.Len(t, mv.(*multiValidator).validators, 1)
 }
@@ -42,7 +42,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 	baseConfig2 := &validatorBaseConfig{Process: "p2"}
 
 	t.Run("With schema validator", func(t *testing.T) {
-		mv1 := NewMultiValidator([]ChildValidator{
+		mv1 := NewMultiValidator([]Validator{
 			schemaValidator{
 				Config: baseConfig1,
 			}},
@@ -52,7 +52,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, h1)
 
-		mv2 := NewMultiValidator([]ChildValidator{
+		mv2 := NewMultiValidator([]Validator{
 			&schemaValidator{
 				Config: baseConfig1,
 			}},
@@ -62,7 +62,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualValues(t, h1, h2)
 
-		mv3 := NewMultiValidator([]ChildValidator{
+		mv3 := NewMultiValidator([]Validator{
 			schemaValidator{
 				Config: baseConfig2,
 			}},
@@ -74,7 +74,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 	})
 
 	t.Run("With pki validator", func(t *testing.T) {
-		mv1 := NewMultiValidator([]ChildValidator{
+		mv1 := NewMultiValidator([]Validator{
 			&pkiValidator{
 				Config: baseConfig1,
 			},
@@ -85,7 +85,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, h1)
 
-		mv2 := NewMultiValidator([]ChildValidator{
+		mv2 := NewMultiValidator([]Validator{
 			&pkiValidator{
 				Config: baseConfig1,
 			},
@@ -96,7 +96,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualValues(t, h1, h2)
 
-		mv3 := NewMultiValidator([]ChildValidator{
+		mv3 := NewMultiValidator([]Validator{
 			&pkiValidator{
 				Config: baseConfig2,
 			},
@@ -136,7 +136,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 
 	// append a signatureValidator in the validators to reproduce NewMultiValidator behaviour
 	mv := multiValidator{
-		validators: []ChildValidator{svCfg1, svCfg2, sigVCfg1, sigVCfg2, newSignatureValidator()},
+		validators: []Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2, newSignatureValidator()},
 	}
 
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {

@@ -15,12 +15,15 @@
 package validator
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 
+	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/sdk/cs"
 	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/sdk/types"
 
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -31,7 +34,7 @@ type schemaValidator struct {
 	Schema *gojsonschema.Schema
 }
 
-func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (ChildValidator, error) {
+func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (Validator, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -42,6 +45,16 @@ func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (Chi
 		Schema: schema,
 	}, nil
 }
+
+func (sv schemaValidator) Hash() (*types.Bytes32, error) {
+	b, err := cj.Marshal(sv)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	validationsHash := types.Bytes32(sha256.Sum256(b))
+	return &validationsHash, nil
+}
+
 func (sv schemaValidator) ShouldValidate(link *cs.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
