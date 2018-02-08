@@ -17,7 +17,7 @@ package couchstore
 import (
 	"encoding/json"
 
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/go-indigocore/store"
 )
 
 // LinkSelector used in LinkQuery

@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/store/storetestcases"
 )
 
 func TestExists(t *testing.T) {

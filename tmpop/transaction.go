@@ -17,8 +17,8 @@ package tmpop
 import (
 	"encoding/json"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // TxType represents the type of a Transaction

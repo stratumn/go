@@ -23,10 +23,10 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/stratumn/sdk/dummyfossilizer"
-	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
-	"github.com/stratumn/sdk/jsonhttp"
-	"github.com/stratumn/sdk/jsonws"
+	"github.com/stratumn/go-indigocore/dummyfossilizer"
+	"github.com/stratumn/go-indigocore/fossilizer/fossilizerhttp"
+	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-indigocore/jsonws"
 )
 
 // This example shows how to create a server from a dummyfossilizer.

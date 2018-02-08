@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/sdk/merkle/treetestcases"
+	"github.com/stratumn/go-indigocore/merkle/treetestcases"
 )
 
 func TestMain(m *testing.M) {

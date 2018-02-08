@@ -19,7 +19,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 var (

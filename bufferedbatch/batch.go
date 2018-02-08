@@ -15,13 +15,13 @@
 package bufferedbatch
 
 import (
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // Batch can be used as a base class for types
-// that want to implement github.com/stratumn/sdk/store.Batch.
+// that want to implement github.com/stratumn/go-indigocore/store.Batch.
 // All operations are stored in arrays and can be replayed.
 // Only the Write method must be implemented.
 type Batch struct {
@@ -34,7 +34,7 @@ func NewBatch(a store.Adapter) *Batch {
 	return &Batch{originalStore: a}
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	if err := link.Validate(b.GetSegment); err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return filter.Pagination.PaginateStrings(ids), err
 }
 
-// Write implements github.com/stratumn/sdk/store.Batch.Write.
+// Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
 func (b *Batch) Write() (err error) {
 	for _, link := range b.Links {
 		_, err = b.originalStore.CreateLink(link)

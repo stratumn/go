@@ -21,9 +21,9 @@ import (
 	jmespath "github.com/jmespath/go-jmespath"
 	"github.com/pkg/errors"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/validator/signature"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/validator/signature"
 )
 
 var (

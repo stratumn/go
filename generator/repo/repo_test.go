@@ -20,7 +20,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stratumn/sdk/generator"
+	"github.com/stratumn/go-indigocore/generator"
 )
 
 var (

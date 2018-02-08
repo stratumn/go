@@ -29,11 +29,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/fossilizer"
 
-	"github.com/stratumn/sdk/merkle"
+	"github.com/stratumn/go-indigocore/merkle"
 )
 
 const (
@@ -141,7 +141,7 @@ type Info struct {
 }
 
 // Fossilizer is the type that
-// implements github.com/stratumn/sdk/fossilizer.Adapter.
+// implements github.com/stratumn/go-indigocore/fossilizer.Adapter.
 type Fossilizer struct {
 	config               *Config
 	startedChan          chan chan struct{}
@@ -188,7 +188,7 @@ func New(config *Config) (*Fossilizer, error) {
 	return a, nil
 }
 
-// GetInfo implements github.com/stratumn/sdk/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo() (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -199,12 +199,12 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 }
 
 // AddFossilizerEventChan implements
-// github.com/stratumn/sdk/fossilizer.Adapter.AddFossilizerEventChan.
+// github.com/stratumn/go-indigocore/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
 	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
 }
 
-// Fossilize implements github.com/stratumn/sdk/fossilizer.Adapter.Fossilize.
+// Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 	f := fossil{Meta: meta}
 	copy(f.Data[:], data)

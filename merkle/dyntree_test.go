@@ -17,10 +17,10 @@ package merkle_test
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/merkle"
-	"github.com/stratumn/sdk/merkle/treetestcases"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/go-indigocore/merkle/treetestcases"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 func TestDynTree(t *testing.T) {

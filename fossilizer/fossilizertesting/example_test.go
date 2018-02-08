@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/stratumn/sdk/fossilizer/fossilizertesting"
+	"github.com/stratumn/go-indigocore/fossilizer/fossilizertesting"
 )
 
 // This example shows how to use a mock adapter.

@@ -18,7 +18,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/go-indigocore/store"
 )
 
 func createFileStore() (*FileStore, error) {

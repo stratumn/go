@@ -21,8 +21,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/fossilizer"
 )
 
 const (
@@ -51,7 +51,7 @@ type Info struct {
 }
 
 // DummyFossilizer is the type that implements
-// github.com/stratumn/sdk/fossilizer.Adapter.
+// github.com/stratumn/go-indigocore/fossilizer.Adapter.
 type DummyFossilizer struct {
 	config               *Config
 	fossilizerEventChans []chan *fossilizer.Event
@@ -97,7 +97,7 @@ func New(config *Config) *DummyFossilizer {
 	return &DummyFossilizer{config, nil}
 }
 
-// GetInfo implements github.com/stratumn/sdk/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *DummyFossilizer) GetInfo() (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -108,12 +108,12 @@ func (a *DummyFossilizer) GetInfo() (interface{}, error) {
 }
 
 // AddFossilizerEventChan implements
-// github.com/stratumn/sdk/fossilizer.Adapter.AddFossilizerEventChan.
+// github.com/stratumn/go-indigocore/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
 	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
 }
 
-// Fossilize implements github.com/stratumn/sdk/fossilizer.Adapter.Fossilize.
+// Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *DummyFossilizer) Fossilize(data []byte, meta []byte) error {
 
 	r := &fossilizer.Result{

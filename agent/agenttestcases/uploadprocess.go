@@ -29,7 +29,7 @@ import (
 func (f Factory) TestUploadProcessOK(t *testing.T) {
 	process, err := f.Client.UploadProcess(
 		"test",
-		fmt.Sprintf("%v/src/github.com/stratumn/sdk/agent/agenttestcases/actions.js", build.Default.GOPATH),
+		fmt.Sprintf("%v/src/github.com/stratumn/go-indigocore/agent/agenttestcases/actions.js", build.Default.GOPATH),
 		StoreURL,
 		[]string{},
 		[]string{},

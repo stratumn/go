@@ -18,15 +18,15 @@ import (
 	"encoding/json"
 
 	"github.com/lib/pq"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 type writer struct {
 	stmts writeStmts
 }
 
-// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
 func (a *writer) SetValue(key []byte, value []byte) error {
 	_, err := a.stmts.SaveValue.Exec(key, value)
 	if err != nil {
@@ -36,7 +36,7 @@ func (a *writer) SetValue(key []byte, value []byte) error {
 	return nil
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
 func (a *writer) DeleteValue(key []byte) ([]byte, error) {
 	var data []byte
 
@@ -50,7 +50,7 @@ func (a *writer) DeleteValue(key []byte) ([]byte, error) {
 	return data, nil
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.Adapter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
 func (a *writer) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	var (
 		priority     = link.GetPriority()

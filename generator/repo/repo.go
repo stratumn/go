@@ -40,7 +40,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/google/go-github/github"
-	"github.com/stratumn/sdk/generator"
+	"github.com/stratumn/go-indigocore/generator"
 )
 
 const (

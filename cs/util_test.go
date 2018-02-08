@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
+	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stretchr/testify/assert"
 )
 

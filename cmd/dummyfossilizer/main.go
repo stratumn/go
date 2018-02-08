@@ -22,9 +22,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/sdk/dummyfossilizer"
-	"github.com/stratumn/sdk/fossilizer/fossilizerhttp"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/dummyfossilizer"
+	"github.com/stratumn/go-indigocore/fossilizer/fossilizerhttp"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 var (

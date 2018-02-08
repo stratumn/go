@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/utils"
 )
 
 func TestMain(m *testing.M) {

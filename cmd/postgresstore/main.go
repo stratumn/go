@@ -20,8 +20,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/sdk/postgresstore"
-	"github.com/stratumn/sdk/store/storehttp"
+	"github.com/stratumn/go-indigocore/postgresstore"
+	"github.com/stratumn/go-indigocore/store/storehttp"
 )
 
 var (

@@ -23,10 +23,10 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/stratumn/sdk/bufferedbatch"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/bufferedbatch"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 const (
@@ -54,7 +54,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// DummyStore is the type that implements github.com/stratumn/sdk/store.Adapter.
+// DummyStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
 type DummyStore struct {
 	config     *Config
 	eventChans []chan *store.Event
@@ -84,7 +84,7 @@ func New(config *Config) *DummyStore {
 	}
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
 func (a *DummyStore) GetInfo() (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -94,14 +94,14 @@ func (a *DummyStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel
 func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
 /********** Store writer implementation **********/
 
-// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *DummyStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -135,7 +135,7 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	return linkHash, nil
 }
 
-// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (a *DummyStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -171,7 +171,7 @@ func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 
 /********** Store reader implementation **********/
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
 func (a *DummyStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -179,7 +179,7 @@ func (a *DummyStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	return a.getSegment(linkHash.String())
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
 func (a *DummyStore) getSegment(linkHash string) (*cs.Segment, error) {
 	link, exists := a.links[linkHash]
 	if !exists {
@@ -202,7 +202,7 @@ func (a *DummyStore) getSegment(linkHash string) (*cs.Segment, error) {
 	return segment, nil
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
 func (a *DummyStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -227,7 +227,7 @@ func (a *DummyStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice,
 	return a.findHashesSegments(linkHashes, filter)
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
 func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -246,7 +246,7 @@ func (a *DummyStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return filter.Pagination.PaginateStrings(mapIDs), nil
 }
 
-// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
 func (a *DummyStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -255,9 +255,9 @@ func (a *DummyStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error
 	return evidences, nil
 }
 
-/********** github.com/stratumn/sdk/store.KeyValueStore implementation **********/
+/********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
 
-// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
 func (a *DummyStore) GetValue(key []byte) ([]byte, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -265,7 +265,7 @@ func (a *DummyStore) GetValue(key []byte) ([]byte, error) {
 	return a.values[createKey(key)], nil
 }
 
-// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
 func (a *DummyStore) SetValue(key, value []byte) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -280,7 +280,7 @@ func (a *DummyStore) setValue(key, value []byte) error {
 	return nil
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
 func (a *DummyStore) DeleteValue(key []byte) ([]byte, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -301,9 +301,9 @@ func (a *DummyStore) deleteValue(key []byte) ([]byte, error) {
 	return value, nil
 }
 
-/********** github.com/stratumn/sdk/store.Batch implementation **********/
+/********** github.com/stratumn/go-indigocore/store.Batch implementation **********/
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (a *DummyStore) NewBatch() (store.Batch, error) {
 	return bufferedbatch.NewBatch(a), nil
 }

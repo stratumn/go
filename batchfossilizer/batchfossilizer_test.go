@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/fossilizer"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/fossilizer"
 )
 
 func TestGetInfo(t *testing.T) {

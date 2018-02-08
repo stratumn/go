@@ -15,13 +15,13 @@
 package storetesting
 
 import (
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // MockAdapter is used to mock a store.
-// It implements github.com/stratumn/sdk/store.Adapter.
+// It implements github.com/stratumn/go-indigocore/store.Adapter.
 type MockAdapter struct {
 	// The mock for the GetInfo function.
 	MockGetInfo MockGetInfo
@@ -52,7 +52,7 @@ type MockAdapter struct {
 }
 
 // MockKeyValueStore is used to mock a key-value store.
-// It implements github.com/stratumn/sdk/store.KeyValueStore.
+// It implements github.com/stratumn/go-indigocore/store.KeyValueStore.
 type MockKeyValueStore struct {
 	// The mock for the SetValue function.
 	MockSetValue MockSetValue
@@ -247,7 +247,7 @@ type MockDeleteValue struct {
 	Fn func([]byte) ([]byte, error)
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
 func (a *MockAdapter) GetInfo() (interface{}, error) {
 	a.MockGetInfo.CalledCount++
 
@@ -259,7 +259,7 @@ func (a *MockAdapter) GetInfo() (interface{}, error) {
 }
 
 // AddStoreEventChannel implements
-// github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel.
+// github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
 func (a *MockAdapter) AddStoreEventChannel(storeChan chan *store.Event) {
 	a.MockAddStoreEventChannel.CalledCount++
 	a.MockAddStoreEventChannel.CalledWith = append(a.MockAddStoreEventChannel.CalledWith, storeChan)
@@ -270,7 +270,7 @@ func (a *MockAdapter) AddStoreEventChannel(storeChan chan *store.Event) {
 	}
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.Adapter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
 func (a *MockAdapter) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
@@ -283,7 +283,7 @@ func (a *MockAdapter) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return nil, nil
 }
 
-// AddEvidence implements github.com/stratumn/sdk/store.Adapter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-indigocore/store.Adapter.AddEvidence.
 func (a *MockAdapter) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	a.MockAddEvidence.CalledCount++
 	a.MockAddEvidence.CalledWith = append(a.MockAddEvidence.CalledWith, evidence)
@@ -296,7 +296,7 @@ func (a *MockAdapter) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence
 	return nil
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
 func (a *MockAdapter) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.MockGetSegment.CalledCount++
 	a.MockGetSegment.CalledWith = append(a.MockGetSegment.CalledWith, linkHash)
@@ -309,7 +309,7 @@ func (a *MockAdapter) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	return nil, nil
 }
 
-// GetEvidences implements github.com/stratumn/sdk/store.Adapter.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-indigocore/store.Adapter.GetEvidences.
 func (a *MockAdapter) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
 	a.MockGetEvidences.CalledCount++
 	a.MockGetEvidences.CalledWith = append(a.MockGetEvidences.CalledWith, linkHash)
@@ -322,7 +322,7 @@ func (a *MockAdapter) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, erro
 	return nil, nil
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
 func (a *MockAdapter) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	a.MockFindSegments.CalledCount++
 	a.MockFindSegments.CalledWith = append(a.MockFindSegments.CalledWith, filter)
@@ -335,7 +335,7 @@ func (a *MockAdapter) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice
 	return nil, nil
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
 func (a *MockAdapter) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	a.MockGetMapIDs.CalledCount++
 	a.MockGetMapIDs.CalledWith = append(a.MockGetMapIDs.CalledWith, filter)
@@ -348,7 +348,7 @@ func (a *MockAdapter) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	return nil, nil
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (a *MockAdapter) NewBatch() (store.Batch, error) {
 	a.MockNewBatch.CalledCount++
 
@@ -359,7 +359,7 @@ func (a *MockAdapter) NewBatch() (store.Batch, error) {
 	return &MockBatch{}, nil
 }
 
-// SetValue implements github.com/stratumn/sdk/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
 func (a *MockKeyValueStore) SetValue(key, value []byte) error {
 	a.MockSetValue.CalledCount++
 	calledWith := [][]byte{key, value}
@@ -373,7 +373,7 @@ func (a *MockKeyValueStore) SetValue(key, value []byte) error {
 	return nil
 }
 
-// GetValue implements github.com/stratumn/sdk/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
 func (a *MockKeyValueStore) GetValue(key []byte) ([]byte, error) {
 	a.MockGetValue.CalledCount++
 	a.MockGetValue.CalledWith = append(a.MockGetValue.CalledWith, key)
@@ -386,7 +386,7 @@ func (a *MockKeyValueStore) GetValue(key []byte) ([]byte, error) {
 	return nil, nil
 }
 
-// DeleteValue implements github.com/stratumn/sdk/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
 func (a *MockKeyValueStore) DeleteValue(key []byte) ([]byte, error) {
 	a.MockDeleteValue.CalledCount++
 	a.MockDeleteValue.CalledWith = append(a.MockDeleteValue.CalledWith, key)

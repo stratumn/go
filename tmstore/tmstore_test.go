@@ -18,10 +18,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/jsonhttp"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/store/storetestcases"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/store/storetestcases"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -121,7 +121,7 @@ const (
 var (
 	nixShell    = []string{"sh", "-i", "-c"}
 	winShell    = []string{"cmd", "/C"}
-	brewInfoCmd = []string{"brew", "info", "--json=v1", "stratumn/sdk/strat"}
+	brewInfoCmd = []string{"brew", "info", "--json=v1", "stratumn/go-indigocore/strat"}
 )
 
 // Project describes a project.

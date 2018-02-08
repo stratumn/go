@@ -19,8 +19,8 @@ import (
 	"flag"
 	"time"
 
-	"github.com/stratumn/sdk/batchfossilizer"
-	"github.com/stratumn/sdk/blockchain"
+	"github.com/stratumn/go-indigocore/batchfossilizer"
+	"github.com/stratumn/go-indigocore/blockchain"
 
 	log "github.com/sirupsen/logrus"
 )

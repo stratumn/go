@@ -17,7 +17,7 @@ package agenttestcases
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/store"
+	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -18,12 +18,12 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/stratumn/sdk/bufferedbatch"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/merkle"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/validator"
+	"github.com/stratumn/go-indigocore/bufferedbatch"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/validator"
 )
 
 // State represents the app states, separating the committed state (for queries)

@@ -19,12 +19,12 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/merkle"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/validator"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/validator"
 	abci "github.com/tendermint/abci/types"
 )
 

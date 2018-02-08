@@ -18,7 +18,7 @@ import (
 	"encoding/gob"
 	"os"
 
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 type batch struct {

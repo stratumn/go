@@ -18,10 +18,10 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stratumn/sdk/blockchain/btc"
-	"github.com/stratumn/sdk/blockchain/btc/btctesting"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/blockchain/btc"
+	"github.com/stratumn/go-indigocore/blockchain/btc/btctesting"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 func TestNetwork_NetworkTest3(t *testing.T) {

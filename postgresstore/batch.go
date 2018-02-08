@@ -16,7 +16,7 @@ package postgresstore
 
 import "database/sql"
 
-// Batch is the type that implements github.com/stratumn/sdk/store.Batch.
+// Batch is the type that implements github.com/stratumn/go-indigocore/store.Batch.
 type Batch struct {
 	*reader
 	*writer
@@ -38,7 +38,7 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 	}, nil
 }
 
-// Write implements github.com/stratumn/sdk/store.Batch.Write.
+// Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
 func (b *Batch) Write() error {
 	b.done = true
 	return b.tx.Commit()

@@ -19,9 +19,9 @@ import (
 
 	cj "github.com/gibson042/canonicaljson-go"
 
-	"github.com/stratumn/sdk/agent/client"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/agent/client"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
 

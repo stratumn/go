@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	cj "github.com/gibson042/canonicaljson-go"
-	"github.com/stratumn/sdk/agent/client"
-	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/go-indigocore/agent/client"
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 

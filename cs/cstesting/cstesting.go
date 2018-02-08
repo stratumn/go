@@ -26,8 +26,8 @@ import (
 	jmespath "github.com/jmespath/go-jmespath"
 	"golang.org/x/crypto/ed25519"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/testutil"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/testutil"
 )
 
 // CreateLink creates a minimal link.

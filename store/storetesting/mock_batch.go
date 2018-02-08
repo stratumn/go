@@ -15,13 +15,13 @@
 package storetesting
 
 import (
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // MockBatch is used to mock a batch.
-// It implements github.com/stratumn/sdk/store.Batch
+// It implements github.com/stratumn/go-indigocore/store.Batch
 type MockBatch struct {
 	// The mock for the CreateLink function.
 	MockCreateLink MockBatchCreateLink
@@ -90,7 +90,7 @@ type MockBatchGetMapIDs struct {
 	Fn func(filter *store.MapFilter) ([]string, error)
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.Batch.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.Batch.CreateLink.
 func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
@@ -103,7 +103,7 @@ func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return nil, nil
 }
 
-// Write implements github.com/stratumn/sdk/store.Batch.Write.
+// Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
 func (a *MockBatch) Write() error {
 	a.MockWrite.CalledCount++
 

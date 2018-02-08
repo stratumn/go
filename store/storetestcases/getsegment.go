@@ -20,12 +20,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
 	// import every type of evidence to see if we can deserialize all of them
-	_ "github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	_ "github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
 

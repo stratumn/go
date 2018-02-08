@@ -544,6 +544,8 @@
   packages = [
     "cast5",
     "curve25519",
+    "ed25519",
+    "ed25519/internal/edwards25519",
     "nacl/box",
     "nacl/secretbox",
     "openpgp",
@@ -701,6 +703,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e0fba10ae59e597d21c961ee3bb0c9579678851f9761e933a9526994cfb71f84"
+  inputs-digest = "6d9f4e071c2f9bbc9a5449e51be90614f4ca71c0c6ddce2f25ba5bc2ed58de58"
   solver-name = "gps-cdcl"
   solver-version = 1

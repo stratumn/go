@@ -17,14 +17,14 @@ package tmpoptestcases
 import (
 	"testing"
 
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/merkle"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/tmpop"
-	"github.com/stratumn/sdk/tmpop/tmpoptestcases/mocks"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	abci "github.com/tendermint/abci/types"
 )

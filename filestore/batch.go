@@ -15,10 +15,10 @@
 package filestore
 
 import (
-	"github.com/stratumn/sdk/bufferedbatch"
+	"github.com/stratumn/go-indigocore/bufferedbatch"
 )
 
-// Batch is the type that implements github.com/stratumn/sdk/store.Batch.
+// Batch is the type that implements github.com/stratumn/go-indigocore/store.Batch.
 type Batch struct {
 	*bufferedbatch.Batch
 
@@ -33,7 +33,7 @@ func NewBatch(a *FileStore) *Batch {
 	}
 }
 
-// Write implements github.com/stratumn/sdk/store.Batch.Write
+// Write implements github.com/stratumn/go-indigocore/store.Batch.Write
 func (b *Batch) Write() (err error) {
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()

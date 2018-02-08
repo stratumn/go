@@ -34,9 +34,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/stratumn/sdk/fossilizer"
-	"github.com/stratumn/sdk/jsonhttp"
-	"github.com/stratumn/sdk/jsonws"
+	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-indigocore/jsonws"
 )
 
 const (

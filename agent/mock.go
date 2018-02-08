@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	cs "github.com/stratumn/sdk/cs"
+	cs "github.com/stratumn/go-indigocore/cs"
 )
 
 // MockAgent is a mock of Agent interface

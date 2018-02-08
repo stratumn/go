@@ -19,8 +19,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/sdk/cs/cstesting"
-	"github.com/stratumn/sdk/tmpop"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

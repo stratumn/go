@@ -23,8 +23,8 @@ of tests in various packages.
 import (
 	"path/filepath"
 
-	"github.com/stratumn/sdk/dummystore"
-	"github.com/stratumn/sdk/tmpop"
+	"github.com/stratumn/go-indigocore/dummystore"
+	"github.com/stratumn/go-indigocore/tmpop"
 	node "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpctest "github.com/tendermint/tendermint/rpc/test"

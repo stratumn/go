@@ -25,10 +25,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/sdk/cs/evidences"
-	"github.com/stratumn/sdk/fossilizer"
-	"github.com/stratumn/sdk/testutil"
-	"github.com/stratumn/sdk/types"
+	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 type fossilizeTest struct {

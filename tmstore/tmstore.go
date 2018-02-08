@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/stratumn/sdk/bufferedbatch"
-	"github.com/stratumn/sdk/cs"
-	"github.com/stratumn/sdk/store"
-	"github.com/stratumn/sdk/tmpop"
-	"github.com/stratumn/sdk/types"
-	"github.com/stratumn/sdk/utils"
+	"github.com/stratumn/go-indigocore/bufferedbatch"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/utils"
 
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
@@ -36,7 +36,7 @@ import (
 	tmcommon "github.com/tendermint/tmlibs/common"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/sdk/jsonhttp"
+	"github.com/stratumn/go-indigocore/jsonhttp"
 )
 
 const (
@@ -53,7 +53,7 @@ const (
 	DefaultWsRetryInterval = 5 * time.Second
 )
 
-// TMStore is the type that implements github.com/stratumn/sdk/store.Adapter.
+// TMStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
 type TMStore struct {
 	config          *Config
 	ctx             context.Context
@@ -168,12 +168,12 @@ func (t *TMStore) notifyStoreChans() {
 	}
 }
 
-// AddStoreEventChannel implements github.com/stratumn/sdk/store.Adapter.AddStoreEventChannel.
+// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
 func (t *TMStore) AddStoreEventChannel(storeChan chan *store.Event) {
 	t.storeEventChans = append(t.storeEventChans, storeChan)
 }
 
-// GetInfo implements github.com/stratumn/sdk/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
 func (t *TMStore) GetInfo() (interface{}, error) {
 	response, err := t.sendQuery(tmpop.GetInfo, nil)
 	if err != nil {
@@ -195,7 +195,7 @@ func (t *TMStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// CreateLink implements github.com/stratumn/sdk/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (t *TMStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
@@ -212,7 +212,7 @@ func (t *TMStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	return linkHash, err
 }
 
-// AddEvidence implements github.com/stratumn/sdk/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (t *TMStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	// Adding an external evidence does not require consensus
 	// So it will not go through a blockchain transaction, but will rather
@@ -241,7 +241,7 @@ func (t *TMStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) er
 	return nil
 }
 
-// GetEvidences implements github.com/stratumn/sdk/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
 func (t *TMStore) GetEvidences(linkHash *types.Bytes32) (evidences *cs.Evidences, err error) {
 	evidences = &cs.Evidences{}
 	response, err := t.sendQuery(tmpop.GetEvidences, linkHash)
@@ -260,7 +260,7 @@ func (t *TMStore) GetEvidences(linkHash *types.Bytes32) (evidences *cs.Evidences
 	return
 }
 
-// GetSegment implements github.com/stratumn/sdk/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
 func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
 	response, err := t.sendQuery(tmpop.GetSegment, linkHash)
 	if err != nil {
@@ -283,7 +283,7 @@ func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err 
 	return
 }
 
-// FindSegments implements github.com/stratumn/sdk/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
 func (t *TMStore) FindSegments(filter *store.SegmentFilter) (segmentSlice cs.SegmentSlice, err error) {
 	response, err := t.sendQuery(tmpop.FindSegments, filter)
 	if err != nil {
@@ -298,7 +298,7 @@ func (t *TMStore) FindSegments(filter *store.SegmentFilter) (segmentSlice cs.Seg
 	return
 }
 
-// GetMapIDs implements github.com/stratumn/sdk/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
 func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 	response, err := t.sendQuery(tmpop.GetMapIDs, filter)
 	err = json.Unmarshal(response.Value, &ids)
@@ -309,7 +309,7 @@ func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 	return
 }
 
-// NewBatch implements github.com/stratumn/sdk/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (t *TMStore) NewBatch() (store.Batch, error) {
 	return bufferedbatch.NewBatch(t), nil
 }
