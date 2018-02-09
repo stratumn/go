@@ -37,7 +37,7 @@ const validJSONConfig = `
 	    "TESTKEY2": {
 		"name": "Bob Wagner",
 		"roles": [
-		    "manager",
+    		    "manager",
 		    "it"
 		]
 	    }
@@ -112,9 +112,9 @@ const validJSONConfig = `
 		    }
 		},
 		{
-		    "id": "initSigned",
-		    "type": "init",
-		    "signatures": ["manager"]
+		    "id": "signed-by-employee",
+		    "type": "*",
+		    "signatures": ["employee"]
 		}
 	    ]
 	}
@@ -154,6 +154,19 @@ var testCases = []testCase{{
 	link: &cs.Link{
 		State: map[string]interface{}{
 			"to": "bob",
+		},
+		Meta: map[string]interface{}{
+			"process": "chat",
+			"action":  "message",
+		},
+	},
+	valid: false,
+}, {
+	name: "wildcard-validator-failed",
+	link: &cs.Link{
+		State: map[string]interface{}{
+			"to":      "bob",
+			"content": "test",
 		},
 		Meta: map[string]interface{}{
 			"process": "chat",
