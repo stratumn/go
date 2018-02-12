@@ -52,11 +52,10 @@ func (p PKI) matchRequirement(requirement, publicKey string) bool {
 		return false
 	}
 
-	for _, key := range identity.Keys {
-		if key == publicKey {
-			return true
-		}
+	if required, ok := p[requirement]; ok && identity == required {
+		return true
 	}
+
 	for _, role := range identity.Roles {
 		if strings.EqualFold(role, requirement) {
 			return true

@@ -268,29 +268,6 @@ func TestLoadValidators_Error(t *testing.T) {
 		assert.Nil(t, validators)
 		assert.Error(t, err)
 	})
-
-	t.Run("Duplicate validator", func(T *testing.T) {
-		const invalidValidatorConfig = `
-		{
-			"test": {
-				"types": {
-				    "init": {
-					"signatures": "test"
-				    },
-				    "init": {
-					"schema": {}
-				    }
-				}
-			    }
-			}
-		    `
-		testFile := createTMPFile(t, invalidValidatorConfig)
-		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
-
-		assert.Nil(t, validators)
-		assert.Error(t, err)
-	})
 }
 
 func TestLoadPKI_Error(t *testing.T) {

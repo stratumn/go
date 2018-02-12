@@ -151,7 +151,7 @@ func RandomSignature(l *cs.Link) *cs.Signature {
 	}
 }
 
-// RandomSignature returns an arbitrary signature from a generated key pair
+// SignatureWithKey returns a signature of a link using the provided private key
 func SignatureWithKey(l *cs.Link, priv ed25519.PrivateKey) *cs.Signature {
 	pub := priv.Public().(ed25519.PublicKey)
 	payloadPath := "[state, meta]"
