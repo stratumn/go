@@ -27,19 +27,19 @@ import (
 
 func TestPKIValidator(t *testing.T) {
 	process := "p1"
-	action := "test"
+	linkType := "test"
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = process
-		l.Meta["action"] = action
+		l.Meta["type"] = linkType
 		return cstesting.SignLink(l)
 	}
 
 	createValidLinkWithKey := func(priv ed25519.PrivateKey) *cs.Link {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = process
-		l.Meta["action"] = action
+		l.Meta["type"] = linkType
 		return cstesting.SignLinkWithKey(l, priv)
 	}
 
@@ -49,12 +49,12 @@ func TestPKIValidator(t *testing.T) {
 	link2 := createValidLinkWithKey(priv2)
 
 	pki := &PKI{
-		link1.Signatures[0].PublicKey: &Identity{
-			Name:  "Alice Van den Budenmayer",
+		"Alice Van den Budenmayer": &Identity{
+			Keys:  []string{link1.Signatures[0].PublicKey},
 			Roles: []string{"employee"},
 		},
-		link2.Signatures[0].PublicKey: &Identity{
-			Name:  "Bob Wagner",
+		"Bob Wagner": &Identity{
+			Keys:  []string{link2.Signatures[0].PublicKey},
 			Roles: []string{"manager", "it"},
 		},
 	}
@@ -87,7 +87,7 @@ func TestPKIValidator(t *testing.T) {
 			link: func() *cs.Link {
 				return link1
 			},
-			requiredSignatures: []string{"alice van den budenmayer"},
+			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 		{
 			name:  "required-signature-role",
@@ -113,19 +113,19 @@ func TestPKIValidator(t *testing.T) {
 				tmpLink := *link1
 				return cstesting.SignLinkWithKey(&tmpLink, priv2)
 			},
-			requiredSignatures: []string{"employee", "it", "bob wagner"},
+			requiredSignatures: []string{"employee", "it", "Bob Wagner"},
 		},
 		{
 			name:               "required-signature-fails",
 			valid:              false,
-			err:                "Missing signatory for validator required-signature-fails: signature from alice van den budenmayer is required",
+			err:                "Missing signatory for validator test of process p1: signature from Alice Van den Budenmayer is required",
 			link:               createValidLink,
-			requiredSignatures: []string{"alice van den budenmayer"},
+			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 	}
 
 	for _, tt := range testCases {
-		baseCfg, err := newValidatorBaseConfig(process, tt.name, action)
+		baseCfg, err := newValidatorBaseConfig(process, linkType)
 		require.NoError(t, err)
 		sv := newPkiValidator(baseCfg, tt.requiredSignatures, pki)
 

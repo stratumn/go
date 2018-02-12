@@ -125,37 +125,45 @@ func RandomTags() []interface{} {
 // SignLink adds a signature to a link.
 // The ed25519 signature algorithm is used.
 func SignLink(l *cs.Link) *cs.Link {
-	pub, priv, _ := ed25519.GenerateKey(crand.Reader)
-	payloadPath := "[state, meta]"
-	payload, _ := jmespath.Search(payloadPath, l)
-	payloadBytes, _ := cj.Marshal(payload)
-	sigBytes, _ := priv.Sign(crand.Reader, payloadBytes, crypto.Hash(0))
-	sig := cs.Signature{
-		Type:      "ed25519",
-		PublicKey: base64.StdEncoding.EncodeToString(pub),
-		Signature: base64.StdEncoding.EncodeToString(sigBytes),
-		Payload:   payloadPath,
-	}
-	l.Signatures = append(l.Signatures, &sig)
+	l.Signatures = append(l.Signatures, RandomSignature(l))
 	return l
 }
 
 // SignLinkWithKey signs the link with the provided private key.
 // The key must be an instance of ed25519.PrivateKey
 func SignLinkWithKey(l *cs.Link, priv ed25519.PrivateKey) *cs.Link {
-	pub := priv.Public().(ed25519.PublicKey)
+	l.Signatures = append(l.Signatures, SignatureWithKey(l, priv))
+	return l
+}
+
+// RandomSignature returns an arbitrary signature from a generated key pair
+func RandomSignature(l *cs.Link) *cs.Signature {
+	pub, priv, _ := ed25519.GenerateKey(crand.Reader)
 	payloadPath := "[state, meta]"
 	payload, _ := jmespath.Search(payloadPath, l)
 	payloadBytes, _ := cj.Marshal(payload)
 	sigBytes, _ := priv.Sign(crand.Reader, payloadBytes, crypto.Hash(0))
-	sig := cs.Signature{
+	return &cs.Signature{
 		Type:      "ed25519",
 		PublicKey: base64.StdEncoding.EncodeToString(pub),
 		Signature: base64.StdEncoding.EncodeToString(sigBytes),
 		Payload:   payloadPath,
 	}
-	l.Signatures = append(l.Signatures, &sig)
-	return l
+}
+
+// SignatureWithKey returns a signature of a link using the provided private key
+func SignatureWithKey(l *cs.Link, priv ed25519.PrivateKey) *cs.Signature {
+	pub := priv.Public().(ed25519.PublicKey)
+	payloadPath := "[state, meta]"
+	payload, _ := jmespath.Search(payloadPath, l)
+	payloadBytes, _ := cj.Marshal(payload)
+	sigBytes, _ := priv.Sign(crand.Reader, payloadBytes, crypto.Hash(0))
+	return &cs.Signature{
+		Type:      "ed25519",
+		PublicKey: base64.StdEncoding.EncodeToString(pub),
+		Signature: base64.StdEncoding.EncodeToString(sigBytes),
+		Payload:   payloadPath,
+	}
 }
 
 // Clone clones a link.

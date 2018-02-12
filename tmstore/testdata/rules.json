@@ -1,20 +1,17 @@
 {
-  "pki": {
-    "TESTKEY1": {
-      "name": "Alice Van den Budenmayer",
-      "roles": ["employee"]
+  "testProcess": {
+    "pki": {
+      "alice.vandenbudenmayer@stratumn.com": {
+        "keys": ["TESTKEY1"],
+        "roles": ["employee"]
+      },
+      "Bob Wagner": {
+        "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+        "roles": ["manager", "it"]
+      }
     },
-    "hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48=": {
-      "name": "Bob Wagner",
-      "roles": ["manager", "it"]
-    }
-  },
-  "validators": {
-    "testProcess": [
-      {
-        "id": "testProcess-schema",
-        "type": "init",
-        "signatures": ["it"],
+    "types": {
+      "init": {
         "schema": {
           "type": "object",
           "properties": {
@@ -23,7 +20,10 @@
             }
           }
         }
+      },
+      "action": {
+        "signatures": ["it"]
       }
-    ]
+    }
   }
 }

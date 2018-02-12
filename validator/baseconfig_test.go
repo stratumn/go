@@ -25,12 +25,12 @@ import (
 
 func TestBaseConfig(t *testing.T) {
 	process := "p1"
-	action := "sell"
+	linkType := "sell"
 
 	type testCaseCfg struct {
 		id            string
 		process       string
-		action        string
+		linkType      string
 		schema        []byte
 		valid         bool
 		expectedError error
@@ -39,26 +39,20 @@ func TestBaseConfig(t *testing.T) {
 	testCases := []testCaseCfg{{
 		id:            "missing-process",
 		process:       "",
-		action:        action,
+		linkType:      linkType,
 		valid:         false,
 		expectedError: ErrMissingProcess,
 	}, {
-		id:            "",
-		process:       process,
-		action:        action,
-		valid:         false,
-		expectedError: ErrMissingIdentifier,
-	}, {
 		id:            "missing-link-type",
 		process:       process,
-		action:        "",
+		linkType:      "",
 		valid:         false,
 		expectedError: ErrMissingLinkType,
 	}, {
-		id:      "valid-config",
-		process: process,
-		action:  action,
-		valid:   true,
+		id:       "valid-config",
+		process:  process,
+		linkType: linkType,
+		valid:    true,
 	},
 	}
 
@@ -66,8 +60,7 @@ func TestBaseConfig(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			cfg, err := newValidatorBaseConfig(
 				tt.process,
-				tt.id,
-				tt.action,
+				tt.linkType,
 			)
 
 			if tt.valid {
@@ -86,18 +79,17 @@ func TestBaseConfig(t *testing.T) {
 
 func TestBaseConfig_ShouldValidate(t *testing.T) {
 	process := "p1"
-	action := "sell"
+	linkType := "sell"
 	cfg, err := newValidatorBaseConfig(
 		process,
-		"test",
-		action,
+		linkType,
 	)
 	require.NoError(t, err)
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = process
-		l.Meta["action"] = action
+		l.Meta["type"] = linkType
 		return cstesting.SignLink(l)
 	}
 	type testCase struct {
@@ -131,20 +123,20 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 			},
 		},
 		{
-			name:           "no-action",
+			name:           "no-type",
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
-				delete(l.Meta, "action")
+				delete(l.Meta, "type")
 				return l
 			},
 		},
 		{
-			name:           "action-no-match",
+			name:           "type-no-match",
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
-				l.Meta["action"] = "test"
+				l.Meta["type"] = "test"
 				return l
 			},
 		},

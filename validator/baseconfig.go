@@ -27,30 +27,22 @@ var (
 
 	// ErrMissingLinkType is returned when the link type is missing for validation.
 	ErrMissingLinkType = errors.New("validator requires a link type")
-
-	// ErrMissingIdentifier is returned when the link identifier is missing for validation.
-	ErrMissingIdentifier = errors.New("validator requires an identifier")
 )
 
 type validatorBaseConfig struct {
-	ID       string
 	Process  string
 	LinkType string
 }
 
-func newValidatorBaseConfig(process, id, linkType string) (*validatorBaseConfig, error) {
+func newValidatorBaseConfig(process, linkType string) (*validatorBaseConfig, error) {
 	if len(process) == 0 {
 		return nil, ErrMissingProcess
-	}
-
-	if len(id) == 0 {
-		return nil, ErrMissingIdentifier
 	}
 
 	if len(linkType) == 0 {
 		return nil, ErrMissingLinkType
 	}
-	return &validatorBaseConfig{Process: process, LinkType: linkType, ID: id}, nil
+	return &validatorBaseConfig{Process: process, LinkType: linkType}, nil
 }
 
 // ShouldValidate returns true if the link matches the validator's process
@@ -67,13 +59,13 @@ func (bv *validatorBaseConfig) ShouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	linkAction, ok := link.Meta["action"].(string)
+	linkType, ok := link.Meta["type"].(string)
 	if !ok {
-		log.Debug("No action found in link %v", link)
+		log.Debug("No type found in link %v", link)
 		return false
 	}
 
-	if linkAction != bv.LinkType {
+	if linkType != bv.LinkType {
 		return false
 	}
 

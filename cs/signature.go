@@ -15,6 +15,17 @@
 // Package cs defines types to work with Chainscripts.
 package cs
 
+import (
+	"encoding/base64"
+
+	jmespath "github.com/jmespath/go-jmespath"
+	"github.com/pkg/errors"
+
+	cj "github.com/gibson042/canonicaljson-go"
+
+	signatures "github.com/stratumn/go-indigocore/cs/signatures"
+)
+
 // Signature contains a user-provided signature of a certain part of the link.
 type Signature struct {
 	// Type of the signature (eg: "EdDSA")
@@ -28,6 +39,31 @@ type Signature struct {
 
 	// Payload describes what has been signed, It is expressed using the JMESPATH query language.
 	Payload string `json:"payload"`
+}
+
+// Verify takes a link as input, computes the signed part using the signature payload
+// and runs the signature verification depending on its type.
+func (s Signature) Verify(l *Link) error {
+	keyBytes, _ := base64.StdEncoding.DecodeString(s.PublicKey)
+	sigBytes, _ := base64.StdEncoding.DecodeString(s.Signature)
+
+	payload, err := jmespath.Search(s.Payload, l)
+	if err != nil {
+		return errors.Wrap(err, "failed to execute JMESPATH query")
+	}
+	if payload == nil {
+		return errors.New("JMESPATH query does not match any link data")
+	}
+
+	payloadBytes, err := cj.Marshal(payload)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err := signatures.Verify(s.Type, keyBytes, sigBytes, payloadBytes); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 // Signatures is a slice of Signature

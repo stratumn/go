@@ -21,8 +21,6 @@ of tests in various packages.
 **/
 
 import (
-	"path/filepath"
-
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/tmpop"
 	node "github.com/tendermint/tendermint/node"
@@ -46,12 +44,10 @@ func ResetNode() {
 	*testDummyStore = *dummystore.New(&dummystore.Config{})
 }
 
-func StartNode() *node.Node {
+func StartNode(config *tmpop.Config) *node.Node {
 	testDummyStore = dummystore.New(&dummystore.Config{})
 	var err error
-	testTmpop, err = tmpop.New(testDummyStore, testDummyStore, &tmpop.Config{
-		ValidatorFilename: filepath.Join("testdata", "rules.json"),
-	})
+	testTmpop, err = tmpop.New(testDummyStore, testDummyStore, config)
 	if err != nil {
 		panic(err)
 	}

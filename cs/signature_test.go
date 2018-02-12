@@ -20,6 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
+	sig "github.com/stratumn/go-indigocore/cs/signatures"
 )
 
 func TestGetSignatures(t *testing.T) {
@@ -46,4 +48,75 @@ func TestGetSignatures_NotFound(t *testing.T) {
 	}
 	got := signatures.Get("wrong")
 	assert.Nil(t, got, "s.Get(()")
+}
+
+func TestSignatureValidator(t *testing.T) {
+	payload := cstesting.RandomLink()
+	type testCase struct {
+		name               string
+		signature          func() *cs.Signature
+		valid              bool
+		err                string
+		requiredSignatures []string
+	}
+
+	testCases := []testCase{
+		{
+			name:      "valid-link",
+			valid:     true,
+			signature: func() *cs.Signature { return cstesting.RandomSignature(payload) },
+		},
+		{
+			name:  "unsupported-signature-type",
+			valid: false,
+			err:   "Unhandled signature scheme [test]: " + sig.ErrUnsupportedSignatureType.Error(),
+			signature: func() *cs.Signature {
+				s := cstesting.RandomSignature(payload)
+				s.Type = "test"
+				return s
+			},
+		},
+		{
+			name:  "wrong-jmespath-query",
+			valid: false,
+			err:   "failed to execute JMESPATH query: SyntaxError: Incomplete expression",
+			signature: func() *cs.Signature {
+				s := cstesting.RandomSignature(payload)
+				s.Payload = ""
+				return s
+			},
+		},
+		{
+			name:  "empty-jmespath-query",
+			valid: false,
+			err:   "JMESPATH query does not match any link data",
+			signature: func() *cs.Signature {
+				s := cstesting.RandomSignature(payload)
+				s.Payload = "notfound"
+				return s
+			},
+		},
+		{
+			name:  "wrong-signature",
+			valid: false,
+			err:   sig.ErrInvalidSignature.Error(),
+			signature: func() *cs.Signature {
+				s := cstesting.RandomSignature(payload)
+				s.Signature = "test"
+				return s
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.signature().Verify(payload)
+			if tt.valid {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tt.err)
+			}
+		})
+	}
+
 }

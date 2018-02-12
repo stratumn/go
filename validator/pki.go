@@ -31,30 +31,44 @@ import (
 // and establishes n-to-n relationships between users and roles.
 type PKI map[string]*Identity
 
+func (p PKI) getIdentityByPublicKey(publicKey string) *Identity {
+	for _, identity := range p {
+		for _, key := range identity.Keys {
+			if key == publicKey {
+				return identity
+			}
+		}
+	}
+	return nil
+}
+
 func (p PKI) matchRequirement(requirement, publicKey string) bool {
 	if requirement == publicKey {
 		return true
 	}
 
-	identity, ok := p[publicKey]
-	if !ok {
+	identity := p.getIdentityByPublicKey(publicKey)
+	if identity == nil {
 		return false
 	}
-	if strings.EqualFold(identity.Name, requirement) {
+
+	if required, ok := p[requirement]; ok && identity == required {
 		return true
 	}
+
 	for _, role := range identity.Roles {
 		if strings.EqualFold(role, requirement) {
 			return true
 		}
 	}
+
 	return false
 
 }
 
 // Identity represents an actor of an indigo network
 type Identity struct {
-	Name  string
+	Keys  []string
 	Roles []string
 }
 
@@ -106,7 +120,7 @@ func (pv pkiValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 			}
 		}
 		if !fulfilled {
-			return errors.Errorf("Missing signatory for validator %s: signature from %s is required", pv.Config.ID, required)
+			return errors.Errorf("Missing signatory for validator %s of process %s: signature from %s is required", pv.Config.LinkType, pv.Config.Process, required)
 		}
 	}
 	return nil

@@ -32,9 +32,7 @@ type multiValidator struct {
 // of single-purpose validators.
 // The slice of validators should be loaded from a JSON file via validator.LoadConfig().
 func NewMultiValidator(validators []Validator) Validator {
-	return &multiValidator{
-		validators: append(validators, newSignatureValidator()),
-	}
+	return &multiValidator{validators}
 }
 
 func (v multiValidator) ShouldValidate(link *cs.Link) bool {
@@ -63,6 +61,10 @@ func (v multiValidator) matchValidators(l *cs.Link) (linkValidators []Validator)
 // It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
 func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
 	linkValidators := v.matchValidators(l)
+	if len(linkValidators) == 0 {
+		return errors.Errorf("Validation failed: link with process: [%s] and type: [%s] does not match any validator", l.Meta["process"], l.Meta["type"])
+	}
+
 	for _, child := range linkValidators {
 		err := child.Validate(r, l)
 		if err != nil {

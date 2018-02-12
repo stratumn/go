@@ -287,6 +287,12 @@ func TestLinkValidate_wrongSignatureFormat(t *testing.T) {
 	testLinkValidateError(t, l, nil, "signature.Signature [*test*] has to be a base64-encoded string")
 }
 
+func TestLinkValidate_badSignature(t *testing.T) {
+	l := cstesting.SignLink(cstesting.RandomLink())
+	l.Signatures[0].Signature = "test"
+	testLinkValidateError(t, l, nil, "signature verification failed")
+}
+
 func TestLinkValidate_wrongPaylodExpression(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{

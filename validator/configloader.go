@@ -34,9 +34,11 @@ var (
 	ErrNoPKI = errors.New("rules.json needs a 'pki' field to list authorized public keys")
 )
 
+type processesRules map[string]rulesSchema
+
 type rulesSchema struct {
-	PKI        json.RawMessage `json:"pki"`
-	Validators json.RawMessage `json:"validators"`
+	PKI   json.RawMessage `json:"pki"`
+	Types json.RawMessage `json:"types"`
 }
 
 // LoadConfig loads the validators configuration from a json file.
@@ -52,21 +54,28 @@ func LoadConfig(path string) ([]Validator, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	var rules rulesSchema
+	var rules processesRules
 	err = json.Unmarshal(data, &rules)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	var pki *PKI
-	if rules.PKI != nil {
-		pki, err = loadPKIConfig(rules.PKI)
-		if err != nil {
-			return nil, errors.WithStack(err)
+	var validators []Validator
+	for process, schema := range rules {
+		var pki *PKI
+		if schema.PKI != nil {
+			pki, err = loadPKIConfig(schema.PKI)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 		}
+		processValidators, err := loadValidatorsConfig(process, schema.Types, pki)
+		if err != nil {
+			return nil, err
+		}
+		validators = append(validators, processValidators...)
 	}
-
-	return loadValidatorsConfig(rules.Validators, pki)
+	return validators, nil
 }
 
 // loadPKIConfig deserializes json into a PKI struct.
@@ -78,22 +87,22 @@ func loadPKIConfig(data json.RawMessage) (*PKI, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	for key := range jsonData {
-		if _, err := base64.StdEncoding.DecodeString(key); key == "" || err != nil {
-			return nil, errors.Wrap(ErrBadPublicKey, "Error while parsing PKI")
+	for _, id := range jsonData {
+		for _, key := range id.Keys {
+			if _, err := base64.StdEncoding.DecodeString(key); key == "" || err != nil {
+				return nil, errors.Wrap(ErrBadPublicKey, "Error while parsing PKI")
+			}
 		}
 	}
 	return &jsonData, nil
 }
 
-type jsonValidatorData []struct {
-	ID         string           `json:"id"`
-	Type       string           `json:"type"`
+type jsonValidatorData struct {
 	Signatures []string         `json:"signatures"`
 	Schema     *json.RawMessage `json:"schema"`
 }
 
-func loadValidatorsConfig(data json.RawMessage, pki *PKI) ([]Validator, error) {
+func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Validator, error) {
 	var jsonStruct map[string]jsonValidatorData
 	err := json.Unmarshal(data, &jsonStruct)
 	if err != nil {
@@ -101,39 +110,33 @@ func loadValidatorsConfig(data json.RawMessage, pki *PKI) ([]Validator, error) {
 	}
 
 	var validators []Validator
-	for process, jsonSchemaData := range jsonStruct {
-		for _, val := range jsonSchemaData {
-			if val.ID == "" {
-				return nil, ErrMissingIdentifier
-			}
-			if val.Type == "" {
-				return nil, ErrMissingLinkType
-			}
-			if len(val.Signatures) == 0 && val.Schema == nil {
-				return nil, ErrInvalidValidator
-			}
+	for linkType, val := range jsonStruct {
+		if linkType == "" {
+			return nil, ErrMissingLinkType
+		}
+		if len(val.Signatures) == 0 && val.Schema == nil {
+			return nil, ErrInvalidValidator
+		}
 
-			baseConfig, err := newValidatorBaseConfig(process, val.ID, val.Type)
+		baseConfig, err := newValidatorBaseConfig(process, linkType)
+		if err != nil {
+			return nil, err
+		}
+		if len(val.Signatures) > 0 {
+			// if no PKI was provided, one cannot require signatures.
+			if pki == nil {
+				return nil, ErrNoPKI
+			}
+			validators = append(validators, newPkiValidator(baseConfig, val.Signatures, pki))
+		}
+
+		if val.Schema != nil {
+			schemaData, _ := val.Schema.MarshalJSON()
+			schemaValidator, err := newSchemaValidator(baseConfig, schemaData)
 			if err != nil {
 				return nil, err
 			}
-			if len(val.Signatures) > 0 {
-				// if no PKI was provided, one cannot require signatures.
-				if pki == nil {
-					return nil, ErrNoPKI
-				}
-				validators = append(validators, newPkiValidator(baseConfig, val.Signatures, pki))
-			}
-
-			if val.Schema != nil {
-				schemaData, _ := val.Schema.MarshalJSON()
-				schemaValidator, err := newSchemaValidator(baseConfig, schemaData)
-				if err != nil {
-					return nil, err
-				}
-				validators = append(validators, schemaValidator)
-			}
-
+			validators = append(validators, schemaValidator)
 		}
 	}
 

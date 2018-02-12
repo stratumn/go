@@ -76,7 +76,7 @@ func TestSchemaValidatorConfig(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			baseCfg, _ := newValidatorBaseConfig(process, tt.name, tt.linkType)
+			baseCfg, _ := newValidatorBaseConfig(process, tt.linkType)
 			sv, err := newSchemaValidator(baseCfg, tt.schema)
 
 			if tt.valid {
@@ -96,7 +96,7 @@ func TestSchemaValidatorConfig(t *testing.T) {
 
 func TestSchemaValidator(t *testing.T) {
 	schema := []byte(testSellSchema)
-	baseCfg, err := newValidatorBaseConfig("p1", "id1", "sell")
+	baseCfg, err := newValidatorBaseConfig("p1", "sell")
 	require.NoError(t, err)
 	sv, err := newSchemaValidator(baseCfg, schema)
 	require.NoError(t, err)
@@ -104,7 +104,7 @@ func TestSchemaValidator(t *testing.T) {
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = "p1"
-		l.Meta["action"] = "sell"
+		l.Meta["type"] = "sell"
 		l.State["seller"] = "Alice"
 		l.State["lot"] = "Secret key"
 		l.State["initialPrice"] = 42

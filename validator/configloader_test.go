@@ -28,98 +28,83 @@ func TestLoadConfig_Success(t *testing.T) {
 	t.Run("schema & signatures", func(T *testing.T) {
 		const validJSONConfig = `
 		{
-			"pki": {
-			    "TESTKEY1": {
-				"name": "Alice Van den Budenmayer",
-				"roles": [
-				    "employee"
-				]
+			"auction": {
+			  "pki": {
+			    "alice.vandenbudenmayer@stratumn.com": {
+			      "keys": ["TESTKEY1"],
+			      "roles": ["employee"]
 			    },
-			    "TESTKEY2": {
-				"name": "Bob Wagner",
-				"roles": [
-				    "manager",
-				    "it"
-				]
+			    "Bob Wagner": {
+			      "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+			      "roles": ["manager", "it"]
 			    }
+			  },
+			  "types": {
+			    "init": {
+			      "signatures": ["Alice Van den Budenmayer"],
+			      "schema": {
+				"type": "object",
+				"properties": {
+				  "seller": {
+				    "type": "string"
+				  },
+				  "lot": {
+				    "type": "string"
+				  },
+				  "initialPrice": {
+				    "type": "integer",
+				    "minimum": 0
+				  }
+				},
+				"required": ["seller", "lot", "initialPrice"]
+			      }
+			    },
+			    "bid": {
+			      "schema": {
+				"type": "object",
+				"properties": {
+				  "buyer": {
+				    "type": "string"
+				  },
+				  "bidPrice": {
+				    "type": "integer",
+				    "minimum": 0
+				  }
+				},
+				"required": ["buyer", "bidPrice"]
+			      }
+			    }
+			  }
 			},
-			"validators": {
-			    "auction": [
-				{
-				    "id": "initFormat",	
-				    "type": "init",
-				    "signatures": ["Alice Van den Budenmayer"],
-				    "schema": {
-					"type": "object",
-					"properties": {
-					    "seller": {
-						"type": "string"
-					    },
-					    "lot": {
-						"type": "string"
-					    },
-					    "initialPrice": {
-						"type": "integer",
-						"minimum": 0
-					    }
-					},
-					"required": [
-					    "seller",
-					    "lot",
-					    "initialPrice"
-					]
-				    }
-				},
-				{
-					"id": "bidFormat",	
-				      "type": "bid",
-				    "schema": {
-					"type": "object",
-					"properties": {
-					    "buyer": {
-						"type": "string"
-					    },
-					    "bidPrice": {
-						"type": "integer",
-						"minimum": 0
-					    }
-					},
-					"required": [
-					    "buyer",
-					    "bidPrice"
-					]
-				    }
+			"chat": {
+			"pki": {
+				"Bob Wagner": {
+					"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+					"roles": ["manager", "it"]
 				}
-			    ],
-			    "chat": [
-				{
-				    "id": "messageFormat",	
-				    "type": "message",
-				    "signatures": null,
-				    "schema": {
-					"type": "object",
-					"properties": {
-					    "to": {
-						"type": "string"
-					    },
-					    "content": {
-						"type": "string"
-					    }
-					},
-					"required": [
-					    "to",
-					    "content"
-					]
-				    }
+			},
+			"types": {
+			    "message": {
+			      "signatures": null,
+			      "schema": {
+				"type": "object",
+				"properties": {
+				  "to": {
+				    "type": "string"
+				  },
+				  "content": {
+				    "type": "string"
+				  }
 				},
-				{
-				    "id": "initSigned",
-				    "type": "init",
-				    "signatures": ["manager", "it"]
-				}
-			    ]
+				"required": ["to", "content"]
+			      }
+			    },
+			    "init": {
+			      "signatures": ["manager", "it"]
+			    }
+			  }
 			}
-		    }
+		      }		      
 		`
 
 		testFile := createTMPFile(t, validJSONConfig)
@@ -145,32 +130,23 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		const validJSONSig = `
 		{
-			"pki": {
-			    "TESTKEY1": {
-				"name": "Alice Van den Budenmayer",
-				"roles": [
-				    "employee"
-				]
-			    },
-			    "TESTKEY2": {
-				"name": "Bob Wagner",
-				"roles": [
-				    "manager",
-				    "it"
-				]
+			"testProcess": {
+			  "pki": {
+			    "alice.vandenbudenmayer@stratumn.com": {
+			      "keys": ["TESTKEY1"],
+			      "name": "Alice Van den Budenmayer",
+			      "roles": ["employee"]
 			    }
-			},
-			"validators": {
-			    "test": [
-				{
-				    "id": "initSigned",
-				    "type": "init",
-				    "signatures": null,
-				    "schema": {}
-				}
-			    ]
+			  },
+			  "types": {
+			      "init": {
+				"signatures": null,      
+				"schema": {}
+			      }
+			  }
 			}
-		    }
+		      }
+		      
 	`
 
 		testFile := createTMPFile(t, validJSONSig)
@@ -189,33 +165,27 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		const validJSONSig = `
 		{
-			"pki": {
-			    "TESTKEY1": {
-				"name": "Alice Van den Budenmayer",
-				"roles": [
-				    "employee"
-				]
+			"test": {
+			    "pki": {
+				"alice.vandenbudenmayer@stratumn.com": {
+				    "keys": [
+					"TESTKEY1"
+				    ],
+				    "name": "Alice Van den Budenmayer",
+				    "roles": [
+					"employee"
+				    ]
+				}
 			    },
-			    "TESTKEY2": {
-				"name": "Bob Wagner",
-				"roles": [
-				    "manager",
-				    "it"
-				]
-			    }
-			},
-			"validators": {
-			    "test": [
-				{
-				    "id": "initSigned",
-				    "type": "init",
+			    "types": {
+				"init": {
 				    "signatures": [],
 				    "schema": {}
 				}
-			    ]
+			    }
 			}
 		    }
-	`
+		`
 
 		testFile := createTMPFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -233,16 +203,14 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		const validJSONSig = `
 		{
-			"validators": {
-			    "test": [
-				{
-				    "id": "initSigned",
-				    "type": "init",
+			"test": {
+			    "types": {
+				"init": {
 				    "schema": {
 					"type": "object"
 				    }
 				}
-			    ]
+			    }
 			}
 		    }
 		`
@@ -266,17 +234,14 @@ func TestLoadValidators_Error(t *testing.T) {
 	t.Run("Missing schema", func(T *testing.T) {
 		const invalidValidatorConfig = `
 		{
-			"pki": {},
-			"validators": {
-			    "auction": [
-				{
-				    "id": "wrongValidator",
-				    "type": "init"
-				}
-			    ]
+			"test": {
+			  "types": {
+			    "init": {}
+			  },
+			  "pki": {}
 			}
-		    }
-		`
+		}
+	`
 		testFile := createTMPFile(t, invalidValidatorConfig)
 		validators, err := LoadConfig(testFile)
 
@@ -284,87 +249,18 @@ func TestLoadValidators_Error(t *testing.T) {
 		assert.EqualError(t, err, ErrInvalidValidator.Error())
 	})
 
-	t.Run("Missing identifier", func(T *testing.T) {
-		const invalidValidatorConfig = `
-		{
-			"pki": {},
-			"validators": {
-			    "auction": [
-				{
-				    "type": "init",
-				    "schema": {
-					"type": "object",
-					"properties": {
-					    "buyer": {
-						"type": "string"
-					    },
-					    "bidPrice": {
-						"type": "integer",
-						"minimum": 0
-					    }
-					}
-				    }
-				}
-			    ]
-			}
-		    }
-		`
-		testFile := createTMPFile(t, invalidValidatorConfig)
-		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
-
-		assert.Nil(t, validators)
-		assert.EqualError(t, err, ErrMissingIdentifier.Error())
-	})
-
-	t.Run("Missing type", func(T *testing.T) {
-		const invalidValidatorConfig = `
-		{
-			"pki": {},
-			"validators": {
-			    "auction": [
-				{
-				    "id": "missingType",
-				    "schema": {
-					"type": "object",
-					"properties": {
-					    "buyer": {
-						"type": "string"
-					    },
-					    "bidPrice": {
-						"type": "integer",
-						"minimum": 0
-					    }
-					}
-				    }
-				}
-			    ]
-			}
-		    }
-		`
-		testFile := createTMPFile(t, invalidValidatorConfig)
-		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
-
-		assert.Nil(t, validators)
-		assert.EqualError(t, err, ErrMissingLinkType.Error())
-	})
-
 	t.Run("Bad signature validator", func(T *testing.T) {
 		const invalidValidatorConfig = `
 		{
-			"pki": {},
-			"validators": {
-			    "auction": [
-				{
-				    "id": "missingType",
-				    "type": "action",	
-				    "signatures": "test"
+			"test": {
+				"types": {
+				    "init": {
+					"signatures": "test"
+				    }
 				}
-			    ]
+			    }
 			}
-		    }
-		`
+		    `
 		testFile := createTMPFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
 		validators, err := LoadConfig(testFile)
@@ -379,16 +275,14 @@ func TestLoadPKI_Error(t *testing.T) {
 	t.Run("No PKI", func(T *testing.T) {
 		const noPKIConfig = `
 		{
-			"validators": {
-				"auction": [
-				    {
-					"id": "missingType",
-					"type": "action",	
+			"test": {
+				"types": {
+				    "init": {
 					"signatures": ["test"]
 				    }
-				]
+				}
 			    }
-		    }
+			}
 		`
 		testFile := createTMPFile(t, noPKIConfig)
 		defer os.Remove(testFile)
@@ -401,17 +295,23 @@ func TestLoadPKI_Error(t *testing.T) {
 	t.Run("Bad public key", func(T *testing.T) {
 		const invalidPKIConfig = `
 		{
-			"pki": {
-				"": {
-				    "name": "Alice Van den Budenmayer",
-				    "roles": [
-					"employee"
-				    ]
-				}
-			},
-			"validators": {}
+			"test": {
+			  "pki": {
+			    "alice.vandenbudenmayer@stratumn.com": {
+			      "keys": ["t€st"],
+			      "name": "Alice Van den Budenmayer",
+			      "roles": ["employee"]
+			    }
+			  },
+			  "types": {
+			    "init": {
+			      "signatures": [],
+			      "schema": {}
+			    }
+			  }
+			}
 		}
-		`
+				      `
 		testFile := createTMPFile(t, invalidPKIConfig)
 		defer os.Remove(testFile)
 		validators, err := LoadConfig(testFile)
