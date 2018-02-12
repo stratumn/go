@@ -223,7 +223,7 @@ func (l *Link) GetProcess() string {
 }
 
 // Validate checks for errors in a link.
-// It only validates the format of signatures, it does not verify their correctness.
+// It checks the validity of: format, signatures and references.
 func (l *Link) Validate(getSegment GetSegmentFunc) error {
 	if process, ok := l.Meta["process"].(string); !ok || process == "" {
 		return errors.New("link.meta.process should be a non empty string")
@@ -259,7 +259,7 @@ func (l *Link) Validate(getSegment GetSegmentFunc) error {
 		return err
 	}
 
-	if err := l.validateSignaturesFormat(); err != nil {
+	if err := l.validateSignatures(); err != nil {
 		return err
 	}
 
@@ -308,7 +308,7 @@ func (l *Link) validateReferences(getSegment GetSegmentFunc) error {
 	return nil
 }
 
-func (l *Link) validateSignaturesFormat() error {
+func (l *Link) validateSignatures() error {
 	if l.Signatures != nil {
 		for _, sig := range l.Signatures {
 			if sig.Type == "" {
@@ -319,6 +319,10 @@ func (l *Link) validateSignaturesFormat() error {
 				return errors.Errorf("signature.Signature [%s] has to be a base64-encoded string", sig.Signature)
 			} else if _, err := jmespath.Compile(sig.Payload); err != nil {
 				return errors.Errorf("signature.Payload [%s] has to be a JMESPATH expression, got: %s", sig.Payload, err.Error())
+			}
+
+			if err := sig.Verify(l); err != nil {
+				return err
 			}
 		}
 	}

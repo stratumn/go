@@ -32,9 +32,7 @@ type multiValidator struct {
 // of single-purpose validators.
 // The slice of validators should be loaded from a JSON file via validator.LoadConfig().
 func NewMultiValidator(validators []Validator) Validator {
-	return &multiValidator{
-		validators: append(validators, newSignatureValidator()),
-	}
+	return &multiValidator{validators}
 }
 
 func (v multiValidator) ShouldValidate(link *cs.Link) bool {

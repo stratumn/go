@@ -49,12 +49,12 @@ func TestPKIValidator(t *testing.T) {
 	link2 := createValidLinkWithKey(priv2)
 
 	pki := &PKI{
-		link1.Signatures[0].PublicKey: &Identity{
-			Name:  "Alice Van den Budenmayer",
+		"Alice Van den Budenmayer": &Identity{
+			Keys:  []string{link1.Signatures[0].PublicKey},
 			Roles: []string{"employee"},
 		},
-		link2.Signatures[0].PublicKey: &Identity{
-			Name:  "Bob Wagner",
+		"Bob Wagner": &Identity{
+			Keys:  []string{link2.Signatures[0].PublicKey},
 			Roles: []string{"manager", "it"},
 		},
 	}
@@ -118,14 +118,14 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:               "required-signature-fails",
 			valid:              false,
-			err:                "Missing signatory for validator required-signature-fails: signature from alice van den budenmayer is required",
+			err:                "Missing signatory for validator test of process p1: signature from alice van den budenmayer is required",
 			link:               createValidLink,
 			requiredSignatures: []string{"alice van den budenmayer"},
 		},
 	}
 
 	for _, tt := range testCases {
-		baseCfg, err := newValidatorBaseConfig(process, tt.name, action)
+		baseCfg, err := newValidatorBaseConfig(process, action)
 		require.NoError(t, err)
 		sv := newPkiValidator(baseCfg, tt.requiredSignatures, pki)
 

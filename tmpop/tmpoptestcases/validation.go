@@ -27,18 +27,16 @@ import (
 
 const testValidationConfig = `
 {
-	"pki": {
-	  "TESTKEY1": {
-	    "name": "Alice Van den Budenmayer",
-	    "roles": ["employee"]
-	  }
-	},
-	"validators": {
-	  "testProcess": [
-	    {
-	      "id": "testProcess-schema",
-	      "type": "init",
-	      "signatures": null,
+	"testProcess": {
+	  "pki": {
+	    "alice.vandenbudenmayer@stratumn.com": {
+	      "keys": ["TESTKEY1"],
+	      "roles": ["employee"]
+	    }
+	  },
+	  "types": {
+	    "init": {
+	      "signature": null,
 	      "schema": {
 		"type": "object",
 		"properties": {
@@ -47,10 +45,13 @@ const testValidationConfig = `
 		  }
 		}
 	      }
+	    },
+	    "action": {
+	      "signatures": ["it"]
 	    }
-	  ]
+	  }
 	}
-} 
+      }
 `
 
 func createValidationFile(t *testing.T) string {

@@ -27,98 +27,83 @@ import (
 
 const validJSONConfig = `
 {
-	"pki": {
-	    "TESTKEY1": {
-		"name": "Alice Van den Budenmayer",
-		"roles": [
-		    "employee"
-		]
-	    },
-	    "TESTKEY2": {
-		"name": "Bob Wagner",
-		"roles": [
-		    "manager",
-		    "it"
-		]
-	    }
-	},
-	"validators": {
-	    "auction": [
-		{
-		    "id": "initFormat",	
-		    "type": "init",
-		    "signatures": ["Alice Van den Budenmayer"],
-		    "schema": {
+		"auction": {
+		  "pki": {
+		    "alice.vandenbudenmayer@stratumn.com": {
+		      "keys": ["TESTKEY1"],
+		      "roles": ["employee"]
+		    },
+		    "Bob Wagner": {
+		      "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+		      "roles": ["manager", "it"]
+		    }
+		  },
+		  "types": {
+		    "init": {
+		      "signatures": ["Alice Van den Budenmayer"],
+		      "schema": {
 			"type": "object",
 			"properties": {
-			    "seller": {
-				"type": "string"
-			    },
-			    "lot": {
-				"type": "string"
-			    },
-			    "initialPrice": {
-				"type": "integer",
-				"minimum": 0
-			    }
+			  "seller": {
+			    "type": "string"
+			  },
+			  "lot": {
+			    "type": "string"
+			  },
+			  "initialPrice": {
+			    "type": "integer",
+			    "minimum": 0
+			  }
 			},
-			"required": [
-			    "seller",
-			    "lot",
-			    "initialPrice"
-			]
+			"required": ["seller", "lot", "initialPrice"]
+		      }
+		    },
+		    "bid": {
+		      "schema": {
+			"type": "object",
+			"properties": {
+			  "buyer": {
+			    "type": "string"
+			  },
+			  "bidPrice": {
+			    "type": "integer",
+			    "minimum": 0
+			  }
+			},
+			"required": ["buyer", "bidPrice"]
+		      }
 		    }
+		  }
 		},
-		{
-    		    "id": "bidFormat",	
-	  	    "type": "bid",
-		    "schema": {
-			"type": "object",
-			"properties": {
-			    "buyer": {
-				"type": "string"
-			    },
-			    "bidPrice": {
-				"type": "integer",
-				"minimum": 0
-			    }
-			},
-			"required": [
-			    "buyer",
-			    "bidPrice"
-			]
-		    }
-		}
-	    ],
-	    "chat": [
-		{
-		    "id": "messageFormat",	
-		    "type": "message",
-		    "signatures": null,
-		    "schema": {
-			"type": "object",
-			"properties": {
-			    "to": {
-				"type": "string"
-			    },
-			    "content": {
-				"type": "string"
-			    }
-			},
-			"required": [
-			    "to",
-			    "content"
-			]
-		    }
+		"chat": {
+		"pki": {
+			"Bob Wagner": {
+				"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+				"roles": ["manager", "it"]
+			}
 		},
-		{
-		    "id": "initSigned",
-		    "type": "init",
-		    "signatures": ["manager"]
+		"types": {
+		    "message": {
+		      "signatures": null,
+		      "schema": {
+			"type": "object",
+			"properties": {
+			  "to": {
+			    "type": "string"
+			  },
+			  "content": {
+			    "type": "string"
+			  }
+			},
+			"required": ["to", "content"]
+		      }
+		    },
+		    "init": {
+		      "signatures": ["manager", "it"]
+		    }
+		  }
 		}
-	    ]
-	}
-    }
+	      }		      
 `
 
 type testCase struct {

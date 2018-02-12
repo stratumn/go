@@ -43,12 +43,6 @@ func TestBaseConfig(t *testing.T) {
 		valid:         false,
 		expectedError: ErrMissingProcess,
 	}, {
-		id:            "",
-		process:       process,
-		action:        action,
-		valid:         false,
-		expectedError: ErrMissingIdentifier,
-	}, {
 		id:            "missing-link-type",
 		process:       process,
 		action:        "",
@@ -66,7 +60,6 @@ func TestBaseConfig(t *testing.T) {
 		t.Run(tt.id, func(t *testing.T) {
 			cfg, err := newValidatorBaseConfig(
 				tt.process,
-				tt.id,
 				tt.action,
 			)
 
@@ -89,7 +82,6 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 	action := "sell"
 	cfg, err := newValidatorBaseConfig(
 		process,
-		"test",
 		action,
 	)
 	require.NoError(t, err)
