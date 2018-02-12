@@ -12,7 +12,6 @@
     },
     "types": {
       "init": {
-        "signature": null,
         "schema": {
           "type": "object",
           "properties": {

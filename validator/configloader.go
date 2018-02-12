@@ -138,7 +138,6 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 			}
 			validators = append(validators, schemaValidator)
 		}
-
 	}
 
 	return validators, nil

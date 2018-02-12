@@ -121,7 +121,7 @@ var testCases = []testCase{{
 		},
 		Meta: map[string]interface{}{
 			"process": "auction",
-			"action":  "bid",
+			"type":    "bid",
 		},
 	},
 	valid: true,
@@ -130,10 +130,10 @@ var testCases = []testCase{{
 	link: &cs.Link{
 		Meta: map[string]interface{}{
 			"process": "unknown",
-			"action":  "unknown",
+			"type":    "unknown",
 		},
 	},
-	valid: true,
+	valid: false,
 }, {
 	name: "missing-required-field",
 	link: &cs.Link{
@@ -142,7 +142,7 @@ var testCases = []testCase{{
 		},
 		Meta: map[string]interface{}{
 			"process": "chat",
-			"action":  "message",
+			"type":    "message",
 		},
 	},
 	valid: false,
@@ -155,7 +155,7 @@ var testCases = []testCase{{
 		},
 		Meta: map[string]interface{}{
 			"process": "auction",
-			"action":  "bid",
+			"type":    "bid",
 		},
 	},
 	valid: false,

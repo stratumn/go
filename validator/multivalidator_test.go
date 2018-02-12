@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stratumn/sdk/cs/cstesting"
@@ -129,7 +130,11 @@ func TestMultiValidator_Validate(t *testing.T) {
 	svCfg1, _ := newSchemaValidator(baseConfig1, []byte(testMessageSchema))
 	svCfg2, _ := newSchemaValidator(baseConfig2, []byte(testMessageSchema))
 
-	sigVCfg1 := newPkiValidator(baseConfig3, []string{"anyone"}, &PKI{})
+	sigVCfg1 := newPkiValidator(baseConfig3, []string{"alice"}, &PKI{
+		"alice": &Identity{
+			Keys: []string{"TESTKEY1"},
+		},
+	})
 	sigVCfg2 := newPkiValidator(baseConfig4, []string{}, &PKI{})
 
 	mv := multiValidator{
@@ -137,15 +142,30 @@ func TestMultiValidator_Validate(t *testing.T) {
 	}
 
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
-		l := cstesting.RandomLink()
+		l := cstesting.SignLink(cstesting.RandomLink())
+		l.Meta["process"] = "p"
+		l.Meta["type"] = "a1"
+		l.State["message"] = "test"
+		l.Signatures[0].PublicKey = "TESTKEY1"
+
 		err := mv.Validate(nil, l)
 		assert.NoError(t, err)
+	})
+
+	t.Run("Validate fails if no validator matches the given segment", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		l.Meta["type"] = "nomatch"
+
+		process := l.Meta["process"]
+
+		err := mv.Validate(nil, l)
+		assert.EqualError(t, err, fmt.Sprintf("Validation failed: link with process: [%s] and type: [nomatch] does not match any validator", process))
 	})
 
 	t.Run("Validate fails if one of the children fails (schema)", func(t *testing.T) {
 		l := cstesting.RandomLink()
 		l.Meta["process"] = "p"
-		l.Meta["action"] = "a2"
+		l.Meta["type"] = "a2"
 
 		err := mv.Validate(nil, l)
 		assert.EqualError(t, err, "link validation failed: [message: message is required]")
@@ -154,7 +174,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 	t.Run("Validate fails if one of the children fails (pki)", func(t *testing.T) {
 		l := cstesting.SignLink(cstesting.RandomLink())
 		l.Meta["process"] = "p"
-		l.Meta["action"] = "a1"
+		l.Meta["type"] = "a1"
 		l.State["message"] = "test"
 
 		err := mv.Validate(nil, l)

@@ -59,13 +59,13 @@ func (bv *validatorBaseConfig) ShouldValidate(link *cs.Link) bool {
 		return false
 	}
 
-	linkAction, ok := link.Meta["action"].(string)
+	linkType, ok := link.Meta["type"].(string)
 	if !ok {
-		log.Debug("No action found in link %v", link)
+		log.Debug("No type found in link %v", link)
 		return false
 	}
 
-	if linkAction != bv.LinkType {
+	if linkType != bv.LinkType {
 		return false
 	}
 

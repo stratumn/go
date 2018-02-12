@@ -49,7 +49,7 @@ func (s Signature) Verify(l *Link) error {
 
 	payload, err := jmespath.Search(s.Payload, l)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute JMESPATH query")
+		return errors.Wrap(err, "failed to execute JMESPATH query")
 	}
 	if payload == nil {
 		return errors.New("JMESPATH query does not match any link data")
