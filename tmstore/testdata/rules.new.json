@@ -1,0 +1,29 @@
+{
+  "testProcess": {
+    "pki": {
+      "charlie@stratumn.com": {
+        "keys": ["TESTKEY2"],
+        "roles": ["employee"]
+      },
+      "Dave Gahan": {
+        "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+        "roles": ["it"]
+      }
+    },
+    "types": {
+      "init": {
+        "schema": {
+          "type": "object",
+          "properties": {
+            "string": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "action": {
+        "signatures": ["employee"]
+      }
+    }
+  }
+}

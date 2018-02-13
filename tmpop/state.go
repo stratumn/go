@@ -18,6 +18,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/merkle"
@@ -39,10 +43,13 @@ type State struct {
 	deliveredLinks     store.Batch
 	deliveredLinksList []*cs.Link
 	checkedLinks       store.Batch
+
+	validatorWatcher *fsnotify.Watcher
+	validatorChan    chan validator.Validator
 }
 
 // NewState creates a new State.
-func NewState(a store.Adapter) (*State, error) {
+func NewState(a store.Adapter, config *Config) (*State, error) {
 	deliveredLinks, err := a.NewBatch()
 	if err != nil {
 		return nil, err
@@ -52,11 +59,65 @@ func NewState(a store.Adapter) (*State, error) {
 	// (more exactly, checked links would lock out delivered links)
 	checkedLinks := bufferedbatch.NewBatch(a)
 
+	var validatorChan = make(chan validator.Validator, 1)
+	var watcher *fsnotify.Watcher
+
+	if config.ValidatorFilename != "" {
+		loadValidatorFile(config.ValidatorFilename, validatorChan)
+		var err error
+		if watcher, err = fsnotify.NewWatcher(); err != nil {
+			return nil, errors.Wrap(err, "cannot create a new filesystem watcher for validators")
+		}
+		if err = watcher.Add(config.ValidatorFilename); err != nil {
+			return nil, errors.Wrapf(err, "cannot watch validator configuration file %s", config.ValidatorFilename)
+		}
+	}
+
 	return &State{
-		adapter:        a,
-		deliveredLinks: deliveredLinks,
-		checkedLinks:   checkedLinks,
+		adapter:          a,
+		deliveredLinks:   deliveredLinks,
+		checkedLinks:     checkedLinks,
+		validatorWatcher: watcher,
+		validatorChan:    validatorChan,
 	}, nil
+}
+
+func loadValidatorFile(filename string, validatorChan chan validator.Validator) {
+	validators, err := validator.LoadConfig(filename)
+	if err != nil {
+		log.Warnf("Could not load validator configuration: %s", err.Error())
+	} else {
+		select {
+		case validatorChan <- validator.NewMultiValidator(validators):
+		}
+	}
+}
+
+// UpdateValidators updates validators if a new version is available
+func (s *State) UpdateValidators() {
+	if s.validatorWatcher != nil {
+		var validatorFile string
+		select {
+		case event := <-s.validatorWatcher.Events:
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				validatorFile = event.Name
+			}
+		case err := <-s.validatorWatcher.Errors:
+			log.Warnf("Validator file watcher error caught: %s", err)
+		default:
+			break
+		}
+		if validatorFile != "" {
+			go loadValidatorFile(validatorFile, s.validatorChan)
+		}
+	}
+	select {
+	case validator := <-s.validatorChan:
+		log.Info("Validator updated")
+		s.validator = validator
+	default:
+		return
+	}
 }
 
 // Check checks if creating this link is a valid operation
