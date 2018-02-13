@@ -18,13 +18,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/merkle"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validator"
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -100,10 +100,10 @@ func New(a store.Adapter, kv store.KeyValueStore, config *Config) (*TMPop, error
 
 	lastBlock, err := ReadLastBlock(kv)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cannot read the last block")
 	}
 
-	s, err := NewState(a)
+	s, err := NewState(a, config)
 	if err != nil {
 		return nil, err
 	}
@@ -170,15 +170,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 			*t.lastBlock.AppHash)
 	}
 
-	// TODO: we don't need to re-load the file for each block, it's expensive.
-	// We should improve this and only reload when a config update was committed.
-	if t.config.ValidatorFilename != "" {
-		validators, err := validator.LoadConfig(t.config.ValidatorFilename)
-		if err != nil {
-			log.Warnf("Could not load validator configuration: %s", err.Error())
-		}
-		t.state.validator = validator.NewMultiValidator(validators)
-	}
+	t.state.UpdateValidators()
 
 	t.state.previousAppHash = types.NewBytes32FromBytes(t.currentHeader.AppHash)
 
