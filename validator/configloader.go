@@ -41,21 +41,29 @@ type rulesSchema struct {
 	Types json.RawMessage `json:"types"`
 }
 
+type rulesListener func(process string, schema rulesSchema, validators []Validator)
+
 // LoadConfig loads the validators configuration from a json file.
 // The configuration returned can then be used in NewMultiValidator().
-func LoadConfig(path string) ([]Validator, error) {
+func LoadConfig(path string, listener rulesListener) ([]Validator, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	defer f.Close()
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	return LoadConfigContent(data, listener)
+}
 
+// LoadConfigContent loads the validators configuration from json data.
+// The configuration returned can then be used in NewMultiValidator().
+func LoadConfigContent(data []byte, listener rulesListener) ([]Validator, error) {
 	var rules processesRules
-	err = json.Unmarshal(data, &rules)
+	err := json.Unmarshal(data, &rules)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -72,6 +80,9 @@ func LoadConfig(path string) ([]Validator, error) {
 		processValidators, err := loadValidatorsConfig(process, schema.Types, pki)
 		if err != nil {
 			return nil, err
+		}
+		if listener != nil {
+			listener(process, schema, processValidators)
 		}
 		validators = append(validators, processValidators...)
 	}

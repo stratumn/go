@@ -18,10 +18,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/merkle"
@@ -29,6 +25,31 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/validator"
 )
+
+// // State represents the app states, separating the committed state (for queries)
+// // from the working state (for CheckTx and DeliverTx).
+// type State interface {
+// 	// UpdateValidators updates validators if a new version is available
+// 	UpdateValidators()
+
+// 	// SetValidators forces to set validators
+// 	SetValidators(validator.Validator)
+
+// 	// ValidatorHash returns the validator hash
+// 	ValidatorHash() (*types.Bytes32, error)
+
+// 	// Check checks if creating this link is a valid operation
+// 	Check(link *cs.Link) *ABCIError
+
+// 	// Deliver adds a link to the list of links to be committed
+// 	Deliver(link *cs.Link) *ABCIError
+
+// 	// Commit commits the delivered links,
+// 	// resets delivered and checked state,
+// 	// and returns the hash for the commit
+// 	// and the list of committed links.
+// 	Commit() (*types.Bytes32, []*cs.Link, error)
+// }
 
 // State represents the app states, separating the committed state (for queries)
 // from the working state (for CheckTx and DeliverTx).
@@ -44,8 +65,7 @@ type State struct {
 	deliveredLinksList []*cs.Link
 	checkedLinks       store.Batch
 
-	validatorWatcher *fsnotify.Watcher
-	validatorChan    chan validator.Validator
+	manager *validator.GovernanceManager
 }
 
 // NewState creates a new State.
@@ -59,66 +79,36 @@ func NewState(a store.Adapter, config *Config) (*State, error) {
 	// (more exactly, checked links would lock out delivered links)
 	checkedLinks := bufferedbatch.NewBatch(a)
 
-	var validatorChan = make(chan validator.Validator, 1)
-	var watcher *fsnotify.Watcher
-
-	if config.ValidatorFilename != "" {
-		loadValidatorFile(config.ValidatorFilename, validatorChan)
-		var err error
-		if watcher, err = fsnotify.NewWatcher(); err != nil {
-			return nil, errors.Wrap(err, "cannot create a new filesystem watcher for validators")
-		}
-		if err = watcher.Add(config.ValidatorFilename); err != nil {
-			return nil, errors.Wrapf(err, "cannot watch validator configuration file %s", config.ValidatorFilename)
-		}
+	state := &State{
+		adapter:        a,
+		deliveredLinks: deliveredLinks,
+		checkedLinks:   checkedLinks,
 	}
 
-	return &State{
-		adapter:          a,
-		deliveredLinks:   deliveredLinks,
-		checkedLinks:     checkedLinks,
-		validatorWatcher: watcher,
-		validatorChan:    validatorChan,
-	}, nil
-}
-
-func loadValidatorFile(filename string, validatorChan chan validator.Validator) {
-	validators, err := validator.LoadConfig(filename)
+	state.manager, err = validator.NewGovernanceManager(a, config.ValidatorFilename)
 	if err != nil {
-		log.Warnf("Could not load validator configuration: %s", err.Error())
-	} else {
-		select {
-		case validatorChan <- validator.NewMultiValidator(validators):
-		}
+		return nil, err
 	}
+
+	return state, nil
 }
 
 // UpdateValidators updates validators if a new version is available
 func (s *State) UpdateValidators() {
-	if s.validatorWatcher != nil {
-		var validatorFile string
-		select {
-		case event := <-s.validatorWatcher.Events:
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				validatorFile = event.Name
-			}
-		case err := <-s.validatorWatcher.Errors:
-			log.Warnf("Validator file watcher error caught: %s", err)
-		default:
-			break
-		}
-		if validatorFile != "" {
-			go loadValidatorFile(validatorFile, s.validatorChan)
-		}
-	}
-	select {
-	case validator := <-s.validatorChan:
-		log.Info("Validator updated")
-		s.validator = validator
-	default:
-		return
-	}
+	s.manager.UpdateValidators(&s.validator)
 }
+
+// // SetValidators implements tmpop.State.SetValidators
+// func (s *state) SetValidators(v validator.Validator) {
+// 	s.validator = v
+// }
+
+// // ValidatorHash implements tmpop.State.ValidatorHash
+// func (s *state) ValidatorHash() (*types.Bytes32, error) {
+// 	if s.validator == nil {
+// 		return
+// 	}
+// }
 
 // Check checks if creating this link is a valid operation
 func (s *State) Check(link *cs.Link) *ABCIError {
