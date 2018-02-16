@@ -15,7 +15,6 @@
 package validator
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -26,90 +25,9 @@ import (
 func TestLoadConfig_Success(t *testing.T) {
 
 	t.Run("schema & signatures", func(T *testing.T) {
-		const validJSONConfig = `
-		{
-			"auction": {
-			  "pki": {
-			    "alice.vandenbudenmayer@stratumn.com": {
-			      "keys": ["TESTKEY1"],
-			      "roles": ["employee"]
-			    },
-			    "Bob Wagner": {
-			      "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
-			      "roles": ["manager", "it"]
-			    }
-			  },
-			  "types": {
-			    "init": {
-			      "signatures": ["Alice Van den Budenmayer"],
-			      "schema": {
-				"type": "object",
-				"properties": {
-				  "seller": {
-				    "type": "string"
-				  },
-				  "lot": {
-				    "type": "string"
-				  },
-				  "initialPrice": {
-				    "type": "integer",
-				    "minimum": 0
-				  }
-				},
-				"required": ["seller", "lot", "initialPrice"]
-			      }
-			    },
-			    "bid": {
-			      "schema": {
-				"type": "object",
-				"properties": {
-				  "buyer": {
-				    "type": "string"
-				  },
-				  "bidPrice": {
-				    "type": "integer",
-				    "minimum": 0
-				  }
-				},
-				"required": ["buyer", "bidPrice"]
-			      }
-			    }
-			  }
-			},
-			"chat": {
-			"pki": {
-				"Bob Wagner": {
-					"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
-					"roles": ["manager", "it"]
-				}
-			},
-			"types": {
-			    "message": {
-			      "signatures": null,
-			      "schema": {
-				"type": "object",
-				"properties": {
-				  "to": {
-				    "type": "string"
-				  },
-				  "content": {
-				    "type": "string"
-				  }
-				},
-				"required": ["to", "content"]
-			      }
-			    },
-			    "init": {
-			      "signatures": ["manager", "it"]
-			    }
-			  }
-			}
-		      }		      
-		`
-
-		testFile := createTMPFile(t, validJSONConfig)
+		testFile := createTempFile(t, validJSONConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
@@ -124,6 +42,17 @@ func TestLoadConfig_Success(t *testing.T) {
 		}
 		assert.Equal(t, 3, schemaValidatorCount)
 		assert.Equal(t, 2, pkiValidatorCount)
+
+		validatorProcessCount := 0
+		validatorCount := 0
+		validators, err = LoadConfig(testFile, func(process string, schema rulesSchema, validators []Validator) {
+			validatorProcessCount++
+			validatorCount = validatorCount + len(validators)
+		})
+		assert.NoError(t, err, "LoadConfig()")
+		assert.NotNil(t, validators)
+		assert.Equal(t, 2, validatorProcessCount)
+		assert.Len(t, validators, validatorCount)
 	})
 
 	t.Run("Null signatures", func(T *testing.T) {
@@ -149,9 +78,9 @@ func TestLoadConfig_Success(t *testing.T) {
 		      
 	`
 
-		testFile := createTMPFile(t, validJSONSig)
+		testFile := createTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
@@ -187,9 +116,9 @@ func TestLoadConfig_Success(t *testing.T) {
 		    }
 		`
 
-		testFile := createTMPFile(t, validJSONSig)
+		testFile := createTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
@@ -215,9 +144,9 @@ func TestLoadConfig_Success(t *testing.T) {
 		    }
 		`
 
-		testFile := createTMPFile(t, validJSONSig)
+		testFile := createTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
@@ -242,8 +171,8 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		}
 	`
-		testFile := createTMPFile(t, invalidValidatorConfig)
-		validators, err := LoadConfig(testFile)
+		testFile := createTempFile(t, invalidValidatorConfig)
+		validators, err := LoadConfig(testFile, nil)
 
 		assert.Nil(t, validators)
 		assert.EqualError(t, err, ErrInvalidValidator.Error())
@@ -261,9 +190,9 @@ func TestLoadValidators_Error(t *testing.T) {
 			    }
 			}
 		    `
-		testFile := createTMPFile(t, invalidValidatorConfig)
+		testFile := createTempFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		assert.Nil(t, validators)
 		assert.Error(t, err)
@@ -284,9 +213,9 @@ func TestLoadPKI_Error(t *testing.T) {
 			    }
 			}
 		`
-		testFile := createTMPFile(t, noPKIConfig)
+		testFile := createTempFile(t, noPKIConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		assert.Nil(t, validators)
 		assert.EqualError(t, err, "rules.json needs a 'pki' field to list authorized public keys")
@@ -312,20 +241,11 @@ func TestLoadPKI_Error(t *testing.T) {
 			}
 		}
 				      `
-		testFile := createTMPFile(t, invalidPKIConfig)
+		testFile := createTempFile(t, invalidPKIConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(testFile)
+		validators, err := LoadConfig(testFile, nil)
 
 		assert.Nil(t, validators)
 		assert.EqualError(t, err, "Error while parsing PKI: public key must be a non null base64 encoded string")
 	})
-}
-
-func createTMPFile(t *testing.T, data string) string {
-	tmpfile, err := ioutil.TempFile("", "invalid-config")
-	require.NoError(t, err, "ioutil.TempFile()")
-
-	_, err = tmpfile.WriteString(data)
-	require.NoError(t, err, "tmpfile.WriteString()")
-	return tmpfile.Name()
 }

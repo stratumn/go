@@ -170,7 +170,7 @@ func TestValidator(t *testing.T) {
 	_, err = tmpfile.WriteString(validJSONConfig)
 	require.NoError(t, err, "tmpfile.WriteString()")
 
-	children, err := validator.LoadConfig(tmpfile.Name())
+	children, err := validator.LoadConfig(tmpfile.Name(), nil)
 	assert.NoError(t, err, "validator.LoadConfig()")
 
 	v := validator.NewMultiValidator(children)

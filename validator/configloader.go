@@ -67,7 +67,13 @@ func LoadConfigContent(data []byte, listener rulesListener) ([]Validator, error)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+	return LoadProcessRules(rules, listener)
+}
 
+// LoadProcessRules loads the validators configuration from a slice of processRule.
+// The configuration returned can then be used in NewMultiValidator().
+func LoadProcessRules(rules processesRules, listener rulesListener) ([]Validator, error) {
+	var err error
 	var validators []Validator
 	for process, schema := range rules {
 		var pki *PKI

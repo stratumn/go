@@ -44,26 +44,30 @@ var defaultPagination = store.Pagination{
 type GovernanceManager struct {
 	adapter store.Adapter
 
-	validatorWatcher  *fsnotify.Watcher
-	validatorChan     chan Validator
-	processLastHeight map[string]int
+	validatorWatcher *fsnotify.Watcher
+	validatorChan    chan Validator
+	validators       map[string][]Validator
 }
 
 // NewGovernanceManager enhances validator management with some governance concepts.
 func NewGovernanceManager(a store.Adapter, filename string) (*GovernanceManager, error) {
+	var err error
 	var govMgr = GovernanceManager{
 		adapter:       a,
 		validatorChan: make(chan Validator, 1),
+		validators:    make(map[string][]Validator, 0),
+	}
+
+	govMgr.loadValidatorsFromFile(filename)
+	govMgr.loadValidatorsFromStore()
+	if len(govMgr.validators) > 0 {
+		govMgr.sendValidators()
 	}
 	if filename != "" {
-		err := govMgr.loadValidatorFile(filename, false)
-		if err != nil {
-			log.Warn(errors.Wrapf(err, "cannot load validator configuration file %s", filename))
-		}
 		if govMgr.validatorWatcher, err = fsnotify.NewWatcher(); err != nil {
 			return nil, errors.Wrap(err, "cannot create a new filesystem watcher for validators")
 		}
-		if err = govMgr.validatorWatcher.Add(filename); err != nil {
+		if err := govMgr.validatorWatcher.Add(filename); err != nil {
 			return nil, errors.Wrapf(err, "cannot watch validator configuration file %s", filename)
 		}
 	}
@@ -71,24 +75,104 @@ func NewGovernanceManager(a store.Adapter, filename string) (*GovernanceManager,
 	return &govMgr, nil
 }
 
-func (m *GovernanceManager) loadValidatorFile(filename string, updateStore bool) error {
-	var v4ch = make([]Validator, 0)
-	_, err := LoadConfig(filename, func(process string, schema rulesSchema, validators []Validator) {
-		log.Infof("Here is a new validator: %s", process)
-		v := m.getValidatorFromStore(process, schema, validators, updateStore)
-		if v != nil {
-			v4ch = append(v4ch, v...)
-		}
-	})
-	if err == nil {
-		select {
-		case m.validatorChan <- NewMultiValidator(v4ch):
+func (m *GovernanceManager) loadValidatorsFromFile(filename string) (err error) {
+	if filename != "" {
+		_, err = LoadConfig(filename, func(process string, schema rulesSchema, validators []Validator) {
+			m.validators[process] = m.getBestValidators(process, schema, validators)
+		})
+		if err != nil {
+			log.Errorf("Cannot load validator rules file %s: %s", filename, err)
 		}
 	}
 	return err
 }
 
-func (m *GovernanceManager) getValidatorFromStore(process string, schema rulesSchema, validators []Validator, updateStore bool) []Validator {
+func (m *GovernanceManager) loadValidatorsFromStore() {
+	for _, process := range m.getAllProcesses() {
+		log.Infof("Testing BC process %s", process)
+		if _, exist := m.validators[process]; !exist {
+			m.validators[process] = m.getValidators(process)
+		}
+	}
+}
+
+func (m *GovernanceManager) sendValidators() {
+	var v4ch = make([]Validator, 0)
+	for _, v := range m.validators {
+		v4ch = append(v4ch, v...)
+	}
+	m.validatorChan <- NewMultiValidator(v4ch)
+}
+
+func (m *GovernanceManager) getAllProcesses() []string {
+	processSet := make(map[string]interface{}, 0)
+	for offset := 0; offset >= 0; {
+		segments, err := m.adapter.FindSegments(&store.SegmentFilter{
+			Pagination: store.Pagination{Offset: 0, Limit: store.MaxLimit},
+			Process:    governanceProcessName,
+			Tags:       []string{validatorTag},
+		})
+		if err != nil {
+			log.Errorf("Cannot retrieve gouvernance segments: %+v", errors.WithStack(err))
+			return []string{}
+		}
+		for _, segment := range segments {
+			tags, ok := segment.Link.Meta["tags"].([]interface{})
+			if !ok {
+				return []string{}
+			}
+			for _, tag := range tags {
+				if t, ok := tag.(string); ok && t != validatorTag {
+					processSet[t] = nil
+				}
+			}
+		}
+		if len(segments) == store.MaxLimit {
+			offset += store.MaxLimit
+		} else {
+			break
+		}
+	}
+	ret := make([]string, 0)
+	for p := range processSet {
+		ret = append(ret, p)
+	}
+	return ret
+}
+
+func (m *GovernanceManager) getValidators(process string) []Validator {
+	segments, err := m.adapter.FindSegments(&store.SegmentFilter{
+		Pagination: defaultPagination,
+		Process:    governanceProcessName,
+		Tags:       []string{process, validatorTag},
+	})
+	if err != nil || len(segments) == 0 {
+		return nil
+	}
+	linkMeta := segments[0].Link.Meta
+	pki, ok := linkMeta["pki"]
+	types, ok2 := linkMeta["types"]
+	if !ok || !ok2 {
+		return nil
+	}
+	rawPKI, ok := pki.(json.RawMessage)
+	rawTypes, ok2 := types.(json.RawMessage)
+	if !ok || !ok2 {
+		return nil
+	}
+	v, err := LoadProcessRules(processesRules{
+		"process": rulesSchema{
+			PKI:   rawPKI,
+			Types: rawTypes,
+		},
+	}, nil)
+	if err != nil {
+		return v
+	}
+	return nil
+}
+
+func (m *GovernanceManager) getBestValidators(process string, schema rulesSchema, validators []Validator) []Validator {
 	segments, err := m.adapter.FindSegments(&store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    governanceProcessName,
@@ -106,23 +190,30 @@ func (m *GovernanceManager) getValidatorFromStore(process string, schema rulesSc
 		return validators
 	}
 	link := segments[0].Link
-	var hasToUpdateStore bool
-	if err := m.compareFromStore(link.Meta, "pki", schema.PKI); err != nil {
-		log.Errorf("Problem when loading pki: %s", err)
-		hasToUpdateStore = true
-	}
-	if err := m.compareFromStore(link.Meta, "types", schema.Types); err != nil {
-		log.Errorf("Problem when loading types: %s", err)
-		hasToUpdateStore = true
-	}
-	// if updateStore && hasToUpdateStore {
-	if hasToUpdateStore {
+	if m.compareFromStore(link.Meta, "pki", schema.PKI) != nil ||
+		m.compareFromStore(link.Meta, "types", schema.Types) != nil {
+		log.Infof("Validator or process %s has to be updated in store", process)
 		if err = m.uploadValidator(process, schema, &link); err != nil {
 			log.Warnf("Cannot upload validator %s", err)
 		}
 	}
 
 	return validators
+}
+
+func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key string, fileData json.RawMessage) error {
+	metaData, ok := meta[key]
+	if !ok {
+		return errors.Errorf("%s is missing on segment", key)
+	}
+	storeData, err := json.Marshal(metaData)
+	if err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(storeData, fileData) {
+		return errors.New("data different from file and from store")
+	}
+	return nil
 }
 
 func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, prevLink *cs.Link) error {
@@ -166,23 +257,8 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 	return nil
 }
 
-func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key string, fileData json.RawMessage) error {
-	metaData, ok := meta[key]
-	if !ok {
-		return errors.Errorf("%s is missing on segment", key)
-	}
-	storeData, err := json.Marshal(metaData)
-	if err != nil {
-		return err
-	}
-	if !reflect.DeepEqual(storeData, fileData) {
-		return errors.New("data different from file and from store")
-	}
-	return nil
-}
-
 // UpdateValidators will replace validator if a new one is available
-func (m *GovernanceManager) UpdateValidators(v *Validator) {
+func (m *GovernanceManager) UpdateValidators(v *Validator) bool {
 	if m.validatorWatcher != nil {
 		var validatorFile string
 		select {
@@ -197,8 +273,8 @@ func (m *GovernanceManager) UpdateValidators(v *Validator) {
 		}
 		if validatorFile != "" {
 			go func() {
-				if err := m.loadValidatorFile(validatorFile, true); err != nil {
-					log.Warnf("cannot load validator configuration file %s: %+v", validatorFile, err)
+				if m.loadValidatorsFromFile(validatorFile) == nil {
+					m.sendValidators()
 				}
 			}()
 		}
@@ -206,7 +282,8 @@ func (m *GovernanceManager) UpdateValidators(v *Validator) {
 	select {
 	case validator := <-m.validatorChan:
 		*v = validator
+		return true
 	default:
-		return
+		return false
 	}
 }

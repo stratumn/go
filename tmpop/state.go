@@ -26,31 +26,6 @@ import (
 	"github.com/stratumn/go-indigocore/validator"
 )
 
-// // State represents the app states, separating the committed state (for queries)
-// // from the working state (for CheckTx and DeliverTx).
-// type State interface {
-// 	// UpdateValidators updates validators if a new version is available
-// 	UpdateValidators()
-
-// 	// SetValidators forces to set validators
-// 	SetValidators(validator.Validator)
-
-// 	// ValidatorHash returns the validator hash
-// 	ValidatorHash() (*types.Bytes32, error)
-
-// 	// Check checks if creating this link is a valid operation
-// 	Check(link *cs.Link) *ABCIError
-
-// 	// Deliver adds a link to the list of links to be committed
-// 	Deliver(link *cs.Link) *ABCIError
-
-// 	// Commit commits the delivered links,
-// 	// resets delivered and checked state,
-// 	// and returns the hash for the commit
-// 	// and the list of committed links.
-// 	Commit() (*types.Bytes32, []*cs.Link, error)
-// }
-
 // State represents the app states, separating the committed state (for queries)
 // from the working state (for CheckTx and DeliverTx).
 type State struct {
@@ -97,18 +72,6 @@ func NewState(a store.Adapter, config *Config) (*State, error) {
 func (s *State) UpdateValidators() {
 	s.manager.UpdateValidators(&s.validator)
 }
-
-// // SetValidators implements tmpop.State.SetValidators
-// func (s *state) SetValidators(v validator.Validator) {
-// 	s.validator = v
-// }
-
-// // ValidatorHash implements tmpop.State.ValidatorHash
-// func (s *state) ValidatorHash() (*types.Bytes32, error) {
-// 	if s.validator == nil {
-// 		return
-// 	}
-// }
 
 // Check checks if creating this link is a valid operation
 func (s *State) Check(link *cs.Link) *ABCIError {
