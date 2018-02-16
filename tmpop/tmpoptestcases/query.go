@@ -25,6 +25,7 @@ import (
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestQuery tests each query request type implemented by TMPop
@@ -69,7 +70,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		got := &cs.Segment{}
 		err = makeQuery(h, tmpop.GetSegment, linkHash2, got)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(got.Meta.Evidences), "Segment should have an evidence added")
+		require.Len(t, got.Meta.Evidences, 1, "Segment should have an evidence added")
 
 		storedEvidence := got.Meta.GetEvidence("1")
 		assert.True(t, storedEvidence.Backend == evidence.Backend && storedEvidence.Provider == evidence.Provider)
@@ -92,7 +93,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		gots := cs.SegmentSlice{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(gots), "Unexpected number of segments")
+		require.Len(t, gots, 1, "Unexpected number of segments")
 
 		got := gots[0]
 		assert.EqualValues(t, link2, &got.Link)
@@ -108,7 +109,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		gots := cs.SegmentSlice{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(gots), "Unexpected number of segments")
+		assert.Len(t, gots, 2, "Unexpected number of segments")
 
 		for _, segment := range gots {
 			assert.NotEqual(t, *invalidLinkHash, *segment.GetLinkHash(),
@@ -126,7 +127,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		var got []string
 		err := makeQuery(h, tmpop.GetMapIDs, args, &got)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(got), "Unexpected number of maps")
+		assert.Len(t, got, 2, "Unexpected number of maps")
 
 		mapIdsFound := make(map[string]bool)
 		for _, mapID := range got {
@@ -143,11 +144,11 @@ func (f Factory) TestQuery(t *testing.T) {
 		var events []*store.Event
 		err := makeQuery(h, tmpop.PendingEvents, nil, &events)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(events), "We should have two saved links events (no evidence since Tendermint Core is not connected)")
+		assert.Len(t, events, 2, "We should have two saved links events (no evidence since Tendermint Core is not connected)")
 
 		err = makeQuery(h, tmpop.PendingEvents, nil, &events)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(events), "Events should not be delivered twice")
+		assert.Len(t, events, 0, "Events should not be delivered twice")
 	})
 
 	t.Run("Unsupported Query", func(t *testing.T) {

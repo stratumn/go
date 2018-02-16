@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -78,7 +79,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		assert.NoError(t, err)
 
 		evidence := got.Meta.GetEvidence(h.GetCurrentHeader().GetChainId())
-		assert.NotNil(t, evidence, "Evidence is missing")
+		require.NotNil(t, evidence, "Evidence is missing")
 
 		proof := evidence.Proof.(*evidences.TendermintProof)
 		assert.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
@@ -107,9 +108,9 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 			}
 		}
 
-		assert.Equal(t, 1, len(evidenceEvents), "Invalid number of events")
+		require.Len(t, evidenceEvents, 1, "Invalid number of events")
 		savedEvidences := evidenceEvents[0].Data.(map[string]*cs.Evidence)
-		assert.Equal(t, 2, len(savedEvidences), "Invalid number of evidence produced")
+		assert.Len(t, savedEvidences, 2, "Invalid number of evidence produced")
 		assert.NotNil(t, savedEvidences[linkHash1.String()], "Evidence missing for %x", *linkHash1)
 		assert.NotNil(t, savedEvidences[linkHash2.String()], "Evidence missing for %x", *linkHash2)
 	})
@@ -118,7 +119,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &cs.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash3, got)
 		assert.NoError(t, err)
-		assert.Zero(t, len(got.Meta.Evidences),
+		assert.Len(t, got.Meta.Evidences, 0,
 			"Link should not have evidence before the next block signs the committed state")
 	})
 
@@ -130,6 +131,6 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		err := makeQuery(h, tmpop.GetSegment, invalidLinkHash, got)
 		assert.NoError(t, err)
 		assert.Zero(t, got.Link, "Link should not be found")
-		assert.Zero(t, len(got.Meta.Evidences), "Evidence should not be added to invalid link")
+		assert.Len(t, got.Meta.Evidences, 0, "Evidence should not be added to invalid link")
 	})
 }

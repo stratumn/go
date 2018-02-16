@@ -24,6 +24,7 @@ import (
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCheckTx tests what happens when the ABCI method CheckTx() is called
@@ -136,13 +137,13 @@ func (f Factory) TestCommitTx(t *testing.T) {
 		var events []*store.Event
 		err := makeQuery(h, tmpop.PendingEvents, nil, &events)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(events), "Invalid number of events")
+		require.Len(t, events, 1, "Invalid number of events")
 
 		savedEvent := events[0]
 		assert.EqualValues(t, store.SavedLinks, savedEvent.EventType)
 
 		savedLinks := savedEvent.Data.([]*cs.Link)
-		assert.Equal(t, 2, len(savedLinks), "Invalid number of links")
+		require.Len(t, savedLinks, 2, "Invalid number of links")
 		assert.EqualValues(t, link1, savedLinks[0])
 		assert.EqualValues(t, link2, savedLinks[1])
 	})
