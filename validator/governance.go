@@ -97,7 +97,7 @@ func (m *GovernanceManager) loadValidatorsFromStore() {
 }
 
 func (m *GovernanceManager) sendValidators() {
-	var v4ch = make([]Validator, 0)
+	v4ch := make([]Validator, 0)
 	for _, v := range m.validators {
 		v4ch = append(v4ch, v...)
 	}
@@ -113,7 +113,7 @@ func (m *GovernanceManager) getAllProcesses() []string {
 			Tags:       []string{validatorTag},
 		})
 		if err != nil {
-			log.Errorf("Cannot retrieve gouvernance segments: %+v", errors.WithStack(err))
+			log.Errorf("Cannot retrieve governance segments: %+v", errors.WithStack(err))
 			return []string{}
 		}
 		for _, segment := range segments {
@@ -179,11 +179,11 @@ func (m *GovernanceManager) updateValidatorInStore(process string, schema rulesS
 		Tags:       []string{process, validatorTag},
 	})
 	if err != nil {
-		log.Errorf("Cannot retrieve gouvernance segments: %+v", errors.WithStack(err))
+		log.Errorf("Cannot retrieve governance segments: %+v", errors.WithStack(err))
 		return validators
 	}
 	if len(segments) == 0 {
-		log.Warnf("No gouvernance segments found for process %s", process)
+		log.Warnf("No governance segments found for process %s", process)
 		if err = m.uploadValidator(process, schema, nil); err != nil {
 			log.Warnf("Cannot upload validator: %s", err)
 		}

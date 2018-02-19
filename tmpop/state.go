@@ -40,7 +40,7 @@ type State struct {
 	deliveredLinksList []*cs.Link
 	checkedLinks       store.Batch
 
-	manager *validator.GovernanceManager
+	governance *validator.GovernanceManager
 }
 
 // NewState creates a new State.
@@ -60,7 +60,7 @@ func NewState(a store.Adapter, config *Config) (*State, error) {
 		checkedLinks:   checkedLinks,
 	}
 
-	state.manager, err = validator.NewGovernanceManager(a, config.ValidatorFilename)
+	state.governance, err = validator.NewGovernanceManager(a, config.ValidatorFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func NewState(a store.Adapter, config *Config) (*State, error) {
 
 // UpdateValidators updates validators if a new version is available
 func (s *State) UpdateValidators() {
-	s.manager.UpdateValidators(&s.validator)
+	s.governance.UpdateValidators(&s.validator)
 }
 
 // Check checks if creating this link is a valid operation
