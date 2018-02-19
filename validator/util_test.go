@@ -23,7 +23,7 @@ import (
 )
 
 const validAuctionJSONPKIConfig = `
-"pki": {
+{
 	"alice.vandenbudenmayer@stratumn.com": {
 		"keys": ["TESTKEY1"],
 		"roles": ["employee"]
@@ -32,10 +32,11 @@ const validAuctionJSONPKIConfig = `
 		"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
 		"roles": ["manager", "it"]
 	}
-}`
+}
+`
 
 const validAuctionJSONTypesConfig = `
-"types": {
+{
 	"init": {
 		"signatures": ["Alice Van den Budenmayer"],
 		"schema": {
@@ -70,10 +71,11 @@ const validAuctionJSONTypesConfig = `
 			"required": ["buyer", "bidPrice"]
 		}
 	}
-}`
+}
+`
 
 const validChatJSONPKIConfig = `
-"pki": {
+{
 	"Bob Wagner": {
 		"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
 		"roles": ["manager", "it"]
@@ -82,7 +84,7 @@ const validChatJSONPKIConfig = `
 `
 
 const validChatJSONTypesConfig = `
-"types": {
+{
 	"message": {
 		"signatures": null,
 		"schema": {
@@ -104,8 +106,12 @@ const validChatJSONTypesConfig = `
 }
 `
 
-var validAuctionJSONConfig = fmt.Sprintf(`"auction": {%s,%s}`, validAuctionJSONPKIConfig, validAuctionJSONTypesConfig)
-var validChatJSONConfig = fmt.Sprintf(`"chat": {%s,%s}`, validChatJSONPKIConfig, validChatJSONTypesConfig)
+func createValidatorJSON(name, pki, types string) string {
+	return fmt.Sprintf(`"%s": {"pki": %s,"types": %s}`, name, pki, types)
+}
+
+var validAuctionJSONConfig = createValidatorJSON("auction", validAuctionJSONPKIConfig, validAuctionJSONTypesConfig)
+var validChatJSONConfig = createValidatorJSON("chat", validChatJSONPKIConfig, validChatJSONTypesConfig)
 var validJSONConfig = fmt.Sprintf(`{%s,%s}`, validAuctionJSONConfig, validChatJSONConfig)
 
 func createTempFile(t *testing.T, data string) string {

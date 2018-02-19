@@ -15,10 +15,11 @@
 package validator
 
 import (
+	"bytes"
 	"encoding/json"
-	"reflect"
 
 	"github.com/fsnotify/fsnotify"
+	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -78,7 +79,7 @@ func NewGovernanceManager(a store.Adapter, filename string) (*GovernanceManager,
 func (m *GovernanceManager) loadValidatorsFromFile(filename string) (err error) {
 	if filename != "" {
 		_, err = LoadConfig(filename, func(process string, schema rulesSchema, validators []Validator) {
-			m.validators[process] = m.getBestValidators(process, schema, validators)
+			m.validators[process] = m.updateValidatorInStore(process, schema, validators)
 		})
 		if err != nil {
 			log.Errorf("Cannot load validator rules file %s: %s", filename, err)
@@ -89,7 +90,6 @@ func (m *GovernanceManager) loadValidatorsFromFile(filename string) (err error) 
 
 func (m *GovernanceManager) loadValidatorsFromStore() {
 	for _, process := range m.getAllProcesses() {
-		log.Infof("Testing BC process %s", process)
 		if _, exist := m.validators[process]; !exist {
 			m.validators[process] = m.getValidators(process)
 		}
@@ -108,7 +108,7 @@ func (m *GovernanceManager) getAllProcesses() []string {
 	processSet := make(map[string]interface{}, 0)
 	for offset := 0; offset >= 0; {
 		segments, err := m.adapter.FindSegments(&store.SegmentFilter{
-			Pagination: store.Pagination{Offset: 0, Limit: store.MaxLimit},
+			Pagination: store.Pagination{Offset: offset, Limit: store.MaxLimit},
 			Process:    governanceProcessName,
 			Tags:       []string{validatorTag},
 		})
@@ -172,7 +172,7 @@ func (m *GovernanceManager) getValidators(process string) []Validator {
 	return nil
 }
 
-func (m *GovernanceManager) getBestValidators(process string, schema rulesSchema, validators []Validator) []Validator {
+func (m *GovernanceManager) updateValidatorInStore(process string, schema rulesSchema, validators []Validator) []Validator {
 	segments, err := m.adapter.FindSegments(&store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    governanceProcessName,
@@ -185,7 +185,7 @@ func (m *GovernanceManager) getBestValidators(process string, schema rulesSchema
 	if len(segments) == 0 {
 		log.Warnf("No gouvernance segments found for process %s", process)
 		if err = m.uploadValidator(process, schema, nil); err != nil {
-			log.Warnf("Cannot upload validator %s", err)
+			log.Warnf("Cannot upload validator: %s", err)
 		}
 		return validators
 	}
@@ -194,11 +194,20 @@ func (m *GovernanceManager) getBestValidators(process string, schema rulesSchema
 		m.compareFromStore(link.Meta, "types", schema.Types) != nil {
 		log.Infof("Validator or process %s has to be updated in store", process)
 		if err = m.uploadValidator(process, schema, &link); err != nil {
-			log.Warnf("Cannot upload validator %s", err)
+			log.Warnf("Cannot upload validator: %s", err)
 		}
 	}
 
 	return validators
+}
+
+func getCanonicalJSONFromData(rawData json.RawMessage) (json.RawMessage, error) {
+	var typedData interface{}
+	err := json.Unmarshal(rawData, &typedData)
+	if err != nil {
+		return nil, err
+	}
+	return cj.Marshal(typedData)
 }
 
 func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key string, fileData json.RawMessage) error {
@@ -206,11 +215,15 @@ func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key st
 	if !ok {
 		return errors.Errorf("%s is missing on segment", key)
 	}
-	storeData, err := json.Marshal(metaData)
+	canonStoreData, err := getCanonicalJSONFromData(metaData.(json.RawMessage))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "cannot canonical marshal %s store data", key)
 	}
-	if !reflect.DeepEqual(storeData, fileData) {
+	canonFileData, err := getCanonicalJSONFromData(fileData)
+	if err != nil {
+		return errors.Wrapf(err, "cannot canonical marshal %s file data", key)
+	}
+	if !bytes.Equal(canonStoreData, canonFileData) {
 		return errors.New("data different from file and from store")
 	}
 	return nil
@@ -221,7 +234,7 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 	mapID := ""
 	prevLinkHash := ""
 	if prevLink != nil {
-		priority = prevLink.GetPriority() + 1
+		priority = prevLink.GetPriority() + 1.
 		mapID = prevLink.GetMapID()
 		var err error
 		if prevLinkHash, err = prevLink.HashString(); err != nil {
