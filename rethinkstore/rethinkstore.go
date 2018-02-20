@@ -19,7 +19,6 @@ package rethinkstore
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -95,14 +94,18 @@ type Store struct {
 }
 
 type linkWrapper struct {
-	ID           []byte    `json:"id"`
-	Content      *cs.Link  `json:"content"`
-	Priority     float64   `json:"priority"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	MapID        string    `json:"mapId"`
-	PrevLinkHash []byte    `json:"prevLinkHash"`
-	Tags         []string  `json:"tags"`
-	Process      string    `json:"process"`
+	ID           []byte                `json:"id"`
+	Content      *cs.Link              `json:"content"`
+	Priority     float64               `json:"priority"`
+	UpdatedAt    time.Time             `json:"updatedAt"`
+	MapID        string                `json:"mapId"`
+	PrevLinkHash []byte                `json:"prevLinkHash"`
+	Tags         []string              `json:"tags"`
+	Process      string                `json:"process"`
+	Action       string                `json:"action"`
+	Type         string                `json:"type"`
+	Inputs       []string              `json:"inputs"`
+	Refs         []cs.SegmentReference `json:"refs"`
 }
 
 type evidencesWrapper struct {
@@ -185,15 +188,14 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 		MapID:     link.GetMapID(),
 		Tags:      link.GetTags(),
 		Process:   link.GetProcess(),
+		Action:    link.Meta.Action,
+		Type:      link.Meta.Type,
+		Inputs:    link.Meta.Inputs,
+		Refs:      link.Meta.Refs,
 	}
 
 	if prevLinkHash != nil {
 		w.PrevLinkHash = prevLinkHash[:]
-	}
-
-	// rethink does not handle -Inf
-	if w.Priority == math.Inf(-1) {
-		w.Priority = -math.MaxFloat64
 	}
 
 	if err := a.links.Get(linkHash).Replace(&w).Exec(a.session); err != nil {

@@ -31,20 +31,20 @@ import (
 )
 
 // CreateLink creates a minimal link.
-func CreateLink(process, mapID, prevLinkHash string, tags []interface{}, priority float64) *cs.Link {
-	linkMeta := map[string]interface{}{
-		"process":  process,
-		"mapId":    mapID,
-		"priority": priority,
-		"random":   testutil.RandomString(12),
-	}
-
-	if prevLinkHash != "" {
-		linkMeta["prevLinkHash"] = prevLinkHash
-	}
-
-	if tags != nil {
-		linkMeta["tags"] = tags
+func CreateLink(process, mapID, prevLinkHash string, tags []string, priority float64) *cs.Link {
+	linkMeta := cs.LinkMeta{
+		Process:      process,
+		MapID:        mapID,
+		PrevLinkHash: prevLinkHash,
+		Tags:         tags,
+		Priority:     priority,
+		Action:       testutil.RandomString(24),
+		Type:         testutil.RandomString(24),
+		Inputs:       RandomTags(),
+		Refs:         []cs.SegmentReference{},
+		Data: map[string]interface{}{
+			"random": testutil.RandomString(12),
+		},
 	}
 
 	link := &cs.Link{
@@ -100,7 +100,7 @@ func ChangeState(l *cs.Link) *cs.Link {
 // ChangeMapID clones a link and randomly changes its map ID.
 func ChangeMapID(l *cs.Link) *cs.Link {
 	clone := Clone(l)
-	clone.Meta["mapId"] = testutil.RandomString(24)
+	clone.Meta.MapID = testutil.RandomString(24)
 	return clone
 }
 
@@ -109,13 +109,13 @@ func RandomBranch(parent *cs.Link) *cs.Link {
 	linkHash, _ := parent.HashString()
 	branch := CreateLink(testutil.RandomString(24), testutil.RandomString(24),
 		linkHash, RandomTags(), rand.Float64())
-	branch.Meta["mapId"] = parent.Meta["mapId"]
+	branch.Meta.MapID = parent.Meta.MapID
 	return branch
 }
 
 // RandomTags creates between zero and four random tags.
-func RandomTags() []interface{} {
-	var tags []interface{}
+func RandomTags() []string {
+	var tags []string
 	for i := 0; i < rand.Intn(5); i++ {
 		tags = append(tags, testutil.RandomString(12))
 	}

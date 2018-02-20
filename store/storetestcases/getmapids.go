@@ -37,8 +37,8 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	for i := 0; i < testPageSize; i++ {
 		for j := 0; j < testPageSize; j++ {
 			l := cstesting.RandomLink()
-			l.Meta["mapId"] = fmt.Sprintf("map%d", i)
-			l.Meta["process"] = processNames[i%2]
+			l.Meta.MapID = fmt.Sprintf("map%d", i)
+			l.Meta.Process = processNames[i%2]
 			a.CreateLink(l)
 		}
 	}

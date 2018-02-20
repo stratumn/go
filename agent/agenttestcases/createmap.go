@@ -40,9 +40,9 @@ func (f Factory) TestCreateMapWithRefs(t *testing.T) {
 	segment, err := f.Client.CreateMap(process, refs, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, segment)
-	assert.NotNil(t, segment.Link.Meta["refs"])
+	assert.NotNil(t, segment.Link.Meta.Refs)
 	want, _ := cj.Marshal(refs)
-	got, _ := cj.Marshal(segment.Link.Meta["refs"])
+	got, _ := cj.Marshal(segment.Link.Meta.Refs)
 	assert.Equal(t, want, got)
 }
 
@@ -53,7 +53,8 @@ func (f Factory) TestCreateMapWithBadRefs(t *testing.T) {
 	refs := []client.SegmentRef{{Process: "wrong"}}
 
 	segment, err := f.Client.CreateMap(process, refs, arg)
-	assert.EqualError(t, err, "missing segment or (process and linkHash)")
+	assert.Error(t, err, "missing segment or (process and linkHash)")
+	assert.Contains(t, err.Error(), "linkHash should be a non empty string")
 	assert.Nil(t, segment)
 }
 

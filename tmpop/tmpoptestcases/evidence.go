@@ -40,7 +40,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	// First block contains an invalid link
 	invalidLink := cstesting.RandomLink()
-	invalidLink.Meta["mapId"] = nil
+	invalidLink.Meta.MapID = ""
 	invalidLinkHash, _ := invalidLink.Hash()
 	req = commitLink(t, h, invalidLink, req)
 	previousAppHash := req.Header.AppHash

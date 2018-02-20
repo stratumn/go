@@ -46,9 +46,9 @@ func (f Factory) TestCreateSegmentWithRefs(t *testing.T) {
 	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, "one")
 	assert.NoError(t, err)
 	assert.NotNil(t, segment)
-	assert.NotNil(t, segment.Link.Meta["refs"])
+	assert.NotNil(t, segment.Link.Meta.Refs)
 	want, _ := cj.Marshal(refs)
-	got, _ := cj.Marshal(segment.Link.Meta["refs"])
+	got, _ := cj.Marshal(segment.Link.Meta.Refs)
 	assert.Equal(t, want, got)
 }
 
@@ -60,7 +60,8 @@ func (f Factory) TestCreateSegmentWithBadRefs(t *testing.T) {
 	refs := []client.SegmentRef{{Process: "wrong"}}
 
 	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, arg)
-	assert.EqualError(t, err, "missing segment or (process and linkHash)")
+	assert.Error(t, err, "missing segment or (process and linkHash)")
+	assert.Contains(t, err.Error(), "linkHash should be a non empty string")
 	assert.Nil(t, segment)
 }
 

@@ -38,7 +38,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink with no priority should not produce an error", func(t *testing.T) {
 		l := cstesting.RandomLink()
-		delete(l.Meta, "priority")
+		delete(l.Meta.Data, "priority")
 
 		_, err := a.CreateLink(l)
 		assert.NoError(t, err, "a.CreateLink()")

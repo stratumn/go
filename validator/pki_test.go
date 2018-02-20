@@ -31,15 +31,15 @@ func TestPKIValidator(t *testing.T) {
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
-		l.Meta["process"] = process
-		l.Meta["type"] = linkType
+		l.Meta.Process = process
+		l.Meta.Type = linkType
 		return cstesting.SignLink(l)
 	}
 
 	createValidLinkWithKey := func(priv ed25519.PrivateKey) *cs.Link {
 		l := cstesting.RandomLink()
-		l.Meta["process"] = process
-		l.Meta["type"] = linkType
+		l.Meta.Process = process
+		l.Meta.Type = linkType
 		return cstesting.SignLinkWithKey(l, priv)
 	}
 

@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/golang/mock/gomock"
@@ -38,13 +39,65 @@ import (
 
 type mockHTTPServer struct{}
 
-func (a *mockHTTPServer) decodePostParams(r *http.Request) ([]interface{}, error) {
+func (m *mockHTTPServer) decodePostParams(r *http.Request) ([]interface{}, error) {
 	decoder := json.NewDecoder(r.Body)
 	params := []interface{}{}
 	if err := decoder.Decode(&params); err != nil {
 		return nil, err
 	}
 	return params, nil
+}
+
+func (m *mockHTTPServer) decodeRefs(input interface{}) ([]cs.SegmentReference, error) {
+	if input == nil {
+		return []cs.SegmentReference{}, nil
+	}
+	inputSlice, ok := input.([]interface{})
+	if !ok {
+		return nil, errors.New("refs should be a slice")
+	}
+	var refs []cs.SegmentReference
+	for refIdx, in := range inputSlice {
+		// var ref client.SegmentRef
+		// inputStr, ok := in.(string)
+		// if !ok {
+		// 	return nil, errors.Errorf("refs[%d] should be a string", refIdx)
+		// }
+		// err := json.Unmarshal([]byte(inputStr), &ref)
+		// if err != nil {
+		// 	return nil, errors.Wrapf(err, "refs[%d]: cannot unmarshal segment", refIdx)
+		// }
+		// if ref.Segment != nil {
+		// 	refs = append(refs, cs.SegmentReference{Segment: ref.Segment})
+		// } else if ref.Process != "" && ref.LinkHash != nil {
+		// 	refs = append(refs, cs.SegmentReference{Process: ref.Process, LinkHash: ref.LinkHash.String()})
+		// } else {
+		// 	return nil, errors.Errorf("refs[%d]: missing segment or (process and linkHash)", refIdx)
+		// }
+
+		ref, ok := in.(map[string]interface{})
+		if !ok {
+			return nil, errors.Errorf("refs[%d] should be a map", refIdx)
+		}
+		if jsonSeg, ok := ref["segment"].(string); ok {
+			var seg cs.Segment
+			if err := json.Unmarshal([]byte(jsonSeg), &seg); err != nil {
+				return nil, errors.Errorf("refs[%d].segment should be a valid json segment", refIdx)
+			}
+			refs = append(refs, cs.SegmentReference{Segment: &seg})
+		} else {
+			process, ok := ref["process"].(string)
+			if !ok || process == "" {
+				return nil, errors.Errorf("refs[%d].process should be a non empty string", refIdx)
+			}
+			linkHashStr, ok := ref["linkHash"].(string)
+			if !ok || linkHashStr == "" {
+				return nil, errors.Errorf("refs[%d].linkHash should be a non empty string", refIdx)
+			}
+			refs = append(refs, cs.SegmentReference{Process: process, LinkHash: linkHashStr})
+		}
+	}
+	return refs, nil
 }
 
 func (m *mockHTTPServer) sendError(w http.ResponseWriter, status int, message string) {
@@ -83,20 +136,27 @@ func (m *mockHTTPServer) mockCreateSegment(w http.ResponseWriter, r *http.Reques
 		m.sendError(w, http.StatusBadRequest, "a title is required")
 		return
 	}
-	refs := params[0]
+	refs, err := m.decodeRefs(params[0])
+	if err != nil {
+		m.sendError(w, http.StatusBadRequest, errors.Wrap(err, "cannot decode references").Error())
+		return
+	}
 	arg := params[1].(string)
 
 	vars := mux.Vars(r)
 	if vars["linkHash"] == "0000000000000000000000000000000000000000000000000000000000000000" {
 		m.sendError(w, http.StatusBadRequest, "Not Found")
 		return
-	} else if vars["action"] == "wrong" {
+	}
+	if vars["action"] == "wrong" {
 		m.sendError(w, http.StatusBadRequest, "not found")
 		return
-	} else if vars["process"] == "wrong" {
+	}
+	if vars["process"] == "wrong" {
 		m.sendError(w, http.StatusBadRequest, "process 'wrong' does not exist")
 		return
-	} else if arg == "wrongref" {
+	}
+	if arg == "wrongref" {
 		m.sendError(w, http.StatusBadRequest, "missing segment or (process and linkHash)")
 		return
 	}
@@ -106,9 +166,9 @@ func (m *mockHTTPServer) mockCreateSegment(w http.ResponseWriter, r *http.Reques
 			State: map[string]interface{}{
 				"title": arg,
 			},
-			Meta: map[string]interface{}{
-				"mapId": "mapId",
-				"refs":  refs,
+			Meta: cs.LinkMeta{
+				MapID: "mapId",
+				Refs:  refs,
 			},
 		},
 	}
@@ -146,7 +206,11 @@ func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 		m.sendError(w, http.StatusBadRequest, "a title is required")
 		return
 	}
-	refs := params[0]
+	refs, err := m.decodeRefs(params[0])
+	if err != nil {
+		m.sendError(w, http.StatusBadRequest, errors.Wrap(err, "cannot decode references").Error())
+		return
+	}
 	arg := params[1].(string)
 
 	if arg == "wrongref" {
@@ -158,9 +222,9 @@ func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 			State: map[string]interface{}{
 				"title": arg,
 			},
-			Meta: map[string]interface{}{
-				"mapId": "mapId",
-				"refs":  refs,
+			Meta: cs.LinkMeta{
+				MapID: "mapId",
+				Refs:  refs,
 			},
 		},
 	}
@@ -190,8 +254,8 @@ func (m *mockHTTPServer) mockFindSegments(w http.ResponseWriter, r *http.Request
 	} else if len(tags) > 0 {
 
 		s = append(s, &cs.Segment{Link: cs.Link{
-			Meta: map[string]interface{}{
-				"tags": tags,
+			Meta: cs.LinkMeta{
+				Tags: tags,
 			},
 		}})
 	} else {

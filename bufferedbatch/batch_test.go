@@ -46,7 +46,7 @@ func TestBatch_CreateLink(t *testing.T) {
 		t.Errorf("len(batch.Links) = %d want %d", got, want)
 	}
 
-	l.Meta["mapId"] = ""
+	l.Meta.MapID = ""
 	if _, err := batch.CreateLink(l); err == nil {
 		t.Fatal("batch.CreateLink() should return an error when mapId is missing")
 	}
@@ -111,11 +111,11 @@ func TestBatch_FindSegments(t *testing.T) {
 	batch := NewBatch(a)
 
 	storedLink := cstesting.RandomLink()
-	storedLink.Meta["process"] = "Foo"
+	storedLink.Meta.Process = "Foo"
 	l1 := cstesting.RandomLink()
-	l1.Meta["process"] = "Foo"
+	l1.Meta.Process = "Foo"
 	l2 := cstesting.RandomLink()
-	l2.Meta["process"] = "Bar"
+	l2.Meta.Process = "Bar"
 
 	batch.CreateLink(l1)
 	batch.CreateLink(l2)
@@ -162,33 +162,33 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	batch := NewBatch(a)
 
 	storedLink1 := cstesting.RandomLink()
-	storedLink1.Meta["mapId"] = "Foo1"
-	storedLink1.Meta["process"] = "FooProcess"
+	storedLink1.Meta.MapID = "Foo1"
+	storedLink1.Meta.Process = "FooProcess"
 	storedLink2 := cstesting.RandomLink()
-	storedLink2.Meta["mapId"] = "Bar"
-	storedLink2.Meta["process"] = "BarProcess"
+	storedLink2.Meta.MapID = "Bar"
+	storedLink2.Meta.Process = "BarProcess"
 
 	batchLink1 := cstesting.RandomLink()
-	batchLink1.Meta["mapId"] = "Foo2"
-	batchLink1.Meta["process"] = "FooProcess"
+	batchLink1.Meta.MapID = "Foo2"
+	batchLink1.Meta.Process = "FooProcess"
 	batchLink2 := cstesting.RandomLink()
-	batchLink2.Meta["mapId"] = "Yin"
-	batchLink2.Meta["process"] = "YinProcess"
+	batchLink2.Meta.MapID = "Yin"
+	batchLink2.Meta.Process = "YinProcess"
 
 	batch.CreateLink(batchLink1)
 	batch.CreateLink(batchLink2)
 
 	a.MockGetMapIDs.Fn = func(filter *store.MapFilter) ([]string, error) {
-		if filter.Process == storedLink1.Meta["process"] {
-			return []string{storedLink1.Meta["mapId"].(string)}, nil
+		if filter.Process == storedLink1.Meta.Process {
+			return []string{storedLink1.Meta.MapID}, nil
 		}
-		if filter.Process == storedLink2.Meta["process"] {
-			return []string{storedLink2.Meta["mapId"].(string)}, nil
+		if filter.Process == storedLink2.Meta.Process {
+			return []string{storedLink2.Meta.MapID}, nil
 		}
 
 		return []string{
-			storedLink1.Meta["mapId"].(string),
-			storedLink2.Meta["mapId"].(string),
+			storedLink1.Meta.MapID,
+			storedLink2.Meta.MapID,
 		}, nil
 	}
 

@@ -54,12 +54,12 @@ func init() {
 
 func defaultTestingSegment() *cs.Segment {
 	link := &cs.Link{
-		Meta: map[string]interface{}{
-			"prevLinkHash": prevLinkHashTestingValue,
-			"process":      "TheProcess",
-			"mapId":        "TheMapId",
-			"tags":         []interface{}{"Foo", "Bar"},
-			"priority":     42,
+		Meta: cs.LinkMeta{
+			PrevLinkHash: prevLinkHashTestingValue,
+			Process:      "TheProcess",
+			MapID:        "TheMapId",
+			Tags:         []string{"Foo", "Bar"},
+			Priority:     42.,
 		},
 	}
 	return link.Segmentify()
@@ -67,7 +67,7 @@ func defaultTestingSegment() *cs.Segment {
 
 func emptyPrevLinkHashTestingSegment() *cs.Segment {
 	seg := defaultTestingSegment()
-	delete(seg.Link.Meta, "prevLinkHash")
+	seg.Link.Meta.PrevLinkHash = ""
 	return seg
 }
 

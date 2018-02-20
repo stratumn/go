@@ -88,8 +88,8 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
-		l.Meta["process"] = process
-		l.Meta["type"] = linkType
+		l.Meta.Process = process
+		l.Meta.Type = linkType
 		return cstesting.SignLink(l)
 	}
 	type testCase struct {
@@ -109,7 +109,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
-				delete(l.Meta, "process")
+				l.Meta.Process = ""
 				return l
 			},
 		},
@@ -118,7 +118,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
-				l.Meta["process"] = "test"
+				l.Meta.Process = "test"
 				return l
 			},
 		},
@@ -127,7 +127,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
-				delete(l.Meta, "type")
+				l.Meta.Type = ""
 				return l
 			},
 		},
@@ -136,7 +136,7 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 			shouldValidate: false,
 			link: func() *cs.Link {
 				l := createValidLink()
-				l.Meta["type"] = "test"
+				l.Meta.Type = "test"
 				return l
 			},
 		},
