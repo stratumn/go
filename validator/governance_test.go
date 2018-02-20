@@ -224,7 +224,7 @@ func createGovernanceLink(process string, pki, types json.RawMessage) *cs.Link {
 	link.Meta["process"] = governanceProcessName
 	link.Meta["priority"] = 0.
 	link.Meta["tags"] = []interface{}{process, validatorTag}
-	link.Meta["pki"] = pki
-	link.Meta["types"] = types
+	link.State["pki"] = pki
+	link.State["types"] = types
 	return link
 }

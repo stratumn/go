@@ -149,9 +149,9 @@ func (m *GovernanceManager) getValidators(process string) []Validator {
 	if err != nil || len(segments) == 0 {
 		return nil
 	}
-	linkMeta := segments[0].Link.Meta
-	pki, ok := linkMeta["pki"]
-	types, ok2 := linkMeta["types"]
+	linkState := segments[0].Link.State
+	pki, ok := linkState["pki"]
+	types, ok2 := linkState["types"]
 	if !ok || !ok2 {
 		return nil
 	}
@@ -190,8 +190,8 @@ func (m *GovernanceManager) updateValidatorInStore(process string, schema rulesS
 		return validators
 	}
 	link := segments[0].Link
-	if m.compareFromStore(link.Meta, "pki", schema.PKI) != nil ||
-		m.compareFromStore(link.Meta, "types", schema.Types) != nil {
+	if m.compareFromStore(link.State, "pki", schema.PKI) != nil ||
+		m.compareFromStore(link.State, "types", schema.Types) != nil {
 		log.Infof("Validator or process %s has to be updated in store", process)
 		if err = m.uploadValidator(process, schema, &link); err != nil {
 			log.Warnf("Cannot upload validator: %s", err)
@@ -243,13 +243,15 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 	} else {
 		mapID = uuid.NewV4().String()
 	}
+	linkState := map[string]interface{}{
+		"pki":   schema.PKI,
+		"types": schema.Types,
+	}
 	linkMeta := map[string]interface{}{
 		"process":  governanceProcessName,
 		"mapId":    mapID,
 		"priority": priority,
 		"tags":     []interface{}{process, validatorTag},
-		"pki":      schema.PKI,
-		"types":    schema.Types,
 	}
 
 	if prevLink != nil {
@@ -257,7 +259,7 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 	}
 
 	link := &cs.Link{
-		State:      map[string]interface{}{},
+		State:      linkState,
 		Meta:       linkMeta,
 		Signatures: cs.Signatures{},
 	}
