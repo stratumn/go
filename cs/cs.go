@@ -18,9 +18,7 @@ package cs
 import (
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"math"
 
 	"reflect"
 
@@ -125,10 +123,31 @@ func (s *SegmentMeta) FindEvidences(backend string) (res Evidences) {
 	return s.Evidences.FindEvidences(backend)
 }
 
+// SegmentReference is a reference to a segment or a linkHash
+type SegmentReference struct {
+	Segment  *Segment `json:"segment"`
+	Process  string   `json:"process"`
+	LinkHash string   `json:"linkHash"`
+}
+
+// LinkMeta contains the typed meta data of a Link and data
+type LinkMeta struct {
+	MapID        string                 `json:"mapId"`
+	Process      string                 `json:"process"`
+	Action       string                 `json:"action"`
+	Type         string                 `json:"type"`
+	Inputs       []string               `json:"inputs"`
+	Tags         []string               `json:"tags"`
+	Priority     float64                `json:"priority,omitempty"`
+	PrevLinkHash string                 `json:"prevLinkHash"`
+	Refs         []SegmentReference     `json:"refs"`
+	Data         map[string]interface{} `json:"data"`
+}
+
 // Link contains a state and meta data about the state.
 type Link struct {
 	State      map[string]interface{} `json:"state"`
-	Meta       map[string]interface{} `json:"meta"`
+	Meta       LinkMeta               `json:"meta"`
 	Signatures []*Signature           `json:"signatures"`
 }
 
@@ -157,24 +176,25 @@ func (l *Link) HashString() (string, error) {
 // It assumes the link is valid.
 // If priority is nil, it will return -Infinity.
 func (l *Link) GetPriority() float64 {
-	if f64, ok := l.Meta["priority"].(float64); ok {
-		return f64
-	}
-	return math.Inf(-1)
+	return l.Meta.Priority
+	// if f64, ok := l.Meta.Data["priority"].(float64); ok {
+	// 	return f64
+	// }
+	// return math.Inf(-1)
 }
 
 // GetMapID returns the map ID as a string.
 // It assumes the link is valid.
 func (l *Link) GetMapID() string {
-	return l.Meta["mapId"].(string)
+	return l.Meta.MapID
 }
 
 // GetPrevLinkHash returns the previous link hash as a bytes.
 // It assumes the link is valid.
 // It will return nil if the previous link hash is null.
 func (l *Link) GetPrevLinkHash() *types.Bytes32 {
-	if str, ok := l.Meta["prevLinkHash"].(string); ok {
-		b, _ := types.NewBytes32FromString(str)
+	if l.Meta.PrevLinkHash != "" {
+		b, _ := types.NewBytes32FromString(l.Meta.PrevLinkHash)
 		return b
 	}
 	return nil
@@ -184,34 +204,22 @@ func (l *Link) GetPrevLinkHash() *types.Bytes32 {
 // It assumes the link is valid.
 // It will return an empty string if the previous link hash is null.
 func (l *Link) GetPrevLinkHashString() string {
-	if str, ok := l.Meta["prevLinkHash"].(string); ok {
-		return str
-	}
-	return ""
+	return l.Meta.PrevLinkHash
 }
 
 // GetTags returns the tags as an array of string.
 // It assumes the link is valid.
 // It will return nil if there are no tags.
 func (l *Link) GetTags() []string {
-	if t, ok := l.Meta["tags"].([]interface{}); ok {
-		tags := make([]string, len(t))
-		for i, v := range t {
-			tags[i] = v.(string)
-		}
-		return tags
-	}
-	return nil
+	return l.Meta.Tags
 }
 
 // GetTagMap returns the tags as a map of string to empty structs (a set).
 // It assumes the link is valid.
 func (l *Link) GetTagMap() map[string]struct{} {
 	tags := map[string]struct{}{}
-	if t, ok := l.Meta["tags"].([]interface{}); ok {
-		for _, v := range t {
-			tags[v.(string)] = struct{}{}
-		}
+	for _, v := range l.Meta.Tags {
+		tags[v] = struct{}{}
 	}
 	return tags
 }
@@ -219,39 +227,28 @@ func (l *Link) GetTagMap() map[string]struct{} {
 // GetProcess returns the process name as a string.
 // It assumes the link is valid.
 func (l *Link) GetProcess() string {
-	return l.Meta["process"].(string)
+	return l.Meta.Process
 }
 
 // Validate checks for errors in a link.
 // It checks the validity of: format, signatures and references.
 func (l *Link) Validate(getSegment GetSegmentFunc) error {
-	if process, ok := l.Meta["process"].(string); !ok || process == "" {
+	if l.Meta.Process == "" {
 		return errors.New("link.meta.process should be a non empty string")
 	}
-	if mapID, ok := l.Meta["mapId"].(string); !ok || mapID == "" {
+	if l.Meta.MapID == "" {
 		return errors.New("link.meta.mapId should be a non empty string")
 	}
-	if v, ok := l.Meta["prevLinkHash"]; ok {
-		if prevLinkHash, ok := v.(string); !ok || prevLinkHash == "" {
-			return errors.New("link.meta.prevLinkHash should be a non empty string")
-		}
-	}
 
-	if v, ok := l.Meta["tags"]; ok {
-		tags, ok := v.([]interface{})
-		if !ok {
+	for _, tag := range l.Meta.Tags {
+		if tag == "" {
 			return errors.New("link.meta.tags should be an array of non empty string")
 		}
-		for _, t := range tags {
-			if tag, ok := t.(string); !ok || tag == "" {
-				return errors.New("link.meta.tags should be an array of non empty string")
-			}
-		}
 	}
 
-	if v, ok := l.Meta["priority"]; ok {
+	if v, ok := l.Meta.Data["priority"]; ok {
 		if _, ok := v.(float64); !ok {
-			return errors.New("link.meta.priority should be a float64")
+			return errors.New("link.meta.data.priority should be a float64")
 		}
 	}
 
@@ -267,42 +264,27 @@ func (l *Link) Validate(getSegment GetSegmentFunc) error {
 }
 
 func (l *Link) validateReferences(getSegment GetSegmentFunc) error {
-	if refs, ok := l.Meta["refs"].([]interface{}); ok {
-		for refIdx, refChild := range refs {
-			ref, ok := refChild.(map[string]interface{})
-			if !ok {
-				return errors.Errorf("link.meta.refs[%d] should be a map", refIdx)
+	for refIdx, ref := range l.Meta.Refs {
+		if ref.Segment != nil {
+			if err := ref.Segment.Link.Validate(getSegment); err != nil {
+				return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
 			}
-			if jsonSeg, ok := ref["segment"].(string); ok {
-				var seg Segment
-				if err := json.Unmarshal([]byte(jsonSeg), &seg); err != nil {
-					return errors.Errorf("link.meta.refs[%d].segment should be a valid json segment", refIdx)
-				}
-				if err := seg.Link.Validate(getSegment); err != nil {
-					return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
-				}
-			} else {
-				process, ok := ref["process"].(string)
-				if !ok || process == "" {
-					return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
-				}
-				linkHashStr, ok := ref["linkHash"].(string)
-				if !ok || linkHashStr == "" {
-					return errors.Errorf("link.meta.refs[%d].linkHash should be a non empty string", refIdx)
-				}
-				linkHash, err := types.NewBytes32FromString(linkHashStr)
-				if err != nil {
-					return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
-				}
-				if l.Meta["process"].(string) == process && getSegment != nil {
-					if seg, err := getSegment(linkHash); err != nil {
-						return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
-					} else if seg == nil {
-						return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
-					}
-				}
-				// Segment from another process is not retrieved because it could be in another store
+		} else {
+			if ref.Process == "" {
+				return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
 			}
+			linkHash, err := types.NewBytes32FromString(ref.LinkHash)
+			if err != nil {
+				return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
+			}
+			if l.Meta.Process == ref.Process && getSegment != nil {
+				if seg, err := getSegment(linkHash); err != nil {
+					return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
+				} else if seg == nil {
+					return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
+				}
+			}
+			// Segment from another process is not retrieved because it could be in another store
 		}
 	}
 	return nil

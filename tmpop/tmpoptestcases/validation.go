@@ -81,7 +81,7 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	t.Run("Validation succeeded", func(t *testing.T) {
 		l := cstesting.RandomLinkWithProcess("testProcess")
-		l.Meta["type"] = "init"
+		l.Meta.Type = "init"
 		l.State["string"] = "test"
 		l = cstesting.SignLink(l)
 		tx := makeCreateLinkTx(t, l)
@@ -92,7 +92,7 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	t.Run("Link does not match any validator", func(t *testing.T) {
 		l := cstesting.RandomLinkWithProcess("testProcess")
-		l.Meta["type"] = "notfound"
+		l.Meta.Type = "notfound"
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
 
@@ -102,7 +102,7 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	t.Run("Schema validation failed", func(t *testing.T) {
 		l := cstesting.RandomLinkWithProcess("testProcess")
-		l.Meta["type"] = "init"
+		l.Meta.Type = "init"
 		l.State["string"] = 42
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
@@ -113,7 +113,7 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	t.Run("Signature validation failed", func(t *testing.T) {
 		l := cstesting.RandomLinkWithProcess("testProcess")
-		l.Meta["type"] = "init"
+		l.Meta.Type = "init"
 		l.State["string"] = "test"
 		l = cstesting.SignLink(l)
 		l.Signatures[0].Signature = "test"

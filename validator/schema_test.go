@@ -103,8 +103,8 @@ func TestSchemaValidator(t *testing.T) {
 
 	createValidLink := func() *cs.Link {
 		l := cstesting.RandomLink()
-		l.Meta["process"] = "p1"
-		l.Meta["type"] = "sell"
+		l.Meta.Process = "p1"
+		l.Meta.Type = "sell"
 		l.State["seller"] = "Alice"
 		l.State["lot"] = "Secret key"
 		l.State["initialPrice"] = 42

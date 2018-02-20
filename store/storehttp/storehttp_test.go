@@ -135,7 +135,7 @@ func TestCreateLink_invalidLink(t *testing.T) {
 	s, a := createServer()
 
 	l1 := cstesting.RandomLink()
-	l1.Meta["process"] = ""
+	l1.Meta.Process = ""
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &body)
 	if err != nil {

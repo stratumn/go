@@ -40,9 +40,9 @@ func (f Factory) TestCheckTx(t *testing.T) {
 
 	t.Run("Check link with invalid reference returns not-ok", func(t *testing.T) {
 		link := cstesting.RandomLink()
-		link.Meta["refs"] = []interface{}{map[string]interface{}{
-			"process":  "proc",
-			"linkHash": "invalidLinkHash",
+		link.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
+			Process:  "proc",
+			LinkHash: "invalidLinkHash",
 		}}
 		tx := makeCreateLinkTx(t, link)
 
@@ -57,9 +57,9 @@ func (f Factory) TestCheckTx(t *testing.T) {
 		res := h.CheckTx(tx)
 
 		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
-		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
-			"process":  link.GetProcess(),
-			"linkHash": linkHash,
+		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
+			Process:  link.GetProcess(),
+			LinkHash: linkHash.String(),
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
 
@@ -89,9 +89,9 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		h.CheckTx(tx)
 
 		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
-		linkWithRef.Meta["refs"] = []interface{}{map[string]interface{}{
-			"process":  link.GetProcess(),
-			"linkHash": linkHash,
+		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
+			Process:  link.GetProcess(),
+			LinkHash: linkHash.String(),
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
 		res := h.DeliverTx(tx)

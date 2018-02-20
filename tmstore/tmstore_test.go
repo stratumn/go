@@ -99,8 +99,8 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Validation succeeds", func(t *testing.T) {
 			l := cstesting.RandomLink()
-			l.Meta["process"] = "testProcess"
-			l.Meta["type"] = "init"
+			l.Meta.Process = "testProcess"
+			l.Meta.Type = "init"
 			l.State["string"] = "test"
 
 			privBytes, _ := base64.StdEncoding.DecodeString(itPrivKey)
@@ -113,8 +113,8 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Schema validation failed", func(t *testing.T) {
 			l := cstesting.RandomLink()
-			l.Meta["process"] = "testProcess"
-			l.Meta["type"] = "init"
+			l.Meta.Process = "testProcess"
+			l.Meta.Type = "init"
 			l.State["string"] = 42
 
 			_, err = tmstore.CreateLink(l)
@@ -128,8 +128,8 @@ func TestTMStore(t *testing.T) {
 		t.Run("Signature validation failed", func(t *testing.T) {
 			l := cstesting.RandomLink()
 			l = cstesting.SignLink(l)
-			l.Meta["process"] = "testProcess"
-			l.Meta["type"] = "init"
+			l.Meta.Process = "testProcess"
+			l.Meta.Type = "init"
 			l.State["string"] = "test"
 
 			_, err = tmstore.CreateLink(l)
@@ -142,8 +142,8 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Validation rules update succeeds", func(t *testing.T) {
 			l := cstesting.RandomLink()
-			l.Meta["process"] = "testProcess"
-			l.Meta["type"] = "action"
+			l.Meta.Process = "testProcess"
+			l.Meta.Type = "action"
 			l.State["string"] = "test"
 
 			privBytes, _ := base64.StdEncoding.DecodeString(itPrivKey)
@@ -156,8 +156,8 @@ func TestTMStore(t *testing.T) {
 			updateValidatorRulesFile(t, filepath.Join("testdata", "rules.new.json"), rulesFilename)
 
 			l = cstesting.RandomLink()
-			l.Meta["process"] = "testProcess"
-			l.Meta["type"] = "action"
+			l.Meta.Process = "testProcess"
+			l.Meta.Type = "action"
 			l.State["string"] = "test"
 
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)

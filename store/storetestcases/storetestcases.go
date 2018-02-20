@@ -194,7 +194,7 @@ func RandomLink(b *testing.B, numLinks, i int) *cs.Link {
 // The map ID will be one of ten possible values.
 func RandomLinkMapID(b *testing.B, numLinks, i int) *cs.Link {
 	l := cstesting.RandomLink()
-	l.Meta["mapId"] = fmt.Sprintf("%d", i%10)
+	l.Meta.MapID = fmt.Sprintf("%d", i%10)
 	return l
 }
 
@@ -203,7 +203,7 @@ func RandomLinkMapID(b *testing.B, numLinks, i int) *cs.Link {
 // The previous link hash will be one of ten possible values.
 func RandomLinkPrevLinkHash(b *testing.B, numLinks, i int) *cs.Link {
 	l := cstesting.RandomLink()
-	l.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
+	l.Meta.PrevLinkHash = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
 	return l
 }
 
@@ -211,7 +211,7 @@ func RandomLinkPrevLinkHash(b *testing.B, numLinks, i int) *cs.Link {
 // The tags will contain one of ten possible values.
 func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
 	l := cstesting.RandomLink()
-	l.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
+	l.Meta.Tags = []string{fmt.Sprintf("%d", i%10)}
 	return l
 }
 
@@ -221,8 +221,8 @@ func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
 // The tags will contain one of ten possible values.
 func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
 	l := cstesting.RandomLink()
-	l.Meta["mapId"] = fmt.Sprintf("%d", i%10)
-	l.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
+	l.Meta.MapID = fmt.Sprintf("%d", i%10)
+	l.Meta.Tags = []string{fmt.Sprintf("%d", i%10)}
 	return l
 }
 
@@ -232,8 +232,8 @@ func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
 // The tags will contain one of ten possible values.
 func RandomLinkPrevLinkHashTags(b *testing.B, numLinks, i int) *cs.Link {
 	l := cstesting.RandomLink()
-	l.Meta["prevLinkHash"] = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
-	l.Meta["tags"] = []interface{}{fmt.Sprintf("%d", i%10)}
+	l.Meta.PrevLinkHash = fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)
+	l.Meta.Tags = []string{fmt.Sprintf("%d", i%10)}
 	return l
 }
 

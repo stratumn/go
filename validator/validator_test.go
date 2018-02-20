@@ -119,18 +119,18 @@ var testCases = []testCase{{
 			"buyer":    "alice",
 			"bidPrice": 42,
 		},
-		Meta: map[string]interface{}{
-			"process": "auction",
-			"type":    "bid",
+		Meta: cs.LinkMeta{
+			Process: "auction",
+			Type:    "bid",
 		},
 	},
 	valid: true,
 }, {
 	name: "no-validator-match",
 	link: &cs.Link{
-		Meta: map[string]interface{}{
-			"process": "unknown",
-			"type":    "unknown",
+		Meta: cs.LinkMeta{
+			Process: "auction",
+			Type:    "unknown",
 		},
 	},
 	valid: false,
@@ -140,9 +140,9 @@ var testCases = []testCase{{
 		State: map[string]interface{}{
 			"to": "bob",
 		},
-		Meta: map[string]interface{}{
-			"process": "chat",
-			"type":    "message",
+		Meta: cs.LinkMeta{
+			Process: "chat",
+			Type:    "message",
 		},
 	},
 	valid: false,
@@ -153,9 +153,9 @@ var testCases = []testCase{{
 			"buyer":    "alice",
 			"bidPrice": -10,
 		},
-		Meta: map[string]interface{}{
-			"process": "auction",
-			"type":    "bid",
+		Meta: cs.LinkMeta{
+			Process: "auction",
+			Type:    "bid",
 		},
 	},
 	valid: false,

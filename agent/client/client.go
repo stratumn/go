@@ -43,7 +43,6 @@ type SegmentRef struct {
 	LinkHash *types.Bytes32 `json:"linkHash"`
 	Process  string         `json:"process"`
 	Segment  *cs.Segment    `json:"segment"`
-	Meta     interface{}    `json:"meta"`
 }
 
 // AgentClient is the interface for an agent client

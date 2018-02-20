@@ -60,7 +60,7 @@ func (f Factory) TestFindSegmentsTags(t *testing.T) {
 	assert.NotNil(t, found)
 	assert.True(t, len(found) > 0)
 	for _, s := range found {
-		assert.Equal(t, []interface{}{tag}, s.Link.Meta["tags"])
+		assert.Equal(t, []string{tag}, s.Link.Meta.Tags)
 	}
 }
 
@@ -92,7 +92,7 @@ func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
 
 	filter := store.SegmentFilter{
 		Process: process,
-		MapIDs:  []string{parent.Link.Meta["mapId"].(string)},
+		MapIDs:  []string{parent.Link.Meta.MapID},
 		Pagination: store.Pagination{
 			Limit: 20,
 		},

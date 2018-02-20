@@ -15,8 +15,6 @@
 package validator
 
 import (
-	log "github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-indigocore/cs"
 )
@@ -49,23 +47,11 @@ func newValidatorBaseConfig(process, linkType string) (*validatorBaseConfig, err
 // and type. Otherwise the link is considered valid because this validator
 // doesn't apply to it.
 func (bv *validatorBaseConfig) ShouldValidate(link *cs.Link) bool {
-	linkProcess, ok := link.Meta["process"].(string)
-	if !ok {
-		log.Debug("No process found in link %v", link)
+	if link.Meta.Process != bv.Process {
 		return false
 	}
 
-	if linkProcess != bv.Process {
-		return false
-	}
-
-	linkType, ok := link.Meta["type"].(string)
-	if !ok {
-		log.Debug("No type found in link %v", link)
-		return false
-	}
-
-	if linkType != bv.LinkType {
+	if link.Meta.Type != bv.LinkType {
 		return false
 	}
 

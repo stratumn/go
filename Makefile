@@ -79,7 +79,13 @@ release: test lint clean build git_tag github_draft github_upload github_publish
 test: $(TEST_LIST)
 
 $(TEST_LIST): test_%:
-	@$(GO_TEST) $*
+	@$(GO_TEST) $* $(GO_TEST_OPTS)
+
+test_wo_cache: GO_TEST_OPTS=-count=1
+test_wo_cache: $(TEST_LIST)
+
+test_integration: GO_TEST_OPTS=-integration
+test_integration: $(TEST_LIST)
 
 # == coverage =================================================================
 coverage: $(COVERAGE_FILE)

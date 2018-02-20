@@ -93,8 +93,7 @@ func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	// Apply uncommitted links
 	for _, link := range b.Links {
 		if filter.MatchLink(link) {
-			mapID := link.Meta["mapId"].(string)
-			mapIDs[mapID]++
+			mapIDs[link.Meta.MapID]++
 		}
 	}
 

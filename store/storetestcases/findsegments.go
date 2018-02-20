@@ -73,37 +73,37 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	segmentsTotalCount := 8
 
 	createRandomLink(a, func(l *cs.Link) {
-		l.Meta["mapId"] = "map1"
-		delete(l.Meta, "prevLinkHash")
-		l.Meta["process"] = "Foo"
+		l.Meta.MapID = "map1"
+		l.Meta.PrevLinkHash = ""
+		l.Meta.Process = "Foo"
 	})
 
 	createRandomLink(a, func(l *cs.Link) {
-		l.Meta["tags"] = []interface{}{"tag1", "tag42"}
-		l.Meta["mapId"] = "map2"
+		l.Meta.Tags = []string{"tag1", "tag42"}
+		l.Meta.MapID = "map2"
 	})
 
 	createRandomLink(a, func(l *cs.Link) {
-		l.Meta["tags"] = []interface{}{"tag2"}
+		l.Meta.Tags = []string{"tag2"}
 	})
 
 	link4 := createRandomLink(a, nil)
 	linkHash4, _ := link4.Hash()
 
 	createLinkBranch(a, link4, func(l *cs.Link) {
-		l.Meta["tags"] = []interface{}{"tag1", testutil.RandomString(5)}
-		l.Meta["mapId"] = "map1"
+		l.Meta.Tags = []string{"tag1", testutil.RandomString(5)}
+		l.Meta.MapID = "map1"
 	})
 
 	link6 := createRandomLink(a, func(l *cs.Link) {
-		l.Meta["tags"] = []interface{}{"tag2", "tag42"}
-		l.Meta["process"] = "Foo"
-		delete(l.Meta, "prevLinkHash")
+		l.Meta.Tags = []string{"tag2", "tag42"}
+		l.Meta.Process = "Foo"
+		l.Meta.PrevLinkHash = ""
 	})
 	linkHash6, _ := link6.Hash()
 
 	createRandomLink(a, func(l *cs.Link) {
-		l.Meta["mapId"] = "map2"
+		l.Meta.MapID = "map2"
 	})
 
 	createLinkBranch(a, link4, nil)

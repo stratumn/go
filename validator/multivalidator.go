@@ -62,7 +62,7 @@ func (v multiValidator) matchValidators(l *cs.Link) (linkValidators []Validator)
 func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
 	linkValidators := v.matchValidators(l)
 	if len(linkValidators) == 0 {
-		return errors.Errorf("Validation failed: link with process: [%s] and type: [%s] does not match any validator", l.Meta["process"], l.Meta["type"])
+		return errors.Errorf("Validation failed: link with process: [%s] and type: [%s] does not match any validator", l.Meta.Process, l.Meta.Type)
 	}
 
 	for _, child := range linkValidators {

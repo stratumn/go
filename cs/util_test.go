@@ -15,12 +15,12 @@
 package cs_test
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func strEqual(lhs, rhs string) bool {
@@ -29,7 +29,7 @@ func strEqual(lhs, rhs string) bool {
 
 func innerTestLinkValidate(t *testing.T, l *cs.Link, getSegment cs.GetSegmentFunc, want string, strComp func(lhs, rhs string) bool) {
 	err := l.Validate(getSegment)
-	assert.Error(t, err, "l.Validate() expected error")
+	require.Error(t, err, "l.Validate() expected error")
 	assert.True(t, strComp(err.Error(), want), "Unexpected error:\n%s\n", want, err.Error())
 }
 
@@ -42,25 +42,22 @@ func testLinkValidateErrorWrapper(t *testing.T, l *cs.Link, getSegment cs.GetSeg
 }
 
 func appendRefSegment(l, ref *cs.Link) {
-	var refs []interface{}
-	var present bool
-	if refs, present = l.Meta["refs"].([]interface{}); !present {
-		refs = []interface{}{}
-	}
-	marshalledRef, _ := json.Marshal(ref.Segmentify())
-	refs = append(refs, map[string]interface{}{"segment": string(marshalledRef)})
-	l.Meta["refs"] = refs
+	// var refs []interface{}
+	// var present bool
+	// if refs, present = l.Meta.Refs.([]interface{}); !present {
+	// 	refs = []interface{}{}
+	// }
+	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{Segment: ref.Segmentify()})
 }
 
 func appendRefLink(l *cs.Link, process, linkHash string) {
-	var refs []interface{}
-	var present bool
-	if refs, present = l.Meta["refs"].([]interface{}); !present {
-		refs = []interface{}{}
-	}
-	refs = append(refs, map[string]interface{}{
-		"process":  process,
-		"linkHash": linkHash,
+	// var refs []interface{}
+	// var present bool
+	// if refs, present = l.Meta.Refs.([]interface{}); !present {
+	// 	refs = []interface{}{}
+	// }
+	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{
+		Process:  process,
+		LinkHash: linkHash,
 	})
-	l.Meta["refs"] = refs
 }
