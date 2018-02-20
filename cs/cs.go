@@ -177,10 +177,6 @@ func (l *Link) HashString() (string, error) {
 // If priority is nil, it will return -Infinity.
 func (l *Link) GetPriority() float64 {
 	return l.Meta.Priority
-	// if f64, ok := l.Meta.Data["priority"].(float64); ok {
-	// 	return f64
-	// }
-	// return math.Inf(-1)
 }
 
 // GetMapID returns the map ID as a string.
