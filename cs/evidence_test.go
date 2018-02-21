@@ -37,7 +37,7 @@ const (
 var (
 	header = &abci.Header{
 		Height:  height,
-		ChainId: TestChainId,
+		ChainID: TestChainId,
 	}
 
 	TestEvidence = cs.Evidence{

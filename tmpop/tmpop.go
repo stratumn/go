@@ -152,7 +152,7 @@ func (t *TMPop) SetOption(req abci.RequestSetOption) abci.ResponseSetOption {
 
 // BeginBlock implements github.com/tendermint/abci/types.Application.BeginBlock.
 func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	t.currentHeader = req.GetHeader()
+	t.currentHeader = &req.Header
 	if t.currentHeader == nil {
 		log.Error("Cannot begin block without header")
 		return abci.ResponseBeginBlock{}
@@ -163,7 +163,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// This AppHash will never be denied in a future block so we can add
 	// evidence to the links that were added in the previous blocks.
 	if t.lastBlock.AppHash.EqualsBytes(t.currentHeader.AppHash) {
-		t.addTendermintEvidence(req.Header)
+		t.addTendermintEvidence(&req.Header)
 	} else {
 		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x",
 			t.currentHeader.AppHash,
@@ -208,24 +208,18 @@ func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
 func (t *TMPop) Commit() abci.ResponseCommit {
 	appHash, links, err := t.state.Commit()
 	if err != nil {
-		return abci.ResponseCommit{
-			Code: CodeTypeInternalError,
-			Log:  err.Error(),
-		}
+		log.Errorf("Error while committing: %s", err)
+		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveValidatorHash(); err != nil {
-		return abci.ResponseCommit{
-			Code: CodeTypeInternalError,
-			Log:  err.Error(),
-		}
+		log.Errorf("Error while saving validator hash: %s", err)
+		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveCommitLinkHashes(links); err != nil {
-		return abci.ResponseCommit{
-			Code: CodeTypeInternalError,
-			Log:  err.Error(),
-		}
+		log.Errorf("Error while saving committed link hashes: %s", err)
+		return abci.ResponseCommit{}
 	}
 
 	t.eventsManager.AddSavedLinks(links)
@@ -428,7 +422,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		if valid {
 			evidence := &cs.Evidence{
 				Backend:  Name,
-				Provider: header.ChainId,
+				Provider: header.ChainID,
 				Proof: &evidences.TendermintProof{
 					BlockHeight:     height,
 					Root:            merkleRoot,

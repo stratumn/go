@@ -40,6 +40,7 @@ var (
 	dbDir             string
 
 	nodeLaddr               string
+	peers                   string
 	seeds                   string
 	skipUPNP                bool
 	addrBook                string
@@ -83,7 +84,6 @@ var (
 func RegisterFlags() {
 	flag.StringVar(&rootDir, "home", os.ExpandEnv("$TMHOME"), "Root directory for config and data")
 
-	flag.StringVar(&chainID, "chain_id", config.BaseConfig.ChainID, "The ID of the chain to join (should be signed with every transaction and vote)")
 	flag.StringVar(&privValidatorFile, "priv_validator_file", config.BaseConfig.PrivValidator, "Validator private key file")
 	flag.StringVar(&moniker, "moniker", config.BaseConfig.Moniker, "Node name")
 	flag.StringVar(&genesisFile, "genesis_file", config.BaseConfig.Genesis, "The location of the genesis file")
@@ -99,6 +99,7 @@ func RegisterFlags() {
 	flag.StringVar(&txIndex, "tx_index", config.TxIndex.Indexer, "What indexer to use for transactions")
 
 	flag.StringVar(&nodeLaddr, "node_laddr", config.P2P.ListenAddress, "Node listen address (0.0.0.0:0 means any interface, any port)")
+	flag.StringVar(&peers, "peers", config.P2P.PersistentPeers, "Comma delimited host:port persistent peer nodes")
 	flag.StringVar(&seeds, "seeds", config.P2P.Seeds, "Comma delimited host:port seed nodes")
 	flag.BoolVar(&skipUPNP, "skip_upnp", config.P2P.SkipUPNP, "Skip UPNP configuration")
 	flag.StringVar(&addrBook, "addr_book_file", config.P2P.AddrBook, "")
@@ -146,7 +147,6 @@ func GetConfig() *cfg.Config {
 		config.SetRoot(os.ExpandEnv("$HOME/.tendermint"))
 	}
 
-	config.BaseConfig.ChainID = chainID
 	config.BaseConfig.PrivValidator = privValidatorFile
 	config.BaseConfig.Moniker = moniker
 	config.BaseConfig.Genesis = genesisFile
@@ -162,6 +162,7 @@ func GetConfig() *cfg.Config {
 	config.TxIndex.Indexer = txIndex
 
 	config.P2P.ListenAddress = nodeLaddr
+	config.P2P.PersistentPeers = peers
 	config.P2P.Seeds = seeds
 	config.P2P.SkipUPNP = skipUPNP
 	config.P2P.AddrBook = addrBook

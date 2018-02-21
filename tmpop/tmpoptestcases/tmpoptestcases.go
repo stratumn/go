@@ -119,9 +119,9 @@ func makeCreateLinkTx(t *testing.T, l *cs.Link) []byte {
 func makeBeginBlock(appHash []byte, height int64) abci.RequestBeginBlock {
 	return abci.RequestBeginBlock{
 		Hash: []byte{},
-		Header: &abci.Header{
+		Header: abci.Header{
 			Height:  height,
-			ChainId: chainID,
+			ChainID: chainID,
 			AppHash: appHash,
 		},
 	}
@@ -151,8 +151,8 @@ func commitTxs(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBegin
 	}
 
 	commitResult := h.Commit()
-	if commitResult.IsErr() {
-		t.Errorf("a.Commit(): failed: %v", commitResult.Log)
+	if len(commitResult.GetData()) == 0 {
+		t.Errorf("a.Commit(): failed")
 	}
 
 	return makeBeginBlock(commitResult.Data, requestBeginBlock.Header.Height+1)
