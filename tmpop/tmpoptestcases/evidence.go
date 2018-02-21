@@ -78,7 +78,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		err := makeQuery(h, tmpop.GetSegment, linkHash1, got)
 		assert.NoError(t, err)
 
-		evidence := got.Meta.GetEvidence(h.GetCurrentHeader().GetChainId())
+		evidence := got.Meta.GetEvidence(h.GetCurrentHeader().GetChainID())
 		require.NotNil(t, evidence, "Evidence is missing")
 
 		proof := evidence.Proof.(*evidences.TendermintProof)

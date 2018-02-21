@@ -66,7 +66,7 @@ func updateValidatorRulesFile(t *testing.T, in, out string) {
 		tmInfo := testTmpop.Info(abci.RequestInfo{})
 		testTmpop.BeginBlock(abci.RequestBeginBlock{
 			Hash: tmInfo.LastBlockAppHash,
-			Header: &abci.Header{
+			Header: abci.Header{
 				AppHash: tmInfo.LastBlockAppHash,
 				Height:  tmInfo.LastBlockHeight,
 			},
@@ -92,11 +92,10 @@ func TestTMStore(t *testing.T) {
 	})
 
 	t.Run("Validation", func(t *testing.T) {
-		tmstore, err := newTestTMStore()
-		require.NoError(t, err)
-
+		tmstore.StartWebsocket()
 		updateValidatorRulesFile(t, filepath.Join("testdata", "rules.json"), rulesFilename)
 
+		var err error
 		t.Run("Validation succeeds", func(t *testing.T) {
 			l := cstesting.RandomLink()
 			l.Meta["process"] = "testProcess"
@@ -169,8 +168,6 @@ func TestTMStore(t *testing.T) {
 
 	// TestWebSocket tests how the web socket with Tendermint behaves
 	t.Run("Websocket", func(t *testing.T) {
-		tmstore = NewTestClient()
-
 		t.Run("Start and stop websocket", func(t *testing.T) {
 			err := tmstore.StartWebsocket()
 			assert.NoError(t, err)
@@ -192,7 +189,7 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Stop already stopped websocket", func(t *testing.T) {
 			err := tmstore.StopWebsocket()
-			assert.NoError(t, err)
+			assert.EqualError(t, err, "subscription not found")
 		})
 	})
 }

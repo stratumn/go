@@ -54,7 +54,7 @@ func (c *TendermintClientWrapper) Block(height int) *Block {
 
 	block := &Block{
 		Header: &abci.Header{
-			ChainId:        previousBlock.BlockMeta.Header.ChainID,
+			ChainID:        previousBlock.BlockMeta.Header.ChainID,
 			Height:         int64(previousBlock.BlockMeta.Header.Height),
 			Time:           int64(previousBlock.BlockMeta.Header.Time.Unix()),
 			LastCommitHash: previousBlock.BlockMeta.Header.LastCommitHash,

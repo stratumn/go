@@ -120,8 +120,8 @@ func (f Factory) TestCommitTx(t *testing.T) {
 	h.DeliverTx(tx)
 
 	res := h.Commit()
-	if !res.IsOK() {
-		t.Fatalf("Commit failed: %v", res)
+	if len(res.GetData()) == 0 {
+		t.Fatalf("Commit failed")
 	}
 
 	t.Run("Commit correctly saves links and updates app hash", func(t *testing.T) {
