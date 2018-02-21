@@ -47,7 +47,7 @@
     "txscript",
     "wire"
   ]
-  revision = "9aa9e79ebf7f11f1f70533c100e5c835a6af8c0f"
+  revision = "2be2f12b358dc57d70b8f501b00be450192efbc3"
 
 [[projects]]
   branch = "master"
@@ -136,21 +136,6 @@
   version = "v0.3.0"
 
 [[projects]]
-  name = "github.com/go-playground/locales"
-  packages = [
-    ".",
-    "currency"
-  ]
-  revision = "e4cbcb5d0652150d40ad0646651076b6bd2be4f6"
-  version = "v0.11.2"
-
-[[projects]]
-  name = "github.com/go-playground/universal-translator"
-  packages = ["."]
-  revision = "b32fa301c9fe55953584134cb6853a13c87ec0a1"
-  version = "v0.16.0"
-
-[[projects]]
   name = "github.com/go-stack/stack"
   packages = ["."]
   revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
@@ -173,10 +158,9 @@
   branch = "master"
   name = "github.com/golang/mock"
   packages = ["gomock"]
-  revision = "b3e60bcdc577185fce3cf625fc96b62857ce5574"
+  revision = "58cd061d09382b6011f84c1291ebe50ef2e25bab"
 
 [[projects]]
-  branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -186,6 +170,7 @@
     "ptypes/timestamp"
   ]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -197,7 +182,7 @@
   branch = "master"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "e48060a28fac52d0f1cb758bc8b87c07bac4a87d"
+  revision = "632a2caf6d3d380753dc7e422748202982ad18a3"
 
 [[projects]]
   branch = "master"
@@ -256,7 +241,7 @@
   branch = "master"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
-  revision = "dd801d4f4ce7ac746e7e7b4489d2fa600b3b096b"
+  revision = "c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5"
 
 [[projects]]
   branch = "master"
@@ -289,13 +274,13 @@
     ".",
     "oid"
   ]
-  revision = "19c8e9ad00952ce0c64489b60e8df88bb16dd514"
+  revision = "88edab0803230a3898347e77b474f8c1820a1f20"
 
 [[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
-  revision = "d419a98cdbed11a922bf76f257b7c4be79b50e73"
-  version = "v1.7.4"
+  revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
+  version = "v1.7.6"
 
 [[projects]]
   branch = "master"
@@ -307,7 +292,7 @@
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
-  revision = "b4575eea38cca1123ec2dc90c26529b5c5acfcff"
+  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -372,14 +357,14 @@
 [[projects]]
   name = "github.com/spf13/cast"
   packages = ["."]
-  revision = "acbeb36b902d72a7a4c18e8f3241075e7ab763e4"
-  version = "v1.1.0"
+  revision = "8965335b8c7107321228e3e3702cab9832751bac"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "f91529fc609202eededff4de2dc0ba2f662240a3"
+  revision = "be77323fc05148ef091e83b3866c0d47c8e74a8b"
 
 [[projects]]
   branch = "master"
@@ -412,8 +397,8 @@
     "mock",
     "require"
   ]
-  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
-  version = "v1.2.0"
+  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -442,8 +427,8 @@
     "example/dummy",
     "types"
   ]
-  revision = "fca2b508c185b855af1446ec4afc19bdfc7b315d"
-  version = "v0.8.0"
+  revision = "68592f4d8ee34e97db94b7a7976b1309efdb7eb9"
+  version = "v0.10.0"
 
 [[projects]]
   branch = "master"
@@ -465,17 +450,10 @@
   name = "github.com/tendermint/go-wire"
   packages = [
     ".",
-    "data",
-    "nowriter/tmlegacy"
+    "data"
   ]
   revision = "b6fc872b42d41158a60307db4da051dd6f179415"
   version = "v0.7.2"
-
-[[projects]]
-  name = "github.com/tendermint/iavl"
-  packages = ["."]
-  revision = "594cc0c062a7174475f0ab654384038d77067917"
-  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/tendermint/tendermint"
@@ -484,9 +462,12 @@
     "config",
     "consensus",
     "consensus/types",
+    "evidence",
     "mempool",
     "node",
     "p2p",
+    "p2p/conn",
+    "p2p/pex",
     "p2p/trust",
     "p2p/upnp",
     "proxy",
@@ -506,8 +487,8 @@
     "types",
     "version"
   ]
-  revision = "a2b92c07453f66277f70d0c3979a9dac67bbecea"
-  version = "v0.13.0"
+  revision = "c8a2bdf78ba7aaaf4284fa78c1b9b05c5e7342bc"
+  version = "v0.16.0"
 
 [[projects]]
   name = "github.com/tendermint/tmlibs"
@@ -523,8 +504,8 @@
     "pubsub",
     "pubsub/query"
   ]
-  revision = "bfcc0217f120d3bee6730ba0789d2eb72fc2e889"
-  version = "v0.5.0"
+  revision = "1b9b5652a199ab0be2e781393fb275b66377309d"
+  version = "v0.7.0"
 
 [[projects]]
   branch = "master"
@@ -542,7 +523,7 @@
   branch = "master"
   name = "github.com/xeipuuv/gojsonschema"
   packages = ["."]
-  revision = "70e59348c29403c606624cd201e79769d6657db8"
+  revision = "8bcffc811467a5f691810420385be6e66b35a317"
 
 [[projects]]
   branch = "master"
@@ -566,7 +547,7 @@
     "salsa20/salsa",
     "ssh/terminal"
   ]
-  revision = "1875d0a70c90e57f11972aefd42276df65e895b9"
+  revision = "432090b8f568c018896cd8a0fb0345872bbac6ce"
 
 [[projects]]
   branch = "master"
@@ -582,7 +563,7 @@
     "proxy",
     "trace"
   ]
-  revision = "0ed95abb35c445290478a5348a7b38bb154135fd"
+  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
 
 [[projects]]
   branch = "master"
@@ -591,7 +572,7 @@
     ".",
     "internal"
   ]
-  revision = "a032972e28060ca4f5644acffae3dfc268cc09db"
+  revision = "543e37812f10c46c622c9575afd7ad22f22a12ba"
 
 [[projects]]
   branch = "master"
@@ -600,7 +581,7 @@
     "unix",
     "windows"
   ]
-  revision = "3dbebcf8efb6a5011a60c2b4591c1022a759af8a"
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [[projects]]
   branch = "master"
@@ -621,7 +602,7 @@
     "unicode/norm",
     "unicode/rangetable"
   ]
-  revision = "e19ae1496984b1c655b8044a65c0300a3c878dd3"
+  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -641,7 +622,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "4eb30f4778eed4c258ba66527a0d4f9ec8a36c45"
+  revision = "2b5a72b8730b0b16380010cfe5286c42108d88e7"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -654,6 +635,7 @@
     "connectivity",
     "credentials",
     "encoding",
+    "encoding/proto",
     "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "internal",
@@ -669,8 +651,8 @@
     "tap",
     "transport"
   ]
-  revision = "6b51017f791ae1cfbec89c52efdf444b13b550ef"
-  version = "v1.9.2"
+  revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
+  version = "v1.10.0"
 
 [[projects]]
   name = "gopkg.in/dancannon/gorethink.v3"
@@ -683,12 +665,6 @@
   packages = ["."]
   revision = "010e0b745d12eaf8426c95f9c3924d81dd0b668f"
   version = "v2.0.0"
-
-[[projects]]
-  name = "gopkg.in/go-playground/validator.v9"
-  packages = ["."]
-  revision = "48a433ba4bcadc5be9aa16d4bdcb383d3f57a741"
-  version = "v9.9.3"
 
 [[projects]]
   name = "gopkg.in/gorethink/gorethink.v3"
@@ -709,6 +685,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6687bae42245eb015e6e4e4553a476df43fc78a7fc1e78935ec56f3cffa06e77"
+  inputs-digest = "a3449ddd518598d96bc72ac75e8aedfeacaa74edfc20c5b81b34b55721c41f8f"
   solver-name = "gps-cdcl"
   solver-version = 1

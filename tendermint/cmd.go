@@ -83,7 +83,6 @@ var (
 func RegisterFlags() {
 	flag.StringVar(&rootDir, "home", os.ExpandEnv("$TMHOME"), "Root directory for config and data")
 
-	flag.StringVar(&chainID, "chain_id", config.BaseConfig.ChainID, "The ID of the chain to join (should be signed with every transaction and vote)")
 	flag.StringVar(&privValidatorFile, "priv_validator_file", config.BaseConfig.PrivValidator, "Validator private key file")
 	flag.StringVar(&moniker, "moniker", config.BaseConfig.Moniker, "Node name")
 	flag.StringVar(&genesisFile, "genesis_file", config.BaseConfig.Genesis, "The location of the genesis file")
@@ -146,7 +145,6 @@ func GetConfig() *cfg.Config {
 		config.SetRoot(os.ExpandEnv("$HOME/.tendermint"))
 	}
 
-	config.BaseConfig.ChainID = chainID
 	config.BaseConfig.PrivValidator = privValidatorFile
 	config.BaseConfig.Moniker = moniker
 	config.BaseConfig.Genesis = genesisFile

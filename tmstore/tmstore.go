@@ -51,6 +51,9 @@ const (
 
 	// DefaultWsRetryInterval is the default interval between Tendermint Websocket connection attempts.
 	DefaultWsRetryInterval = 5 * time.Second
+
+	// ErrAlreadySubscribed is the error returned by tendermint's rpc client when we try to suscribe twice to the same event
+	ErrAlreadySubscribed = "already subscribed"
 )
 
 // TMStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
@@ -110,8 +113,7 @@ func (t *TMStore) StartWebsocket() error {
 		}
 	}()
 
-	newBlocksQuery := fmt.Sprintf("%s='%s'", tmtypes.EventTypeKey, tmtypes.EventNewBlock)
-	if err := t.tmClient.Subscribe(t.ctx, newBlocksQuery, t.tmEventChan); err != nil {
+	if err := t.tmClient.Subscribe(t.ctx, Name, tmtypes.EventQueryNewBlock, t.tmEventChan); err != nil && err.Error() != ErrAlreadySubscribed {
 		return err
 	}
 
@@ -124,6 +126,9 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 	return utils.Retry(func(attempt int) (retry bool, err error) {
 		err = t.StartWebsocket()
 		if err != nil {
+			if err.Error() == ErrAlreadySubscribed {
+				return false, nil
+			}
 			log.Infof("%v, retrying...", err)
 			time.Sleep(interval)
 		}
@@ -134,7 +139,7 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 // StopWebsocket stops the websocket client.
 func (t *TMStore) StopWebsocket() error {
 	// Note: no need to close t.tmEventChan, unsubscribing handles it
-	if err := t.tmClient.UnsubscribeAll(t.ctx); err != nil {
+	if err := t.tmClient.UnsubscribeAll(t.ctx, Name); err != nil {
 		log.Warnf("Error unsubscribing to Tendermint events: %s", err.Error())
 		return err
 	}
@@ -328,12 +333,12 @@ func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, er
 		if result.CheckTx.Code == tmpop.CodeTypeValidation {
 			// TODO: this package should be HTTP unaware, so
 			// we need a better way to pass error types.
-			return nil, jsonhttp.NewErrBadRequest(result.CheckTx.Error())
+			return nil, jsonhttp.NewErrBadRequest(result.CheckTx.Log)
 		}
-		return nil, fmt.Errorf(result.CheckTx.Error())
+		return nil, fmt.Errorf(result.CheckTx.Log)
 	}
 	if result.DeliverTx.IsErr() {
-		return nil, fmt.Errorf(result.DeliverTx.Error())
+		return nil, fmt.Errorf(result.DeliverTx.Log)
 	}
 
 	return result, nil
