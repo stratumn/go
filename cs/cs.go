@@ -138,7 +138,7 @@ type LinkMeta struct {
 	Type         string                 `json:"type"`
 	Inputs       []interface{}          `json:"inputs"`
 	Tags         []string               `json:"tags"`
-	Priority     float64                `json:"priority,omitempty"`
+	Priority     float64                `json:"priority"`
 	PrevLinkHash string                 `json:"prevLinkHash"`
 	Refs         []SegmentReference     `json:"refs"`
 	Data         map[string]interface{} `json:"data"`
@@ -172,58 +172,23 @@ func (l *Link) HashString() (string, error) {
 	return hash.String(), nil
 }
 
-// GetPriority returns the priority as a float64
-// It assumes the link is valid.
-// If priority is nil, it will return -Infinity.
-func (l *Link) GetPriority() float64 {
-	return l.Meta.Priority
-}
-
-// GetMapID returns the map ID as a string.
-// It assumes the link is valid.
-func (l *Link) GetMapID() string {
-	return l.Meta.MapID
-}
-
 // GetPrevLinkHash returns the previous link hash as a bytes.
-// It assumes the link is valid.
 // It will return nil if the previous link hash is null.
-func (l *Link) GetPrevLinkHash() *types.Bytes32 {
-	if l.Meta.PrevLinkHash != "" {
-		b, _ := types.NewBytes32FromString(l.Meta.PrevLinkHash)
+func (m *LinkMeta) GetPrevLinkHash() *types.Bytes32 {
+	if m.PrevLinkHash != "" {
+		b, _ := types.NewBytes32FromString(m.PrevLinkHash)
 		return b
 	}
 	return nil
 }
 
-// GetPrevLinkHashString returns the previous link hash as a string.
-// It assumes the link is valid.
-// It will return an empty string if the previous link hash is null.
-func (l *Link) GetPrevLinkHashString() string {
-	return l.Meta.PrevLinkHash
-}
-
-// GetTags returns the tags as an array of string.
-// It assumes the link is valid.
-// It will return nil if there are no tags.
-func (l *Link) GetTags() []string {
-	return l.Meta.Tags
-}
-
 // GetTagMap returns the tags as a map of string to empty structs (a set).
-// It assumes the link is valid.
-func (l *Link) GetTagMap() map[string]struct{} {
+func (m *LinkMeta) GetTagMap() map[string]struct{} {
 	tags := map[string]struct{}{}
-	for _, v := range l.Meta.Tags {
+	for _, v := range m.Tags {
 		tags[v] = struct{}{}
 	}
 	return tags
-}
-
-// GetProcess returns the process name as a string.
-// It assumes the link is valid.
-func (l *Link) GetProcess() string {
-	return l.Meta.Process
 }
 
 // Validate checks for errors in a link.
@@ -331,8 +296,8 @@ func (s SegmentSlice) Less(i, j int) bool {
 	var (
 		s1 = s[i]
 		s2 = s[j]
-		p1 = s1.Link.GetPriority()
-		p2 = s2.Link.GetPriority()
+		p1 = s1.Link.Meta.Priority
+		p2 = s2.Link.Meta.Priority
 	)
 
 	if p1 > p2 {

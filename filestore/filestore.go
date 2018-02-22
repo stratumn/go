@@ -234,7 +234,7 @@ func (a *FileStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 	set := map[string]struct{}{}
 	a.forEach(func(segment *cs.Segment) error {
 		if filter.Match(segment) {
-			set[segment.Link.GetMapID()] = struct{}{}
+			set[segment.Link.Meta.MapID] = struct{}{}
 		}
 		return nil
 	})

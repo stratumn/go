@@ -118,7 +118,7 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHashStr := linkHash.String()
 	a.links[linkHashStr] = link
 
-	mapID := link.GetMapID()
+	mapID := link.Meta.MapID
 	_, exists := a.maps[mapID]
 	if !exists {
 		a.maps[mapID] = hashSet{}

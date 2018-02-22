@@ -50,7 +50,7 @@ func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l
 func verifyPriorityOrdering(t *testing.T, slice cs.SegmentSlice) {
 	wantLTE := 100.0
 	for _, s := range slice {
-		got := s.Link.GetPriority()
+		got := s.Link.Meta.Priority
 		assert.True(t, got <= wantLTE, "Invalid priority")
 		wantLTE = got
 	}

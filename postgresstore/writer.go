@@ -53,11 +53,11 @@ func (a *writer) DeleteValue(key []byte) ([]byte, error) {
 // CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
 func (a *writer) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	var (
-		priority     = link.GetPriority()
-		mapID        = link.GetMapID()
-		prevLinkHash = link.GetPrevLinkHash()
-		tags         = link.GetTags()
-		process      = link.GetProcess()
+		priority     = link.Meta.Priority
+		mapID        = link.Meta.MapID
+		prevLinkHash = link.Meta.GetPrevLinkHash()
+		tags         = link.Meta.Tags
+		process      = link.Meta.Process
 	)
 
 	linkHash, err := link.Hash()

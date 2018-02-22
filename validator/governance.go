@@ -230,8 +230,8 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 	mapID := ""
 	prevLinkHash := ""
 	if prevLink != nil {
-		priority = prevLink.GetPriority() + 1.
-		mapID = prevLink.GetMapID()
+		priority = prevLink.Meta.Priority + 1.
+		mapID = prevLink.Meta.MapID
 		var err error
 		if prevLinkHash, err = prevLink.HashString(); err != nil {
 			return errors.Wrapf(err, "cannot get previous hash for process governance %s", process)

@@ -35,11 +35,11 @@ func (f Factory) TestQuery(t *testing.T) {
 
 	link1, req := commitRandomLink(t, h, req)
 
-	invalidLink := cstesting.InvalidLinkWithProcess(link1.GetProcess())
+	invalidLink := cstesting.InvalidLinkWithProcess(link1.Meta.Process)
 	invalidLinkHash, _ := invalidLink.Hash()
 	req = commitLink(t, h, invalidLink, req)
 
-	link2 := cstesting.RandomLinkWithProcess(link1.GetProcess())
+	link2 := cstesting.RandomLinkWithProcess(link1.Meta.Process)
 	linkHash2, _ := link2.Hash()
 	commitLink(t, h, link2, req)
 
@@ -81,14 +81,14 @@ func (f Factory) TestQuery(t *testing.T) {
 	})
 
 	t.Run("FindSegments()", func(t *testing.T) {
-		wantedPrevLinkHashStr := link2.GetPrevLinkHashString()
+		wantedPrevLinkHashStr := link2.Meta.PrevLinkHash
 		args := &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: store.DefaultLimit,
 			},
-			MapIDs:       []string{link2.GetMapID()},
+			MapIDs:       []string{link2.Meta.MapID},
 			PrevLinkHash: &wantedPrevLinkHashStr,
-			Tags:         link2.GetTags(),
+			Tags:         link2.Meta.Tags,
 		}
 		gots := cs.SegmentSlice{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
@@ -104,7 +104,7 @@ func (f Factory) TestQuery(t *testing.T) {
 			Pagination: store.Pagination{
 				Limit: store.DefaultLimit,
 			},
-			Process: link1.GetProcess(),
+			Process: link1.Meta.Process,
 		}
 		gots := cs.SegmentSlice{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
@@ -134,7 +134,7 @@ func (f Factory) TestQuery(t *testing.T) {
 			mapIdsFound[mapID] = true
 		}
 
-		for _, mapID := range []string{link1.GetMapID(), link2.GetMapID()} {
+		for _, mapID := range []string{link1.Meta.MapID, link2.Meta.MapID} {
 			_, found := mapIdsFound[mapID]
 			assert.True(t, found, "Couldn't find map id %s", mapID)
 		}
