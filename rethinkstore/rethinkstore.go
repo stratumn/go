@@ -168,23 +168,20 @@ func (a *Store) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-func avoidNilStringSlices(s *[]string) {
-	if *s == nil {
-		*s = []string{}
-	}
-}
-
 // Rethink cannot retrieve nil slices, so we force putting empty slices in Link
-func formatLink(link *cs.Link) *cs.Link {
-	avoidNilStringSlices(&link.Meta.Tags)
-	avoidNilStringSlices(&link.Meta.Inputs)
+func formatLink(link *cs.Link) {
+	if link.Meta.Tags == nil {
+		link.Meta.Tags = []string{}
+	}
+	if link.Meta.Inputs == nil {
+		link.Meta.Inputs = []interface{}{}
+	}
 	if link.Meta.Refs == nil {
 		link.Meta.Refs = []cs.SegmentReference{}
 	}
 	if link.Signatures == nil {
 		link.Signatures = []*cs.Signature{}
 	}
-	return link
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
@@ -507,7 +504,8 @@ type rethinkBufferedBatch struct {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (b *rethinkBufferedBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	return b.Batch.CreateLink(formatLink(link))
+	formatLink(link)
+	return b.Batch.CreateLink(link)
 }
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.

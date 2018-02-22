@@ -136,7 +136,7 @@ type LinkMeta struct {
 	Process      string                 `json:"process"`
 	Action       string                 `json:"action"`
 	Type         string                 `json:"type"`
-	Inputs       []string               `json:"inputs"`
+	Inputs       []interface{}          `json:"inputs"`
 	Tags         []string               `json:"tags"`
 	Priority     float64                `json:"priority,omitempty"`
 	PrevLinkHash string                 `json:"prevLinkHash"`
@@ -239,12 +239,6 @@ func (l *Link) Validate(getSegment GetSegmentFunc) error {
 	for _, tag := range l.Meta.Tags {
 		if tag == "" {
 			return errors.New("link.meta.tags should be an array of non empty string")
-		}
-	}
-
-	if v, ok := l.Meta.Data["priority"]; ok {
-		if _, ok := v.(float64); !ok {
-			return errors.New("link.meta.data.priority should be a float64")
 		}
 	}
 

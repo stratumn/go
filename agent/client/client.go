@@ -38,19 +38,12 @@ type ErrorData struct {
 	Message string `json:"error"`
 }
 
-//SegmentRef defines a format for a valid reference.
-type SegmentRef struct {
-	LinkHash *types.Bytes32 `json:"linkHash"`
-	Process  string         `json:"process"`
-	Segment  *cs.Segment    `json:"segment"`
-}
-
 // AgentClient is the interface for an agent client
 // It can be used to access an agent's http endpoints.
 type AgentClient interface {
 	UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*agent.Process, error)
-	CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error)
-	CreateSegment(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error)
+	CreateMap(process string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error)
+	CreateSegment(process string, linkHash *types.Bytes32, action string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error)
 	FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error)
 	GetInfo() (*agent.Info, error)
 	GetMapIds(filter *store.MapFilter) ([]string, error)
@@ -152,7 +145,7 @@ func (a *agentClient) UploadProcess(processName string, actionsPath string, stor
 
 // CreateSegment sends a CreateSegment request to the agent and returns
 // the newly created segment.
-func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, action string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, action string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments/%s/%s", process, linkHash, action)
 	postParams, err := a.makeActionPostParams(refs, args...)
 	if err != nil {
@@ -172,7 +165,7 @@ func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, act
 
 // CreateMap sends a CreateMap request to the agent and returns
 // the first segment of the newly created map.
-func (a *agentClient) CreateMap(process string, refs []SegmentRef, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateMap(process string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments", process)
 	postParams, err := a.makeActionPostParams(refs, args...)
 	resp, err := a.post(queryURL, postParams)
@@ -329,7 +322,7 @@ func (a *agentClient) decodeError(resp *http.Response) error {
 	return errors.New(errorData.Message)
 }
 
-func (a *agentClient) makeActionPostParams(refs []SegmentRef, args ...string) ([]byte, error) {
+func (a *agentClient) makeActionPostParams(refs []cs.SegmentReference, args ...string) ([]byte, error) {
 	var rawParams []interface{}
 	rawParams = append(rawParams, refs)
 	for _, a := range args {

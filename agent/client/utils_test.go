@@ -58,23 +58,6 @@ func (m *mockHTTPServer) decodeRefs(input interface{}) ([]cs.SegmentReference, e
 	}
 	var refs []cs.SegmentReference
 	for refIdx, in := range inputSlice {
-		// var ref client.SegmentRef
-		// inputStr, ok := in.(string)
-		// if !ok {
-		// 	return nil, errors.Errorf("refs[%d] should be a string", refIdx)
-		// }
-		// err := json.Unmarshal([]byte(inputStr), &ref)
-		// if err != nil {
-		// 	return nil, errors.Wrapf(err, "refs[%d]: cannot unmarshal segment", refIdx)
-		// }
-		// if ref.Segment != nil {
-		// 	refs = append(refs, cs.SegmentReference{Segment: ref.Segment})
-		// } else if ref.Process != "" && ref.LinkHash != nil {
-		// 	refs = append(refs, cs.SegmentReference{Process: ref.Process, LinkHash: ref.LinkHash.String()})
-		// } else {
-		// 	return nil, errors.Errorf("refs[%d]: missing segment or (process and linkHash)", refIdx)
-		// }
-
 		ref, ok := in.(map[string]interface{})
 		if !ok {
 			return nil, errors.Errorf("refs[%d] should be a map", refIdx)

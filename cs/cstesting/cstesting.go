@@ -40,7 +40,7 @@ func CreateLink(process, mapID, prevLinkHash string, tags []string, priority flo
 		Priority:     priority,
 		Action:       testutil.RandomString(24),
 		Type:         testutil.RandomString(24),
-		Inputs:       RandomTags(),
+		Inputs:       RandomInterfaces(),
 		Refs:         []cs.SegmentReference{},
 		Data: map[string]interface{}{
 			"random": testutil.RandomString(12),
@@ -120,6 +120,23 @@ func RandomTags() []string {
 		tags = append(tags, testutil.RandomString(12))
 	}
 	return tags
+}
+
+// RandomInterfaces creates between zero and four random values of type string/float/bool.
+// int type is not generated because of assertion failure on float/int interpretation
+func RandomInterfaces() []interface{} {
+	var ret []interface{}
+	for i := 0; i < rand.Intn(5); i++ {
+		switch rand.Intn(3) {
+		case 0:
+			ret = append(ret, testutil.RandomString(12))
+		case 1:
+			ret = append(ret, rand.Float64())
+		case 2:
+			ret = append(ret, rand.Int() < 42)
+		}
+	}
+	return ret
 }
 
 // SignLink adds a signature to a link.
