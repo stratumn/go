@@ -325,6 +325,16 @@
   version = "v1.0.1"
 
 [[projects]]
+  name = "github.com/opentracing/opentracing-go"
+  packages = [
+    ".",
+    "ext",
+    "log"
+  ]
+  revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
+  version = "v1.0.2"
+
+[[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
@@ -673,10 +683,10 @@
   version = "v1.9.2"
 
 [[projects]]
-  name = "gopkg.in/dancannon/gorethink.v3"
+  name = "gopkg.in/dancannon/gorethink.v4"
   packages = ["."]
-  revision = "7f5bdfd858bb064d80559b2a32b86669c5de5d3b"
-  version = "v3.0.5"
+  revision = "eec03bd47cfc11965a9de004ff86add2a88e65b0"
+  version = "v4.0.0"
 
 [[projects]]
   name = "gopkg.in/fatih/pool.v2"
@@ -691,14 +701,14 @@
   version = "v9.9.3"
 
 [[projects]]
-  name = "gopkg.in/gorethink/gorethink.v3"
+  name = "gopkg.in/gorethink/gorethink.v4"
   packages = [
     "encoding",
     "ql2",
     "types"
   ]
-  revision = "7f5bdfd858bb064d80559b2a32b86669c5de5d3b"
-  version = "v3.0.5"
+  revision = "eec03bd47cfc11965a9de004ff86add2a88e65b0"
+  version = "v4.0.0"
 
 [[projects]]
   branch = "v2"
@@ -709,6 +719,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6687bae42245eb015e6e4e4553a476df43fc78a7fc1e78935ec56f3cffa06e77"
+  inputs-digest = "9c02f3158944acdb8a73b35ea12f20a697372723f89e5f635c52ebb6b385b148"
   solver-name = "gps-cdcl"
   solver-version = 1

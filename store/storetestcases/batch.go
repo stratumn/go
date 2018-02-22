@@ -22,6 +22,7 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func initBatch(t *testing.T, a store.Adapter) store.Batch {
@@ -67,6 +68,7 @@ func (f Factory) TestBatch(t *testing.T) {
 
 		found, err := a.GetSegment(linkHash)
 		assert.NoError(t, err, "a.GetSegment()")
+		require.NotNil(t, found, "a.GetSegment()")
 		assert.EqualValues(t, *link, found.Link, "Link should be found in adapter after a Write")
 	})
 
