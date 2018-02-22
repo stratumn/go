@@ -16,6 +16,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -69,7 +70,7 @@ func RunContainer(containerName string, imageName string, exposedPorts nat.PortS
 
 	err = PullImage(imageName)
 	if err != nil {
-		return err
+		fmt.Fprintf(os.Stderr, "Cannot pull docker image %s: %s\n", imageName, err)
 	}
 
 	_, err = cli.ContainerCreate(
