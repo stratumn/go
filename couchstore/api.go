@@ -158,8 +158,8 @@ func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 		linkDoc,
 		{
 			ObjectType: objectTypeMap,
-			ID:         linkDoc.Link.GetMapID(),
-			Process:    linkDoc.Link.GetProcess(),
+			ID:         linkDoc.Link.Meta.MapID,
+			Process:    linkDoc.Link.Meta.Process,
 		},
 	}
 

@@ -203,7 +203,7 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 	}
 
 	if filter.PrevLinkHash != nil {
-		prevLinkHash := link.GetPrevLinkHash()
+		prevLinkHash := link.Meta.GetPrevLinkHash()
 		if *filter.PrevLinkHash == "" {
 			if prevLinkHash != nil {
 				return false
@@ -230,13 +230,13 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 		}
 	}
 
-	if filter.Process != "" && filter.Process != link.GetProcess() {
+	if filter.Process != "" && filter.Process != link.Meta.Process {
 		return false
 	}
 
 	if len(filter.MapIDs) > 0 {
 		var match = false
-		mapID := link.GetMapID()
+		mapID := link.Meta.MapID
 		for _, filterMapIDs := range filter.MapIDs {
 			match = match || filterMapIDs == mapID
 		}
@@ -246,7 +246,7 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 	}
 
 	if len(filter.Tags) > 0 {
-		tags := link.GetTagMap()
+		tags := link.Meta.GetTagMap()
 		for _, tag := range filter.Tags {
 			if _, ok := tags[tag]; !ok {
 				return false
@@ -270,7 +270,7 @@ func (filter MapFilter) MatchLink(link *cs.Link) bool {
 	if link == nil {
 		return false
 	}
-	if filter.Process != "" && filter.Process != link.GetProcess() {
+	if filter.Process != "" && filter.Process != link.Meta.Process {
 		return false
 	}
 	return true

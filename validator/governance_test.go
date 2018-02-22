@@ -112,7 +112,7 @@ func checkLastValidatorPriority(t *testing.T, a store.Adapter, process string, e
 	})
 	assert.NoError(t, err, "FindSegment(governance) should sucess")
 	require.Len(t, segs, 1, "The last validator config should be retrieved")
-	assert.Equal(t, expected, segs[0].Link.GetPriority(), "The last validator config should be retrieved")
+	assert.Equal(t, expected, segs[0].Link.Meta.Priority, "The last validator config should be retrieved")
 }
 
 func TestGovernanceUpdate(t *testing.T) {

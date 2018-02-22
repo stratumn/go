@@ -270,13 +270,13 @@ func TestLinkGetPriority(t *testing.T) {
 	l := cstesting.RandomLink()
 	want := rand.Float64()
 	l.Meta.Priority = want
-	got := l.GetPriority()
+	got := l.Meta.Priority
 	assert.EqualValues(t, want, got, "Invalid priority")
 }
 
 func TestLinkGetPriority_default(t *testing.T) {
 	l := &cs.Link{}
-	got := l.GetPriority()
+	got := l.Meta.Priority
 	assert.Equal(t, 0., got, "Priority should be zero")
 }
 
@@ -284,7 +284,7 @@ func TestLinkGetMapID(t *testing.T) {
 	l := cstesting.RandomLink()
 	want := "hello"
 	l.Meta.MapID = want
-	got := l.GetMapID()
+	got := l.Meta.MapID
 	assert.EqualValues(t, want, got, "Invalid map id")
 }
 
@@ -292,39 +292,39 @@ func TestLinkGetPrevLinkHash_notNil(t *testing.T) {
 	l := cstesting.RandomLink()
 	wantStr := "0123456789012345678901234567890123456789012345678901234567890123"
 	l.Meta.PrevLinkHash = wantStr
-	got := l.GetPrevLinkHash()
+	got := l.Meta.GetPrevLinkHash()
 	want, _ := types.NewBytes32FromString(wantStr)
 	assert.EqualValues(t, want, got, "Invalid PrevLinkHash")
-	assert.EqualValues(t, wantStr, l.GetPrevLinkHashString(), "PrevLinkHash")
+	assert.EqualValues(t, wantStr, l.Meta.PrevLinkHash, "PrevLinkHash")
 }
 
 func TestLinkGetPrevLinkHash_nil(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Meta.PrevLinkHash = ""
-	got := l.GetPrevLinkHash()
+	got := l.Meta.GetPrevLinkHash()
 	assert.Nil(t, got, "PrevLinkHash")
-	assert.EqualValues(t, "", l.GetPrevLinkHashString(), "Expected empty PrevLinkHash")
+	assert.EqualValues(t, "", l.Meta.PrevLinkHash, "Expected empty PrevLinkHash")
 }
 
 func TestLinkGetTags_notNil(t *testing.T) {
 	l := cstesting.RandomLink()
 	want := []string{"one", "two"}
 	l.Meta.Tags = []string{"one", "two"}
-	got := l.GetTags()
+	got := l.Meta.Tags
 	assert.EqualValues(t, want, got, "Invalid tags")
 }
 
 func TestLinkGetTags_nil(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Meta.Tags = nil
-	got := l.GetTags()
+	got := l.Meta.Tags
 	assert.Nil(t, got, "Tags")
 }
 
 func TestLinkGetTagMap(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Meta.Tags = []string{"one", "two"}
-	tags := l.GetTagMap()
+	tags := l.Meta.GetTagMap()
 	_, got := tags["one"]
 	assert.True(t, got, `tags["one"]`)
 	_, got = tags["two"]
@@ -337,7 +337,7 @@ func TestLinkGetProcess(t *testing.T) {
 	l := cstesting.RandomLink()
 	want := "hello"
 	l.Meta.Process = want
-	got := l.GetProcess()
+	got := l.Meta.Process
 	assert.EqualValues(t, want, got, "Invalid processes")
 }
 

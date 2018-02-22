@@ -215,8 +215,8 @@ func TestBatch_GetMapIDs(t *testing.T) {
 		t.Errorf("mapIds length = %d want %d / values = %v", got, want, mapIDs)
 	}
 	for _, mapID := range []string{
-		storedLink1.GetMapID(),
-		batchLink1.GetMapID(),
+		storedLink1.Meta.MapID,
+		batchLink1.Meta.MapID,
 	} {
 		if mapIDs[0] != mapID && mapIDs[1] != mapID {
 			t.Errorf("Invalid mapId returned: %v", mapID)

@@ -56,9 +56,9 @@ func (f Factory) TestCheckTx(t *testing.T) {
 		linkHash, _ := link.Hash()
 		res := h.CheckTx(tx)
 
-		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
+		linkWithRef := cstesting.RandomLinkWithProcess(link.Meta.Process)
 		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
-			Process:  link.GetProcess(),
+			Process:  link.Meta.Process,
 			LinkHash: linkHash.String(),
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
@@ -88,9 +88,9 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		linkHash, _ := link.Hash()
 		h.CheckTx(tx)
 
-		linkWithRef := cstesting.RandomLinkWithProcess(link.GetProcess())
+		linkWithRef := cstesting.RandomLinkWithProcess(link.Meta.Process)
 		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
-			Process:  link.GetProcess(),
+			Process:  link.Meta.Process,
 			LinkHash: linkHash.String(),
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)

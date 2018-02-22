@@ -186,7 +186,7 @@ func formatLink(link *cs.Link) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	prevLinkHash := link.GetPrevLinkHash()
+	prevLinkHash := link.Meta.GetPrevLinkHash()
 
 	formatLink(link)
 
@@ -198,11 +198,11 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	w := linkWrapper{
 		ID:        linkHash[:],
 		Content:   link,
-		Priority:  link.GetPriority(),
+		Priority:  link.Meta.Priority,
 		UpdatedAt: time.Now().UTC(),
-		MapID:     link.GetMapID(),
-		Tags:      link.GetTags(),
-		Process:   link.GetProcess(),
+		MapID:     link.Meta.MapID,
+		Tags:      link.Meta.Tags,
+		Process:   link.Meta.Process,
 	}
 
 	if prevLinkHash != nil {
