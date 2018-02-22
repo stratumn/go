@@ -22,9 +22,9 @@ import (
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/testutil"
 	// import every type of evidence to see if we can deserialize all of them
 	_ "github.com/stratumn/go-indigocore/cs/evidences"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,6 +45,9 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, s, "Segment should be found")
 		assert.EqualValues(t, link, &s.Link, "Invalid link")
+		gotHash, err := s.Link.Hash()
+		assert.NoError(t, err, "Hash should be computed")
+		assert.EqualValues(t, linkHash, gotHash, "Invalid linkHash")
 	})
 
 	t.Run("Getting an updated segment should work", func(t *testing.T) {
@@ -52,6 +55,9 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, got, "Segment should be found")
 		assert.EqualValues(t, link2, &got.Link, "Invalid link")
+		gotHash, err := got.Link.Hash()
+		assert.NoError(t, err, "Hash should be computed")
+		assert.EqualValues(t, linkHash2, gotHash, "Invalid linkHash")
 	})
 
 	t.Run("Getting an unknown segment should return nil", func(t *testing.T) {
@@ -76,7 +82,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		got, err := a.GetSegment(linkHash2)
 		assert.NoError(t, err, "a.GetSegment()")
 		assert.NotNil(t, got)
-		assert.Equal(t, 5, len(got.Meta.Evidences), "Invalid number of evidences")
+		assert.Len(t, got.Meta.Evidences, 5, "Invalid number of evidences")
 	})
 }
 

@@ -18,6 +18,7 @@ package rethinkstore
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -28,7 +29,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
-	rethink "gopkg.in/dancannon/gorethink.v3"
+	rethink "gopkg.in/dancannon/gorethink.v4"
 )
 
 func init() {
@@ -94,18 +95,14 @@ type Store struct {
 }
 
 type linkWrapper struct {
-	ID           []byte                `json:"id"`
-	Content      *cs.Link              `json:"content"`
-	Priority     float64               `json:"priority"`
-	UpdatedAt    time.Time             `json:"updatedAt"`
-	MapID        string                `json:"mapId"`
-	PrevLinkHash []byte                `json:"prevLinkHash"`
-	Tags         []string              `json:"tags"`
-	Process      string                `json:"process"`
-	Action       string                `json:"action"`
-	Type         string                `json:"type"`
-	Inputs       []string              `json:"inputs"`
-	Refs         []cs.SegmentReference `json:"refs"`
+	ID           []byte    `json:"id"`
+	Content      *cs.Link  `json:"content"`
+	Priority     float64   `json:"priority"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+	MapID        string    `json:"mapId"`
+	PrevLinkHash []byte    `json:"prevLinkHash"`
+	Tags         []string  `json:"tags,omitempty"`
+	Process      string    `json:"process"`
 }
 
 type evidencesWrapper struct {
@@ -171,9 +168,30 @@ func (a *Store) GetInfo() (interface{}, error) {
 	}, nil
 }
 
+func avoidNilStringSlices(s *[]string) {
+	if *s == nil {
+		*s = []string{}
+	}
+}
+
+// Rethink cannot retrieve nil slices, so we force putting empty slices in Link
+func formatLink(link *cs.Link) *cs.Link {
+	avoidNilStringSlices(&link.Meta.Tags)
+	avoidNilStringSlices(&link.Meta.Inputs)
+	if link.Meta.Refs == nil {
+		link.Meta.Refs = []cs.SegmentReference{}
+	}
+	if link.Signatures == nil {
+		link.Signatures = []*cs.Signature{}
+	}
+	return link
+}
+
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 	prevLinkHash := link.GetPrevLinkHash()
+
+	formatLink(link)
 
 	linkHash, err := link.Hash()
 	if err != nil {
@@ -188,10 +206,6 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 		MapID:     link.GetMapID(),
 		Tags:      link.GetTags(),
 		Process:   link.GetProcess(),
-		Action:    link.Meta.Action,
-		Type:      link.Meta.Type,
-		Inputs:    link.Meta.Inputs,
-		Refs:      link.Meta.Refs,
 	}
 
 	if prevLinkHash != nil {
@@ -487,9 +501,22 @@ func (a *Store) DeleteValue(key []byte) ([]byte, error) {
 	return w.Value, nil
 }
 
+type rethinkBufferedBatch struct {
+	*bufferedbatch.Batch
+}
+
+// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+func (b *rethinkBufferedBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+	return b.Batch.CreateLink(formatLink(link))
+}
+
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (a *Store) NewBatch() (store.Batch, error) {
-	return bufferedbatch.NewBatch(a), nil
+	bbBatch := bufferedbatch.NewBatch(a)
+	if bbBatch == nil {
+		return nil, errors.New("cannot create underlying batch")
+	}
+	return &rethinkBufferedBatch{bbBatch}, nil
 }
 
 // Create creates the database tables and indexes.

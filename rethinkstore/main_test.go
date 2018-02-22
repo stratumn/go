@@ -31,9 +31,10 @@ var (
 )
 
 const (
-	domain = "0.0.0.0"
-	port   = "28015"
-	dbName = "test"
+	domain    = "0.0.0.0"
+	port      = "28015"
+	adminPort = "8080"
+	dbName    = "test"
 )
 
 func TestMain(m *testing.M) {
@@ -46,12 +47,19 @@ func TestMain(m *testing.M) {
 	imageName := "rethinkdb:2.3"
 	containerName := "indigo_rethinkstore_test"
 	p, _ := nat.NewPort("tcp", port)
-	exposedPorts := map[nat.Port]struct{}{p: {}}
+	pa, _ := nat.NewPort("tcp", adminPort)
+	exposedPorts := map[nat.Port]struct{}{p: {}, pa: {}}
 	portBindings := nat.PortMap{
 		p: []nat.PortBinding{
 			{
 				HostIP:   domain,
 				HostPort: port,
+			},
+		},
+		pa: []nat.PortBinding{
+			{
+				HostIP:   domain,
+				HostPort: adminPort,
 			},
 		},
 	}
