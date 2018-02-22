@@ -31,10 +31,11 @@ var (
 )
 
 const (
-	domain    = "0.0.0.0"
-	port      = "28015"
-	adminPort = "8080"
-	dbName    = "test"
+	domain           = "0.0.0.0"
+	port             = "28015"
+	adminPort        = "8080"
+	adminExposedPort = "18080"
+	dbName           = "test"
 )
 
 func TestMain(m *testing.M) {
@@ -59,7 +60,7 @@ func TestMain(m *testing.M) {
 		pa: []nat.PortBinding{
 			{
 				HostIP:   domain,
-				HostPort: adminPort,
+				HostPort: adminExposedPort,
 			},
 		},
 	}

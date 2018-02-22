@@ -42,20 +42,10 @@ func testLinkValidateErrorWrapper(t *testing.T, l *cs.Link, getSegment cs.GetSeg
 }
 
 func appendRefSegment(l, ref *cs.Link) {
-	// var refs []interface{}
-	// var present bool
-	// if refs, present = l.Meta.Refs.([]interface{}); !present {
-	// 	refs = []interface{}{}
-	// }
 	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{Segment: ref.Segmentify()})
 }
 
 func appendRefLink(l *cs.Link, process, linkHash string) {
-	// var refs []interface{}
-	// var present bool
-	// if refs, present = l.Meta.Refs.([]interface{}); !present {
-	// 	refs = []interface{}{}
-	// }
 	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{
 		Process:  process,
 		LinkHash: linkHash,

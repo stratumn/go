@@ -19,7 +19,7 @@ import (
 
 	cj "github.com/gibson042/canonicaljson-go"
 
-	"github.com/stratumn/go-indigocore/agent/client"
+	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func (f Factory) TestCreateSegmentOK(t *testing.T) {
 func (f Factory) TestCreateSegmentWithRefs(t *testing.T) {
 	process, action := "test", "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
-	refs := []client.SegmentRef{{Process: "other", LinkHash: testutil.RandomHash()}}
+	refs := []cs.SegmentReference{{Process: "other", LinkHash: testutil.RandomHash().String()}}
 
 	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, "one")
 	assert.NoError(t, err)
@@ -57,7 +57,7 @@ func (f Factory) TestCreateSegmentWithRefs(t *testing.T) {
 func (f Factory) TestCreateSegmentWithBadRefs(t *testing.T) {
 	process, action, arg := "test", "test", "wrongref"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
-	refs := []client.SegmentRef{{Process: "wrong"}}
+	refs := []cs.SegmentReference{{Process: "wrong"}}
 
 	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, arg)
 	assert.Error(t, err, "missing segment or (process and linkHash)")
