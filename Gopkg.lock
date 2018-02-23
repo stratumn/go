@@ -761,10 +761,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-<<<<<<< HEAD
   inputs-digest = "172d58ef7882272ffb253facbe4375e887020ee80d9c00bfd55128ec642b8559"
-=======
-  inputs-digest = "b258bff237606ba252fa1d413c73abea75c8e4116c5762d2a7fac1ab6f273d88"
->>>>>>> strat: update to indigo framework 0.2
   solver-name = "gps-cdcl"
   solver-version = 1

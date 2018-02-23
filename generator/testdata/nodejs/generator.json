@@ -42,12 +42,10 @@
       "prompt": "License:",
       "options": [
         {
-          "input": "1",
           "value": "mit",
           "text": "MIT"
         },
         {
-          "input": "2",
           "value": "bsd",
           "text": "BSD"
         }

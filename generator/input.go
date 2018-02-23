@@ -292,6 +292,10 @@ func (in *StringSelectMulti) Run() (interface{}, error) {
 			Items: options,
 			Size:  len(options),
 		}
+		prompt.Templates = new(promptui.SelectTemplates)
+		prompt.Templates.Help = fmt.Sprintf(`{{ "Use the arrow keys to navigate:" | faint }} {{ .NextKey | faint }} ` +
+			`{{ .PrevKey | faint }} {{ .PageDownKey | faint }} {{ .PageUpKey | faint }} ` +
+			`{{ "(select empty line to finish your selection) "| faint }}`)
 		_, val, err := prompt.Run()
 		if err != nil {
 			return nil, err
@@ -331,8 +335,11 @@ func createListPrompt(label, format, defaultValue string) promptui.Prompt {
 // Run implements github.com/stratumn/sdk/generator.Input.
 func (in *StringSlice) Run() (interface{}, error) {
 	values := make([]interface{}, 0)
+	label := fmt.Sprintf("%s %s",
+		in.Prompt,
+		promptui.Styler(promptui.FGFaint)("(empty line to finish)"))
 	for {
-		prompt := createListPrompt(in.Prompt, in.Format, in.Default)
+		prompt := createListPrompt(label, in.Format, in.Default)
 		val, err := prompt.Run()
 		if err != nil {
 			return nil, err
