@@ -3,44 +3,48 @@
   "version": "x.x.x",
   "description": "A basic NodeJS template",
   "author": "Stratumn",
-  "license": "MIT",
+  "license": "Apache 2.0",
   "variables": {
     "os": "{{.os}}"
   },
   "inputs": {
     "name": {
       "type": "string",
-      "prompt": "Project name:",
+      "prompt": "Project name",
       "default": "{{.dir}}",
       "format": ".+"
     },
     "description": {
       "type": "string",
-      "prompt": "Project description:",
+      "prompt": "Project description",
       "default": "{{.description}}"
     },
     "author": {
       "type": "string",
-      "prompt": "Your name:",
+      "prompt": "Your name",
       "default": "{{.author}}",
       "format": ".+"
     },
     "company": {
       "type": "string",
-      "prompt": "Company:",
+      "prompt": "Company",
       "default": "{{.company}}",
       "format": ".+"
     },
     "year": {
       "type": "string",
-      "prompt": "Year:",
+      "prompt": "Year",
       "default": "{{now `2006`}}",
       "format": ".+"
     },
     "license": {
       "type": "select:string",
-      "prompt": "License:",
+      "prompt": "License",
       "options": [
+        {
+          "value": "apache",
+          "text": "Apache 2.0"
+        },
         {
           "value": "mit",
           "text": "MIT"
@@ -50,13 +54,33 @@
           "text": "BSD"
         }
       ],
-      "default": "mit"
+      "default": "apache"
     },
     "process": {
       "type": "slice:string",
-      "prompt": "List of process names:",
+      "prompt": "List of process names",
       "default": "{{.process}}",
       "format": "^[a-zA-Z].*$"
+    },
+    "nodes": {
+      "type": "int",
+      "prompt": "Number of nodes",
+      "default": 4
+    },
+    "fossilizer": {
+      "type": "selectmulti:string",
+      "prompt": "List of fossilizers",
+      "isRequired": true,
+      "options": [
+        {
+          "value": "dummyfossilizer",
+          "text": "Indigo's Dummy Fossilizer"
+        },
+        {
+          "value": "btcfossilizer",
+          "text": "Indigo's Bitcoin Fossilizer"
+        }
+      ]
     }
   },
   "priorities": ["README.md", "LICENSE"]

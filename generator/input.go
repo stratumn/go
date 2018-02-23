@@ -102,7 +102,7 @@ func UnmarshalJSONInput(data []byte) (Input, error) {
 		}
 		return &in, nil
 	case StringSliceID:
-		var in = StringSlice{Separator: ","}
+		var in = StringSlice{}
 		if err := json.Unmarshal(data, &in); err != nil {
 			return nil, err
 		}
@@ -129,29 +129,7 @@ type IntInput struct {
 	Default int `json:"default"`
 }
 
-// Run implements github.com/stratumn/sdk/generator.Input.
-func (in *IntInput) Run() (interface{}, error) {
-	prompt := createStringPrompt(in.Prompt, "^[0-9]+$", fmt.Sprintf("%d", in.Default))
-	txt, err := prompt.Run()
-	if err != nil {
-		return nil, err
-	}
-	i, err := strconv.ParseInt(txt, 10, 0)
-	return int(i), err
-}
-
-// StringInput contains properties for string inputs.
-type StringInput struct {
-	InputShared
-
-	// Default is the default value.
-	Default string `json:"default"`
-
-	// Format is a string containing a regexp the value must have.
-	Format string `json:"format"`
-}
-
-func createStringPrompt(label, format, defaultValue string) promptui.Prompt {
+func (in *InputShared) createStringPrompt(label, format, defaultValue string) promptui.Prompt {
 	prompt := promptui.Prompt{
 		Label: label,
 		Validate: func(input string) error {
@@ -174,8 +152,30 @@ func createStringPrompt(label, format, defaultValue string) promptui.Prompt {
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
+func (in *IntInput) Run() (interface{}, error) {
+	prompt := in.createStringPrompt(in.Prompt, "^[0-9]+$", fmt.Sprintf("%d", in.Default))
+	txt, err := prompt.Run()
+	if err != nil {
+		return nil, err
+	}
+	i, err := strconv.ParseInt(txt, 10, 0)
+	return int(i), err
+}
+
+// StringInput contains properties for string inputs.
+type StringInput struct {
+	InputShared
+
+	// Default is the default value.
+	Default string `json:"default"`
+
+	// Format is a string containing a regexp the value must have.
+	Format string `json:"format"`
+}
+
+// Run implements github.com/stratumn/sdk/generator.Input.
 func (in *StringInput) Run() (interface{}, error) {
-	prompt := createStringPrompt(in.Prompt, in.Format, in.Default)
+	prompt := in.createStringPrompt(in.Prompt, in.Format, in.Default)
 	return prompt.Run()
 }
 
@@ -259,9 +259,6 @@ type StringSelectMulti struct {
 
 	// IsRequired is a bool indicating wether an input is needed.
 	IsRequired bool `json:"isRequired"`
-
-	// Separator is a string used to split the input to list.
-	Separator string `json:"separator"`
 }
 
 func appendIfNotSelected(value string, input, output []string) []string {
@@ -323,13 +320,6 @@ type StringSlice struct {
 
 	// Format is a string containing a regexp the value must have.
 	Format string `json:"format"`
-
-	// Separator is a string used to split the input to list.
-	Separator string `json:"separator"`
-}
-
-func createListPrompt(label, format, defaultValue string) promptui.Prompt {
-	return createStringPrompt(label, fmt.Sprintf("|%s", format), defaultValue)
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
@@ -337,9 +327,9 @@ func (in *StringSlice) Run() (interface{}, error) {
 	values := make([]interface{}, 0)
 	label := fmt.Sprintf("%s %s",
 		in.Prompt,
-		promptui.Styler(promptui.FGFaint)("(empty line to finish)"))
+		promptui.Styler(promptui.FGFaint)("(one per line, empty line to finish)"))
 	for {
-		prompt := createListPrompt(label, in.Format, in.Default)
+		prompt := in.createStringPrompt(label, fmt.Sprintf("|%s", in.Format), in.Default)
 		val, err := prompt.Run()
 		if err != nil {
 			return nil, err

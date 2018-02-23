@@ -60,27 +60,40 @@ func TestInputSliceUnmarshalJSON(t *testing.T) {
 		assert.Error(t, err, "invalid json")
 	})
 
+	t.Run("Invalid int", func(t *testing.T) {
+		var gen Definition
+		err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "int", "default": "1"}}}`), &gen)
+		assert.Error(t, err, "invalid json")
+	})
+
 	t.Run("Invalid select", func(t *testing.T) {
 		var gen Definition
 		err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "select:string", "options": [1]}}}`), &gen)
 		assert.Error(t, err, "invalid json")
 	})
 
+	t.Run("Invalid select multi", func(t *testing.T) {
+		var gen Definition
+		err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "selectmulti:string", "options": [1]}}}`), &gen)
+		assert.Error(t, err, "invalid json")
+	})
+
 	t.Run("Invalid slice", func(t *testing.T) {
 		var gen Definition
-		err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "slice:string", "separator": 1}}}`), &gen)
+		err := json.Unmarshal([]byte(`{"inputs": {"test": {"type": "slice:string", "format": 42}}}`), &gen)
 		assert.Error(t, err, "invalid json")
 	})
 }
 
-func TestStringInput(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		in := StringInput{}
-		val, err := in.Run()
-		assert.NoError(t, err)
-		assert.IsType(t, val, "")
-	})
-}
+// func TestStringInput(t *testing.T) {
+// 	t.Run("Success", func(t *testing.T) {
+// 		in := StringInput{}
+// 		in.SetStdin(strings.NewReader("lol"))
+// 		val, err := in.Run()
+// 		assert.NoError(t, err)
+// 		assert.IsType(t, val, "lol")
+// 	})
+// }
 
 // func TestStringInputSet(t *testing.T) {
 // 	in := StringInput{}
