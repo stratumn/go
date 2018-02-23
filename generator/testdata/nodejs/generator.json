@@ -40,20 +40,11 @@
     "license": {
       "type": "select:string",
       "prompt": "License",
-      "options": [
-        {
-          "value": "apache",
-          "text": "Apache 2.0"
-        },
-        {
-          "value": "mit",
-          "text": "MIT"
-        },
-        {
-          "value": "bsd",
-          "text": "BSD"
-        }
-      ],
+      "options": {
+        "apache": "Apache 2.0",
+        "mit": "MIT",
+        "bsd": "BSD"
+      },
       "default": "apache"
     },
     "process": {
@@ -71,16 +62,10 @@
       "type": "selectmulti:string",
       "prompt": "List of fossilizers",
       "isRequired": true,
-      "options": [
-        {
-          "value": "dummyfossilizer",
-          "text": "Indigo's Dummy Fossilizer"
-        },
-        {
-          "value": "btcfossilizer",
-          "text": "Indigo's Bitcoin Fossilizer"
-        }
-      ]
+      "options": {
+        "dummyfossilizer": "Indigo's Dummy Fossilizer",
+        "btcfossilizer": "Indigo's Bitcoin Fossilizer"
+      }
     }
   },
   "priorities": ["README.md", "LICENSE"]

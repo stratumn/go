@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/stratumn/go-indigocore/generator"
@@ -63,14 +62,10 @@ It asks which generator to use, then uses that generator to generate a project i
 				InputShared: generator.InputShared{
 					Prompt: "What would you like to generate?",
 				},
-				Options: []generator.StringSelectOption{},
+				Options: generator.StringSelectOptions{},
 			}
-			for i, desc := range list {
-				in.Options = append(in.Options, generator.StringSelectOption{
-					Input: strconv.Itoa(i + 1),
-					Value: desc.Name,
-					Text:  desc.Description,
-				})
+			for _, desc := range list {
+				in.Options[desc.Name] = desc.Description
 			}
 			ret, err := in.Run()
 			name = ret.(string)

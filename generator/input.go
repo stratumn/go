@@ -179,6 +179,27 @@ func (in *StringInput) Run() (interface{}, error) {
 	return prompt.Run()
 }
 
+// StringSelectOptions is a map of options (key/value strings)
+type StringSelectOptions map[string]string
+
+// FindText have to be replaced when []StringSelectOption will be a map[string]string
+func (options StringSelectOptions) FindText(value string) string {
+	if ret, ok := options[value]; ok {
+		return ret
+	}
+	return value
+}
+
+// FindValue have to be replaced when []StringSelectOption will be a map[string]string
+func (options StringSelectOptions) FindValue(text string) string {
+	for k, v := range options {
+		if text == v {
+			return k
+		}
+	}
+	return text
+}
+
 // StringSelect contains properties for string select inputs.
 type StringSelect struct {
 	InputShared
@@ -186,8 +207,8 @@ type StringSelect struct {
 	// Default is the default value.
 	Default string `json:"default"`
 
-	// Options is an array of possible values.
-	Options StringSelectOptionSlice `json:"options"`
+	// Options is a map of possible values.
+	Options StringSelectOptions `json:"options"`
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
@@ -199,9 +220,9 @@ func (in *StringSelect) Run() (interface{}, error) {
 			if in.Default != "" {
 				items = append(items, in.Options.FindText(in.Default))
 			}
-			for _, v := range in.Options {
-				if in.Default == "" || v.Value != in.Default {
-					items = append(items, v.Text)
+			for k, v := range in.Options {
+				if in.Default == "" || k != in.Default {
+					items = append(items, v)
 				}
 			}
 			return
@@ -212,41 +233,6 @@ func (in *StringSelect) Run() (interface{}, error) {
 	return in.Options.FindValue(txt), err
 }
 
-// StringSelectOption contains properties for string select options.
-type StringSelectOption struct {
-	// Input is the string the user must enter to choose this option.
-	Input string `json:"input"`
-
-	// Value is the value the input will have if this option is selected.
-	Value string `json:"value"`
-
-	// Text will be displayed when presenting this option to the user.
-	Text string `json:"text"`
-}
-
-// StringSelectOptionSlice is a slice of StringSelectOption to add methods
-type StringSelectOptionSlice []StringSelectOption
-
-// FindText have to be replaced when []StringSelectOption will be a map[string]string
-func (options StringSelectOptionSlice) FindText(value string) string {
-	for _, v := range options {
-		if value == v.Value {
-			return v.Text
-		}
-	}
-	return value
-}
-
-// FindValue have to be replaced when []StringSelectOption will be a map[string]string
-func (options StringSelectOptionSlice) FindValue(text string) string {
-	for _, v := range options {
-		if text == v.Text {
-			return v.Value
-		}
-	}
-	return text
-}
-
 // StringSelectMulti contains properties for multiple select inputs.
 type StringSelectMulti struct {
 	InputShared
@@ -255,7 +241,7 @@ type StringSelectMulti struct {
 	Default string `json:"default"`
 
 	// Options is an array of possible values.
-	Options StringSelectOptionSlice `json:"options"`
+	Options StringSelectOptions `json:"options"`
 
 	// IsRequired is a bool indicating wether an input is needed.
 	IsRequired bool `json:"isRequired"`
@@ -279,9 +265,9 @@ func (in *StringSelectMulti) Run() (interface{}, error) {
 			options = appendIfNotSelected(in.Options.FindText(in.Default), values, options)
 		}
 		options = append(options, "")
-		for _, v := range in.Options {
-			if in.Default == "" || v.Value != in.Default {
-				options = appendIfNotSelected(v.Text, values, options)
+		for k, v := range in.Options {
+			if in.Default == "" || k != in.Default {
+				options = appendIfNotSelected(v, values, options)
 			}
 		}
 		prompt := promptui.Select{

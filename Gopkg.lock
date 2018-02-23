@@ -75,7 +75,7 @@
   branch = "master"
   name = "github.com/chzyer/readline"
   packages = ["."]
-  revision = "a4d5111b617813c5d09df1ba6d76394ed71b1644"
+  revision = "f6d7a1f6fbf35bbf9beb80dc63c56a29dcfb759f"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -188,7 +188,7 @@
   branch = "master"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "632a2caf6d3d380753dc7e422748202982ad18a3"
+  revision = "9b583fa3cb7d3c2eb125bd1018447b39dde3de5a"
 
 [[projects]]
   branch = "master"
@@ -262,7 +262,7 @@
     ".",
     "tabwriter"
   ]
-  revision = "35c59b9e0fe275705a71bf5d58ee293f27efbbc4"
+  revision = "720a0952cc2ac777afc295d9861263e2a4cf96a1"
 
 [[projects]]
   name = "github.com/julienschmidt/httprouter"
@@ -310,8 +310,8 @@
     "list",
     "screenbuf"
   ]
-  revision = "3325f5fcbce567f6c36fe4899b67c1f597453792"
-  version = "v0.2.0"
+  revision = "f6438f6153008ee1b9ba5446d5333bbe63b622b7"
+  version = "v0.2.1"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -438,7 +438,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "be77323fc05148ef091e83b3866c0d47c8e74a8b"
+  revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
 
 [[projects]]
   branch = "master"
@@ -623,7 +623,7 @@
     "salsa20/salsa",
     "ssh/terminal"
   ]
-  revision = "432090b8f568c018896cd8a0fb0345872bbac6ce"
+  revision = "49796115aa4b964c318aad4f3084fdb41e9aa067"
 
 [[projects]]
   branch = "master"
@@ -657,10 +657,9 @@
     "unix",
     "windows"
   ]
-  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+  revision = "c1138c84af3a9927aee1a1b8b7ce06c9b7ea52bc"
 
 [[projects]]
-  branch = "master"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -678,7 +677,8 @@
     "unicode/norm",
     "unicode/rangetable"
   ]
-  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
 
 [[projects]]
   name = "google.golang.org/appengine"
