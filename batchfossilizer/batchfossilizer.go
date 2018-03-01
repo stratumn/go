@@ -150,6 +150,7 @@ type Fossilizer struct {
 	batchChan            chan *batch
 	stopChan             chan error
 	semChan              chan struct{} // used to control number of simultaneous batches
+	fossilizerEventMutex sync.RWMutex
 	fossilizerEventChans []chan *fossilizer.Event
 	waitGroup            sync.WaitGroup
 	transformer          Transformer
@@ -201,6 +202,8 @@ func (a *Fossilizer) GetInfo() (interface{}, error) {
 // AddFossilizerEventChan implements
 // github.com/stratumn/go-indigocore/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
+	a.fossilizerEventMutex.Lock()
+	defer a.fossilizerEventMutex.Unlock()
 	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
 }
 
@@ -398,6 +401,8 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 				EventType: fossilizer.DidFossilizeLink,
 				Data:      r,
 			}
+			a.fossilizerEventMutex.RLock()
+			defer a.fossilizerEventMutex.RUnlock()
 			for _, c := range a.fossilizerEventChans {
 				c <- event
 			}

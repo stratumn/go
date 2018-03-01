@@ -31,6 +31,7 @@ import (
 )
 
 func TestGetInfo(t *testing.T) {
+	t.Parallel()
 	a, err := New(&Config{})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
@@ -45,6 +46,7 @@ func TestGetInfo(t *testing.T) {
 }
 
 func TestFossilize(t *testing.T) {
+	t.Parallel()
 	a, err := New(&Config{Interval: interval})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
@@ -60,6 +62,7 @@ func TestFossilize(t *testing.T) {
 }
 
 func TestFossilize_MaxLeaves(t *testing.T) {
+	t.Parallel()
 	a, err := New(&Config{Interval: interval, MaxLeaves: 4})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
@@ -77,6 +80,7 @@ func TestFossilize_MaxLeaves(t *testing.T) {
 }
 
 func TestFossilize_Interval(t *testing.T) {
+	t.Parallel()
 	a, err := New(&Config{Interval: interval})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
@@ -97,6 +101,7 @@ func TestFossilize_Interval(t *testing.T) {
 }
 
 func TestStop_StopBatch(t *testing.T) {
+	t.Parallel()
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir(): err: %s", err)
@@ -144,6 +149,7 @@ func TestStop_StopBatch(t *testing.T) {
 }
 
 func TestFossilize_Archive(t *testing.T) {
+	t.Parallel()
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir(): err: %s", err)
@@ -172,6 +178,7 @@ func TestFossilize_Archive(t *testing.T) {
 }
 
 func TestNew_recover(t *testing.T) {
+	t.Parallel()
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
 		t.Fatalf("ioutil.TempDir(): err: %s", err)
@@ -225,6 +232,7 @@ func TestNew_recover(t *testing.T) {
 }
 
 func TestSetTransformer(t *testing.T) {
+	t.Parallel()
 	a, err := New(&Config{Interval: interval})
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
@@ -255,6 +263,7 @@ func TestSetTransformer(t *testing.T) {
 }
 
 func TestBatchProof(t *testing.T) {
+	t.Parallel()
 	a, err := New(&Config{
 		Interval: interval,
 	})
