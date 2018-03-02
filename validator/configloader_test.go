@@ -24,7 +24,7 @@ import (
 
 func TestLoadConfig_Success(t *testing.T) {
 
-	t.Run("schema & signatures", func(T *testing.T) {
+	t.Run("schema & signatures & transitions", func(T *testing.T) {
 		testFile := createTempFile(t, validJSONConfig)
 		defer os.Remove(testFile)
 		validators, err := LoadConfig(testFile, nil)
@@ -32,26 +32,34 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		var schemaValidatorCount, pkiValidatorCount int
+		var schemaValidatorCount, pkiValidatorCount, transitionValidatorCount int
 		for _, v := range validators {
 			if _, ok := v.(*pkiValidator); ok {
 				pkiValidatorCount++
 			} else if _, ok := v.(*schemaValidator); ok {
 				schemaValidatorCount++
+			} else if _, ok := v.(*transitionValidator); ok {
+				transitionValidatorCount++
 			}
 		}
 		assert.Equal(t, 3, schemaValidatorCount)
 		assert.Equal(t, 2, pkiValidatorCount)
+		assert.Equal(t, 4, transitionValidatorCount)
+	})
 
+	t.Run("schema & signatures & transitions with listener", func(T *testing.T) {
+		testFile := createTempFile(t, validJSONConfig)
+		defer os.Remove(testFile)
 		validatorProcessCount := 0
 		validatorCount := 0
-		validators, err = LoadConfig(testFile, func(process string, schema rulesSchema, validators []Validator) {
+		validators, err := LoadConfig(testFile, func(process string, schema rulesSchema, validators []Validator) {
 			validatorProcessCount++
 			validatorCount = validatorCount + len(validators)
 		})
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 		assert.Equal(t, 2, validatorProcessCount)
+		assert.Equal(t, 9, validatorCount)
 		assert.Len(t, validators, validatorCount)
 	})
 
@@ -62,21 +70,19 @@ func TestLoadConfig_Success(t *testing.T) {
 			"testProcess": {
 			  "pki": {
 			    "alice.vandenbudenmayer@stratumn.com": {
-			      "keys": ["TESTKEY1"],
-			      "name": "Alice Van den Budenmayer",
-			      "roles": ["employee"]
+					"keys": ["TESTKEY1"],
+					"name": "Alice Van den Budenmayer",
+					"roles": ["employee"]
 			    }
 			  },
 			  "types": {
-			      "init": {
-				"signatures": null,      
-				"schema": {}
-			      }
-			  }
+					"init": {
+						"signatures": null,      
+						"schema": {}
+					}
+			  	}
 			}
-		      }
-		      
-	`
+		}`
 
 		testFile := createTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -86,8 +92,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NotNil(t, validators)
 
 		require.Len(t, validators, 1)
-		_, ok := validators[0].(*schemaValidator)
-		assert.True(t, ok)
+		assert.IsType(t, &schemaValidator{}, validators[0])
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -96,25 +101,20 @@ func TestLoadConfig_Success(t *testing.T) {
 		{
 			"test": {
 			    "pki": {
-				"alice.vandenbudenmayer@stratumn.com": {
-				    "keys": [
-					"TESTKEY1"
-				    ],
-				    "name": "Alice Van den Budenmayer",
-				    "roles": [
-					"employee"
-				    ]
-				}
+					"alice.vandenbudenmayer@stratumn.com": {
+						"keys": ["TESTKEY1"],
+						"name": "Alice Van den Budenmayer",
+						"roles": ["employee"]
+					}
 			    },
 			    "types": {
-				"init": {
-				    "signatures": [],
-				    "schema": {}
-				}
+					"init": {
+						"signatures": [],
+						"schema": {}
+					}
 			    }
 			}
-		    }
-		`
+		}`
 
 		testFile := createTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -124,8 +124,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NotNil(t, validators)
 
 		require.Len(t, validators, 1)
-		_, ok := validators[0].(*schemaValidator)
-		assert.True(t, ok)
+		assert.IsType(t, &schemaValidator{}, validators[0])
 	})
 
 	t.Run("No PKI", func(T *testing.T) {
@@ -141,8 +140,7 @@ func TestLoadConfig_Success(t *testing.T) {
 				}
 			    }
 			}
-		    }
-		`
+		}`
 
 		testFile := createTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -153,13 +151,51 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		assert.Len(t, validators, 1)
 		require.Len(t, validators, 1)
-		_, ok := validators[0].(*schemaValidator)
-		assert.True(t, ok)
+		assert.IsType(t, &schemaValidator{}, validators[0])
 	})
 
 }
 
 func TestLoadValidators_Error(t *testing.T) {
+
+	t.Run("Missing link type", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"": {
+			  "types": {
+			    "init": {
+					"schema": {}
+				}
+			  },
+			  "pki": {}
+			}
+		}`
+		testFile := createTempFile(t, invalidValidatorConfig)
+		validators, err := LoadConfig(testFile, nil)
+
+		assert.Nil(t, validators)
+		assert.EqualError(t, err, ErrMissingProcess.Error())
+	})
+
+	t.Run("Missing link type", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"test": {
+			  "types": {
+			    "": {
+					"schema": {}
+				}
+			  },
+			  "pki": {}
+			}
+		}`
+		testFile := createTempFile(t, invalidValidatorConfig)
+		validators, err := LoadConfig(testFile, nil)
+
+		assert.Nil(t, validators)
+		assert.EqualError(t, err, ErrMissingLinkType.Error())
+	})
+
 	t.Run("Missing schema", func(T *testing.T) {
 		const invalidValidatorConfig = `
 		{
@@ -169,8 +205,7 @@ func TestLoadValidators_Error(t *testing.T) {
 			  },
 			  "pki": {}
 			}
-		}
-	`
+		}`
 		testFile := createTempFile(t, invalidValidatorConfig)
 		validators, err := LoadConfig(testFile, nil)
 
@@ -187,9 +222,27 @@ func TestLoadValidators_Error(t *testing.T) {
 					"signatures": "test"
 				    }
 				}
-			    }
 			}
-		    `
+		}`
+		testFile := createTempFile(t, invalidValidatorConfig)
+		defer os.Remove(testFile)
+		validators, err := LoadConfig(testFile, nil)
+
+		assert.Nil(t, validators)
+		assert.Error(t, err)
+	})
+
+	t.Run("Bad transitions validator", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"test": {
+				"types": {
+				    "init": {
+					"transitions": "test"
+				    }
+				}
+			}
+		}`
 		testFile := createTempFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
 		validators, err := LoadConfig(testFile, nil)
@@ -246,6 +299,6 @@ func TestLoadPKI_Error(t *testing.T) {
 		validators, err := LoadConfig(testFile, nil)
 
 		assert.Nil(t, validators)
-		assert.EqualError(t, err, "Error while parsing PKI: public key must be a non null base64 encoded string")
+		assert.EqualError(t, err, "error while parsing PKI: public key must be a non null base64 encoded string")
 	})
 }

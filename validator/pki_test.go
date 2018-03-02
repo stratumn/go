@@ -16,6 +16,7 @@ package validator
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -26,6 +27,7 @@ import (
 )
 
 func TestPKIValidator(t *testing.T) {
+	t.Parallel()
 	process := "p1"
 	linkType := "test"
 
@@ -139,4 +141,45 @@ func TestPKIValidator(t *testing.T) {
 		})
 	}
 
+}
+
+func TestPKIHash(t *testing.T) {
+	t.Parallel()
+
+	_, priv1, _ := ed25519.GenerateKey(rand.Reader)
+	_, priv2, _ := ed25519.GenerateKey(rand.Reader)
+	pub1 := base64.StdEncoding.EncodeToString(priv1.Public().(ed25519.PublicKey))
+	pub2 := base64.StdEncoding.EncodeToString(priv2.Public().(ed25519.PublicKey))
+
+	pki1 := &PKI{
+		"Alice": &Identity{
+			Keys:  []string{pub1},
+			Roles: []string{"employee"},
+		},
+	}
+	pki2 := &PKI{
+		"Bob": &Identity{
+			Keys:  []string{pub2},
+			Roles: []string{"manager", "it"},
+		},
+	}
+
+	baseCfg, err := newValidatorBaseConfig("foo", "bar")
+	require.NoError(t, err)
+	v1 := newPkiValidator(baseCfg, []string{"a", "b"}, pki1)
+	v2 := newPkiValidator(baseCfg, []string{"a", "b"}, pki2)
+	v3 := newPkiValidator(baseCfg, []string{"c", "d"}, pki1)
+
+	hash1, err1 := v1.Hash()
+	hash2, err2 := v2.Hash()
+	hash3, err3 := v3.Hash()
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
+	assert.NoError(t, err3)
+	assert.NotNil(t, hash1)
+	assert.NotNil(t, hash2)
+	assert.NotNil(t, hash3)
+	assert.NotEqual(t, hash1.String(), hash2.String())
+	assert.NotEqual(t, hash1.String(), hash3.String())
+	assert.NotEqual(t, hash2.String(), hash3.String())
 }

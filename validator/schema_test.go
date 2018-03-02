@@ -47,6 +47,7 @@ const testSellSchema = `
 }`
 
 func TestSchemaValidatorConfig(t *testing.T) {
+	t.Parallel()
 	validSchema := []byte(testSellSchema)
 	process := "p1"
 	linkType := "sell"
@@ -95,6 +96,7 @@ func TestSchemaValidatorConfig(t *testing.T) {
 }
 
 func TestSchemaValidator(t *testing.T) {
+	t.Parallel()
 	schema := []byte(testSellSchema)
 	baseCfg, err := newValidatorBaseConfig("p1", "sell")
 	require.NoError(t, err)
@@ -143,4 +145,20 @@ func TestSchemaValidator(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSchemaHash(t *testing.T) {
+	t.Parallel()
+	baseCfg, err := newValidatorBaseConfig("foo", "bar")
+	require.NoError(t, err)
+	v1, err1 := newSchemaValidator(baseCfg, []byte(testSellSchema))
+	v2, err2 := newSchemaValidator(baseCfg, []byte(`{"type": "object","properties": {"seller": {"type": "string"}}, "required": ["seller"]}`))
+
+	hash1, err1 := v1.Hash()
+	hash2, err2 := v2.Hash()
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
+	assert.NotNil(t, hash1)
+	assert.NotNil(t, hash2)
+	assert.NotEqual(t, hash1.String(), hash2.String())
 }

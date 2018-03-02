@@ -75,15 +75,15 @@ type Identity struct {
 // pkiValidator validates the json signature of a link's state.
 type pkiValidator struct {
 	Config             *validatorBaseConfig
-	requiredSignatures []string
-	pki                *PKI
+	RequiredSignatures []string
+	PKI                *PKI
 }
 
 func newPkiValidator(baseConfig *validatorBaseConfig, required []string, pki *PKI) Validator {
 	return &pkiValidator{
 		Config:             baseConfig,
-		requiredSignatures: required,
-		pki:                pki,
+		RequiredSignatures: required,
+		PKI:                pki,
 	}
 }
 
@@ -95,26 +95,18 @@ func (pv pkiValidator) Hash() (*types.Bytes32, error) {
 	validationsHash := types.Bytes32(sha256.Sum256(b))
 	return &validationsHash, nil
 }
+
 func (pv pkiValidator) ShouldValidate(link *cs.Link) bool {
 	return pv.Config.ShouldValidate(link)
-}
-
-func (pv pkiValidator) isSignatureRequired(publicKey string) bool {
-	for _, required := range pv.requiredSignatures {
-		if pv.pki.matchRequirement(required, publicKey) {
-			return true
-		}
-	}
-	return false
 }
 
 // Validate checks that the provided dignatures match the required ones.
 // a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
 func (pv pkiValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
-	for _, required := range pv.requiredSignatures {
+	for _, required := range pv.RequiredSignatures {
 		fulfilled := false
 		for _, sig := range link.Signatures {
-			if pv.pki.matchRequirement(required, sig.PublicKey) {
+			if pv.PKI.matchRequirement(required, sig.PublicKey) {
 				fulfilled = true
 				break
 			}

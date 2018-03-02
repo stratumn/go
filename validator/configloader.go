@@ -37,8 +37,9 @@ var (
 type processesRules map[string]rulesSchema
 
 type rulesSchema struct {
-	PKI   json.RawMessage `json:"pki"`
-	Types json.RawMessage `json:"types"`
+	PKI         json.RawMessage `json:"pki"`
+	Types       json.RawMessage `json:"types"`
+	Transitions json.RawMessage `json:"transitions"`
 }
 
 type rulesListener func(process string, schema rulesSchema, validators []Validator)
@@ -73,16 +74,13 @@ func LoadConfigContent(data []byte, listener rulesListener) ([]Validator, error)
 // LoadProcessRules loads the validators configuration from a slice of processRule.
 // The configuration returned can then be used in NewMultiValidator().
 func LoadProcessRules(rules processesRules, listener rulesListener) ([]Validator, error) {
-	var err error
 	var validators []Validator
 	for process, schema := range rules {
-		var pki *PKI
-		if schema.PKI != nil {
-			pki, err = loadPKIConfig(schema.PKI)
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
+		pki, err := loadPKIConfig(schema.PKI)
+		if err != nil {
+			return nil, errors.WithStack(err)
 		}
+
 		processValidators, err := loadValidatorsConfig(process, schema.Types, pki)
 		if err != nil {
 			return nil, err
@@ -98,6 +96,9 @@ func LoadProcessRules(rules processesRules, listener rulesListener) ([]Validator
 // loadPKIConfig deserializes json into a PKI struct.
 // It checks that public keys are base64 encoded.
 func loadPKIConfig(data json.RawMessage) (*PKI, error) {
+	if data == nil {
+		return nil, nil
+	}
 	var jsonData PKI
 	err := json.Unmarshal(data, &jsonData)
 	if err != nil {
@@ -107,7 +108,7 @@ func loadPKIConfig(data json.RawMessage) (*PKI, error) {
 	for _, id := range jsonData {
 		for _, key := range id.Keys {
 			if _, err := base64.StdEncoding.DecodeString(key); key == "" || err != nil {
-				return nil, errors.Wrap(ErrBadPublicKey, "Error while parsing PKI")
+				return nil, errors.Wrap(ErrBadPublicKey, "error while parsing PKI")
 			}
 		}
 	}
@@ -115,8 +116,9 @@ func loadPKIConfig(data json.RawMessage) (*PKI, error) {
 }
 
 type jsonValidatorData struct {
-	Signatures []string         `json:"signatures"`
-	Schema     *json.RawMessage `json:"schema"`
+	Signatures  []string            `json:"signatures"`
+	Schema      *json.RawMessage    `json:"schema"`
+	Transitions map[string][]string `json:"transitions"`
 }
 
 func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Validator, error) {
@@ -131,7 +133,7 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 		if linkType == "" {
 			return nil, ErrMissingLinkType
 		}
-		if len(val.Signatures) == 0 && val.Schema == nil {
+		if len(val.Signatures) == 0 && val.Schema == nil && len(val.Transitions) == 0 {
 			return nil, ErrInvalidValidator
 		}
 
@@ -154,6 +156,9 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 				return nil, err
 			}
 			validators = append(validators, schemaValidator)
+		}
+		if len(val.Transitions) > 0 {
+			validators = append(validators, newTransitionValidator(baseConfig, val.Transitions))
 		}
 	}
 

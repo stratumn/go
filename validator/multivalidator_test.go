@@ -37,75 +37,59 @@ func TestMultiValidator_New(t *testing.T) {
 }
 
 func TestMultiValidator_Hash(t *testing.T) {
+	t.Parallel()
 	baseConfig1 := &validatorBaseConfig{Process: "p"}
 	baseConfig2 := &validatorBaseConfig{Process: "p2"}
 
-	t.Run("With schema validator", func(t *testing.T) {
-		mv1 := NewMultiValidator([]Validator{
-			schemaValidator{
-				Config: baseConfig1,
-			}},
-		)
+	type testCase struct {
+		name string
+		v1   Validator
+		v2   Validator
+		v3   Validator
+	}
 
-		h1, err := mv1.Hash()
-		assert.NoError(t, err)
-		assert.NotNil(t, h1)
-
-		mv2 := NewMultiValidator([]Validator{
-			&schemaValidator{
-				Config: baseConfig1,
-			}},
-		)
-
-		h2, err := mv2.Hash()
-		assert.NoError(t, err)
-		assert.EqualValues(t, h1, h2)
-
-		mv3 := NewMultiValidator([]Validator{
-			schemaValidator{
-				Config: baseConfig2,
-			}},
-		)
-
-		h3, err := mv3.Hash()
-		assert.NoError(t, err)
-		assert.False(t, h1.Equals(h3))
-	})
-
-	t.Run("With pki validator", func(t *testing.T) {
-		mv1 := NewMultiValidator([]Validator{
-			&pkiValidator{
-				Config: baseConfig1,
-			},
+	testCases := []testCase{
+		{
+			name: "With schema validator",
+			v1:   &schemaValidator{Config: baseConfig1},
+			v2:   &schemaValidator{Config: baseConfig1},
+			v3:   &schemaValidator{Config: baseConfig2},
 		},
-		)
-
-		h1, err := mv1.Hash()
-		assert.NoError(t, err)
-		assert.NotNil(t, h1)
-
-		mv2 := NewMultiValidator([]Validator{
-			&pkiValidator{
-				Config: baseConfig1,
-			},
+		{
+			name: "With pki validator",
+			v1:   &pkiValidator{Config: baseConfig1},
+			v2:   &pkiValidator{Config: baseConfig1},
+			v3:   &pkiValidator{Config: baseConfig2},
 		},
-		)
-
-		h2, err := mv2.Hash()
-		assert.NoError(t, err)
-		assert.EqualValues(t, h1, h2)
-
-		mv3 := NewMultiValidator([]Validator{
-			&pkiValidator{
-				Config: baseConfig2,
-			},
+		{
+			name: "With transition validator",
+			v1:   &transitionValidator{Config: baseConfig1},
+			v2:   &transitionValidator{Config: baseConfig1},
+			v3:   &transitionValidator{Config: baseConfig2},
 		},
-		)
+	}
 
-		h3, err := mv3.Hash()
-		assert.NoError(t, err)
-		assert.False(t, h1.Equals(h3))
-	})
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			mv1 := NewMultiValidator([]Validator{tt.v1})
+
+			h1, err := mv1.Hash()
+			assert.NoError(t, err)
+			assert.NotNil(t, h1)
+
+			mv2 := NewMultiValidator([]Validator{tt.v2})
+
+			h2, err := mv2.Hash()
+			assert.NoError(t, err)
+			assert.EqualValues(t, h1, h2)
+
+			mv3 := NewMultiValidator([]Validator{tt.v3})
+
+			h3, err := mv3.Hash()
+			assert.NoError(t, err)
+			assert.False(t, h1.Equals(h3))
+		})
+	}
 }
 
 const testMessageSchema = `
@@ -122,6 +106,7 @@ const testMessageSchema = `
 }`
 
 func TestMultiValidator_Validate(t *testing.T) {
+	t.Parallel()
 	baseConfig1, _ := newValidatorBaseConfig("p", "a1")
 	baseConfig2, _ := newValidatorBaseConfig("p", "a2")
 	baseConfig3, _ := newValidatorBaseConfig("p", "a1")

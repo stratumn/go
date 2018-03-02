@@ -30,8 +30,9 @@ import (
 
 // schemaValidator validates the json schema of a link's state.
 type schemaValidator struct {
-	Config *validatorBaseConfig
-	Schema *gojsonschema.Schema
+	Config     *validatorBaseConfig
+	schema     *gojsonschema.Schema
+	SchemaHash types.Bytes32
 }
 
 func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (Validator, error) {
@@ -41,8 +42,9 @@ func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (Val
 	}
 
 	return &schemaValidator{
-		Config: baseConfig,
-		Schema: schema,
+		Config:     baseConfig,
+		schema:     schema,
+		SchemaHash: types.Bytes32(sha256.Sum256(schemaData)),
 	}, nil
 }
 
@@ -67,7 +69,7 @@ func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	}
 
 	stateData := gojsonschema.NewBytesLoader(stateBytes)
-	result, err := sv.Schema.Validate(stateData)
+	result, err := sv.schema.Validate(stateData)
 	if err != nil {
 		return errors.WithStack(err)
 	}
