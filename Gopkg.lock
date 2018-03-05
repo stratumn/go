@@ -677,12 +677,6 @@
   version = "v2.0.0"
 
 [[projects]]
-  name = "gopkg.in/go-playground/validator.v9"
-  packages = ["."]
-  revision = "48a433ba4bcadc5be9aa16d4bdcb383d3f57a741"
-  version = "v9.9.3"
-
-[[projects]]
   name = "gopkg.in/gorethink/gorethink.v4"
   packages = [
     "encoding",
@@ -701,6 +695,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9c02f3158944acdb8a73b35ea12f20a697372723f89e5f635c52ebb6b385b148"
+  inputs-digest = "4a504c3f995dc828b1f2c0b7893934924282956a3b51cb6321896d960185812e"
   solver-name = "gps-cdcl"
   solver-version = 1
