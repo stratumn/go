@@ -26,9 +26,8 @@ import (
 	// The init() function of each package gets called hence providing a way for cs.Evidence.UnmarshalJSON to deserialize any kind of proof
 	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
 	"github.com/stratumn/go-indigocore/types"
-
-	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/go-crypto"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
 var (
@@ -99,34 +98,34 @@ func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 	return true
 }
 
-// TendermintSignature is a signature by one of the Tendermint nodes
-type TendermintSignature struct {
-	PubKey    crypto.PubKey    `json:"pub_key"`
-	Signature crypto.Signature `json:"signature"`
+// TendermintVote is a signed vote by one of the Tendermint validator nodes.
+type TendermintVote struct {
+	PubKey crypto.PubKey `json:"pub_key"`
+	Vote   tmtypes.Vote  `json:"vote"`
 }
 
-// TendermintProof implements the Proof interface
+// TendermintProof implements the Proof interface.
 type TendermintProof struct {
-	BlockHeight int64 `json:"blockHeight"`
+	BlockHeight int64 `json:"block_height"`
 
-	Root            *types.Bytes32 `json:"merkleRoot"`
-	Path            types.Path     `json:"merklePath"`
-	ValidationsHash *types.Bytes32 `json:"validationsHash"`
+	Root            *types.Bytes32 `json:"merkle_root"`
+	Path            types.Path     `json:"merkle_path"`
+	ValidationsHash *types.Bytes32 `json:"validations_hash"`
 
-	// The header and its signatures are needed to validate
-	// the previous app hash and metadata such as the height and time
-	Header     abci.Header            `json:"header"`
-	Signatures []*TendermintSignature `json:"signatures"`
+	// The header and its votes are needed to validate
+	// the previous app hash and metadata such as the height and time.
+	Header      tmtypes.Header    `json:"header"`
+	HeaderVotes []*TendermintVote `json:"header_votes"`
 
-	// The next header and its signatures are needed to validate
-	// the app hash representing the validations and merkle path
-	NextHeader     abci.Header            `json:"nextHeader"`
-	NextSignatures []*TendermintSignature `json:"nextSignatures"`
+	// The next header and its votes are needed to validate
+	// the app hash representing the validations and merkle path.
+	NextHeader      tmtypes.Header    `json:"next_header"`
+	NextHeaderVotes []*TendermintVote `json:"next_header_votes"`
 }
 
 // Time returns the timestamp from the block header
 func (p *TendermintProof) Time() uint64 {
-	return uint64(p.Header.GetTime())
+	return uint64(p.Header.Time.Unix())
 }
 
 // FullProof returns a JSON formatted proof
@@ -172,22 +171,57 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	// Then we validate the merkle path
 
 	if len(p.Path) == 0 {
-		// If the tree contains a single element, it's valid if it's the root
-		if lh.Equals(p.Root) {
-			return true
+		// If the tree contains a single element,
+		// it's valid only if it's the root.
+		if !lh.Equals(p.Root) {
+			return false
+		}
+	} else {
+		// Otherwise the path needs to be valid.
+		if err := p.Path.Validate(); err != nil {
+			return false
 		}
 
+		// And it should start at the given link hash.
+		if !lh.Equals(&p.Path[0].Left) && !lh.Equals(&p.Path[0].Right) {
+			return false
+		}
+	}
+
+	// We validate that nodes signed the header.
+	if !p.validateVotes(&p.Header, p.HeaderVotes) {
 		return false
 	}
 
-	if err := p.Path.Validate(); err != nil {
+	// We validate that nodes signed the next header.
+	if !p.validateVotes(&p.NextHeader, p.NextHeaderVotes) {
 		return false
 	}
 
-	// And that the merkle path starts at the given link hash
+	return true
+}
 
-	if !lh.Equals(&p.Path[0].Left) && !lh.Equals(&p.Path[0].Right) {
+// validateVotes verifies that votes are correctly signed
+// and refer to the given header.
+func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*TendermintVote) bool {
+	if len(votes) == 0 {
 		return false
+	}
+
+	for _, v := range votes {
+		if v == nil || v.PubKey.Empty() || v.Vote.BlockID.IsZero() {
+			return false
+		}
+
+		// If the vote isn't for the the given header,
+		// no need to verify the signatures.
+		if bytes.Compare(v.Vote.BlockID.Hash.Bytes(), header.Hash().Bytes()) != 0 {
+			return false
+		}
+
+		if err := v.Vote.Verify(header.ChainID, v.PubKey); err != nil {
+			return false
+		}
 	}
 
 	return true
