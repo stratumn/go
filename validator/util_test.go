@@ -16,16 +16,15 @@ package validator
 
 import (
 	"fmt"
-	"io/ioutil"
-	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
-const validAuctionJSONPKIConfig = `
+const AlicePrivateKey = `XyvgStfhWJ3uq/peoh/VyIIl0kTkCKQ1Fv5VQC4f5w3a+HASh6jEKKWYBvrALvSZpOaiR+c0ak3O0Oqa9kJ44w==`
+const AlicePublicKey = `2vhwEoeoxCilmAb6wC70maTmokfnNGpNztDqmvZCeOM=`
+
+var ValidAuctionJSONPKIConfig = fmt.Sprintf(`
 {
 	"alice.vandenbudenmayer@stratumn.com": {
-		"keys": ["TESTKEY1"],
+		"keys": ["%s"],
 		"roles": ["employee"]
 	},
 	"Bob Wagner": {
@@ -33,12 +32,12 @@ const validAuctionJSONPKIConfig = `
 		"roles": ["manager", "it"]
 	}
 }
-`
+`, AlicePublicKey)
 
-const validAuctionJSONTypesConfig = `
+const ValidAuctionJSONTypesConfig = `
 {
 	"init": {
-		"signatures": ["Alice Van den Budenmayer"],
+		"signatures": ["alice.vandenbudenmayer@stratumn.com"],
 		"schema": {
 			"type": "object",
 			"properties": {
@@ -76,7 +75,7 @@ const validAuctionJSONTypesConfig = `
 }
 `
 
-const validChatJSONPKIConfig = `
+const ValidChatJSONPKIConfig = `
 {
 	"Bob Wagner": {
 		"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
@@ -85,7 +84,7 @@ const validChatJSONPKIConfig = `
 }
 `
 
-const validChatJSONTypesConfig = `
+const ValidChatJSONTypesConfig = `
 {
 	"message": {
 		"signatures": null,
@@ -114,15 +113,6 @@ func createValidatorJSON(name, pki, types string) string {
 	return fmt.Sprintf(`"%s": {"pki": %s,"types": %s}`, name, pki, types)
 }
 
-var validAuctionJSONConfig = createValidatorJSON("auction", validAuctionJSONPKIConfig, validAuctionJSONTypesConfig)
-var validChatJSONConfig = createValidatorJSON("chat", validChatJSONPKIConfig, validChatJSONTypesConfig)
-var validJSONConfig = fmt.Sprintf(`{%s,%s}`, validAuctionJSONConfig, validChatJSONConfig)
-
-func createTempFile(t *testing.T, data string) string {
-	tmpfile, err := ioutil.TempFile("", "validator-tmpfile")
-	require.NoError(t, err, "ioutil.TempFile()")
-
-	_, err = tmpfile.WriteString(data)
-	require.NoError(t, err, "tmpfile.WriteString()")
-	return tmpfile.Name()
-}
+var ValidAuctionJSONConfig = createValidatorJSON("auction", ValidAuctionJSONPKIConfig, ValidAuctionJSONTypesConfig)
+var ValidChatJSONConfig = createValidatorJSON("chat", ValidChatJSONPKIConfig, ValidChatJSONTypesConfig)
+var ValidJSONConfig = fmt.Sprintf(`{%s,%s}`, ValidAuctionJSONConfig, ValidChatJSONConfig)

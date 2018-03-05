@@ -19,10 +19,12 @@
               "type": "string"
             }
           }
-        }
+        },
+        "transitions": [""]
       },
-      "action": {
-        "signatures": ["employee"]
+      "processing": {
+        "signatures": ["it"],
+        "transitions": ["init", "processing"]
       }
     }
   }

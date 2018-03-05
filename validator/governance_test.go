@@ -73,7 +73,7 @@ func TestGovernanceCreation(t *testing.T) {
 	t.Run("Governance with valid file", func(t *testing.T) {
 		var v Validator
 		a := new(storetesting.MockAdapter)
-		testFile := createTempFile(t, validJSONConfig)
+		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
 		gov, err := NewGovernanceManager(a, testFile)
 		assert.NoError(t, err, "Gouvernance is initialized by file and store")
@@ -121,7 +121,7 @@ func TestGovernanceUpdate(t *testing.T) {
 		a := dummystore.New(nil)
 		populateStoreWithValidData(t, a)
 		checkLastValidatorPriority(t, a, "auction", 1.)
-		testFile := createTempFile(t, validJSONConfig)
+		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
 		gov, err := NewGovernanceManager(a, testFile)
 		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
@@ -134,9 +134,9 @@ func TestGovernanceUpdate(t *testing.T) {
 
 	t.Run("New validation file read on modification", func(t *testing.T) {
 		var v Validator
-		validJSON := fmt.Sprintf(`{%s}`, validChatJSONConfig)
+		validJSON := fmt.Sprintf(`{%s}`, ValidChatJSONConfig)
 		a := dummystore.New(nil)
-		testFile := createTempFile(t, validJSON)
+		testFile := utils.CreateTempFile(t, validJSON)
 		defer os.Remove(testFile)
 		gov, err := NewGovernanceManager(a, testFile)
 		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
@@ -147,8 +147,8 @@ func TestGovernanceUpdate(t *testing.T) {
 		checkLastValidatorPriority(t, a, "chat", 0.)
 
 		chatJSON := createValidatorJSON("chat",
-			strings.Replace(validChatJSONPKIConfig, "Bob", "Dave", -1),
-			validChatJSONTypesConfig)
+			strings.Replace(ValidChatJSONPKIConfig, "Bob", "Dave", -1),
+			ValidChatJSONTypesConfig)
 		validJSON = fmt.Sprintf(`{%s}`, chatJSON)
 		f, err := os.OpenFile(testFile, os.O_WRONLY, 0)
 		require.NoErrorf(t, err, "cannot modify file %s", testFile)
@@ -198,22 +198,22 @@ func TestGetAllProcesses(t *testing.T) {
 }
 
 func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
-	auctionPKI := json.RawMessage(validAuctionJSONPKIConfig)
-	auctionTypes := json.RawMessage(validAuctionJSONTypesConfig)
+	auctionPKI := json.RawMessage(ValidAuctionJSONPKIConfig)
+	auctionTypes := json.RawMessage(ValidAuctionJSONTypesConfig)
 	link := createGovernanceLink("auction", auctionPKI, auctionTypes)
 	hash, err := a.CreateLink(link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 	assert.NotNil(t, hash, "LinkHash should not be nil")
 
-	auctionPKI, _ = json.Marshal(strings.Replace(validAuctionJSONPKIConfig, "alice", "charlie", -1))
+	auctionPKI, _ = json.Marshal(strings.Replace(ValidAuctionJSONPKIConfig, "alice", "charlie", -1))
 	link = createGovernanceLink("auction", auctionPKI, auctionTypes)
 	link.Meta.PrevLinkHash = hash.String()
 	link.Meta.Priority = 1.
 	_, err = a.CreateLink(link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 
-	chatPKI := json.RawMessage(validChatJSONPKIConfig)
-	chatTypes := json.RawMessage(validChatJSONTypesConfig)
+	chatPKI := json.RawMessage(ValidChatJSONPKIConfig)
+	chatTypes := json.RawMessage(ValidChatJSONTypesConfig)
 	link = createGovernanceLink("chat", chatPKI, chatTypes)
 	_, err = a.CreateLink(link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)

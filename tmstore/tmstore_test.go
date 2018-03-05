@@ -99,6 +99,7 @@ func TestTMStore(t *testing.T) {
 		t.Run("Validation succeeds", func(t *testing.T) {
 			l := cstesting.RandomLink()
 			l.Meta.Process = "testProcess"
+			l.Meta.PrevLinkHash = ""
 			l.Meta.Type = "init"
 			l.State["string"] = "test"
 
@@ -140,9 +141,17 @@ func TestTMStore(t *testing.T) {
 		})
 
 		t.Run("Validation rules update succeeds", func(t *testing.T) {
-			l := cstesting.RandomLink()
+			prevLink := cstesting.RandomLink()
+			prevLink.Meta.Process = "testProcess"
+			prevLink.Meta.PrevLinkHash = ""
+			prevLink.Meta.Type = "init"
+
+			_, err = tmstore.CreateLink(prevLink)
+			assert.NoError(t, err, "CreateLink(init) failed")
+
+			l := cstesting.RandomBranch(prevLink)
 			l.Meta.Process = "testProcess"
-			l.Meta.Type = "action"
+			l.Meta.Type = "processing"
 			l.State["string"] = "test"
 
 			privBytes, _ := base64.StdEncoding.DecodeString(itPrivKey)
@@ -156,7 +165,7 @@ func TestTMStore(t *testing.T) {
 
 			l = cstesting.RandomLink()
 			l.Meta.Process = "testProcess"
-			l.Meta.Type = "action"
+			l.Meta.Type = "processing"
 			l.State["string"] = "test"
 
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)

@@ -15,96 +15,21 @@
 package validator_test
 
 import (
-	"io/ioutil"
+	"encoding/base64"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/stratumn/go-indigocore/dummystore"
+	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/utils"
+
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/validator"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-const validJSONConfig = `
-{
-		"auction": {
-		  "pki": {
-		    "alice.vandenbudenmayer@stratumn.com": {
-		      "keys": ["TESTKEY1"],
-		      "roles": ["employee"]
-		    },
-		    "Bob Wagner": {
-		      "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
-		      "roles": ["manager", "it"]
-		    }
-		  },
-		  "types": {
-		    "init": {
-		      "signatures": ["Alice Van den Budenmayer"],
-		      "schema": {
-			"type": "object",
-			"properties": {
-			  "seller": {
-			    "type": "string"
-			  },
-			  "lot": {
-			    "type": "string"
-			  },
-			  "initialPrice": {
-			    "type": "integer",
-			    "minimum": 0
-			  }
-			},
-			"required": ["seller", "lot", "initialPrice"]
-		      }
-		    },
-		    "bid": {
-		      "schema": {
-			"type": "object",
-			"properties": {
-			  "buyer": {
-			    "type": "string"
-			  },
-			  "bidPrice": {
-			    "type": "integer",
-			    "minimum": 0
-			  }
-			},
-			"required": ["buyer", "bidPrice"]
-		      }
-		    }
-		  }
-		},
-		"chat": {
-		"pki": {
-			"Bob Wagner": {
-				"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
-				"roles": ["manager", "it"]
-			}
-		},
-		"types": {
-		    "message": {
-		      "signatures": null,
-		      "schema": {
-			"type": "object",
-			"properties": {
-			  "to": {
-			    "type": "string"
-			  },
-			  "content": {
-			    "type": "string"
-			  }
-			},
-			"required": ["to", "content"]
-		      }
-		    },
-		    "init": {
-		      "signatures": ["manager", "it"]
-		    }
-		  }
-		}
-	      }		      
-`
 
 type testCase struct {
 	name  string
@@ -112,72 +37,95 @@ type testCase struct {
 	valid bool
 }
 
-var testCases = []testCase{{
-	name: "valid-link",
-	link: &cs.Link{
+func initTestCases(t *testing.T) (store.Adapter, []testCase) {
+	store := dummystore.New(nil)
+	initAuctionLink := &cs.Link{
 		State: map[string]interface{}{
-			"buyer":    "alice",
-			"bidPrice": 42,
+			"buyer":        "alice",
+			"seller":       "bob",
+			"lot":          "painting",
+			"initialPrice": 12,
 		},
 		Meta: cs.LinkMeta{
 			Process: "auction",
-			Type:    "bid",
+			Type:    "init",
+			Action:  "initialize",
 		},
-	},
-	valid: true,
-}, {
-	name: "no-validator-match",
-	link: &cs.Link{
-		Meta: cs.LinkMeta{
-			Process: "auction",
-			Type:    "unknown",
+	}
+	priv, _ := base64.StdEncoding.DecodeString(validator.AlicePrivateKey)
+	initAuctionLinkHash, err := store.CreateLink(cstesting.SignLinkWithKey(initAuctionLink, priv))
+	require.NoError(t, err)
+
+	var testCases = []testCase{{
+		name:  "valid-init-link",
+		link:  initAuctionLink,
+		valid: true,
+	}, {
+		name: "valid-link",
+		link: &cs.Link{
+			State: map[string]interface{}{
+				"buyer":    "alice",
+				"bidPrice": 42,
+			},
+			Meta: cs.LinkMeta{
+				Process:      "auction",
+				PrevLinkHash: initAuctionLinkHash.String(),
+				Type:         "bid",
+				Action:       "sendOrder",
+			},
 		},
-	},
-	valid: false,
-}, {
-	name: "missing-required-field",
-	link: &cs.Link{
-		State: map[string]interface{}{
-			"to": "bob",
+		valid: true,
+	}, {
+		name: "no-validator-match",
+		link: &cs.Link{
+			Meta: cs.LinkMeta{
+				Process: "auction",
+				Type:    "unknown",
+			},
 		},
-		Meta: cs.LinkMeta{
-			Process: "chat",
-			Type:    "message",
+		valid: false,
+	}, {
+		name: "missing-required-field",
+		link: &cs.Link{
+			State: map[string]interface{}{
+				"to": "bob",
+			},
+			Meta: cs.LinkMeta{
+				Process: "chat",
+				Type:    "message",
+			},
 		},
-	},
-	valid: false,
-}, {
-	name: "invalid-field-value",
-	link: &cs.Link{
-		State: map[string]interface{}{
-			"buyer":    "alice",
-			"bidPrice": -10,
+		valid: false,
+	}, {
+		name: "invalid-field-value",
+		link: &cs.Link{
+			State: map[string]interface{}{
+				"buyer":    "alice",
+				"bidPrice": -10,
+			},
+			Meta: cs.LinkMeta{
+				Process: "auction",
+				Type:    "bid",
+			},
 		},
-		Meta: cs.LinkMeta{
-			Process: "auction",
-			Type:    "bid",
-		},
-	},
-	valid: false,
-}}
+		valid: false,
+	}}
+	return store, testCases
+}
 
 func TestValidator(t *testing.T) {
-	tmpfile, err := ioutil.TempFile("", "valid-config")
-	require.NoError(t, err, "ioutil.TempFile()")
+	testFile := utils.CreateTempFile(t, validator.ValidJSONConfig)
+	defer os.Remove(testFile)
 
-	defer os.Remove(tmpfile.Name())
-
-	_, err = tmpfile.WriteString(validJSONConfig)
-	require.NoError(t, err, "tmpfile.WriteString()")
-
-	children, err := validator.LoadConfig(tmpfile.Name(), nil)
-	assert.NoError(t, err, "validator.LoadConfig()")
+	children, err := validator.LoadConfig(testFile, nil)
+	assert.NoError(t, err, "LoadConfig()")
 
 	v := validator.NewMultiValidator(children)
 
+	store, testCases := initTestCases(t)
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := v.Validate(nil, tt.link)
+			err := v.Validate(store, tt.link)
 			if tt.valid {
 				assert.NoError(t, err, "v.Validate()")
 			} else {

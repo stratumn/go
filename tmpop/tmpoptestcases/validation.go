@@ -15,14 +15,13 @@
 package tmpoptestcases
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-indigocore/utils"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const testValidationConfig = `
@@ -30,48 +29,33 @@ const testValidationConfig = `
 	"testProcess": {
 	    "pki": {
 		"alice.vandenbudenmayer@stratumn.com": {
-		    "keys": [
-			"TESTKEY1"
-		    ],
-		    "roles": [
-			"employee"
-		    ]
+		    "keys": ["TESTKEY1"],
+		    "roles": ["employee"]
 		}
 	    },
 	    "types": {
-		"init": {
-		    "schema": {
-			"type": "object",
-			"properties": {
-			    "string": {
-				"type": "string"
-			    }
+			"init": {
+				"schema": {
+					"type": "object",
+					"properties": {
+						"string": {
+							"type": "string"
+						}
+					}
+				},
+				"transitions": [""]
 			}
-		    }
 		},
 		"action": {
-		    "signatures": [
-			"it"
-		    ]
-		}
+		    "signatures": ["it"]
 	    }
 	}
-    }
-`
-
-func createValidationFile(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "validation-config")
-	require.NoError(t, err, "ioutil.TempFile()")
-
-	_, err = tmpfile.WriteString(testValidationConfig)
-	require.NoError(t, err, "tmpfile.WriteString()")
-
-	return tmpfile.Name()
 }
+`
 
 // TestValidation tests what happens when validating a segment from a json-schema based validation file
 func (f Factory) TestValidation(t *testing.T) {
-	testFilename := createValidationFile(t)
+	testFilename := utils.CreateTempFile(t, testValidationConfig)
 	defer os.Remove(testFilename)
 
 	h, req := f.newTMPop(t, &tmpop.Config{ValidatorFilename: testFilename})
@@ -81,6 +65,7 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	t.Run("Validation succeeded", func(t *testing.T) {
 		l := cstesting.RandomLinkWithProcess("testProcess")
+		l.Meta.PrevLinkHash = ""
 		l.Meta.Type = "init"
 		l.State["string"] = "test"
 		l = cstesting.SignLink(l)

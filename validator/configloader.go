@@ -159,6 +159,8 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 		}
 		if len(val.Transitions) > 0 {
 			validators = append(validators, newTransitionValidator(baseConfig, val.Transitions))
+		} else {
+			validators = append(validators, newInvalidValidator(baseConfig, "transition validator is mandatory"))
 		}
 	}
 

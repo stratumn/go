@@ -35,12 +35,6 @@ const (
 	stateFinalProduct       = "finalProduct"
 	stateFinalSignedProduct = "finalSignedProduct"
 	stateHackedProduct      = "hackedProduct"
-
-	actionCreate    = "create"
-	actionSign      = "sign"
-	actionTransform = "transform"
-	actionApprove   = "approve"
-	actionHack      = "hack"
 )
 
 var (
@@ -77,28 +71,26 @@ func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
 	links.createdProduct = cstesting.RandomLinkWithProcess(process)
 	links.createdProduct.Meta.PrevLinkHash = ""
 	links.createdProduct.Meta.Type = stateCreatedProduct
-	links.createdProduct.Meta.Action = actionCreate
 	_, err := store.CreateLink(links.createdProduct)
 	require.NoError(t, err)
 
-	appendLink := func(prevLink *cs.Link, state, action string) *cs.Link {
+	appendLink := func(prevLink *cs.Link, state string) *cs.Link {
 		l := cstesting.RandomBranch(prevLink)
 		l.Meta.Type = state
-		l.Meta.Action = action
 		_, err := store.CreateLink(l)
 		require.NoError(t, err)
 		return l
 	}
 
-	links.signedProduct = appendLink(links.createdProduct, stateSignedProduct, actionSign)
-	links.finalProduct = appendLink(links.signedProduct, stateFinalProduct, actionTransform)
-	links.finalSignedProduct = appendLink(links.finalProduct, stateFinalSignedProduct, actionSign)
+	links.signedProduct = appendLink(links.createdProduct, stateSignedProduct)
+	links.finalProduct = appendLink(links.signedProduct, stateFinalProduct)
+	links.finalSignedProduct = appendLink(links.finalProduct, stateFinalSignedProduct)
 
-	links.approvedProduct = appendLink(links.createdProduct, stateFinalSignedProduct, actionApprove)
+	links.approvedProduct = appendLink(links.createdProduct, stateFinalSignedProduct)
 
-	links.hacked1Product = appendLink(links.createdProduct, stateHackedProduct, actionHack)
-	links.hacked2Product = appendLink(links.hacked1Product, stateHackedProduct, actionHack)
-	links.hackedFinalProduct = appendLink(links.hacked2Product, stateFinalSignedProduct, actionApprove)
+	links.hacked1Product = appendLink(links.createdProduct, stateHackedProduct)
+	links.hacked2Product = appendLink(links.hacked1Product, stateHackedProduct)
+	links.hackedFinalProduct = appendLink(links.hacked2Product, stateFinalSignedProduct)
 	return store, links
 }
 
