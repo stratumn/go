@@ -58,7 +58,7 @@ func (es *ESStore) createIndex(indexName string) error {
 		}
 		if !createIndex.Acknowledged {
 			// Not acknowledged.
-			return fmt.Errorf("Error creating %s index", indexName)
+			return fmt.Errorf("error creating %s index", indexName)
 		}
 	}
 
@@ -72,7 +72,7 @@ func (es *ESStore) deleteIndex(indexName string) error {
 	}
 
 	if !del.Acknowledged {
-		return fmt.Errorf("Index %s was not deleted", indexName)
+		return fmt.Errorf("index %s was not deleted", indexName)
 	}
 
 	return nil
@@ -97,7 +97,7 @@ func (es *ESStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	}
 
 	if has {
-		return nil, fmt.Errorf("Link is immutable, %s already exists", linkHashStr)
+		return nil, fmt.Errorf("link is immutable, %s already exists", linkHashStr)
 	}
 
 	return linkHash, es.indexDocument(linksIndex, linkHashStr, link)
