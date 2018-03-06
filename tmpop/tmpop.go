@@ -356,31 +356,24 @@ func (t *TMPop) doTx(createLink func(*cs.Link) *ABCIError, txBytes []byte) *ABCI
 // addTendermintEvidence computes and stores new evidence
 func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	if t.tmClient == nil {
-		log.Warn("TMPoP not connected to Tendermint Core.\nEvidence will not be generated.")
+		log.Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
 		return
 	}
 
-	height := header.Height - 1
-	if height <= 0 {
+	// Evidence for block N can only be generated at the beginning of block N+3.
+	// That is because we need signatures for both block N and block N+1
+	// (since the data is always reflected in the next block's AppHash)
+	// so we need block N+1 to be committed.
+	// The signatures for block N+1 will only be included in block N+2 so
+	// we need block N+2 to be committed.
+	evidenceHeight := header.Height - 3
+	if evidenceHeight <= 0 {
 		return
 	}
 
-	block := t.tmClient.Block(int(height))
-	if block.Header == nil {
-		log.Warn("Could not get block header.\nEvidence will not be generated.")
-		return
-	}
-
-	validatorHash, err := t.getValidatorHash(height)
+	linkHashes, err := t.getCommitLinkHashes(evidenceHeight)
 	if err != nil {
-		log.Warn("Could not get validator hash for this block.\nEvidence will not be generated.")
-		return
-	}
-
-	previousAppHash := types.NewBytes32FromBytes(block.Header.AppHash)
-	linkHashes, err := t.getCommitLinkHashes(height)
-	if err != nil {
-		log.Warn("Could not get link hashes for this block.\nEvidence will not be generated.")
+		log.Warn("Could not get link hashes for this block. Evidence will not be generated.")
 		return
 	}
 
@@ -388,21 +381,51 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		return
 	}
 
+	validatorHash, err := t.getValidatorHash(evidenceHeight)
+	if err != nil {
+		log.Warn("Could not get validator hash for this block. Evidence will not be generated.")
+		return
+	}
+
+	evidenceBlock, err := t.tmClient.Block(evidenceHeight)
+	if err != nil {
+		log.Warnf("Could not get block header: %v", err)
+		return
+	}
+
+	evidenceNextBlock, err := t.tmClient.Block(evidenceHeight + 1)
+	if err != nil {
+		log.Warnf("Could not get next block header: %v", err)
+		return
+	}
+
+	evidenceLastBlock, err := t.tmClient.Block(evidenceHeight + 2)
+	if err != nil {
+		log.Warnf("Could not get last block header: %v", err)
+		return
+	}
+
+	if len(evidenceNextBlock.Votes) == 0 || len(evidenceLastBlock.Votes) == 0 {
+		log.Warn("Block isn't signed by validator nodes. Evidence will not be generated.")
+		return
+	}
+
+	evidenceBlockAppHash := types.NewBytes32FromBytes(evidenceBlock.Header.AppHash)
 	merkle, err := merkle.NewStaticTree(linkHashes)
 	if err != nil {
-		log.Warn("Could not create merkle tree for this block.\nEvidence will not be generated.")
+		log.Warn("Could not create merkle tree for this block. Evidence will not be generated.")
 		return
 	}
 
 	merkleRoot := merkle.Root()
 
-	appHash, err := ComputeAppHash(previousAppHash, validatorHash, merkleRoot)
+	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 	if err != nil {
-		log.Warn("Could not compute app hash.\nEvidence will not be generated.")
+		log.Warn("Could not compute app hash. Evidence will not be generated.")
 		return
 	}
-	if !appHash.EqualsBytes(header.AppHash) {
-		log.Warnf("App hash %x doesn't match the header's: %x.\nEvidence will not be generated.",
+	if !appHash.EqualsBytes(evidenceNextBlock.Header.AppHash) {
+		log.Warnf("App hash %x doesn't match the header's: %x. Evidence will not be generated.",
 			*appHash,
 			header.AppHash)
 		return
@@ -414,7 +437,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	}
 
 	newEvidences := make(map[*types.Bytes32]*cs.Evidence)
-	for _, tx := range block.Txs {
+	for _, tx := range evidenceBlock.Txs {
 		// We only create evidence for valid transactions
 		linkHash, _ := tx.Link.Hash()
 		position, valid := linksPositions[*linkHash]
@@ -424,12 +447,14 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 				Backend:  Name,
 				Provider: header.ChainID,
 				Proof: &evidences.TendermintProof{
-					BlockHeight:     height,
+					BlockHeight:     evidenceHeight,
 					Root:            merkleRoot,
 					Path:            merkle.Path(position),
 					ValidationsHash: validatorHash,
-					Header:          *block.Header,
-					NextHeader:      *header,
+					Header:          evidenceBlock.Header,
+					HeaderVotes:     evidenceNextBlock.Votes,
+					NextHeader:      evidenceNextBlock.Header,
+					NextHeaderVotes: evidenceLastBlock.Votes,
 				},
 			}
 

@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
@@ -105,9 +106,9 @@ func (f Factory) TestCommitTx(t *testing.T) {
 	h, req := f.newTMPop(t, nil)
 	defer f.free()
 
-	tmClientMock := new(tmpoptestcasesmocks.MockedTendermintClient)
-	tmClientMock.AllowCalls()
-
+	ctrl := gomock.NewController(t)
+	tmClientMock := tmpoptestcasesmocks.NewMockTendermintClient(ctrl)
+	tmClientMock.EXPECT().Block(gomock.Any()).Return(&tmpop.Block{}, nil).AnyTimes()
 	h.ConnectTendermint(tmClientMock)
 
 	previousAppHash := req.Header.AppHash

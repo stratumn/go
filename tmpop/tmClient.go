@@ -12,66 +12,94 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate mockgen -package tmpoptestcasesmocks -destination tmpoptestcases/mocks/mocktmclient.go github.com/stratumn/go-indigocore/tmpop TendermintClient
+
 package tmpop
 
 import (
+	"bytes"
+	"fmt"
+
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	abci "github.com/tendermint/abci/types"
+	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/tendermint/tendermint/rpc/client"
+	ctypes "github.com/tendermint/tendermint/rpc/core/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-// TendermintClient is a light interface to query Tendermint Core
+// TendermintClient is a light interface to query Tendermint Core.
 type TendermintClient interface {
-	Block(height int) *Block
+	Block(height int64) (*Block, error)
 }
 
 // Block contains the parts of a Tendermint block that TMPoP is interested in.
 type Block struct {
-	Header *abci.Header
-	Txs    []*Tx
+	// The block's header.
+	Header *tmtypes.Header
+	// A block at height N contains the votes for block N-1.
+	Votes []*evidences.TendermintVote
+	// The block's transactions.
+	Txs []*Tx
 }
 
-// TendermintClientWrapper implements TendermintClient
+// TendermintClientWrapper implements TendermintClient.
 type TendermintClientWrapper struct {
 	tmClient client.Client
 }
 
-// NewTendermintClient creates a new TendermintClient
+// NewTendermintClient creates a new TendermintClient.
 func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 	return &TendermintClientWrapper{
 		tmClient: tmClient,
 	}
 }
 
-// Block queries for a block at a specific height
-func (c *TendermintClientWrapper) Block(height int) *Block {
-	requestHeight := int64(height)
-	previousBlock, err := c.tmClient.Block(&requestHeight)
+// Block queries for a block at a specific height.
+func (c *TendermintClientWrapper) Block(height int64) (*Block, error) {
+	tmBlock, err := c.tmClient.Block(&height)
 	if err != nil {
-		log.Warnf("Could not get previous block from Tendermint Core.\nSome evidence will be missing.\nError: %v", err)
-		return &Block{}
+		return nil, errors.Wrap(err, "could not get block from Tendermint Core")
 	}
 
-	block := &Block{
-		Header: &abci.Header{
-			ChainID:        previousBlock.BlockMeta.Header.ChainID,
-			Height:         int64(previousBlock.BlockMeta.Header.Height),
-			Time:           int64(previousBlock.BlockMeta.Header.Time.Unix()),
-			LastCommitHash: previousBlock.BlockMeta.Header.LastCommitHash,
-			DataHash:       previousBlock.BlockMeta.Header.DataHash,
-			AppHash:        previousBlock.BlockMeta.Header.AppHash,
-		},
+	// The votes in block N are voting on block N-1.
+	// So we need the validator set of the previous block.
+	prevHeight := height - 1
+	validators, err := c.tmClient.Validators(&prevHeight)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get validators from Tendermint Core")
 	}
 
-	for _, tx := range previousBlock.Block.Txs {
+	block := &Block{Header: tmBlock.BlockMeta.Header}
+
+	for _, v := range tmBlock.Block.LastCommit.Precommits {
+		vote, err := getVote(v, validators)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get vote from Tendermint Core")
+		}
+
+		block.Votes = append(block.Votes, vote)
+	}
+
+	for _, tx := range tmBlock.Block.Txs {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {
-			log.Warn("Could not unmarshall previous block Tx. Evidence will not be created.")
+			log.Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
 			continue
 		}
 
 		block.Txs = append(block.Txs, tmTx)
 	}
 
-	return block
+	return block, nil
+}
+
+func getVote(v *tmtypes.Vote, validators *ctypes.ResultValidators) (*evidences.TendermintVote, error) {
+	for _, val := range validators.Validators {
+		if bytes.Compare(v.ValidatorAddress.Bytes(), val.Address.Bytes()) == 0 {
+			return &evidences.TendermintVote{PubKey: &val.PubKey, Vote: v}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("could not find validator address %x", v.ValidatorAddress)
 }
