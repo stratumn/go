@@ -100,8 +100,8 @@ func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 
 // TendermintVote is a signed vote by one of the Tendermint validator nodes.
 type TendermintVote struct {
-	PubKey crypto.PubKey `json:"pub_key"`
-	Vote   tmtypes.Vote  `json:"vote"`
+	PubKey *crypto.PubKey `json:"pub_key"`
+	Vote   *tmtypes.Vote  `json:"vote"`
 }
 
 // TendermintProof implements the Proof interface.
@@ -114,12 +114,12 @@ type TendermintProof struct {
 
 	// The header and its votes are needed to validate
 	// the previous app hash and metadata such as the height and time.
-	Header      tmtypes.Header    `json:"header"`
+	Header      *tmtypes.Header   `json:"header"`
 	HeaderVotes []*TendermintVote `json:"header_votes"`
 
 	// The next header and its votes are needed to validate
 	// the app hash representing the validations and merkle path.
-	NextHeader      tmtypes.Header    `json:"next_header"`
+	NextHeader      *tmtypes.Header   `json:"next_header"`
 	NextHeaderVotes []*TendermintVote `json:"next_header_votes"`
 }
 
@@ -189,12 +189,12 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	}
 
 	// We validate that nodes signed the header.
-	if !p.validateVotes(&p.Header, p.HeaderVotes) {
+	if !p.validateVotes(p.Header, p.HeaderVotes) {
 		return false
 	}
 
 	// We validate that nodes signed the next header.
-	if !p.validateVotes(&p.NextHeader, p.NextHeaderVotes) {
+	if !p.validateVotes(p.NextHeader, p.NextHeaderVotes) {
 		return false
 	}
 
@@ -209,7 +209,7 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 	}
 
 	for _, v := range votes {
-		if v == nil || v.PubKey.Empty() || v.Vote.BlockID.IsZero() {
+		if v == nil || v.PubKey == nil || v.PubKey.Empty() || v.Vote == nil || v.Vote.BlockID.IsZero() {
 			return false
 		}
 
@@ -219,7 +219,7 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 			return false
 		}
 
-		if err := v.Vote.Verify(header.ChainID, v.PubKey); err != nil {
+		if err := v.Vote.Verify(header.ChainID, *v.PubKey); err != nil {
 			return false
 		}
 	}

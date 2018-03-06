@@ -37,7 +37,7 @@ func TestTendermintProof(t *testing.T) {
 	}{{
 		"time",
 		func(t *testing.T) {
-			e := &evidences.TendermintProof{Header: tmtypes.Header{Time: time.Unix(42, 0)}}
+			e := &evidences.TendermintProof{Header: &tmtypes.Header{Time: time.Unix(42, 0)}}
 			assert.Equal(t, uint64(42), e.Time(), "Invalid proof time")
 		},
 	}, {
@@ -83,7 +83,7 @@ func TestTendermintProof(t *testing.T) {
 		"missing-public-key",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 5)
-			e.HeaderVotes[0].PubKey = crypto.PubKey{}
+			e.HeaderVotes[0].PubKey = &crypto.PubKey{}
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if public key is missing")
 		},
 	}, {
@@ -149,7 +149,7 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 	appHash := testutil.RandomHash()
 	linkHash, tree, merklePath := createMerkleTree(linksCount)
 
-	header := tmtypes.Header{
+	header := &tmtypes.Header{
 		AppHash:        appHash[:],
 		ChainID:        "testchain",
 		Height:         42,
@@ -166,7 +166,7 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 	hash.Write(tree.Root()[:])
 	nextAppHash := hash.Sum(nil)
 
-	nextHeader := tmtypes.Header{
+	nextHeader := &tmtypes.Header{
 		AppHash:        nextAppHash,
 		ChainID:        "testchain",
 		Height:         43,
@@ -214,20 +214,20 @@ func createMerkleTree(linksCount int) (*types.Bytes32, *merkle.StaticTree, types
 
 // vote creates a valid vote for a given header.
 // It simulates nodes signing a header and is crucial for the proof.
-func vote(header tmtypes.Header) []*evidences.TendermintVote {
+func vote(header *tmtypes.Header) []*evidences.TendermintVote {
 	privKey := crypto.GenPrivKeyEd25519()
 	pubKey := privKey.PubKey()
 
 	v := &evidences.TendermintVote{
-		PubKey: pubKey,
-		Vote: tmtypes.Vote{
+		PubKey: &pubKey,
+		Vote: &tmtypes.Vote{
 			BlockID:          tmtypes.BlockID{Hash: header.Hash()},
 			Height:           header.Height,
 			ValidatorAddress: pubKey.Address(),
 		},
 	}
 
-	sig := privKey.Sign(tmtypes.SignBytes(header.ChainID, &v.Vote))
+	sig := privKey.Sign(tmtypes.SignBytes(header.ChainID, v.Vote))
 	v.Vote.Signature = sig
 
 	return []*evidences.TendermintVote{v}
