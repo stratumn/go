@@ -282,12 +282,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &cs.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash9, got)
 		assert.NoError(t, err)
-		assert.Len(
-			t,
-			got.Meta.Evidences,
-			0,
-			"Link should not have evidence before the next block is signed",
-		)
+		assert.Empty(t, got.Meta.Evidences, "Link should not have evidence before the next block is signed")
 	})
 
 	// It is possible to add invalid links to a block.
@@ -300,17 +295,16 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		err := makeQuery(h, tmpop.GetSegment, invalidLinkHash1, got)
 		assert.NoError(t, err)
 		assert.Zero(t, got.Link, "Link should not be found")
-		assert.Len(t, got.Meta.Evidences, 0, "Evidence should not be added to invalid link")
+		assert.Empty(t, got.Meta.Evidences, "Evidence should not be added to invalid link")
 	})
 
 	t.Run("Does not add evidence if signatures are missing", func(t *testing.T) {
 		got := &cs.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash4, got)
 		assert.NoError(t, err)
-		assert.Len(
+		assert.Empty(
 			t,
 			got.Meta.Evidences,
-			0,
 			"Link should not have evidence if signatures are missing",
 		)
 	})
@@ -319,10 +313,9 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &cs.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash7, got)
 		assert.NoError(t, err)
-		assert.Len(
+		assert.Empty(
 			t,
 			got.Meta.Evidences,
-			0,
 			"Link should not have evidence in case of Tendermint Core error",
 		)
 	})
@@ -331,10 +324,9 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &cs.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash8, got)
 		assert.NoError(t, err)
-		assert.Len(
+		assert.Empty(
 			t,
 			got.Meta.Evidences,
-			0,
 			"Link should not have evidence in case of app hash mismatch",
 		)
 	})
