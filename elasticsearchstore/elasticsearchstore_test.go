@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 		// Stop container if it is already running, swallow error.
 		utils.KillContainer(containerName)
 
-		// Start elasticsearch container
+		// Start elasticsearch container.
 		if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
 			fmt.Printf(err.Error())
 			os.Exit(1)

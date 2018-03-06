@@ -33,14 +33,14 @@ const (
 	docType = "doc"
 )
 
-// Evidences is a wrapper around cs.Evidences for json ElasticSearch serialization compliance
-// Elastic Search does not allow indexing of arrays directly..
+// Evidences is a wrapper around cs.Evidences for json ElasticSearch serialization compliance.
+// Elastic Search does not allow indexing of arrays directly.
 type Evidences struct {
 	Evidences *cs.Evidences `json:"evidences,omitempty"`
 }
 
-// Value is a wrapper struct for the value of the keyvalue store part
-// Elastic only accepts json structured objects
+// Value is a wrapper struct for the value of the keyvalue store part.
+// Elastic only accepts json structured objects.
 type Value struct {
 	Value []byte `json:"value,omitempty"`
 }
@@ -51,13 +51,13 @@ func (es *ESStore) createIndex(indexName string) error {
 		return err
 	}
 	if !exists {
-		// TODO: pass mapping through BodyString
+		// TODO: pass mapping through BodyString.
 		createIndex, err := es.client.CreateIndex(indexName).Do(*es.context)
 		if err != nil {
 			return err
 		}
 		if !createIndex.Acknowledged {
-			// Not acknowledged
+			// Not acknowledged.
 			return fmt.Errorf("Error creating %s index", indexName)
 		}
 	}
@@ -227,20 +227,20 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 		return nil, err
 	}
 
-	// prepare search service
+	// prepare search service.
 	svc := es.client.
 		Search().
 		Index(linksIndex).
 		Type(docType)
 
-	// add aggregation for map ids
+	// add aggregation for map ids.
 	a := elastic.
 		NewTermsAggregation().
 		Field("meta.mapId.keyword").
 		Order("_key", true)
 	svc.Aggregation("mapIds", a)
 
-	// add process filtering
+	// add process filtering.
 	if len(filter.Process) > 0 {
 		q := elastic.
 			NewBoolQuery().
@@ -249,13 +249,13 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 		svc.Query(q)
 	}
 
-	// run search
+	// run search.
 	sr, err := svc.Do(*es.context)
 	if err != nil {
 		return nil, err
 	}
 
-	// construct result using pagination
+	// construct result using pagination.
 	res := []string{}
 	if agg, found := sr.Aggregations.Terms("mapIds"); found {
 		for _, bucket := range agg.Buckets {
@@ -272,21 +272,21 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 		return nil, err
 	}
 
-	// prepare search service
+	// prepare search service.
 	svc := es.client.
 		Search().
 		Index(linksIndex).
 		Type(docType)
 
-	// add pagination
+	// add pagination.
 	svc = svc.
 		From(filter.Pagination.Offset).
 		Size(filter.Pagination.Limit)
 
-	// prepare filter queries
+	// prepare filter queries.
 	filterQueries := []elastic.Query{}
 
-	// prevLinkHash filter
+	// prevLinkHash filter.
 	if filter.PrevLinkHash != nil {
 		if len(*filter.PrevLinkHash) > 0 {
 			q := elastic.NewTermQuery("meta.prevLinkHash.keyword", *filter.PrevLinkHash)
@@ -298,13 +298,13 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 
 	}
 
-	// process filter
+	// process filter.
 	if len(filter.Process) > 0 {
 		q := elastic.NewTermQuery("meta.process.keyword", filter.Process)
 		filterQueries = append(filterQueries, q)
 	}
 
-	// mapIds filter
+	// mapIds filter.
 	if len(filter.MapIDs) > 0 {
 		termQueries := []elastic.Query{}
 		for _, x := range filter.MapIDs {
@@ -315,7 +315,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 		filterQueries = append(filterQueries, shouldQuery)
 	}
 
-	// tags filter
+	// tags filter.
 	if len(filter.Tags) > 0 {
 		termQueries := []elastic.Query{}
 		for _, x := range filter.Tags {
@@ -326,22 +326,22 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 		filterQueries = append(filterQueries, shouldQuery)
 	}
 
-	// linkHashes filter
+	// linkHashes filter.
 	if len(filter.LinkHashes) > 0 {
 		q := elastic.NewIdsQuery(docType).Ids(filter.LinkHashes...)
 		filterQueries = append(filterQueries, q)
 	}
 
-	// make final query
+	// make final query.
 	q := elastic.NewBoolQuery().Filter(filterQueries...)
 
-	// run search
+	// run search.
 	sr, err := svc.Query(q).Do(*es.context)
 	if err != nil {
 		return nil, err
 	}
 
-	// populate SegmentSlice
+	// populate SegmentSlice.
 	res := cs.SegmentSlice{}
 	if sr == nil || sr.TotalHits() == 0 {
 		return res, nil

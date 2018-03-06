@@ -45,10 +45,10 @@ type Config struct {
 	// A git commit hash that will be set in the store's information.
 	Commit string
 
-	// The URL of the ElasticSearch database
+	// The URL of the ElasticSearch database.
 	URL string
 
-	// Use sniffing feature of ElasticSearch
+	// Use sniffing feature of ElasticSearch.
 	Sniffing bool
 }
 
@@ -86,7 +86,7 @@ func (l debugLogger) Printf(format string, vars ...interface{}) {
 	log.Debugf(format, vars...)
 }
 
-// New creates a new instance of an ElasticSearch store
+// New creates a new instance of an ElasticSearch store.
 func New(config *Config) (*ESStore, error) {
 	ctx := context.Background()
 
@@ -136,7 +136,7 @@ func (es *ESStore) GetInfo() (interface{}, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
 func (es *ESStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	es.eventChans = append(es.eventChans, eventChan)
 }

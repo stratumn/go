@@ -28,7 +28,7 @@ var (
 	url      string
 )
 
-// Initialize initializes a elasticsearch store adapter
+// Initialize initializes a elasticsearch store adapter.
 func Initialize(config *Config) *ESStore {
 	var a *ESStore
 	var storeErr error
@@ -59,7 +59,7 @@ func RegisterFlags() {
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
-// a postgres adapter using flag values.
+// an elasticsearch adapter using flag values.
 func InitializeWithFlags(version, commit string) *ESStore {
 	config := &Config{URL: url, Version: version, Commit: commit, Sniffing: sniffing}
 	return Initialize(config)
