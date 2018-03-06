@@ -22,11 +22,12 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func initBatch(t *testing.T, a store.Adapter) store.Batch {
 	b, err := a.NewBatch()
-	assert.NoError(t, err, "a.NewBatch()")
+	require.NoError(t, err, "a.NewBatch()")
 	assert.NotNil(t, b, "Batch should not be nil")
 	return b
 }

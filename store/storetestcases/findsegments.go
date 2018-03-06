@@ -27,6 +27,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var emptyPrevLinkHash = ""
@@ -347,7 +348,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		})
 		assert.NoError(t, err, "a.FindSegments()")
 		assert.NotNil(t, got)
-		assert.Len(t, got, 1)
+		require.Len(t, got, 1)
 		assert.True(t, len(got[0].Meta.Evidences) >= 5)
 	})
 
