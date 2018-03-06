@@ -25,9 +25,7 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
-type transitionSources = []string
-
-type allowedTransitions = map[string]transitionSources
+type allowedTransitions = []string
 
 // transitionValidator defines the source state where a transition can be applied and its destination state.
 type transitionValidator struct {
@@ -60,17 +58,12 @@ func (tv transitionValidator) ShouldValidate(link *cs.Link) bool {
 // Otherwise the meta.type of the prevLink must exist in authorized previous statement.
 func (tv transitionValidator) Validate(store store.SegmentReader, link *cs.Link) error {
 	error := func(src string) error {
-		return errors.Errorf("no transition found %s --%s--> %s", src, link.Meta.Action, tv.Config.LinkType)
-	}
-
-	transitions, found := tv.Transitions[link.Meta.Action]
-	if !found {
-		return error("###")
+		return errors.Errorf("no transition found %s --> %s", src, tv.Config.LinkType)
 	}
 
 	prevLinkHash := link.Meta.GetPrevLinkHash()
 	if prevLinkHash == nil {
-		for _, t := range transitions {
+		for _, t := range tv.Transitions {
 			if t == "" {
 				return nil
 			}
@@ -86,7 +79,7 @@ func (tv transitionValidator) Validate(store store.SegmentReader, link *cs.Link)
 		return errors.Errorf("previous segment not found: %s", prevLinkHash.String())
 	}
 
-	for _, t := range transitions {
+	for _, t := range tv.Transitions {
 		if t == seg.Link.Meta.Type {
 			return nil
 		}

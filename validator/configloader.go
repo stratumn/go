@@ -116,9 +116,9 @@ func loadPKIConfig(data json.RawMessage) (*PKI, error) {
 }
 
 type jsonValidatorData struct {
-	Signatures  []string            `json:"signatures"`
-	Schema      *json.RawMessage    `json:"schema"`
-	Transitions map[string][]string `json:"transitions"`
+	Signatures  []string         `json:"signatures"`
+	Schema      *json.RawMessage `json:"schema"`
+	Transitions []string         `json:"transitions"`
 }
 
 func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Validator, error) {

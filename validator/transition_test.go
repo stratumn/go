@@ -45,14 +45,11 @@ const (
 
 var (
 	// Allowed transitions
-	createdProductTransitions     = map[string][]string{actionCreate: []string{""}}
-	signedProductTransitions      = map[string][]string{actionSign: []string{stateCreatedProduct}}
-	finalProductTransitions       = map[string][]string{actionTransform: []string{stateSignedProduct}}
-	hackedProductTransitions      = map[string][]string{actionHack: []string{stateCreatedProduct, stateHackedProduct}}
-	finalSignedProductTransitions = map[string][]string{
-		actionSign:    []string{stateFinalProduct},
-		actionApprove: []string{stateCreatedProduct, stateHackedProduct},
-	}
+	createdProductTransitions     = []string{""}
+	signedProductTransitions      = []string{stateCreatedProduct}
+	finalProductTransitions       = []string{stateSignedProduct}
+	hackedProductTransitions      = []string{stateCreatedProduct, stateHackedProduct}
+	finalSignedProductTransitions = []string{stateFinalProduct, stateCreatedProduct, stateHackedProduct}
 )
 
 type stateMachineLinks struct {
@@ -127,16 +124,9 @@ func TestTransitionValidator(t *testing.T) {
 		{
 			name:        "bad init",
 			valid:       false,
-			err:         `no transition found \(\) --create--> createdProduct`,
+			err:         `no transition found \(\) --> createdProduct`,
 			link:        links.createdProduct,
-			transitions: map[string][]string{"create": []string{"src1", "src2"}},
-		},
-		{
-			name:        "bad type",
-			valid:       false,
-			err:         "no transition found ### --create--> createdProduct",
-			link:        links.createdProduct,
-			transitions: map[string][]string{"doStuff": []string{"src1", "src2"}},
+			transitions: []string{"src1", "src2"},
 		},
 		{
 			name:        "good final transition",
@@ -159,9 +149,9 @@ func TestTransitionValidator(t *testing.T) {
 		{
 			name:        "invalid transition",
 			valid:       false,
-			err:         "no transition found signedProduct --transform--> finalProduct",
-			link:        links.finalProduct,
-			transitions: map[string][]string{actionTransform: []string{stateCreatedProduct}},
+			err:         "no transition found finalProduct --> finalSignedProduct",
+			link:        links.finalSignedProduct,
+			transitions: []string{stateCreatedProduct},
 		},
 		{
 			name:  "prevLink not found",
@@ -172,7 +162,7 @@ func TestTransitionValidator(t *testing.T) {
 				l.Meta.PrevLinkHash = testutil.RandomHash().String()
 				return l
 			}(),
-			transitions: map[string][]string{actionTransform: []string{stateCreatedProduct}},
+			transitions: []string{stateCreatedProduct},
 		},
 	}
 
