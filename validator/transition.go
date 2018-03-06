@@ -55,8 +55,9 @@ func (tv transitionValidator) ShouldValidate(link *cs.Link) bool {
 	return tv.Config.ShouldValidate(link)
 }
 
-// Validate checks that the provided dignatures match the required ones.
-// a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
+// Validate checks that the link follows a valid transition.
+// If there is no previous link, an empty link has to be allowed,
+// Otherwise the meta.type of the prevLink must exist in authorized previous statement.
 func (tv transitionValidator) Validate(store store.SegmentReader, link *cs.Link) error {
 	error := func(src string) error {
 		return errors.Errorf("no transition found %s --%s--> %s", src, link.Meta.Action, tv.Config.LinkType)

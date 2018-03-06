@@ -100,7 +100,7 @@ func (pv pkiValidator) ShouldValidate(link *cs.Link) bool {
 	return pv.Config.ShouldValidate(link)
 }
 
-// Validate checks that the provided dignatures match the required ones.
+// Validate checks that the provided signatures match the required ones.
 // a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
 func (pv pkiValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
 	for _, required := range pv.RequiredSignatures {

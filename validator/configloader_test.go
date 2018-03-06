@@ -158,7 +158,7 @@ func TestLoadConfig_Success(t *testing.T) {
 
 func TestLoadValidators_Error(t *testing.T) {
 
-	t.Run("Missing link type", func(T *testing.T) {
+	t.Run("Missing process type", func(T *testing.T) {
 		const invalidValidatorConfig = `
 		{
 			"": {
