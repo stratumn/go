@@ -373,7 +373,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 
 	linkHashes, err := t.getCommitLinkHashes(evidenceHeight)
 	if err != nil {
-		log.Warn("Could not get link hashes for this block. Evidence will not be generated.")
+		log.Warnf("Could not get link hashes for block %d. Evidence will not be generated.", header.Height)
 		return
 	}
 
@@ -383,37 +383,37 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 
 	validatorHash, err := t.getValidatorHash(evidenceHeight)
 	if err != nil {
-		log.Warn("Could not get validator hash for this block. Evidence will not be generated.")
+		log.Warnf("Could not get validator hash for block %d. Evidence will not be generated.", header.Height)
 		return
 	}
 
 	evidenceBlock, err := t.tmClient.Block(evidenceHeight)
 	if err != nil {
-		log.Warnf("Could not get block header: %v", err)
+		log.Warnf("Could not get block %d header: %v", header.Height, err)
 		return
 	}
 
 	evidenceNextBlock, err := t.tmClient.Block(evidenceHeight + 1)
 	if err != nil {
-		log.Warnf("Could not get next block header: %v", err)
+		log.Warnf("Could not get next block %d header: %v", header.Height, err)
 		return
 	}
 
 	evidenceLastBlock, err := t.tmClient.Block(evidenceHeight + 2)
 	if err != nil {
-		log.Warnf("Could not get last block header: %v", err)
+		log.Warnf("Could not get last block %d header: %v", header.Height, err)
 		return
 	}
 
 	if len(evidenceNextBlock.Votes) == 0 || len(evidenceLastBlock.Votes) == 0 {
-		log.Warn("Block isn't signed by validator nodes. Evidence will not be generated.")
+		log.Warnf("Block %d isn't signed by validator nodes. Evidence will not be generated.", header.Height)
 		return
 	}
 
 	evidenceBlockAppHash := types.NewBytes32FromBytes(evidenceBlock.Header.AppHash)
 	merkle, err := merkle.NewStaticTree(linkHashes)
 	if err != nil {
-		log.Warn("Could not create merkle tree for this block. Evidence will not be generated.")
+		log.Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
 		return
 	}
 
@@ -421,12 +421,13 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 
 	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 	if err != nil {
-		log.Warn("Could not compute app hash. Evidence will not be generated.")
+		log.Warnf("Could not compute app hash for block %d. Evidence will not be generated.", header.Height)
 		return
 	}
 	if !appHash.EqualsBytes(evidenceNextBlock.Header.AppHash) {
-		log.Warnf("App hash %x doesn't match the header's: %x. Evidence will not be generated.",
+		log.Warnf("App hash %x of block %d doesn't match the header's: %x. Evidence will not be generated.",
 			*appHash,
+			header.Height,
 			header.AppHash)
 		return
 	}

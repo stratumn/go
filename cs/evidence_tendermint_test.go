@@ -50,11 +50,16 @@ func TestTendermintProof(t *testing.T) {
 		},
 	}, {
 		"single-link",
-		func(t *testing.T) { CreateTendermintProof(t, 1) },
+		func(t *testing.T) {
+			linkHash, e := CreateTendermintProof(t, 1)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid")
+		},
 	}, {
 		"validations-hash",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 5)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.ValidationsHash = testutil.RandomHash()
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if validations hash changed")
 		},
@@ -62,6 +67,8 @@ func TestTendermintProof(t *testing.T) {
 		"merkle-root",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 3)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.Root = linkHash
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if merkle root changed")
 		},
@@ -69,6 +76,8 @@ func TestTendermintProof(t *testing.T) {
 		"previous-app-hash",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 4)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.Header.AppHash = linkHash[:]
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if previous app hash changed")
 		},
@@ -76,6 +85,8 @@ func TestTendermintProof(t *testing.T) {
 		"missing-votes",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 4)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.HeaderVotes = nil
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if votes are missing")
 		},
@@ -83,6 +94,8 @@ func TestTendermintProof(t *testing.T) {
 		"missing-public-key",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 5)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.HeaderVotes[0].PubKey = &crypto.PubKey{}
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if public key is missing")
 		},
@@ -90,6 +103,8 @@ func TestTendermintProof(t *testing.T) {
 		"public-key-mismatch",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 2)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.HeaderVotes[0].PubKey = e.NextHeaderVotes[0].PubKey
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if public key doesn't match")
 		},
@@ -97,6 +112,8 @@ func TestTendermintProof(t *testing.T) {
 		"invalid-signature",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 3)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.HeaderVotes[0].Vote.Signature = e.NextHeaderVotes[0].Vote.Signature
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if signature is invalid")
 		},
@@ -104,6 +121,8 @@ func TestTendermintProof(t *testing.T) {
 		"invalid-next-signature",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 3)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.NextHeaderVotes[0].Vote.Signature = e.HeaderVotes[0].Vote.Signature
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if next signature is invalid")
 		},
@@ -111,6 +130,8 @@ func TestTendermintProof(t *testing.T) {
 		"header-mismatch",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 4)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.Header.Height += 42
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if header has been modified")
 		},
@@ -118,6 +139,8 @@ func TestTendermintProof(t *testing.T) {
 		"next-header-mismatch",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 4)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
+
 			e.NextHeader.Height--
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if next header has been modified")
 		},
@@ -125,6 +148,7 @@ func TestTendermintProof(t *testing.T) {
 		"invalid-multiple-votes",
 		func(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 3)
+			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
 			moreInvalidVotes := vote(e.Header)
 			moreInvalidVotes[0].Vote.Height = 0
@@ -185,8 +209,6 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 		NextHeader:      nextHeader,
 		NextHeaderVotes: vote(nextHeader),
 	}
-
-	assert.True(t, e.Verify(linkHash), "Proof should be verified")
 
 	return linkHash, e
 }
