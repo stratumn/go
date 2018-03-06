@@ -84,7 +84,7 @@ func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
 	_, err := store.CreateLink(links.createdProduct)
 	require.NoError(t, err)
 
-	append := func(prevLink *cs.Link, state, action string) *cs.Link {
+	appendLink := func(prevLink *cs.Link, state, action string) *cs.Link {
 		l := cstesting.RandomBranch(prevLink)
 		l.Meta.Type = state
 		l.Meta.Action = action
@@ -93,15 +93,15 @@ func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
 		return l
 	}
 
-	links.signedProduct = append(links.createdProduct, stateSignedProduct, actionSign)
-	links.finalProduct = append(links.signedProduct, stateFinalProduct, actionTransform)
-	links.finalSignedProduct = append(links.finalProduct, stateFinalSignedProduct, actionSign)
+	links.signedProduct = appendLink(links.createdProduct, stateSignedProduct, actionSign)
+	links.finalProduct = appendLink(links.signedProduct, stateFinalProduct, actionTransform)
+	links.finalSignedProduct = appendLink(links.finalProduct, stateFinalSignedProduct, actionSign)
 
-	links.approvedProduct = append(links.createdProduct, stateFinalSignedProduct, actionApprove)
+	links.approvedProduct = appendLink(links.createdProduct, stateFinalSignedProduct, actionApprove)
 
-	links.hacked1Product = append(links.createdProduct, stateHackedProduct, actionHack)
-	links.hacked2Product = append(links.hacked1Product, stateHackedProduct, actionHack)
-	links.hackedFinalProduct = append(links.hacked2Product, stateFinalSignedProduct, actionApprove)
+	links.hacked1Product = appendLink(links.createdProduct, stateHackedProduct, actionHack)
+	links.hacked2Product = appendLink(links.hacked1Product, stateHackedProduct, actionHack)
+	links.hackedFinalProduct = appendLink(links.hacked2Product, stateFinalSignedProduct, actionApprove)
 	return store, links
 }
 
