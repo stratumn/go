@@ -49,7 +49,6 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		Meta: cs.LinkMeta{
 			Process: "auction",
 			Type:    "init",
-			Action:  "initialize",
 		},
 	}
 	priv, _ := base64.StdEncoding.DecodeString(validator.AlicePrivateKey)
@@ -71,7 +70,6 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 				Process:      "auction",
 				PrevLinkHash: initAuctionLinkHash.String(),
 				Type:         "bid",
-				Action:       "sendOrder",
 			},
 		},
 		valid: true,

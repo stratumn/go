@@ -93,9 +93,8 @@ func TestLoadConfig_Success(t *testing.T) {
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		require.Len(t, validators, 2)
+		require.Len(t, validators, 1)
 		assert.IsType(t, &schemaValidator{}, validators[0])
-		assert.IsType(t, &invalidValidator{}, validators[1])
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -126,9 +125,8 @@ func TestLoadConfig_Success(t *testing.T) {
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		require.Len(t, validators, 2)
+		require.Len(t, validators, 1)
 		assert.IsType(t, &schemaValidator{}, validators[0])
-		assert.IsType(t, &invalidValidator{}, validators[1])
 	})
 
 	t.Run("No PKI", func(T *testing.T) {
@@ -153,9 +151,8 @@ func TestLoadConfig_Success(t *testing.T) {
 		require.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 
-		require.Len(t, validators, 2)
+		require.Len(t, validators, 1)
 		assert.IsType(t, &schemaValidator{}, validators[0])
-		assert.IsType(t, &invalidValidator{}, validators[1])
 	})
 
 }
@@ -253,6 +250,29 @@ func TestLoadValidators_Error(t *testing.T) {
 
 		assert.Nil(t, validators)
 		assert.Error(t, err)
+	})
+
+	t.Run("Missing transitions validator", func(T *testing.T) {
+		const invalidValidatorConfig = `
+		{
+			"test": {
+				"types": {
+				    "foo": {
+						"schema": { "type": "object" },
+						"transitions": ["test"]
+				    },
+				    "bar": {
+						"schema": { "type": "object" }
+				    }
+				}
+			}
+		}`
+		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
+		defer os.Remove(testFile)
+		validators, err := LoadConfig(testFile, nil)
+
+		assert.Nil(t, validators)
+		assert.EqualError(t, err, "missing transition definition for process test and linkTypes [bar]")
 	})
 }
 

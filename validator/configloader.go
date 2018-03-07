@@ -128,12 +128,13 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 		return nil, errors.WithStack(err)
 	}
 
+	missingTransitionValidation := make([]string, 0)
 	var validators []Validator
 	for linkType, val := range jsonStruct {
 		if linkType == "" {
 			return nil, ErrMissingLinkType
 		}
-		if len(val.Signatures) == 0 && val.Schema == nil && len(val.Transitions) == 0 {
+		if len(val.Signatures) == 0 && val.Schema == nil {
 			return nil, ErrInvalidValidator
 		}
 
@@ -160,8 +161,12 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 		if len(val.Transitions) > 0 {
 			validators = append(validators, newTransitionValidator(baseConfig, val.Transitions))
 		} else {
-			validators = append(validators, newInvalidValidator(baseConfig, "transition validator is mandatory"))
+			missingTransitionValidation = append(missingTransitionValidation, linkType)
 		}
+	}
+
+	if len(missingTransitionValidation) > 0 && len(missingTransitionValidation) != len(jsonStruct) {
+		return nil, errors.Errorf("missing transition definition for process %s and linkTypes %v", process, missingTransitionValidation)
 	}
 
 	return validators, nil
