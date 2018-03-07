@@ -249,7 +249,7 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 	svc.Aggregation("mapIds", a)
 
 	// add process filtering.
-	if len(filter.Process) > 0 {
+	if filter.Process != "" {
 		q := elastic.
 			NewBoolQuery().
 			Filter(elastic.
@@ -297,7 +297,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 
 	// prevLinkHash filter.
 	if filter.PrevLinkHash != nil {
-		if len(*filter.PrevLinkHash) > 0 {
+		if *filter.PrevLinkHash != "" {
 			q := elastic.NewTermQuery("meta.prevLinkHash.keyword", *filter.PrevLinkHash)
 			filterQueries = append(filterQueries, q)
 		} else {
@@ -308,7 +308,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 	}
 
 	// process filter.
-	if len(filter.Process) > 0 {
+	if filter.Process != "" {
 		q := elastic.NewTermQuery("meta.process.keyword", filter.Process)
 		filterQueries = append(filterQueries, q)
 	}
