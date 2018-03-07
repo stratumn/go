@@ -15,6 +15,7 @@
 package elasticsearchstore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -46,13 +47,14 @@ type Value struct {
 }
 
 func (es *ESStore) createIndex(indexName string) error {
-	exists, err := es.client.IndexExists(indexName).Do(*es.context)
+	ctx := context.TODO()
+	exists, err := es.client.IndexExists(indexName).Do(ctx)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		// TODO: pass mapping through BodyString.
-		createIndex, err := es.client.CreateIndex(indexName).Do(*es.context)
+		createIndex, err := es.client.CreateIndex(indexName).Do(ctx)
 		if err != nil {
 			return err
 		}
@@ -66,7 +68,8 @@ func (es *ESStore) createIndex(indexName string) error {
 }
 
 func (es *ESStore) deleteIndex(indexName string) error {
-	del, err := es.client.DeleteIndex(indexName).Do(*es.context)
+	ctx := context.TODO()
+	del, err := es.client.DeleteIndex(indexName).Do(ctx)
 	if err != nil {
 		return err
 	}
@@ -104,11 +107,13 @@ func (es *ESStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 func (es *ESStore) hasDocument(indexName, id string) (bool, error) {
-	return es.client.Exists().Index(indexName).Type(docType).Id(id).Do(*es.context)
+	ctx := context.TODO()
+	return es.client.Exists().Index(indexName).Type(docType).Id(id).Do(ctx)
 }
 
 func (es *ESStore) indexDocument(indexName, id string, doc interface{}) error {
-	_, err := es.client.Index().Index(indexName).Type(docType).Id(id).BodyJson(doc).Do(*es.context)
+	ctx := context.TODO()
+	_, err := es.client.Index().Index(indexName).Type(docType).Id(id).BodyJson(doc).Do(ctx)
 	return err
 }
 
@@ -120,7 +125,8 @@ func (es *ESStore) getDocument(indexName, id string) (*json.RawMessage, error) {
 	if !has {
 		return nil, nil
 	}
-	get, err := es.client.Get().Index(indexName).Type(docType).Id(id).Do(*es.context)
+	ctx := context.TODO()
+	get, err := es.client.Get().Index(indexName).Type(docType).Id(id).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +138,8 @@ func (es *ESStore) getDocument(indexName, id string) (*json.RawMessage, error) {
 }
 
 func (es *ESStore) deleteDocument(indexName, id string) error {
-	_, err := es.client.Delete().Index(indexName).Type(docType).Id(id).Do(*es.context)
+	ctx := context.TODO()
+	_, err := es.client.Delete().Index(indexName).Type(docType).Id(id).Do(ctx)
 	return err
 }
 
@@ -222,7 +229,8 @@ func (es *ESStore) segmentify(link *cs.Link) *cs.Segment {
 
 func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 	// Flush to make sure the documents got written.
-	_, err := es.client.Flush().Index(linksIndex).Do(*es.context)
+	ctx := context.TODO()
+	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +258,7 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 	}
 
 	// run search.
-	sr, err := svc.Do(*es.context)
+	sr, err := svc.Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +275,8 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 
 func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	// Flush to make sure the documents got written.
-	_, err := es.client.Flush().Index(linksIndex).Do(*es.context)
+	ctx := context.TODO()
+	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +345,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 	q := elastic.NewBoolQuery().Filter(filterQueries...)
 
 	// run search.
-	sr, err := svc.Query(q).Do(*es.context)
+	sr, err := svc.Query(q).Do(ctx)
 	if err != nil {
 		return nil, err
 	}

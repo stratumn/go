@@ -15,7 +15,6 @@
 package elasticsearchstore
 
 import (
-	"context"
 	"encoding/hex"
 
 	"github.com/olivere/elastic"
@@ -65,7 +64,6 @@ type ESStore struct {
 	config     *Config
 	eventChans []chan *store.Event
 	client     *elastic.Client
-	context    *context.Context
 }
 
 type errorLogger struct{}
@@ -88,7 +86,6 @@ func (l debugLogger) Printf(format string, vars ...interface{}) {
 
 // New creates a new instance of an ElasticSearch store.
 func New(config *Config) (*ESStore, error) {
-	ctx := context.Background()
 
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(config.URL),
@@ -104,9 +101,8 @@ func New(config *Config) (*ESStore, error) {
 	}
 
 	esStore := &ESStore{
-		config:  config,
-		client:  client,
-		context: &ctx,
+		config: config,
+		client: client,
 	}
 
 	if err := esStore.createIndex(linksIndex); err != nil {
