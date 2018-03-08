@@ -61,8 +61,8 @@ func KillContainer(containerName string) error {
 	return cli.ContainerRemove(context.Background(), containerName, types.ContainerRemoveOptions{})
 }
 
-// RunContainer reproduces docker run command.
-func RunContainer(containerName string, imageName string, exposedPorts nat.PortSet, portBindings nat.PortMap) error {
+// RunContainerWithEnv reproduces docker run command.
+func RunContainerWithEnv(containerName string, imageName string, envVariables []string, exposedPorts nat.PortSet, portBindings nat.PortMap) error {
 	cli, err := docker.NewEnvClient()
 	if err != nil {
 		return err
@@ -78,6 +78,7 @@ func RunContainer(containerName string, imageName string, exposedPorts nat.PortS
 		&container.Config{
 			Image:        imageName,
 			ExposedPorts: exposedPorts,
+			Env:          envVariables,
 		},
 		&container.HostConfig{
 			PortBindings: portBindings,
@@ -94,4 +95,9 @@ func RunContainer(containerName string, imageName string, exposedPorts nat.PortS
 		containerName,
 		types.ContainerStartOptions{},
 	)
+}
+
+// RunContainer reproduces docker run command.
+func RunContainer(containerName string, imageName string, exposedPorts nat.PortSet, portBindings nat.PortMap) error {
+	return RunContainerWithEnv(containerName, imageName, []string{}, exposedPorts, portBindings)
 }

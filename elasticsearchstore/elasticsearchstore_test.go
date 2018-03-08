@@ -30,8 +30,7 @@ import (
 )
 
 var (
-	test        *testing.T
-	integration = flag.Bool("integration", false, "Run integration tests")
+	test *testing.T
 )
 
 const (
@@ -41,79 +40,73 @@ const (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	if *integration {
-		// ElasticSearch container configuration.
-		imageName := "docker.elastic.co/elasticsearch/elasticsearch:6.2.1"
-		containerName := "sdk_elasticsearchstore_test"
-		p, _ := nat.NewPort("tcp", port)
-		exposedPorts := map[nat.Port]struct{}{p: {}}
-		portBindings := nat.PortMap{
-			p: []nat.PortBinding{
-				{
-					HostIP:   domain,
-					HostPort: port,
-				},
+	// ElasticSearch container configuration.
+	imageName := "docker.elastic.co/elasticsearch/elasticsearch:6.2.1"
+	containerName := "sdk_elasticsearchstore_test"
+	p, _ := nat.NewPort("tcp", port)
+	exposedPorts := map[nat.Port]struct{}{p: {}}
+	portBindings := nat.PortMap{
+		p: []nat.PortBinding{
+			{
+				HostIP:   domain,
+				HostPort: port,
 			},
-		}
-
-		// Stop container if it is already running, swallow error.
-		utils.KillContainer(containerName)
-
-		// Start elasticsearch container.
-		if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
-			fmt.Printf(err.Error())
-			os.Exit(1)
-		}
-
-		// Retry until container is ready.
-		if err := utils.Retry(func(attempt int) (bool, error) {
-			_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
-			if err != nil {
-				time.Sleep(1 * time.Second)
-				return true, err
-			}
-			return false, err
-		}, 20); err != nil {
-			fmt.Printf(err.Error())
-			os.Exit(1)
-		}
-
-		// Run tests.
-		testResult := m.Run()
-
-		// Stop elasticsearch container.
-		if err := utils.KillContainer(containerName); err != nil {
-			fmt.Printf(err.Error())
-			os.Exit(1)
-		}
-
-		os.Exit(testResult)
+		},
 	}
+
+	// Stop container if it is already running, swallow error.
+	utils.KillContainer(containerName)
+
+	// Start elasticsearch container.
+	env := []string{"discovery.type=single-node"}
+	if err := utils.RunContainerWithEnv(containerName, imageName, env, exposedPorts, portBindings); err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
+	// Retry until container is ready.
+	if err := utils.Retry(func(attempt int) (bool, error) {
+		_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			return true, err
+		}
+		return false, err
+	}, 60); err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
+	// Run tests.
+	testResult := m.Run()
+
+	// Stop elasticsearch container.
+	if err := utils.KillContainer(containerName); err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
+	os.Exit(testResult)
 }
 
 func TestElasticSearchStore(t *testing.T) {
-	if *integration {
-		test = t
-		factory := storetestcases.Factory{
-			New:               newTestElasticSearchStoreAdapter,
-			NewKeyValueStore:  newTestElasticSearchStoreKeyValue,
-			Free:              freeTestElasticSearchStoreAdapter,
-			FreeKeyValueStore: freeTestElasticSearchStoreKeyValue,
-		}
-
-		factory.RunStoreTests(t)
-		factory.RunKeyValueStoreTests(t)
+	test = t
+	factory := storetestcases.Factory{
+		New:               newTestElasticSearchStoreAdapter,
+		NewKeyValueStore:  newTestElasticSearchStoreKeyValue,
+		Free:              freeTestElasticSearchStoreAdapter,
+		FreeKeyValueStore: freeTestElasticSearchStoreKeyValue,
 	}
+
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
 }
 
 func TestElasticSearchTMPop(t *testing.T) {
-	if *integration {
-
-		tmpoptestcases.Factory{
-			New:  newTestElasticSearchStoreTMPop,
-			Free: freeTestElasticSearchStoreTMPop,
-		}.RunTests(t)
-	}
+	tmpoptestcases.Factory{
+		New:  newTestElasticSearchStoreTMPop,
+		Free: freeTestElasticSearchStoreTMPop,
+	}.RunTests(t)
 }
 
 func newTestElasticSearchStore() (*ESStore, error) {

@@ -30,8 +30,7 @@ import (
 )
 
 var (
-	test        *testing.T
-	integration = flag.Bool("integration", false, "Run integration tests")
+	test *testing.T
 )
 
 const (
@@ -41,78 +40,72 @@ const (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	if *integration {
-		// Couch container configuration.
-		imageName := "couchdb:2.1"
-		containerName := "sdk_couchstore_integration_test"
-		p, _ := nat.NewPort("tcp", port)
-		exposedPorts := map[nat.Port]struct{}{p: {}}
-		portBindings := nat.PortMap{
-			p: []nat.PortBinding{
-				{
-					HostIP:   domain,
-					HostPort: port,
-				},
+	// Couch container configuration.
+	imageName := "couchdb:2.1"
+	containerName := "sdk_couchstore_integration_test"
+	p, _ := nat.NewPort("tcp", port)
+	exposedPorts := map[nat.Port]struct{}{p: {}}
+	portBindings := nat.PortMap{
+		p: []nat.PortBinding{
+			{
+				HostIP:   domain,
+				HostPort: port,
 			},
-		}
-
-		// Stop container if it is already running, swallow error.
-		utils.KillContainer(containerName)
-
-		// Start couchdb container
-		if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
-			fmt.Printf(err.Error())
-			os.Exit(1)
-		}
-
-		// Retry until container is ready.
-		if err := utils.Retry(func(attempt int) (bool, error) {
-			_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
-			if err != nil {
-				time.Sleep(1 * time.Second)
-				return true, err
-			}
-			return false, err
-		}, 10); err != nil {
-			fmt.Printf(err.Error())
-			os.Exit(1)
-		}
-
-		// Run tests.
-		testResult := m.Run()
-
-		// Stop couchdb container.
-		if err := utils.KillContainer(containerName); err != nil {
-			fmt.Printf(err.Error())
-			os.Exit(1)
-		}
-
-		os.Exit(testResult)
+		},
 	}
+
+	// Stop container if it is already running, swallow error.
+	utils.KillContainer(containerName)
+
+	// Start couchdb container
+	if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
+	// Retry until container is ready.
+	if err := utils.Retry(func(attempt int) (bool, error) {
+		_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
+		if err != nil {
+			time.Sleep(1 * time.Second)
+			return true, err
+		}
+		return false, err
+	}, 10); err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
+	// Run tests.
+	testResult := m.Run()
+
+	// Stop couchdb container.
+	if err := utils.KillContainer(containerName); err != nil {
+		fmt.Printf(err.Error())
+		os.Exit(1)
+	}
+
+	os.Exit(testResult)
 }
 
 func TestCouchStore(t *testing.T) {
 	test = t
-	if *integration {
-		factory := storetestcases.Factory{
-			New:               newTestCouchStoreAdapter,
-			NewKeyValueStore:  newTestCouchStoreKeyValue,
-			Free:              freeTestCouchStoreAdapter,
-			FreeKeyValueStore: freeTestCouchStoreKeyValue,
-		}
-
-		factory.RunStoreTests(t)
-		factory.RunKeyValueStoreTests(t)
+	factory := storetestcases.Factory{
+		New:               newTestCouchStoreAdapter,
+		NewKeyValueStore:  newTestCouchStoreKeyValue,
+		Free:              freeTestCouchStoreAdapter,
+		FreeKeyValueStore: freeTestCouchStoreKeyValue,
 	}
+
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
 }
 
 func TestCouchTMPop(t *testing.T) {
-	if *integration {
-		tmpoptestcases.Factory{
-			New:  newTestCouchStoreTMPop,
-			Free: freeTestCouchStoreTMPop,
-		}.RunTests(t)
-	}
+	tmpoptestcases.Factory{
+		New:  newTestCouchStoreTMPop,
+		Free: freeTestCouchStoreTMPop,
+	}.RunTests(t)
 }
 
 func newTestCouchStore() (*CouchStore, error) {
