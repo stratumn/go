@@ -48,7 +48,7 @@ type TagsAll struct {
 // PrevLinkHash is used to specify PrevLinkHash in selector.
 type PrevLinkHash struct {
 	Exists *bool  `json:"$exists,omitempty"`
-	Equals string `json:"$eq,omitempty"`
+	Equals string `json:"$eq"`
 }
 
 // LinkQuery used in CouchDB rich queries
@@ -69,15 +69,8 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	linkSelector.ObjectType = objectTypeLink
 
 	if filter.PrevLinkHash != nil {
-		if *filter.PrevLinkHash == "" {
-			no := false
-			linkSelector.PrevLinkHash = &PrevLinkHash{
-				Exists: &no,
-			}
-		} else {
-			linkSelector.PrevLinkHash = &PrevLinkHash{
-				Equals: *filter.PrevLinkHash,
-			}
+		linkSelector.PrevLinkHash = &PrevLinkHash{
+			Equals: *filter.PrevLinkHash,
 		}
 	}
 	if filter.Process != "" {
