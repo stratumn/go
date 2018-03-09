@@ -105,15 +105,15 @@ func New(config *Config) (*ESStore, error) {
 		client: client,
 	}
 
-	if err := esStore.createIndex(linksIndex); err != nil {
+	if err := esStore.createLinksIndex(); err != nil {
 		return nil, err
 	}
 
-	if err := esStore.createIndex(evidencesIndex); err != nil {
+	if err := esStore.createEvidencesIndex(); err != nil {
 		return nil, err
 	}
 
-	if err := esStore.createIndex(valuesIndex); err != nil {
+	if err := esStore.createValuesIndex(); err != nil {
 		return nil, err
 	}
 

@@ -31,7 +31,99 @@ const (
 	evidencesIndex = "evidences"
 	valuesIndex    = "values"
 
-	docType = "doc"
+	// This is the mapping for the links index.
+	// We voluntarily disable indexing of the following fields:
+	// meta.inputs, meta.refs, state, signatures
+	linksMapping = `{
+		"mappings": {
+			"_doc": {
+				"properties": {
+					"meta": {
+						"properties":{
+							"mapId": {
+								"type": "text",
+								"fields": {
+									"keyword": {
+										"type": "keyword"
+									}
+								}
+							},
+							"process": {
+								"type": "text",
+								"fields": {
+									"keyword": {
+										"type": "keyword"
+									}
+								}
+							},
+							"action": {
+								"type": "text",
+								"fields": {
+									"keyword": {
+										"type": "keyword"
+									}
+								}
+							},
+							"type": {
+								"type": "text",
+								"fields": {
+									"keyword": {
+										"type": "keyword"
+									}
+								}
+							},
+							"inputs": {
+								"enabled": false
+							},
+							"tags": {
+								"type": "text",
+								"fields": {
+									"keyword": {
+										"type": "keyword"
+									}
+								}
+							},
+							"priority": {
+								"type": "double"
+							},
+							"prevLinkHash": {
+								"type": "text",
+								"fields": {
+									"keyword": {
+										"type": "keyword"
+									}
+								}
+							},
+							"refs": {
+								"enabled": false
+							},
+							"data":{
+								"enabled": false
+							}
+						}
+					},
+					"state": {
+						"enabled": false
+					},
+					"signatures": {
+						"enabled": false
+					}
+				}
+			}
+		}
+	}`
+
+	// this is a generic mapping used for evidences and values index,
+	// where we do not require indexing to be enabled.
+	noMapping = `{
+		"mappings": {
+			"_doc": { 
+				"enabled": false
+			}
+		}
+	}`
+
+	docType = "_doc"
 )
 
 // Evidences is a wrapper around cs.Evidences for json ElasticSearch serialization compliance.
@@ -46,7 +138,7 @@ type Value struct {
 	Value []byte `json:"value,omitempty"`
 }
 
-func (es *ESStore) createIndex(indexName string) error {
+func (es *ESStore) createIndex(indexName, mapping string) error {
 	ctx := context.TODO()
 	exists, err := es.client.IndexExists(indexName).Do(ctx)
 	if err != nil {
@@ -54,7 +146,7 @@ func (es *ESStore) createIndex(indexName string) error {
 	}
 	if !exists {
 		// TODO: pass mapping through BodyString.
-		createIndex, err := es.client.CreateIndex(indexName).Do(ctx)
+		createIndex, err := es.client.CreateIndex(indexName).BodyString(mapping).Do(ctx)
 		if err != nil {
 			return err
 		}
@@ -65,6 +157,18 @@ func (es *ESStore) createIndex(indexName string) error {
 	}
 
 	return nil
+}
+
+func (es *ESStore) createLinksIndex() error {
+	return es.createIndex(linksIndex, linksMapping)
+}
+
+func (es *ESStore) createEvidencesIndex() error {
+	return es.createIndex(evidencesIndex, noMapping)
+}
+
+func (es *ESStore) createValuesIndex() error {
+	return es.createIndex(valuesIndex, noMapping)
 }
 
 func (es *ESStore) deleteIndex(indexName string) error {
@@ -297,14 +401,8 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 
 	// prevLinkHash filter.
 	if filter.PrevLinkHash != nil {
-		if *filter.PrevLinkHash != "" {
-			q := elastic.NewTermQuery("meta.prevLinkHash.keyword", *filter.PrevLinkHash)
-			filterQueries = append(filterQueries, q)
-		} else {
-			q := elastic.NewBoolQuery().MustNot(elastic.NewExistsQuery("meta.prevLinkHash"))
-			filterQueries = append(filterQueries, q)
-		}
-
+		q := elastic.NewTermQuery("meta.prevLinkHash.keyword", *filter.PrevLinkHash)
+		filterQueries = append(filterQueries, q)
 	}
 
 	// process filter.
