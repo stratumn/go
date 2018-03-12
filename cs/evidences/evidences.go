@@ -115,13 +115,15 @@ type TendermintProof struct {
 
 	// The header and its votes are needed to validate
 	// the previous app hash and metadata such as the height and time.
-	Header      *tmtypes.Header   `json:"header"`
-	HeaderVotes []*TendermintVote `json:"header_votes"`
+	Header             *tmtypes.Header       `json:"header"`
+	HeaderVotes        []*TendermintVote     `json:"header_votes"`
+	HeaderValidatorSet *tmtypes.ValidatorSet `json:"header_validator_set"`
 
 	// The next header and its votes are needed to validate
 	// the app hash representing the validations and merkle path.
-	NextHeader      *tmtypes.Header   `json:"next_header"`
-	NextHeaderVotes []*TendermintVote `json:"next_header_votes"`
+	NextHeader             *tmtypes.Header       `json:"next_header"`
+	NextHeaderVotes        []*TendermintVote     `json:"next_header_votes"`
+	NextHeaderValidatorSet *tmtypes.ValidatorSet `json:"next_header_validator_set"`
 }
 
 // Time returns the timestamp from the block header
@@ -189,13 +191,41 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 		}
 	}
 
+	// If validator set doesn't match the header's validatorHash,
+	// someone tampered with the validator set.
+	if !p.validateValidatorSet() {
+		return false
+	}
+
 	// We validate that nodes signed the header.
-	if !p.validateVotes(p.Header, p.HeaderVotes) {
+	if !p.validateVotes(p.Header, p.HeaderVotes, p.HeaderValidatorSet) {
 		return false
 	}
 
 	// We validate that nodes signed the next header.
-	if !p.validateVotes(p.NextHeader, p.NextHeaderVotes) {
+	if !p.validateVotes(p.NextHeader, p.NextHeaderVotes, p.NextHeaderValidatorSet) {
+		return false
+	}
+
+	return true
+}
+
+// validateValidatorSet verifies that the signed header
+// aligns with the given validator set.
+func (p *TendermintProof) validateValidatorSet() bool {
+	if p.HeaderValidatorSet == nil || p.NextHeaderValidatorSet == nil {
+		return false
+	}
+
+	if p.Header.ValidatorsHash == nil || p.NextHeader.ValidatorsHash == nil {
+		return false
+	}
+
+	if !bytes.Equal(p.HeaderValidatorSet.Hash(), p.Header.ValidatorsHash.Bytes()) {
+		return false
+	}
+
+	if !bytes.Equal(p.NextHeaderValidatorSet.Hash(), p.NextHeader.ValidatorsHash.Bytes()) {
 		return false
 	}
 
@@ -204,10 +234,12 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 
 // validateVotes verifies that votes are correctly signed
 // and refer to the given header.
-func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*TendermintVote) bool {
+func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*TendermintVote, validatorSet *tmtypes.ValidatorSet) bool {
 	if len(votes) == 0 {
 		return false
 	}
+
+	votesPower := int64(0)
 
 	for _, v := range votes {
 		if v == nil || v.PubKey == nil || v.PubKey.Empty() || v.Vote == nil || v.Vote.BlockID.IsZero() {
@@ -223,6 +255,18 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 		if err := v.Vote.Verify(header.ChainID, *v.PubKey); err != nil {
 			return false
 		}
+
+		_, validator := validatorSet.GetByIndex(v.Vote.ValidatorIndex)
+		if validator == nil {
+			return false
+		}
+
+		votesPower += validator.VotingPower
+	}
+
+	// We need 2/3 of the votes for the proof to be accepted.
+	if 3*votesPower < 2*validatorSet.TotalVotingPower() {
+		return false
 	}
 
 	return true

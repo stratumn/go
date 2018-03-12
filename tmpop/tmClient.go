@@ -39,6 +39,8 @@ type Block struct {
 	Header *tmtypes.Header
 	// A block at height N contains the votes for block N-1.
 	Votes []*evidences.TendermintVote
+	// A block at height N contains the validator set for block N-1.
+	Validators *tmtypes.ValidatorSet
 	// The block's transactions.
 	Txs []*Tx
 }
@@ -63,16 +65,29 @@ func (c *TendermintClientWrapper) Block(height int64) (*Block, error) {
 	}
 
 	// The votes in block N are voting on block N-1.
-	// So we need the validator set of the previous block.
+	// So we need the validator set of the previous block,
+	// unless it's the genesis block.
 	prevHeight := height - 1
+	if prevHeight <= 0 {
+		prevHeight = 1
+	}
 	validators, err := c.tmClient.Validators(&prevHeight)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get validators from Tendermint Core")
 	}
 
-	block := &Block{Header: tmBlock.BlockMeta.Header}
+	block := &Block{
+		Header:     tmBlock.BlockMeta.Header,
+		Validators: &tmtypes.ValidatorSet{Validators: validators.Validators},
+	}
 
 	for _, v := range tmBlock.Block.LastCommit.Precommits {
+		// If a block is invalid, non-byzantine validators
+		// will send a nil vote.
+		if v == nil {
+			continue
+		}
+
 		vote, err := getVote(v, validators)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not get vote from Tendermint Core")

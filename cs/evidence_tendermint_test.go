@@ -31,6 +31,47 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+var validators []*tmtypes.Validator
+var validatorsPrivKeys map[*tmtypes.Validator]crypto.PrivKeyEd25519
+
+func init() {
+	validators = make([]*tmtypes.Validator, 3)
+	validatorsPrivKeys = make(map[*tmtypes.Validator]crypto.PrivKeyEd25519)
+
+	sk1 := crypto.GenPrivKeyEd25519()
+	pk1 := sk1.PubKey()
+	v1 := &tmtypes.Validator{
+		Address:     pk1.Address(),
+		PubKey:      pk1,
+		VotingPower: 30,
+	}
+
+	sk2 := crypto.GenPrivKeyEd25519()
+	pk2 := sk2.PubKey()
+	v2 := &tmtypes.Validator{
+		Address:     pk2.Address(),
+		PubKey:      pk2,
+		VotingPower: 10,
+	}
+
+	sk3 := crypto.GenPrivKeyEd25519()
+	pk3 := sk3.PubKey()
+	v3 := &tmtypes.Validator{
+		Address:     pk3.Address(),
+		PubKey:      pk3,
+		VotingPower: 21,
+	}
+
+	validators[0] = v1
+	validatorsPrivKeys[v1] = sk1
+
+	validators[1] = v2
+	validatorsPrivKeys[v2] = sk2
+
+	validators[2] = v3
+	validatorsPrivKeys[v3] = sk3
+}
+
 func TestTendermintProof(t *testing.T) {
 	for _, tt := range []struct {
 		name string
@@ -106,7 +147,7 @@ func TestTendermintProof(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 2)
 			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
-			e.HeaderVotes[0].PubKey = e.NextHeaderVotes[0].PubKey
+			e.HeaderVotes[0].PubKey = e.HeaderVotes[1].PubKey
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if public key doesn't match")
 		},
 	}, {
@@ -160,6 +201,36 @@ func TestTendermintProof(t *testing.T) {
 
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if next header has been modified")
 		},
+	}, {
+		"missing-validator-set",
+		func(t *testing.T) {
+			linkHash, e := CreateTendermintProof(t, 3)
+			e.NextHeaderValidatorSet = nil
+
+			assert.False(t, e.Verify(linkHash), "Proof should not be correct if validator set is missing")
+		},
+	}, {
+		"invalid-validator-set",
+		func(t *testing.T) {
+			linkHash, e := CreateTendermintProof(t, 5)
+			e.HeaderValidatorSet = &tmtypes.ValidatorSet{
+				Validators: []*tmtypes.Validator{
+					validators[1],
+					validators[2],
+				},
+			}
+
+			assert.False(t, e.Verify(linkHash), "Proof should not be correct if validator set doesn't match header's ValidatorHash")
+		},
+	}, {
+		"validator-minority",
+		func(t *testing.T) {
+			linkHash, e := CreateTendermintProof(t, 1)
+			// If we remove the vote from validator 3, there's less than 2/3 of the voting power.
+			e.HeaderVotes = e.HeaderVotes[:2]
+
+			assert.False(t, e.Verify(linkHash), "Proof should not be correct if voting power is less than 2/3")
+		},
 	}} {
 		t.Run(tt.name, tt.test)
 	}
@@ -174,6 +245,9 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 	appHash := testutil.RandomHash()
 	linkHash, tree, merklePath := createMerkleTree(linksCount)
 
+	validatorSet := &tmtypes.ValidatorSet{Validators: validators}
+	validatorsHash := validatorSet.Hash()
+
 	header := &tmtypes.Header{
 		AppHash:        appHash[:],
 		ChainID:        "testchain",
@@ -182,7 +256,7 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 		NumTxs:         int64(linksCount),
 		Time:           time.Unix(42, 0),
 		TotalTxs:       int64(linksCount),
-		ValidatorsHash: testutil.RandomHash()[:],
+		ValidatorsHash: validatorsHash,
 	}
 
 	hash := sha256.New()
@@ -197,18 +271,20 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 		Height:         43,
 		LastBlockID:    tmtypes.BlockID{Hash: header.Hash()},
 		Time:           time.Unix(43, 0),
-		ValidatorsHash: testutil.RandomHash()[:],
+		ValidatorsHash: validatorsHash,
 	}
 
 	e := &evidences.TendermintProof{
-		BlockHeight:     42,
-		Root:            types.NewBytes32FromBytes(tree.Root()),
-		Path:            merklePath,
-		ValidationsHash: validationsHash,
-		Header:          header,
-		HeaderVotes:     vote(header),
-		NextHeader:      nextHeader,
-		NextHeaderVotes: vote(nextHeader),
+		BlockHeight:            42,
+		Root:                   types.NewBytes32FromBytes(tree.Root()),
+		Path:                   merklePath,
+		ValidationsHash:        validationsHash,
+		Header:                 header,
+		HeaderVotes:            vote(header),
+		HeaderValidatorSet:     validatorSet,
+		NextHeader:             nextHeader,
+		NextHeaderVotes:        vote(nextHeader),
+		NextHeaderValidatorSet: validatorSet,
 	}
 
 	return linkHash, e
@@ -238,20 +314,26 @@ func createMerkleTree(linksCount int) (*types.Bytes32, *merkle.StaticTree, mktyp
 // vote creates a valid vote for a given header.
 // It simulates nodes signing a header and is crucial for the proof.
 func vote(header *tmtypes.Header) []*evidences.TendermintVote {
-	privKey := crypto.GenPrivKeyEd25519()
-	pubKey := privKey.PubKey()
+	votes := make([]*evidences.TendermintVote, len(validators))
+	for i := 0; i < len(validators); i++ {
+		validator := validators[i]
+		privKey := validatorsPrivKeys[validator]
 
-	v := &evidences.TendermintVote{
-		PubKey: &pubKey,
-		Vote: &tmtypes.Vote{
-			BlockID:          tmtypes.BlockID{Hash: header.Hash()},
-			Height:           header.Height,
-			ValidatorAddress: pubKey.Address(),
-		},
+		v := &evidences.TendermintVote{
+			PubKey: &(validator.PubKey),
+			Vote: &tmtypes.Vote{
+				BlockID:          tmtypes.BlockID{Hash: header.Hash()},
+				Height:           header.Height,
+				ValidatorAddress: validator.Address,
+				ValidatorIndex:   i,
+			},
+		}
+
+		sig := privKey.Sign(tmtypes.SignBytes(header.ChainID, v.Vote))
+		v.Vote.Signature = sig
+
+		votes[i] = v
 	}
 
-	sig := privKey.Sign(tmtypes.SignBytes(header.ChainID, v.Vote))
-	v.Vote.Signature = sig
-
-	return []*evidences.TendermintVote{v}
+	return votes
 }
