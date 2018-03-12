@@ -35,6 +35,18 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
+var validator *tmtypes.Validator
+var validatorPrivKey crypto.PrivKeyEd25519
+
+func init() {
+	validatorPrivKey = crypto.GenPrivKeyEd25519()
+	validator = &tmtypes.Validator{
+		Address:     validatorPrivKey.PubKey().Address(),
+		PubKey:      validatorPrivKey.PubKey(),
+		VotingPower: 42,
+	}
+}
+
 // TestTendermintEvidence tests that evidence is correctly added.
 func (f Factory) TestTendermintEvidence(t *testing.T) {
 	h, req := f.newTMPop(t, nil)
@@ -58,7 +70,8 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	//  * Block11 contains one valid link -> no evidence should be generated because we stop before block 13
 	//  * Block12 contains one valid link -> no evidence should be generated because we stop before block 13
 
-	validatorsHash := testutil.RandomHash()[:]
+	validatorSet := &tmtypes.ValidatorSet{Validators: []*tmtypes.Validator{validator}}
+	validatorsHash := validatorSet.Hash()
 
 	appHashes := make([][]byte, 13)
 	appHashes[0] = req.Header.AppHash
@@ -88,8 +101,9 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[1] = req.Header.AppHash
 	blocks[1] = &tmpop.Block{
-		Header: createHeader(1),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: invalidLink1}},
+		Header:     createHeader(1),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: invalidLink1}},
+		Validators: validatorSet,
 	}
 	tmClientMock.EXPECT().Block(int64(1)).Return(blocks[1], nil).AnyTimes()
 
@@ -107,7 +121,8 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 			&tmpop.Tx{TxType: tmpop.CreateLink, Link: link1},
 			&tmpop.Tx{TxType: tmpop.CreateLink, Link: link2},
 		},
-		Votes: vote(blocks[1].Header),
+		Validators: validatorSet,
+		Votes:      vote(blocks[1].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(2)).Return(blocks[2], nil).AnyTimes()
 
@@ -117,9 +132,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[3] = req.Header.AppHash
 	blocks[3] = &tmpop.Block{
-		Header: createHeader(3),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link3}},
-		Votes:  vote(blocks[2].Header),
+		Header:     createHeader(3),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link3}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[2].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(3)).Return(blocks[3], nil).AnyTimes()
 
@@ -130,9 +146,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[4] = req.Header.AppHash
 	blocks[4] = &tmpop.Block{
-		Header: createHeader(4),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: invalidLink2}},
-		Votes:  vote(blocks[3].Header),
+		Header:     createHeader(4),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: invalidLink2}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[3].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(4)).Return(blocks[4], nil).AnyTimes()
 
@@ -142,9 +159,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[5] = req.Header.AppHash
 	blocks[5] = &tmpop.Block{
-		Header: createHeader(5),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link4}},
-		Votes:  vote(blocks[4].Header),
+		Header:     createHeader(5),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link4}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[4].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(5)).Return(blocks[5], nil).AnyTimes()
 
@@ -153,9 +171,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[6] = req.Header.AppHash
 	blocks[6] = &tmpop.Block{
-		Header: createHeader(6),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link5}},
-		Votes:  vote(blocks[5].Header),
+		Header:     createHeader(6),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link5}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[5].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(6)).Return(blocks[6], nil).AnyTimes()
 
@@ -164,8 +183,9 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[7] = req.Header.AppHash
 	blocks[7] = &tmpop.Block{
-		Header: createHeader(7),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link6}},
+		Header:     createHeader(7),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link6}},
+		Validators: validatorSet,
 		// No votes here: should not generate evidence
 	}
 	tmClientMock.EXPECT().Block(int64(7)).Return(blocks[7], nil).AnyTimes()
@@ -177,9 +197,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	// Invalid app hash to prevent next block from producing valid proofs.
 	appHashes[8] = testutil.RandomHash()[:]
 	blocks[8] = &tmpop.Block{
-		Header: createHeader(8),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link7}},
-		Votes:  vote(blocks[7].Header),
+		Header:     createHeader(8),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link7}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[7].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(8)).Return(nil, errors.New("internal error")).AnyTimes()
 
@@ -189,9 +210,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[9] = req.Header.AppHash
 	blocks[9] = &tmpop.Block{
-		Header: createHeader(9),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link8}},
-		Votes:  vote(blocks[8].Header),
+		Header:     createHeader(9),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link8}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[8].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(9)).Return(blocks[9], nil).AnyTimes()
 
@@ -201,9 +223,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[10] = req.Header.AppHash
 	blocks[10] = &tmpop.Block{
-		Header: createHeader(10),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link9}},
-		Votes:  vote(blocks[9].Header),
+		Header:     createHeader(10),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link9}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[9].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(10)).Return(blocks[10], nil).AnyTimes()
 
@@ -212,9 +235,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[11] = req.Header.AppHash
 	blocks[11] = &tmpop.Block{
-		Header: createHeader(11),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link10}},
-		Votes:  vote(blocks[10].Header),
+		Header:     createHeader(11),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link10}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[10].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(11)).Return(blocks[11], nil).AnyTimes()
 
@@ -223,9 +247,10 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 	appHashes[12] = req.Header.AppHash
 	blocks[12] = &tmpop.Block{
-		Header: createHeader(12),
-		Txs:    []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link11}},
-		Votes:  vote(blocks[11].Header),
+		Header:     createHeader(12),
+		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link11}},
+		Validators: validatorSet,
+		Votes:      vote(blocks[11].Header),
 	}
 	tmClientMock.EXPECT().Block(int64(12)).Return(blocks[12], nil).AnyTimes()
 
@@ -335,19 +360,17 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 // vote creates a valid vote for a given header.
 // It simulates nodes signing a header and is crucial for the proof.
 func vote(header *tmtypes.Header) []*evidences.TendermintVote {
-	privKey := crypto.GenPrivKeyEd25519()
-	pubKey := privKey.PubKey()
-
 	v := &evidences.TendermintVote{
-		PubKey: &pubKey,
+		PubKey: &validator.PubKey,
 		Vote: &tmtypes.Vote{
 			BlockID:          tmtypes.BlockID{Hash: header.Hash()},
 			Height:           header.Height,
-			ValidatorAddress: pubKey.Address(),
+			ValidatorAddress: validator.PubKey.Address(),
+			ValidatorIndex:   0,
 		},
 	}
 
-	sig := privKey.Sign(tmtypes.SignBytes(header.ChainID, v.Vote))
+	sig := validatorPrivKey.Sign(tmtypes.SignBytes(header.ChainID, v.Vote))
 	v.Vote.Signature = sig
 
 	return []*evidences.TendermintVote{v}
