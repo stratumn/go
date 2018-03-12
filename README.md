@@ -8,7 +8,7 @@
 [![Build Status](https://semaphoreci.com/api/v1/stratumn/go-indigocore/branches/master/badge.svg)](https://semaphoreci.com/stratumn/go-indigocore)
 [![codecov](https://codecov.io/gh/stratumn/go-indigocore/branch/master/graph/badge.svg)](https://codecov.io/gh/stratumn/go-indigocore)
 [![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/go-indigocore)](https://goreportcard.com/report/github.com/stratumn/go-indigocore)
-[![Join the chat at https://gitter.im/stratumn/go-indigocore](https://badges.gitter.im/stratumn/go-indigocore.svg)](https://gitter.im/stratumn/go-indigocore?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/stratumn/sdk](https://badges.gitter.im/stratumn/sdk.svg)](https://gitter.im/stratumn/sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ---
 
