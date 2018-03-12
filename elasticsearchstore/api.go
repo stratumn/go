@@ -148,6 +148,12 @@ type linkDoc struct {
 	StateTokens []string `json:"stateTokens"`
 }
 
+// SimpleSearchQuery contains paghination and query string information.
+type SimpleSearchQuery struct {
+	store.Pagination
+	Query string
+}
+
 func (es *ESStore) createIndex(indexName, mapping string) error {
 	ctx := context.TODO()
 	exists, err := es.client.IndexExists(indexName).Do(ctx)
@@ -499,6 +505,53 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 
 	// make final query.
 	q := elastic.NewBoolQuery().Filter(filterQueries...)
+
+	// run search.
+	sr, err := svc.Query(q).Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// populate SegmentSlice.
+	res := cs.SegmentSlice{}
+	if sr == nil || sr.TotalHits() == 0 {
+		return res, nil
+	}
+
+	for _, hit := range sr.Hits.Hits {
+		var link cs.Link
+		if err := json.Unmarshal(*hit.Source, &link); err != nil {
+			return nil, err
+		}
+		res = append(res, es.segmentify(&link))
+	}
+
+	sort.Sort(res)
+
+	return res, nil
+}
+
+func (es *ESStore) search(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
+	// Flush to make sure the documents got written.
+	ctx := context.TODO()
+	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// prepare search service.
+	svc := es.client.
+		Search().
+		Index(linksIndex).
+		Type(docType)
+
+	// add pagination.
+	svc = svc.
+		From(query.Pagination.Offset).
+		Size(query.Pagination.Limit)
+
+	// make simple search query
+	q := elastic.NewSimpleQueryStringQuery(query.Query)
 
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)

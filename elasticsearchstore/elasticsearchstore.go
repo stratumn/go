@@ -218,3 +218,10 @@ func (es *ESStore) DeleteValue(key []byte) ([]byte, error) {
 	return es.deleteValue(hexKey)
 
 }
+
+/********** Search feature **********/
+
+// Search through the store for segments matching query criteria
+func (es *ESStore) Search(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
+	return es.search(query)
+}
