@@ -210,8 +210,8 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	return true
 }
 
-// validateValidatorSet verifies that the signed header
-// aligns with the given validator set.
+// validateValidatorSet verifies that the signed headers
+// align with the given validator set.
 func (p *TendermintProof) validateValidatorSet() bool {
 	if p.HeaderValidatorSet == nil || p.NextHeaderValidatorSet == nil {
 		return false
