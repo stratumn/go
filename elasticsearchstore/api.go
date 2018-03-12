@@ -107,6 +107,9 @@ const (
 					},
 					"signatures": {
 						"enabled": false
+					},
+					"stateTokens": {
+						"type": "text"
 					}
 				}
 			}
@@ -136,6 +139,13 @@ type Evidences struct {
 // Elastic only accepts json structured objects.
 type Value struct {
 	Value []byte `json:"value,omitempty"`
+}
+
+type csLink cs.Link
+type linkDoc struct {
+	// *csLink
+	cs.Link
+	StateTokens []string `json:"stateTokens"`
 }
 
 func (es *ESStore) createIndex(indexName, mapping string) error {
@@ -185,10 +195,53 @@ func (es *ESStore) deleteIndex(indexName string) error {
 	return nil
 }
 
+func (es *ESStore) deleteAllIndex() error {
+	if err := es.deleteIndex(linksIndex); err != nil {
+		return err
+	}
+
+	if err := es.deleteIndex(evidencesIndex); err != nil {
+		return err
+	}
+
+	return es.deleteIndex(valuesIndex)
+}
+
 func (es *ESStore) notifyEvent(event *store.Event) {
 	for _, c := range es.eventChans {
 		c <- event
 	}
+}
+
+// only extract leaves that are strings.
+func (o *linkDoc) extractTokens(obj interface{}) {
+	switch value := obj.(type) {
+	case string:
+		o.StateTokens = append(o.StateTokens, value)
+	case map[string]interface{}:
+		for _, v := range value {
+			o.extractTokens(v)
+		}
+	case []interface{}:
+		for v := range value {
+			o.extractTokens(v)
+		}
+	case float64:
+	case bool:
+	default:
+		return
+	}
+}
+
+func fromLink(link *cs.Link) (*linkDoc, error) {
+	doc := linkDoc{
+		Link:        *link,
+		StateTokens: []string{},
+	}
+
+	doc.extractTokens(link.State)
+
+	return &doc, nil
 }
 
 func (es *ESStore) createLink(link *cs.Link) (*types.Bytes32, error) {
@@ -207,7 +260,12 @@ func (es *ESStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 		return nil, fmt.Errorf("link is immutable, %s already exists", linkHashStr)
 	}
 
-	return linkHash, es.indexDocument(linksIndex, linkHashStr, link)
+	linkDoc, err := fromLink(link)
+	if err != nil {
+		return nil, err
+	}
+
+	return linkHash, es.indexDocument(linksIndex, linkHashStr, linkDoc)
 }
 
 func (es *ESStore) hasDocument(indexName, id string) (bool, error) {
@@ -248,7 +306,7 @@ func (es *ESStore) deleteDocument(indexName, id string) error {
 }
 
 func (es *ESStore) getLink(id string) (*cs.Link, error) {
-	var link cs.Link
+	var link linkDoc
 	jsn, err := es.getDocument(linksIndex, id)
 	if err != nil {
 		return nil, err
@@ -257,7 +315,7 @@ func (es *ESStore) getLink(id string) (*cs.Link, error) {
 		return nil, nil
 	}
 	err = json.Unmarshal(*jsn, &link)
-	return &link, err
+	return &link.Link, err
 }
 
 func (es *ESStore) getEvidences(id string) (*cs.Evidences, error) {
