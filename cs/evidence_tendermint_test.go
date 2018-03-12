@@ -59,7 +59,7 @@ func init() {
 	v3 := &tmtypes.Validator{
 		Address:     pk3.Address(),
 		PubKey:      pk3,
-		VotingPower: 21,
+		VotingPower: 20,
 	}
 
 	validators[0] = v1
