@@ -19,43 +19,61 @@ import (
 	"os"
 	"time"
 
+	"github.com/olivere/elastic"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/utils"
 )
 
 var (
+	drop     bool
 	sniffing bool
 	url      string
 )
 
 // Initialize initializes a elasticsearch store adapter.
 func Initialize(config *Config) *ESStore {
-	var a *ESStore
+	var es *ESStore
 	var storeErr error
 
 	err := utils.Retry(func(attempt int) (retry bool, err error) {
-		a, storeErr = New(config)
+		es, storeErr = New(config)
 
 		if storeErr == nil {
 			return false, nil
 		}
 
-		log.Infof("Unable to connect to elasticsearch. Retrying in 5s.")
-		time.Sleep(5 * time.Second)
-		return true, storeErr
+		if elastic.IsConnErr(storeErr) {
+			log.Infof("Unable to connect to elasticsearch. Retrying in 5s.")
+			time.Sleep(5 * time.Second)
+			return true, storeErr
+		}
+
+		return false, storeErr
+
 	}, 10)
 
 	if err != nil {
 		log.Fatal(storeErr)
 	}
 
-	return a
+	if drop {
+		if dropErr := es.deleteAllIndex(); dropErr != nil {
+			log.Fatalf("Failed to drop ElasticSearch index: %v", dropErr)
+		} else {
+			log.Infof("Dropped ElasticSearch index")
+		}
+		os.Exit(0)
+	}
+
+	return es
 }
 
 // RegisterFlags registers the flags used by InitializeWithFlags.
 func RegisterFlags() {
 	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("ELASTICSEARCH_URL"), DefaultURL), "URL of the ElasticSearch database")
 	flag.BoolVar(&sniffing, "sniffing", false, "turn on elastic search nodes sniffing")
+	flag.BoolVar(&drop, "drop", false, "drop indexes then exit")
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
