@@ -305,3 +305,26 @@ func (rb *ReversedBytes32) Reverse(b *Bytes32) {
 		b[Bytes32Size-i-1] = v
 	}
 }
+
+// TransactionID is a blockchain transaction ID.
+type TransactionID []byte
+
+// String returns a hex encoded string.
+func (txid TransactionID) String() string {
+	return hex.EncodeToString(txid)
+}
+
+// MarshalJSON implements encoding/json.Marshaler.MarshalJSON.
+func (txid TransactionID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(txid.String())
+}
+
+// UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON.
+func (txid *TransactionID) UnmarshalJSON(data []byte) (err error) {
+	var s string
+	if err = json.Unmarshal(data, &s); err != nil {
+		return
+	}
+	*txid, err = hex.DecodeString(s)
+	return
+}

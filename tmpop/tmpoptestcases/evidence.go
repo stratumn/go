@@ -23,12 +23,12 @@ import (
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/cs/evidences"
-	"github.com/stratumn/go-indigocore/merkle"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
 	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/merkle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	crypto "github.com/tendermint/go-crypto"
@@ -241,14 +241,14 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		assert.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
 		assert.Equal(t, int64(2), proof.BlockHeight, "Invalid block height in proof")
 
-		tree, _ := merkle.NewStaticTree([]types.Bytes32{*linkHash1, *linkHash2})
-		assert.EqualValues(t, tree.Root(), proof.Root, "Invalid proof merkle root")
-		assert.EqualValues(t, tree.Path(0), proof.Path, "Invalid proof merkle path")
+		tree, _ := merkle.NewStaticTree([][]byte{linkHash1[:], linkHash2[:]})
+		assert.EqualValues(t, tree.Root(), proof.Root[:], "Invalid proof merkle root")
+		assert.EqualValues(t, tree.Path(0), proof.Path[:], "Invalid proof merkle path")
 
 		expectedAppHash, _ := tmpop.ComputeAppHash(
 			types.NewBytes32FromBytes(appHashes[1]),
 			types.NewBytes32FromBytes(nil),
-			tree.Root())
+			types.NewBytes32FromBytes(tree.Root()))
 		assert.EqualValues(t, expectedAppHash[:], appHashes[2], "Invalid app hash generated")
 
 		assert.True(t, proof.Verify(linkHash2), "Proof should verify")

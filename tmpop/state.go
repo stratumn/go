@@ -20,10 +20,10 @@ import (
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/merkle"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/merkle"
 )
 
 // State represents the app states, separating the committed state (for queries)
@@ -155,10 +155,10 @@ func (s *State) computeAppHash() (*types.Bytes32, error) {
 
 	var merkleRoot *types.Bytes32
 	if len(s.deliveredLinksList) > 0 {
-		var treeLeaves []types.Bytes32
+		var treeLeaves [][]byte
 		for _, link := range s.deliveredLinksList {
 			linkHash, _ := link.Hash()
-			treeLeaves = append(treeLeaves, *linkHash)
+			treeLeaves = append(treeLeaves, linkHash[:])
 		}
 
 		merkle, err := merkle.NewStaticTree(treeLeaves)
@@ -166,7 +166,7 @@ func (s *State) computeAppHash() (*types.Bytes32, error) {
 			return nil, err
 		}
 
-		merkleRoot = merkle.Root()
+		merkleRoot = types.NewBytes32FromBytes(merkle.Root())
 	}
 
 	return ComputeAppHash(s.previousAppHash, validatorHash, merkleRoot)

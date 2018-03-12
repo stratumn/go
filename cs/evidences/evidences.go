@@ -26,6 +26,7 @@ import (
 	// The init() function of each package gets called hence providing a way for cs.Evidence.UnmarshalJSON to deserialize any kind of proof
 	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
 	"github.com/stratumn/go-indigocore/types"
+	mktypes "github.com/stratumn/merkle/types"
 	"github.com/tendermint/go-crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -43,7 +44,7 @@ var (
 type BatchProof struct {
 	Timestamp int64          `json:"timestamp"`
 	Root      *types.Bytes32 `json:"merkleRoot"`
-	Path      types.Path     `json:"merklePath"`
+	Path      mktypes.Path   `json:"merklePath"`
 }
 
 // Time returns the timestamp from the block header
@@ -109,7 +110,7 @@ type TendermintProof struct {
 	BlockHeight int64 `json:"block_height"`
 
 	Root            *types.Bytes32 `json:"merkle_root"`
-	Path            types.Path     `json:"merkle_path"`
+	Path            mktypes.Path   `json:"merkle_path"`
 	ValidationsHash *types.Bytes32 `json:"validations_hash"`
 
 	// The header and its votes are needed to validate
@@ -183,7 +184,7 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 		}
 
 		// And it should start at the given link hash.
-		if !lh.Equals(&p.Path[0].Left) && !lh.Equals(&p.Path[0].Right) {
+		if !lh.EqualsBytes(p.Path[0].Left) && !lh.EqualsBytes(p.Path[0].Right) {
 			return false
 		}
 	}

@@ -22,9 +22,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/evidences"
-	"github.com/stratumn/go-indigocore/merkle"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/merkle"
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -411,13 +411,18 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	}
 
 	evidenceBlockAppHash := types.NewBytes32FromBytes(evidenceBlock.Header.AppHash)
-	merkle, err := merkle.NewStaticTree(linkHashes)
+	leaves := make([][]byte, len(linkHashes), len(linkHashes))
+	for i, lh := range linkHashes {
+		leaves[i] = make([]byte, len(lh), len(lh))
+		copy(leaves[i], lh[:])
+	}
+	merkle, err := merkle.NewStaticTree(leaves)
 	if err != nil {
 		log.Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
 		return
 	}
 
-	merkleRoot := merkle.Root()
+	merkleRoot := types.NewBytes32FromBytes(merkle.Root())
 
 	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 	if err != nil {

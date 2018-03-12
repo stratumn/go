@@ -20,6 +20,7 @@ package batchfossilizer
 import (
 	"context"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -32,8 +33,9 @@ import (
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stratumn/go-indigocore/types"
 
-	"github.com/stratumn/go-indigocore/merkle"
+	"github.com/stratumn/merkle"
 )
 
 const (
@@ -210,7 +212,7 @@ func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer
 // Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *Fossilizer) Fossilize(data []byte, meta []byte) error {
 	f := fossil{Meta: meta}
-	copy(f.Data[:], data)
+	f.Data = data
 	a.fossilChan <- &f
 	return <-a.resultChan
 }
@@ -343,7 +345,7 @@ func (a *Fossilizer) batch(b *batch) {
 			}
 
 			if a.config.Archive {
-				archivePath := filepath.Join(a.config.Path, root.String())
+				archivePath := filepath.Join(a.config.Path, hex.EncodeToString(root))
 				if err := os.Rename(path, archivePath); err == nil {
 					log.WithFields(log.Fields{
 						"old": filepath.Base(path),
@@ -389,7 +391,7 @@ func (a *Fossilizer) sendEvidence(tree *merkle.StaticTree, meta [][]byte) {
 			Provider: Name,
 			Proof: &evidences.BatchProof{
 				Timestamp: ts,
-				Root:      root,
+				Root:      types.NewBytes32FromBytes(root),
 				Path:      tree.Path(i),
 			},
 		}

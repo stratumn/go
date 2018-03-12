@@ -17,12 +17,10 @@ package batchfossilizer
 import (
 	"encoding/gob"
 	"os"
-
-	"github.com/stratumn/go-indigocore/types"
 )
 
 type batch struct {
-	data    []types.Bytes32
+	data    [][]byte
 	meta    [][]byte
 	file    *os.File
 	encoder *gob.Encoder
@@ -30,7 +28,7 @@ type batch struct {
 
 func newBatch(maxLeaves int) *batch {
 	return &batch{
-		data: make([]types.Bytes32, 0, maxLeaves),
+		data: make([][]byte, 0, maxLeaves),
 		meta: make([][]byte, 0, maxLeaves),
 	}
 }

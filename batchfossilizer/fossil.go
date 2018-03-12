@@ -16,12 +16,10 @@ package batchfossilizer
 
 import (
 	"encoding/gob"
-
-	"github.com/stratumn/go-indigocore/types"
 )
 
 type fossil struct {
-	Data types.Bytes32
+	Data []byte
 	Meta []byte
 }
 

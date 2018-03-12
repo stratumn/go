@@ -30,12 +30,13 @@ import (
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
+	mktypes "github.com/stratumn/merkle/types"
 )
 
 type fossilizeTest struct {
 	data       []byte
 	meta       []byte
-	path       types.Path
+	path       mktypes.Path
 	sleep      time.Duration
 	fossilized bool
 }

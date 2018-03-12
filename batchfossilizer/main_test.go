@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/merkle/types"
 )
 
 const interval = 100 * time.Millisecond

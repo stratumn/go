@@ -22,9 +22,10 @@ import (
 	"time"
 
 	"github.com/stratumn/go-indigocore/cs/evidences"
-	"github.com/stratumn/go-indigocore/merkle"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/merkle"
+	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"
 	crypto "github.com/tendermint/go-crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -201,7 +202,7 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 
 	e := &evidences.TendermintProof{
 		BlockHeight:     42,
-		Root:            tree.Root(),
+		Root:            types.NewBytes32FromBytes(tree.Root()),
 		Path:            merklePath,
 		ValidationsHash: validationsHash,
 		Header:          header,
@@ -216,16 +217,16 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 // createMerkleTree creates linksCount random links and builds
 // a merkle tree from it. It also returns the merkle path for
 // the chosen link.
-func createMerkleTree(linksCount int) (*types.Bytes32, *merkle.StaticTree, types.Path) {
+func createMerkleTree(linksCount int) (*types.Bytes32, *merkle.StaticTree, mktypes.Path) {
 	position := rand.Intn(linksCount)
 	linkHash := testutil.RandomHash()
 
-	treeLeaves := make([]types.Bytes32, linksCount)
+	treeLeaves := make([][]byte, linksCount)
 	for i := 0; i < linksCount; i++ {
 		if i == position {
-			treeLeaves[i] = *linkHash
+			treeLeaves[i] = linkHash[:]
 		} else {
-			treeLeaves[i] = *testutil.RandomHash()
+			treeLeaves[i] = testutil.RandomHash()[:]
 		}
 	}
 
