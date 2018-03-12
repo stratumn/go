@@ -264,8 +264,8 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 		votesPower += validator.VotingPower
 	}
 
-	// We need 2/3 of the votes for the proof to be accepted.
-	if 3*votesPower < 2*validatorSet.TotalVotingPower() {
+	// We need more than 2/3 of the votes for the proof to be accepted.
+	if 3*votesPower <= 2*validatorSet.TotalVotingPower() {
 		return false
 	}
 
