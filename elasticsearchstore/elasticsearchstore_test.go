@@ -23,10 +23,13 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetestcases"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
 	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -107,6 +110,58 @@ func TestElasticSearchTMPop(t *testing.T) {
 		New:  newTestElasticSearchStoreTMPop,
 		Free: freeTestElasticSearchStoreTMPop,
 	}.RunTests(t)
+}
+
+func verifyResultsCount(t *testing.T, err error, slice cs.SegmentSlice, expectedCount int) {
+	assert.NoError(t, err)
+	assert.NotNil(t, slice)
+	assert.Equal(t, expectedCount, len(slice), "Invalid number of results")
+}
+func TestElasticSearchStoreSearch(t *testing.T) {
+	a, err := newTestElasticSearchStore()
+	assert.NoError(t, err, "newTestElasticSearchStore()")
+	assert.NotNil(t, a, "ES adapter")
+	defer freeTestElasticSearchStore(a)
+
+	link1 := cstesting.RandomLink()
+	link1.Meta.MapID = "foo bar"
+	link1.Meta.Process = "something crazy"
+	link1.Meta.Tags = []string{"one", "two", "three"}
+	link1.State["nested"] = map[string]interface{}{
+		"first": "hector",
+		"last":  "salazar",
+	}
+	a.CreateLink(link1)
+
+	link2 := cstesting.RandomLink()
+	link2.Meta.MapID = "stupid madness"
+	link2.Meta.Process = "fly emirates"
+	link2.Meta.Tags = []string{"urban", "paranoia", "city"}
+	link2.State["nested"] = map[string]interface{}{
+		"first": "james",
+		"last":  "daniel",
+	}
+	a.CreateLink(link2)
+
+	t.Run("Should find segment based on partial state match", func(t *testing.T) {
+		slice, err := a.Search(&SimpleSearchQuery{
+			Pagination: store.Pagination{
+				Limit: 5,
+			},
+			Query: "sala*",
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Should find segment based on mapId", func(t *testing.T) {
+		slice, err := a.Search(&SimpleSearchQuery{
+			Pagination: store.Pagination{
+				Limit: 5,
+			},
+			Query: "emirates",
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
 }
 
 func newTestElasticSearchStore() (*ESStore, error) {
