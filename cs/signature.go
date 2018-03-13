@@ -41,6 +41,34 @@ type Signature struct {
 	Payload string `json:"payload"`
 }
 
+// NewSignature creates a new signature for a link.
+// Only the data matching the JMESPATH query will be signed
+func NewSignature(signatureType, payloadPath string, privateKey []byte, l *Link) (*Signature, error) {
+	payload, err := jmespath.Search(payloadPath, l)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to execute JMESPATH query")
+	}
+	if payload == nil {
+		return nil, errors.New("JMESPATH query does not match any link data")
+	}
+
+	payloadBytes, err := cj.Marshal(payload)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	publicKey, signature, err := signatures.Sign(signatureType, privateKey, payloadBytes)
+	if err != nil {
+		return nil, err
+	}
+	return &Signature{
+		Type:      signatureType,
+		PublicKey: publicKey,
+		Signature: signature,
+		Payload:   payloadPath,
+	}, nil
+}
+
 // Verify takes a link as input, computes the signed part using the signature payload
 // and runs the signature verification depending on its type.
 func (s Signature) Verify(l *Link) error {

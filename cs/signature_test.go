@@ -15,8 +15,10 @@
 package cs_test
 
 import (
+	"crypto/rand"
 	"testing"
 
+	"github.com/agl/ed25519"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -48,6 +50,32 @@ func TestGetSignatures_NotFound(t *testing.T) {
 	}
 	got := signatures.Get("wrong")
 	assert.Nil(t, got, "s.Get(()")
+}
+
+func TestNewSignature(t *testing.T) {
+	_, priv, _ := ed25519.GenerateKey(rand.Reader)
+	link := cstesting.RandomLink()
+
+	t.Run("Valid signature", func(t *testing.T) {
+		payloadPath := "[state,meta]"
+		sig, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
+		assert.NoError(t, err)
+		assert.NoError(t, sig.Verify(link), "signature verificdation failed")
+	})
+
+	t.Run("Bad payload", func(t *testing.T) {
+		payloadPath := ""
+		_, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
+		assert.EqualError(t, err, "failed to execute JMESPATH query: SyntaxError: Incomplete expression")
+	})
+
+	t.Run("Canonicaljson failed", func(t *testing.T) {
+		payloadPath := "[state,meta]"
+		link.State["lol"] = func() {}
+		_, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
+		assert.EqualError(t, err, "canonicaljson: unsupported type: func()")
+	})
+
 }
 
 func TestSignatureValidator(t *testing.T) {
