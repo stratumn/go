@@ -22,6 +22,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha512"
 	"encoding/asn1"
+	"encoding/base64"
 	"math/big"
 	"testing"
 
@@ -136,6 +137,29 @@ func TestVerify(t *testing.T) {
 		t.Run("Bad public key format", func(t *testing.T) {
 			err := Verify(RSA, []byte("test"), sig, document)
 			assert.EqualError(t, err, "Error while decoding public key: Could not parse RSA public key, wrong (N, E) parameters")
+		})
+	})
+}
+
+func TestSign(t *testing.T) {
+
+	document := []byte("test")
+	_, priv, _ := ed25519.GenerateKey(rand.Reader)
+
+	t.Run("Ed25519", func(t *testing.T) {
+
+		t.Run("Valid signature", func(t *testing.T) {
+			pub, sig, err := Sign(Ed25519, priv[:], document)
+			assert.NoError(t, err)
+			decodedSig, _ := base64.StdEncoding.DecodeString(sig)
+			decodedPK, _ := base64.StdEncoding.DecodeString(pub)
+			verified := ed25519.Verify(ed25519.PublicKey(decodedPK), document, decodedSig)
+			assert.True(t, verified, "Ed25519 signature is invalid")
+		})
+
+		t.Run("Bad private key", func(t *testing.T) {
+			_, _, err := Sign(Ed25519, []byte("private"), document)
+			assert.EqualError(t, err, "ED25519 private key lenght must be 64, got 7")
 		})
 	})
 }

@@ -18,8 +18,10 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
+	"encoding/base64"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -70,8 +72,8 @@ func MatchScheme(sigType string) (string, error) {
 // - Ed25519: no encoding necessary, signature length should be 64 bytes.
 // - ECDSA256: ecdsa signatures (R, S *big.Int) must be encoded to ASN-1.
 // - RSA: signatures must be computed using PKCS1-v1_5. What should be signed is the SHA512 sum of the document, not the document itself.
-func Verify(sigType string, key, signature, document []byte) error {
-	scheme, err := MatchScheme(sigType)
+func Verify(signatureType string, key, signature, document []byte) error {
+	scheme, err := MatchScheme(signatureType)
 	if err != nil {
 		return err
 	}
@@ -108,4 +110,37 @@ func Verify(sigType string, key, signature, document []byte) error {
 		}
 	}
 	return nil
+}
+
+// Sign signs a message with the private key.
+// It returns the public key and the signature if the message was signed correctly and an error otherwise.
+// _______________________________________
+// Private keys must be encoded as follows:
+// - Ed25519: no encoding necessary, private key length should be 64 bytes.
+func Sign(signatureType string, privateKey, msg []byte) (publicKey string, signature string, err error) {
+	scheme, err := MatchScheme(signatureType)
+	if err != nil {
+		return "", "", err
+	}
+
+	switch scheme {
+	case Ed25519:
+		if len(privateKey) != ed25519.PrivateKeySize {
+			return "", "", errors.Errorf("%s private key lenght must be %d, got %d", Ed25519, ed25519.PrivateKeySize, len(privateKey))
+		}
+		pk := ed25519.PrivateKey(privateKey)
+
+		publicKey = base64.StdEncoding.EncodeToString(pk.Public().(ed25519.PublicKey))
+		signatureBytes, err := pk.Sign(rand.Reader, msg, crypto.Hash(0))
+		if err != nil {
+			return "", "", err
+		}
+		signature = base64.StdEncoding.EncodeToString(signatureBytes)
+	case ECDSA256:
+		return "", "", ErrUnsupportedSignatureType
+	case RSA:
+		return "", "", ErrUnsupportedSignatureType
+	}
+
+	return publicKey, signature, nil
 }
