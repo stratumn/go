@@ -40,7 +40,7 @@
 
 [[constraint]]
   name = "github.com/tendermint/go-wire"
-  version = "0.7.2"
+  revision = "b6fc872b42d41158a60307db4da051dd6f179415"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
@@ -83,3 +83,12 @@
   # but Docker claims it needs v0.4 (but probably not intentionnally)
   name = "github.com/gogo/protobuf"
   version = "v0.5"
+
+[[constraint]]
+  name = "github.com/manifoldco/promptui"
+  branch = "master"
+
+[[override]]
+  name = "github.com/chzyer/readline"
+  branch = "fix-bell"
+  source = "github.com/stratumn/readline"

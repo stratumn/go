@@ -72,10 +72,11 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
+  branch = "fix-bell"
   name = "github.com/chzyer/readline"
   packages = ["."]
-  revision = "f6d7a1f6fbf35bbf9beb80dc63c56a29dcfb759f"
+  revision = "5aa7eff21932f88f6dbb177bce50b6c24f0696f1"
+  source = "github.com/stratumn/readline"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -188,7 +189,7 @@
   branch = "master"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "9b583fa3cb7d3c2eb125bd1018447b39dde3de5a"
+  revision = "8c26ef494543315e9dac52a0d03acdad21550c92"
 
 [[projects]]
   branch = "master"
@@ -304,14 +305,14 @@
   version = "v1.7.6"
 
 [[projects]]
+  branch = "master"
   name = "github.com/manifoldco/promptui"
   packages = [
     ".",
     "list",
     "screenbuf"
   ]
-  revision = "f6438f6153008ee1b9ba5446d5333bbe63b622b7"
-  version = "v0.2.1"
+  revision = "c0c0d3afc6a03bcb5c1df10b70b862a650db9f9b"
 
 [[projects]]
   name = "github.com/mattn/go-colorable"
@@ -416,8 +417,8 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
-  version = "v1.0.4"
+  revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
+  version = "v1.0.5"
 
 [[projects]]
   name = "github.com/spf13/afero"
@@ -438,7 +439,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "a1e4933ab784095895e33dbe9f001ba10cfe2060"
+  revision = "c6c44e6fdcc30161c7f4480754da7230d01c06e3"
 
 [[projects]]
   branch = "master"
@@ -493,7 +494,7 @@
     "leveldb/table",
     "leveldb/util"
   ]
-  revision = "211f780988068502fe874c44dae530528ebd840f"
+  revision = "169b1b37be738edb2813dab48c97a549bcf99bb5"
 
 [[projects]]
   name = "github.com/tendermint/abci"
@@ -519,8 +520,8 @@
 [[projects]]
   name = "github.com/tendermint/go-crypto"
   packages = ["."]
-  revision = "dd20358a264c772b4a83e477b0cfce4c88a7001d"
-  version = "v0.4.1"
+  revision = "c3e19f3ea26f5c3357e0bcbb799b0761ef923755"
+  version = "v0.5.0"
 
 [[projects]]
   name = "github.com/tendermint/go-wire"
@@ -529,7 +530,6 @@
     "data"
   ]
   revision = "b6fc872b42d41158a60307db4da051dd6f179415"
-  version = "v0.7.2"
 
 [[projects]]
   name = "github.com/tendermint/tendermint"
@@ -623,7 +623,7 @@
     "salsa20/salsa",
     "ssh/terminal"
   ]
-  revision = "49796115aa4b964c318aad4f3084fdb41e9aa067"
+  revision = "182114d582623c1caa54f73de9c7224e23a48487"
 
 [[projects]]
   branch = "master"
@@ -639,7 +639,7 @@
     "proxy",
     "trace"
   ]
-  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
+  revision = "803fdb99c0f72e493c28ef2099d250a9c989d8ff"
 
 [[projects]]
   branch = "master"
@@ -648,7 +648,7 @@
     ".",
     "internal"
   ]
-  revision = "543e37812f10c46c622c9575afd7ad22f22a12ba"
+  revision = "7af32f14d0a25aec7873e0683e8e48dcead159a8"
 
 [[projects]]
   branch = "master"
@@ -657,7 +657,7 @@
     "unix",
     "windows"
   ]
-  revision = "c1138c84af3a9927aee1a1b8b7ce06c9b7ea52bc"
+  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -698,7 +698,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "2b5a72b8730b0b16380010cfe5286c42108d88e7"
+  revision = "df60624c1e9b9d2973e889c7a1cff73155da81c4"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -753,10 +753,10 @@
   version = "v4.0.0"
 
 [[projects]]
-  branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "d670f9405373e636a5a2765eea47fac0c9bc91a4"
+  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
+  version = "v2.1.1"
 
 [solve-meta]
   analyzer-name = "dep"
