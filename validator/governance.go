@@ -213,7 +213,7 @@ func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key st
 	}
 	rawStoreData, err := json.Marshal(metaData)
 	if err != nil {
-		return errors.Wrapf(err, "cannot marshalmarshal %s store data", key)
+		return errors.Wrapf(err, "cannot marshal %s store data", key)
 	}
 	canonStoreData, err := getCanonicalJSONFromData(rawStoreData)
 	if err != nil {
