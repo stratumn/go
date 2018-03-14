@@ -217,8 +217,10 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
-			assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
+			h1, h2 := slice[0].GetLinkHashString(), slice[1].GetLinkHashString()
+			assert.Contains(t, []string{hash1, hash2}, h1, "Wrong link was found")
+			assert.Contains(t, []string{hash1, hash2}, h2, "Wrong link was found")
+			assert.NotEqual(t, h1, h2, "The two results are the same")
 		})
 	})
 
@@ -233,8 +235,10 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "salazar daniel",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
-			assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
+			h1, h2 := slice[0].GetLinkHashString(), slice[1].GetLinkHashString()
+			assert.Contains(t, []string{hash1, hash2}, h1, "Wrong link was found")
+			assert.Contains(t, []string{hash1, hash2}, h2, "Wrong link was found")
+			assert.NotEqual(t, h1, h2, "The two results are the same")
 		})
 	})
 
