@@ -20,6 +20,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/stratumn/go-indigocore/generator"
 )
 
@@ -33,198 +36,104 @@ var (
 
 func TestUpdate(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
+
 	desc, updated, err := r.Update(testRef, false)
-	if err != nil {
-		t.Fatalf("err: r.Update(): %s", err)
-	}
-
-	if got, want := updated, true; got != want {
-		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
-	}
-
-	if got, want := desc.Owner, testOwner; got != want {
-		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
-	}
+	require.NoError(t, err)
+	assert.True(t, updated)
+	assert.Equal(t, testOwner, desc.Owner)
 
 	desc, updated, err = r.Update(testRef, false)
-	if err != nil {
-		t.Fatalf("err: r.Update(): %s", err)
-	}
-
-	if got, want := updated, false; got != want {
-		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
-	}
-
-	if got, want := desc.Owner, testOwner; got != want {
-		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
-	}
+	require.NoError(t, err)
+	assert.False(t, updated)
+	assert.Equal(t, testOwner, desc.Owner)
 
 	desc, updated, err = r.Update(testRef, true)
-	if err != nil {
-		t.Fatalf("err: r.Update(): %s", err)
-	}
-
-	if got, want := updated, true; got != want {
-		t.Errorf("err: r.Update(): updated = %v want %v", got, want)
-	}
-
-	if got, want := desc.Owner, testOwner; got != want {
-		t.Errorf("err: r.Update(): owner = %q want %q", got, want)
-	}
+	require.NoError(t, err)
+	assert.True(t, updated)
+	assert.Equal(t, testOwner, desc.Owner)
 }
 
 func TestUpdate_notFound(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	r := New(dir, testUser, "404", os.Getenv("GITHUB_TOKEN"), true)
 	_, _, err = r.Update(testRef, false)
-	if err == nil {
-		t.Error("err: r.Update(): err = nil want Error")
-	}
+	assert.Error(t, err)
 }
 
 func TestGetState(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
 	desc, err := r.GetState(testRef)
-	if err != nil {
-		t.Fatalf("err: r.GetState(): %s", err)
-	}
-	if desc != nil {
-		t.Fatalf("err: r.GetState(): desc = %#v want nil", desc)
-	}
+	require.NoError(t, err)
+	require.Nil(t, desc)
 
 	_, _, err = r.Update(testRef, false)
-	if err != nil {
-		t.Fatalf("err: r.Update(): %s", err)
-	}
+	assert.NoError(t, err)
 
 	desc, err = r.GetState(testRef)
-	if err != nil {
-		t.Fatalf("err: r.GetState(): %s", err)
-	}
-
-	if got, want := desc.Owner, testOwner; got != want {
-		t.Errorf("err: r.GetState(): owner = %q want %q", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, testOwner, desc.Owner)
 }
 
 func TestGetStateOrCreate(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
 	desc, err := r.GetStateOrCreate(testRef)
-	if err != nil {
-		t.Fatalf("err: r.GetStateOrCreate(): %s", err)
-	}
-
-	if got, want := desc.Owner, testOwner; got != want {
-		t.Errorf("err: r.GetStateOrCreate(): owner = %q want %q", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, testOwner, desc.Owner)
 }
 
 func TestList(t *testing.T) {
 	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
 	list, err := r.List(testRef)
-	if err != nil {
-		t.Fatalf("err: r.List(): %s", err)
-	}
-
-	if got := len(list); got < 1 {
-		t.Errorf("err: len() %d want > 0", got)
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, list)
 }
 
 func TestLocalList(t *testing.T) {
 	// Get generators from git, it should be better
 	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
 
 	_, err = r.GetStateOrCreate(testRef)
-	if err != nil {
-		t.Fatalf("err: r.GetStateOrCreate(): %s", err)
-	}
+	require.NoError(t, err)
 
 	r = New(path.Join(dir, "src", testRef), "foo", "bar", "nil", false)
 
 	list, err := r.List("unread arg")
-	if err != nil {
-		t.Fatalf("err: r.List(): %s", err)
-	}
-
-	if got := len(list); got < 1 {
-		t.Errorf("err: len() %d want > 0", got)
-	}
+	require.NoError(t, err)
+	assert.NotEmpty(t, list)
 }
 
 func TestNotFoundLocalList(t *testing.T) {
 	r := New("/foo/bar", "foo", "bar", "nil", false)
 
 	list, err := r.List("unread arg")
-	if err == nil {
-		t.Fatalf("err: r.List() should return an error")
-	}
-
-	if got := len(list); got != 0 {
-		t.Errorf("err: len() %d want 0", got)
-	}
-}
-
-func TestGenerate(t *testing.T) {
-	dir, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
-	defer os.RemoveAll(dir)
-
-	dst, err := ioutil.TempDir("", "generator")
-	if err != nil {
-		t.Fatalf("err: ioutil.TempDir(): %s", err)
-	}
-	defer os.RemoveAll(dst)
-
-	r := New(dir, testUser, testRepo, os.Getenv("GITHUB_TOKEN"), true)
-	opts := generator.Options{
-		Reader: strings.NewReader(testInput),
-	}
-
-	err = r.Generate("agent-basic-js", dst, &opts, testRef)
-	if err != nil {
-		t.Fatalf("err: r.Generate(): %s", err)
-	}
+	assert.Error(t, err)
+	assert.Empty(t, list)
 }
 
 func TestGenerate_notFound(t *testing.T) {

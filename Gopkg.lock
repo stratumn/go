@@ -306,6 +306,17 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mailru/easyjson"
+  packages = [
+    ".",
+    "buffer",
+    "jlexer",
+    "jwriter"
+  ]
+  revision = "f594efddfa171111dc4349cd6e78e8f61dc7936f"
+
+[[projects]]
+  branch = "master"
   name = "github.com/manifoldco/promptui"
   packages = [
     ".",
@@ -325,17 +336,6 @@
   packages = ["."]
   revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
   version = "v0.0.3"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mailru/easyjson"
-  packages = [
-    ".",
-    "buffer",
-    "jlexer",
-    "jwriter"
-  ]
-  revision = "f594efddfa171111dc4349cd6e78e8f61dc7936f"
 
 [[projects]]
   branch = "master"
@@ -761,6 +761,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "172d58ef7882272ffb253facbe4375e887020ee80d9c00bfd55128ec642b8559"
+  inputs-digest = "3b554b5f20e8c5c319e8b292a0b120708614107de529f37db1b3d6d6167f7557"
   solver-name = "gps-cdcl"
   solver-version = 1
