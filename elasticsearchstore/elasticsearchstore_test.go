@@ -275,7 +275,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 func newTestElasticSearchStore() (*ESStore, error) {
 	config := &Config{
 		URL:   fmt.Sprintf("http://%s:%s", domain, port),
-		Debug: true,
+		Debug: false,
 	}
 	return New(config)
 }

@@ -143,7 +143,6 @@ type Value struct {
 
 type csLink cs.Link
 type linkDoc struct {
-	// *csLink
 	cs.Link
 	StateTokens []string `json:"stateTokens"`
 }
