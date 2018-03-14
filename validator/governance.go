@@ -211,7 +211,11 @@ func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key st
 	if !ok {
 		return errors.Errorf("%s is missing on segment", key)
 	}
-	canonStoreData, err := getCanonicalJSONFromData(metaData.(json.RawMessage))
+	rawStoreData, err := json.Marshal(metaData)
+	if err != nil {
+		return errors.Wrapf(err, "cannot marshalmarshal %s store data", key)
+	}
+	canonStoreData, err := getCanonicalJSONFromData(rawStoreData)
 	if err != nil {
 		return errors.Wrapf(err, "cannot canonical marshal %s store data", key)
 	}

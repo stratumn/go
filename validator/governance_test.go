@@ -224,7 +224,10 @@ func createGovernanceLink(process string, pki, types json.RawMessage) *cs.Link {
 	link.Meta.Process = governanceProcessName
 	link.Meta.Priority = 0.
 	link.Meta.Tags = []string{process, validatorTag}
-	link.State["pki"] = pki
-	link.State["types"] = types
+	var unmarshalledData interface{}
+	json.Unmarshal(pki, &unmarshalledData)
+	link.State["pki"] = unmarshalledData
+	json.Unmarshal(types, &unmarshalledData)
+	link.State["types"] = unmarshalledData
 	return link
 }
