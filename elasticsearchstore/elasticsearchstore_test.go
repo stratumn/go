@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/require"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
@@ -118,7 +118,7 @@ func TestElasticSearchTMPop(t *testing.T) {
 func verifyResultsCount(t *testing.T, err error, slice cs.SegmentSlice, expectedCount int) {
 	assert.NoError(t, err)
 	assert.NotNil(t, slice)
-	assert.Equal(t, expectedCount, len(slice), "Invalid number of results")
+	require.Equal(t, expectedCount, len(slice), "Invalid number of results")
 }
 func TestElasticSearchStoreSearch(t *testing.T) {
 	a, err := newTestElasticSearchStore()
@@ -148,79 +148,100 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	}
 	a.CreateLink(link2)
 
-	t.Run("Should find segment based on partial state match", func(t *testing.T) {
-		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
-			SegmentFilter: store.SegmentFilter{
-				Pagination: store.Pagination{
-					Limit: 5,
+	t.Run("Simple Search Query", func(t *testing.T) {
+
+		t.Run("Should find segment based on partial state match", func(t *testing.T) {
+			slice, err := a.SimpleSearchQuery(&SearchQuery{
+				SegmentFilter: store.SegmentFilter{
+					Pagination: store.Pagination{
+						Limit: 5,
+					},
 				},
-			},
-			Query: "sala*",
+				Query: "sala*",
+			})
+			verifyResultsCount(t, err, slice, 1)
+			hash, _ := link1.HashString()
+			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
 		})
-		verifyResultsCount(t, err, slice, 1)
-		hash, _ := link1.HashString()
-		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+
+		t.Run("Should find segment based on mapId", func(t *testing.T) {
+			slice, err := a.SimpleSearchQuery(&SearchQuery{
+				SegmentFilter: store.SegmentFilter{
+					Pagination: store.Pagination{
+						Limit: 5,
+					},
+				},
+				Query: "emirates",
+			})
+			verifyResultsCount(t, err, slice, 1)
+			hash, _ := link2.HashString()
+			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+		})
+
+		t.Run("Should filter on Process", func(t *testing.T) {
+			slice, err := a.SimpleSearchQuery(&SearchQuery{
+				SegmentFilter: store.SegmentFilter{
+					Pagination: store.Pagination{
+						Limit: 5,
+					},
+					Process: "fly emirates",
+				},
+				Query: "stratu*",
+			})
+			verifyResultsCount(t, err, slice, 1)
+			hash, _ := link2.HashString()
+			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+		})
+
+		t.Run("Should filter on one MapId", func(t *testing.T) {
+			slice, err := a.SimpleSearchQuery(&SearchQuery{
+				SegmentFilter: store.SegmentFilter{
+					Pagination: store.Pagination{
+						Limit: 5,
+					},
+					MapIDs: []string{"foo bar"},
+				},
+				Query: "stratu*",
+			})
+			verifyResultsCount(t, err, slice, 1)
+			hash, _ := link1.HashString()
+			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+		})
+
+		t.Run("Should filter on multiple MapIds", func(t *testing.T) {
+			slice, err := a.SimpleSearchQuery(&SearchQuery{
+				SegmentFilter: store.SegmentFilter{
+					Pagination: store.Pagination{
+						Limit: 5,
+					},
+					MapIDs: []string{"foo bar", "stupid madness"},
+				},
+				Query: "stratu*",
+			})
+			verifyResultsCount(t, err, slice, 2)
+			hash1, _ := link1.HashString()
+			hash2, _ := link2.HashString()
+			assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
+			assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
+		})
 	})
 
-	t.Run("Should find segment based on mapId", func(t *testing.T) {
-		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
-			SegmentFilter: store.SegmentFilter{
-				Pagination: store.Pagination{
-					Limit: 5,
+	t.Run("Multi Match Query", func(t *testing.T) {
+		t.Run("Should find segments based on multiple words", func(t *testing.T) {
+			slice, err := a.MultiMatchQuery(&SearchQuery{
+				SegmentFilter: store.SegmentFilter{
+					Pagination: store.Pagination{
+						Limit: 5,
+					},
 				},
-			},
-			Query: "emirates",
+				Query: "salazar daniel",
+			})
+			verifyResultsCount(t, err, slice, 2)
+			hash1, _ := link1.HashString()
+			hash2, _ := link2.HashString()
+			assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
+			assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
 		})
-		verifyResultsCount(t, err, slice, 1)
-		hash, _ := link2.HashString()
-		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
-	})
-
-	t.Run("Should filter on Process", func(t *testing.T) {
-		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
-			SegmentFilter: store.SegmentFilter{
-				Pagination: store.Pagination{
-					Limit: 5,
-				},
-				Process: "fly emirates",
-			},
-			Query: "stratu*",
-		})
-		verifyResultsCount(t, err, slice, 1)
-		hash, _ := link2.HashString()
-		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
-	})
-
-	t.Run("Should filter on one MapId", func(t *testing.T) {
-		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
-			SegmentFilter: store.SegmentFilter{
-				Pagination: store.Pagination{
-					Limit: 5,
-				},
-				MapIDs: []string{"foo bar"},
-			},
-			Query: "stratu*",
-		})
-		verifyResultsCount(t, err, slice, 1)
-		hash, _ := link1.HashString()
-		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
-	})
-
-	t.Run("Should filter on multiple MapIds", func(t *testing.T) {
-		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
-			SegmentFilter: store.SegmentFilter{
-				Pagination: store.Pagination{
-					Limit: 5,
-				},
-				MapIDs: []string{"foo bar", "stupid madness"},
-			},
-			Query: "stratu*",
-		})
-		verifyResultsCount(t, err, slice, 2)
-		hash1, _ := link1.HashString()
-		hash2, _ := link2.HashString()
-		assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
-		assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
 	})
 
 	t.Run("Should extract all value tokens from state", func(t *testing.T) {

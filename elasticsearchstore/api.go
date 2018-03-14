@@ -148,8 +148,8 @@ type linkDoc struct {
 	StateTokens []string `json:"stateTokens"`
 }
 
-// SimpleSearchQuery contains paghination and query string information.
-type SimpleSearchQuery struct {
+// SearchQuery contains paghination and query string information.
+type SearchQuery struct {
 	store.SegmentFilter
 	Query string
 }
@@ -488,7 +488,7 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 	return filterQueries
 }
 
-func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (cs.SegmentSlice, error) {
 	// Flush to make sure the documents got written.
 	ctx := context.TODO()
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
@@ -506,9 +506,6 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 	svc = svc.
 		From(filter.Pagination.Offset).
 		Size(filter.Pagination.Limit)
-
-	// prepare filter queries.
-	q := elastic.NewBoolQuery().Filter(makeFilterQueries(filter)...)
 
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)
@@ -535,25 +532,15 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 	return res, nil
 }
 
-func (es *ESStore) simpleSearchQuery(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
-	// Flush to make sure the documents got written.
-	ctx := context.TODO()
-	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+	// prepare query.
+	q := elastic.NewBoolQuery().Filter(makeFilterQueries(filter)...)
 
-	// prepare search service.
-	svc := es.client.
-		Search().
-		Index(linksIndex).
-		Type(docType)
+	// run search.
+	return es.genericSearch(filter, q)
+}
 
-	// add pagination.
-	svc = svc.
-		From(query.Pagination.Offset).
-		Size(query.Pagination.Limit)
-
+func (es *ESStore) simpleSearchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
 	// prepare Query.
 	q := elastic.NewBoolQuery().
 		// add filter queries.
@@ -562,26 +549,24 @@ func (es *ESStore) simpleSearchQuery(query *SimpleSearchQuery) (cs.SegmentSlice,
 		Must(elastic.NewSimpleQueryStringQuery(query.Query))
 
 	// run search.
-	sr, err := svc.Query(q).Do(ctx)
-	if err != nil {
-		return nil, err
+	return es.genericSearch(&query.SegmentFilter, q)
+}
+
+func (es *ESStore) multiMatchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
+	// fields to search through: all meta + stateTokens.
+	fields := []string{
+		"meta.mapId",
+		"meta.process",
+		"meta.action",
+		"meta.type",
+		"meta.tags",
+		"meta.prevLinkHash",
+		"stateTokens",
 	}
 
-	// populate SegmentSlice.
-	res := cs.SegmentSlice{}
-	if sr == nil || sr.TotalHits() == 0 {
-		return res, nil
-	}
+	// prepare Query.
+	q := elastic.NewMultiMatchQuery(query.Query, fields...).Type("best_fields")
 
-	for _, hit := range sr.Hits.Hits {
-		var link cs.Link
-		if err := json.Unmarshal(*hit.Source, &link); err != nil {
-			return nil, err
-		}
-		res = append(res, es.segmentify(&link))
-	}
-
-	sort.Sort(res)
-
-	return res, nil
+	// run search.
+	return es.genericSearch(&query.SegmentFilter, q)
 }
