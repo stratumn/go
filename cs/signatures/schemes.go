@@ -126,7 +126,7 @@ func Sign(signatureType string, privateKey, msg []byte) (publicKey string, signa
 	switch scheme {
 	case Ed25519:
 		if len(privateKey) != ed25519.PrivateKeySize {
-			return "", "", errors.Errorf("%s private key lenght must be %d, got %d", Ed25519, ed25519.PrivateKeySize, len(privateKey))
+			return "", "", errors.Errorf("%s private key length must be %d, got %d", Ed25519, ed25519.PrivateKeySize, len(privateKey))
 		}
 		pk := ed25519.PrivateKey(privateKey)
 

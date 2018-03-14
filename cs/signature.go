@@ -26,6 +26,14 @@ import (
 	signatures "github.com/stratumn/go-indigocore/cs/signatures"
 )
 
+const (
+	// ErrBadJMESPATHQuery is returned when the JMESPATH engine fails to execute the query
+	ErrBadJMESPATHQuery = "failed to execute JMESPATH query"
+
+	// ErrEmptyJMESPATHResult is returned when the JMESPATH query does not match any part of the link
+	ErrEmptyJMESPATHResult = "JMESPATH query does not match any link data"
+)
+
 // Signature contains a user-provided signature of a certain part of the link.
 type Signature struct {
 	// Type of the signature (eg: "EdDSA")
@@ -46,10 +54,10 @@ type Signature struct {
 func NewSignature(signatureType, payloadPath string, privateKey []byte, l *Link) (*Signature, error) {
 	payload, err := jmespath.Search(payloadPath, l)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to execute JMESPATH query")
+		return nil, errors.Wrap(err, ErrBadJMESPATHQuery)
 	}
 	if payload == nil {
-		return nil, errors.New("JMESPATH query does not match any link data")
+		return nil, errors.New(ErrEmptyJMESPATHResult)
 	}
 
 	payloadBytes, err := cj.Marshal(payload)
@@ -77,10 +85,10 @@ func (s Signature) Verify(l *Link) error {
 
 	payload, err := jmespath.Search(s.Payload, l)
 	if err != nil {
-		return errors.Wrap(err, "failed to execute JMESPATH query")
+		return errors.Wrap(err, ErrBadJMESPATHQuery)
 	}
 	if payload == nil {
-		return errors.New("JMESPATH query does not match any link data")
+		return errors.New(ErrEmptyJMESPATHResult)
 	}
 
 	payloadBytes, err := cj.Marshal(payload)

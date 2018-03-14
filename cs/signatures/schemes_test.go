@@ -159,7 +159,7 @@ func TestSign(t *testing.T) {
 
 		t.Run("Bad private key", func(t *testing.T) {
 			_, _, err := Sign(Ed25519, []byte("private"), document)
-			assert.EqualError(t, err, "ED25519 private key lenght must be 64, got 7")
+			assert.EqualError(t, err, "ED25519 private key length must be 64, got 7")
 		})
 	})
 }

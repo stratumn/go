@@ -32,6 +32,15 @@
   version = "v0.4.7"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/agl/ed25519"
+  packages = [
+    ".",
+    "edwards25519"
+  ]
+  revision = "5312a61534124124185d41f09206b9fef1d88403"
+
+[[projects]]
   name = "github.com/blockcypher/gobcy"
   packages = ["."]
   revision = "6eace16b4b81ea8dbdcde5417d6b1cc3828a3d1f"
@@ -189,7 +198,7 @@
   branch = "master"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "8c26ef494543315e9dac52a0d03acdad21550c92"
+  revision = "d2b80df1e3eeccae96eb1cb489e65372cc9550c8"
 
 [[projects]]
   branch = "master"
@@ -356,8 +365,8 @@
     "config",
     "uritemplates"
   ]
-  revision = "2982cec1ae1eb496c4e6ec43b4136bedb977fec7"
-  version = "v6.1.8"
+  revision = "75baf8966312d026cc7f59ac3fc7457199425d8a"
+  version = "v6.1.9"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -623,7 +632,7 @@
     "salsa20/salsa",
     "ssh/terminal"
   ]
-  revision = "182114d582623c1caa54f73de9c7224e23a48487"
+  revision = "c4a91bd4f524f10d064139674cf55852e055ad01"
 
 [[projects]]
   branch = "master"
@@ -639,7 +648,7 @@
     "proxy",
     "trace"
   ]
-  revision = "803fdb99c0f72e493c28ef2099d250a9c989d8ff"
+  revision = "892bf7b0c6e2f93b51166bf3882e50277fa5afc6"
 
 [[projects]]
   branch = "master"
@@ -761,6 +770,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3b554b5f20e8c5c319e8b292a0b120708614107de529f37db1b3d6d6167f7557"
+  inputs-digest = "7f5a15a81f2e8dd5c5cb4a1553ce11fa6eaec87291e3c88d862a498baa266e25"
   solver-name = "gps-cdcl"
   solver-version = 1

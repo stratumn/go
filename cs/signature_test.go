@@ -60,13 +60,13 @@ func TestNewSignature(t *testing.T) {
 		payloadPath := "[state,meta]"
 		sig, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
 		assert.NoError(t, err)
-		assert.NoError(t, sig.Verify(link), "signature verificdation failed")
+		assert.NoError(t, sig.Verify(link), "signature verification failed")
 	})
 
 	t.Run("Bad payload", func(t *testing.T) {
 		payloadPath := ""
 		_, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
-		assert.EqualError(t, err, "failed to execute JMESPATH query: SyntaxError: Incomplete expression")
+		assert.EqualError(t, err, cs.ErrBadJMESPATHQuery+": SyntaxError: Incomplete expression")
 	})
 
 	t.Run("Canonicaljson failed", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "wrong-jmespath-query",
 			valid: false,
-			err:   "failed to execute JMESPATH query: SyntaxError: Incomplete expression",
+			err:   cs.ErrBadJMESPATHQuery + ": SyntaxError: Incomplete expression",
 			signature: func() *cs.Signature {
 				s := cstesting.RandomSignature(payload)
 				s.Payload = ""
@@ -117,7 +117,7 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "empty-jmespath-query",
 			valid: false,
-			err:   "JMESPATH query does not match any link data",
+			err:   cs.ErrEmptyJMESPATHResult,
 			signature: func() *cs.Signature {
 				s := cstesting.RandomSignature(payload)
 				s.Payload = "notfound"
