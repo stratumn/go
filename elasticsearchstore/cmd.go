@@ -29,7 +29,7 @@ var (
 	drop     bool
 	sniffing bool
 	url      string
-	debug    bool
+	logLevel string
 )
 
 // Initialize initializes a elasticsearch store adapter.
@@ -75,13 +75,13 @@ func RegisterFlags() {
 	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("ELASTICSEARCH_URL"), DefaultURL), "URL of the ElasticSearch database")
 	flag.BoolVar(&sniffing, "sniffing", false, "turn on elastic search nodes sniffing")
 	flag.BoolVar(&drop, "drop", false, "drop indexes then exit")
-	flag.BoolVar(&debug, "debug", false, "use debug log level")
+	flag.StringVar(&logLevel, "log_level", "info", "set logrus log level")
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
 // an elasticsearch adapter using flag values.
 func InitializeWithFlags(version, commit string) *ESStore {
-	config := &Config{URL: url, Version: version, Commit: commit, Sniffing: sniffing, Debug: debug}
+	config := &Config{URL: url, Version: version, Commit: commit, Sniffing: sniffing, LogLevel: logLevel}
 	return Initialize(config)
 
 }

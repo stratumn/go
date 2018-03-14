@@ -147,7 +147,7 @@ type linkDoc struct {
 	StateTokens []string `json:"stateTokens"`
 }
 
-// SearchQuery contains paghination and query string information.
+// SearchQuery contains pagination and query string information.
 type SearchQuery struct {
 	store.SegmentFilter
 	Query string

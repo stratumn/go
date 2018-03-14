@@ -117,9 +117,9 @@ func TestElasticSearchTMPop(t *testing.T) {
 
 func verifyResultsCount(t *testing.T, err error, slice cs.SegmentSlice, expectedCount int) {
 	assert.NoError(t, err)
-	assert.NotNil(t, slice)
-	require.Equal(t, expectedCount, len(slice), "Invalid number of results")
+	require.Len(t, slice, expectedCount, "Invalid number of results")
 }
+
 func TestElasticSearchStoreSearch(t *testing.T) {
 	a, err := newTestElasticSearchStore()
 	assert.NoError(t, err, "newTestElasticSearchStore()")
@@ -136,6 +136,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		"common": "stratumn",
 	}
 	a.CreateLink(link1)
+	hash1, _ := link1.HashString()
 
 	link2 := cstesting.RandomLink()
 	link2.Meta.MapID = "stupid madness"
@@ -147,6 +148,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		"common": "stratumn",
 	}
 	a.CreateLink(link2)
+	hash2, _ := link2.HashString()
 
 	t.Run("Simple Search Query", func(t *testing.T) {
 
@@ -160,8 +162,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "sala*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			hash, _ := link1.HashString()
-			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+			assert.Equal(t, hash1, slice[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should find segment based on mapId", func(t *testing.T) {
@@ -174,8 +175,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "emirates",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			hash, _ := link2.HashString()
-			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+			assert.Equal(t, hash2, slice[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on Process", func(t *testing.T) {
@@ -189,8 +189,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			hash, _ := link2.HashString()
-			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+			assert.Equal(t, hash2, slice[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on one MapId", func(t *testing.T) {
@@ -204,8 +203,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			hash, _ := link1.HashString()
-			assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+			assert.Equal(t, hash1, slice[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on multiple MapIds", func(t *testing.T) {
@@ -219,8 +217,6 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			hash1, _ := link1.HashString()
-			hash2, _ := link2.HashString()
 			assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
 			assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
 		})
@@ -237,8 +233,6 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "salazar daniel",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			hash1, _ := link1.HashString()
-			hash2, _ := link2.HashString()
 			assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
 			assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
 		})
@@ -267,15 +261,14 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		require.NotNil(t, doc, "fromLink")
 		assert.Equal(t, len(expectedTokens), len(doc.StateTokens), "Invalid number of tokens")
 		for _, token := range expectedTokens {
-			assert.Contains(t, doc.StateTokens, token, "Invalid tokens exracted")
+			assert.Contains(t, doc.StateTokens, token, "Invalid tokens extracted")
 		}
 	})
 }
 
 func newTestElasticSearchStore() (*ESStore, error) {
 	config := &Config{
-		URL:   fmt.Sprintf("http://%s:%s", domain, port),
-		Debug: false,
+		URL: fmt.Sprintf("http://%s:%s", domain, port),
 	}
 	return New(config)
 }

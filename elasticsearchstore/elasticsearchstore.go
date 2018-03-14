@@ -17,6 +17,8 @@ package elasticsearchstore
 import (
 	"encoding/hex"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
@@ -50,8 +52,8 @@ type Config struct {
 	// Use sniffing feature of ElasticSearch.
 	Sniffing bool
 
-	// Use debug log level.
-	Debug bool
+	// Logrus log level.
+	LogLevel string
 }
 
 // Info is the info returned by GetInfo.
@@ -98,8 +100,14 @@ func New(config *Config) (*ESStore, error) {
 		elastic.SetTraceLog(debugLogger{}),
 	}
 
-	if config.Debug {
-		log.SetLevel(log.DebugLevel)
+	if config.LogLevel != "" {
+		lvl, err := logrus.ParseLevel(config.LogLevel)
+
+		if err != nil {
+			return nil, err
+		}
+
+		log.SetLevel(lvl)
 	}
 
 	client, err := elastic.NewClient(opts...)
