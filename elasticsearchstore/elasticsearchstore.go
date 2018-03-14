@@ -229,6 +229,13 @@ func (es *ESStore) DeleteValue(key []byte) ([]byte, error) {
 /********** Search feature **********/
 
 // SimpleSearchQuery searches through the store for segments matching query criteria
-func (es *ESStore) SimpleSearchQuery(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
+// using ES simple query string feature
+func (es *ESStore) SimpleSearchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
 	return es.simpleSearchQuery(query)
+}
+
+// MultiMatchQuery searches through the store for segments matching query criteria
+// using ES multi match query
+func (es *ESStore) MultiMatchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
+	return es.multiMatchQuery(query)
 }
