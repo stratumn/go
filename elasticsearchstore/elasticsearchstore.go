@@ -49,6 +49,9 @@ type Config struct {
 
 	// Use sniffing feature of ElasticSearch.
 	Sniffing bool
+
+	// Use debug log level.
+	Debug bool
 }
 
 // Info is the info returned by GetInfo.
@@ -93,6 +96,10 @@ func New(config *Config) (*ESStore, error) {
 		elastic.SetErrorLog(errorLogger{}),
 		elastic.SetInfoLog(debugLogger{}),
 		elastic.SetTraceLog(debugLogger{}),
+	}
+
+	if config.Debug {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	client, err := elastic.NewClient(opts...)
@@ -221,7 +228,7 @@ func (es *ESStore) DeleteValue(key []byte) ([]byte, error) {
 
 /********** Search feature **********/
 
-// Search through the store for segments matching query criteria
-func (es *ESStore) Search(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
-	return es.search(query)
+// SimpleSearchQuery searches through the store for segments matching query criteria
+func (es *ESStore) SimpleSearchQuery(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
+	return es.simpleSearchQuery(query)
 }
