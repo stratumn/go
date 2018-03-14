@@ -15,12 +15,15 @@
 package elasticsearchstore
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/docker/go-connections/nat"
 	"github.com/stratumn/go-indigocore/cs"
@@ -128,8 +131,9 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	link1.Meta.Process = "something crazy"
 	link1.Meta.Tags = []string{"one", "two", "three"}
 	link1.State["nested"] = map[string]interface{}{
-		"first": "hector",
-		"last":  "salazar",
+		"first":  "hector",
+		"last":   "salazar",
+		"common": "stratumn",
 	}
 	a.CreateLink(link1)
 
@@ -138,35 +142,119 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	link2.Meta.Process = "fly emirates"
 	link2.Meta.Tags = []string{"urban", "paranoia", "city"}
 	link2.State["nested"] = map[string]interface{}{
-		"first": "james",
-		"last":  "daniel",
+		"first":  "james",
+		"last":   "daniel",
+		"common": "stratumn",
 	}
 	a.CreateLink(link2)
 
 	t.Run("Should find segment based on partial state match", func(t *testing.T) {
-		slice, err := a.Search(&SimpleSearchQuery{
-			Pagination: store.Pagination{
-				Limit: 5,
+		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
+			SegmentFilter: store.SegmentFilter{
+				Pagination: store.Pagination{
+					Limit: 5,
+				},
 			},
 			Query: "sala*",
 		})
 		verifyResultsCount(t, err, slice, 1)
+		hash, _ := link1.HashString()
+		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
 	})
 
 	t.Run("Should find segment based on mapId", func(t *testing.T) {
-		slice, err := a.Search(&SimpleSearchQuery{
-			Pagination: store.Pagination{
-				Limit: 5,
+		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
+			SegmentFilter: store.SegmentFilter{
+				Pagination: store.Pagination{
+					Limit: 5,
+				},
 			},
 			Query: "emirates",
 		})
 		verifyResultsCount(t, err, slice, 1)
+		hash, _ := link2.HashString()
+		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+	})
+
+	t.Run("Should filter on Process", func(t *testing.T) {
+		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
+			SegmentFilter: store.SegmentFilter{
+				Pagination: store.Pagination{
+					Limit: 5,
+				},
+				Process: "fly emirates",
+			},
+			Query: "stratu*",
+		})
+		verifyResultsCount(t, err, slice, 1)
+		hash, _ := link2.HashString()
+		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+	})
+
+	t.Run("Should filter on one MapId", func(t *testing.T) {
+		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
+			SegmentFilter: store.SegmentFilter{
+				Pagination: store.Pagination{
+					Limit: 5,
+				},
+				MapIDs: []string{"foo bar"},
+			},
+			Query: "stratu*",
+		})
+		verifyResultsCount(t, err, slice, 1)
+		hash, _ := link1.HashString()
+		assert.Equal(t, slice[0].GetLinkHashString(), hash, "Wrong link was found")
+	})
+
+	t.Run("Should filter on multiple MapIds", func(t *testing.T) {
+		slice, err := a.SimpleSearchQuery(&SimpleSearchQuery{
+			SegmentFilter: store.SegmentFilter{
+				Pagination: store.Pagination{
+					Limit: 5,
+				},
+				MapIDs: []string{"foo bar", "stupid madness"},
+			},
+			Query: "stratu*",
+		})
+		verifyResultsCount(t, err, slice, 2)
+		hash1, _ := link1.HashString()
+		hash2, _ := link2.HashString()
+		assert.Contains(t, []string{hash1, hash2}, slice[0].GetLinkHashString(), "Wrong link was found")
+		assert.Contains(t, []string{hash1, hash2}, slice[1].GetLinkHashString(), "Wrong link was found")
+	})
+
+	t.Run("Should extract all value tokens from state", func(t *testing.T) {
+		l := cstesting.RandomLink()
+		state := []byte(`{
+			"string": "hello",
+			"bool": true,
+			"num": 0.54,
+			"array": ["abc", 1, true, {"name": "james"}, ["def", 1, true]],
+			"object": {
+				"string": "world",
+				"bool": false,
+				"num": 23
+			}
+		}`)
+		l.State = map[string]interface{}{}
+		json.Unmarshal(state, &l.State)
+
+		expectedTokens := []string{"hello", "abc", "james", "def", "world"}
+
+		doc, err := fromLink(l)
+		assert.NoError(t, err, "fromLink")
+		require.NotNil(t, doc, "fromLink")
+		assert.Equal(t, len(expectedTokens), len(doc.StateTokens), "Invalid number of tokens")
+		for _, token := range expectedTokens {
+			assert.Contains(t, doc.StateTokens, token, "Invalid tokens exracted")
+		}
 	})
 }
 
 func newTestElasticSearchStore() (*ESStore, error) {
 	config := &Config{
-		URL: fmt.Sprintf("http://%s:%s", domain, port),
+		URL:   fmt.Sprintf("http://%s:%s", domain, port),
+		Debug: true,
 	}
 	return New(config)
 }

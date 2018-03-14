@@ -150,7 +150,7 @@ type linkDoc struct {
 
 // SimpleSearchQuery contains paghination and query string information.
 type SimpleSearchQuery struct {
-	store.Pagination
+	store.SegmentFilter
 	Query string
 }
 
@@ -229,7 +229,7 @@ func (o *linkDoc) extractTokens(obj interface{}) {
 			o.extractTokens(v)
 		}
 	case []interface{}:
-		for v := range value {
+		for _, v := range value {
 			o.extractTokens(v)
 		}
 	case float64:
@@ -441,25 +441,7 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 	return filter.PaginateStrings(res), nil
 }
 
-func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
-	// Flush to make sure the documents got written.
-	ctx := context.TODO()
-	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// prepare search service.
-	svc := es.client.
-		Search().
-		Index(linksIndex).
-		Type(docType)
-
-	// add pagination.
-	svc = svc.
-		From(filter.Pagination.Offset).
-		Size(filter.Pagination.Limit)
-
+func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 	// prepare filter queries.
 	filterQueries := []elastic.Query{}
 
@@ -503,8 +485,30 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 		filterQueries = append(filterQueries, q)
 	}
 
-	// make final query.
-	q := elastic.NewBoolQuery().Filter(filterQueries...)
+	return filterQueries
+}
+
+func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+	// Flush to make sure the documents got written.
+	ctx := context.TODO()
+	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// prepare search service.
+	svc := es.client.
+		Search().
+		Index(linksIndex).
+		Type(docType)
+
+	// add pagination.
+	svc = svc.
+		From(filter.Pagination.Offset).
+		Size(filter.Pagination.Limit)
+
+	// prepare filter queries.
+	q := elastic.NewBoolQuery().Filter(makeFilterQueries(filter)...)
 
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)
@@ -531,7 +535,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 	return res, nil
 }
 
-func (es *ESStore) search(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
+func (es *ESStore) simpleSearchQuery(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
 	// Flush to make sure the documents got written.
 	ctx := context.TODO()
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
@@ -550,8 +554,12 @@ func (es *ESStore) search(query *SimpleSearchQuery) (cs.SegmentSlice, error) {
 		From(query.Pagination.Offset).
 		Size(query.Pagination.Limit)
 
-	// make simple search query
-	q := elastic.NewSimpleQueryStringQuery(query.Query)
+	// prepare Query.
+	q := elastic.NewBoolQuery().
+		// add filter queries.
+		Filter(makeFilterQueries(&query.SegmentFilter)...).
+		// add simple search query.
+		Must(elastic.NewSimpleQueryStringQuery(query.Query))
 
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)
