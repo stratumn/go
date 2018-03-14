@@ -17,8 +17,6 @@ package elasticsearchstore
 import (
 	"encoding/hex"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
@@ -101,7 +99,7 @@ func New(config *Config) (*ESStore, error) {
 	}
 
 	if config.LogLevel != "" {
-		lvl, err := logrus.ParseLevel(config.LogLevel)
+		lvl, err := log.ParseLevel(config.LogLevel)
 
 		if err != nil {
 			return nil, err
