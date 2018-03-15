@@ -25,7 +25,7 @@ import (
 
 var (
 	// ErrInvalidValidator is returned when the schema and the signatures are both missing in a validator.
-	ErrInvalidValidator = errors.New("a validator requires a JSON schema or a signature criteria to be valid")
+	ErrInvalidValidator = errors.New("a validator requires a JSON schema, a signature or a transtion criteria to be valid")
 
 	// ErrBadPublicKey is returned when a public key is empty or not base64-encoded
 	ErrBadPublicKey = errors.New("public key must be a non null base64 encoded string")
@@ -134,7 +134,7 @@ func loadValidatorsConfig(process string, data json.RawMessage, pki *PKI) ([]Val
 		if linkType == "" {
 			return nil, ErrMissingLinkType
 		}
-		if len(val.Signatures) == 0 && val.Schema == nil {
+		if len(val.Signatures) == 0 && val.Schema == nil && val.Transitions == nil {
 			return nil, ErrInvalidValidator
 		}
 

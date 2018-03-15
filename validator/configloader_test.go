@@ -155,6 +155,30 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.IsType(t, &schemaValidator{}, validators[0])
 	})
 
+	t.Run("Transitions only", func(T *testing.T) {
+
+		const validJSONSig = `
+		{
+			"test": {
+			    "types": {
+				"init": {
+				    "transitions": ["test"]
+				}
+			    }
+			}
+		}`
+
+		testFile := utils.CreateTempFile(t, validJSONSig)
+		defer os.Remove(testFile)
+		validators, err := LoadConfig(testFile, nil)
+
+		require.NoError(t, err, "LoadConfig()")
+		assert.NotNil(t, validators)
+
+		require.Len(t, validators, 1)
+		assert.IsType(t, &transitionValidator{}, validators[0])
+	})
+
 }
 
 func TestLoadValidators_Error(t *testing.T) {
