@@ -102,7 +102,7 @@ func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIEr
 		if err != nil {
 			return &ABCIError{
 				CodeTypeValidation,
-				fmt.Sprintf("Link validation rules failed %v: %v", link, err),
+				fmt.Sprintf("Link validation rules failed: %v", err),
 			}
 		}
 	}
