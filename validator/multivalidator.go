@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"crypto/sha256"
 
 	cj "github.com/gibson042/canonicaljson-go"
@@ -59,14 +60,14 @@ func (v multiValidator) matchValidators(l *cs.Link) (linkValidators []Validator)
 
 // Validate runs the validation on every child validator matching the provided link.
 // It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
-func (v multiValidator) Validate(r store.SegmentReader, l *cs.Link) error {
+func (v multiValidator) Validate(ctx context.Context, r store.SegmentReader, l *cs.Link) error {
 	linkValidators := v.matchValidators(l)
 	if len(linkValidators) == 0 {
 		return errors.Errorf("Validation failed: link with process: [%s] and type: [%s] does not match any validator", l.Meta.Process, l.Meta.Type)
 	}
 
 	for _, child := range linkValidators {
-		err := child.Validate(r, l)
+		err := child.Validate(ctx, r, l)
 		if err != nil {
 			return err
 		}

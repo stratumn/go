@@ -15,6 +15,7 @@
 package tmpop
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -22,10 +23,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/merkle"
 	abci "github.com/tendermint/abci/types"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -83,14 +89,14 @@ const (
 )
 
 // New creates a new instance of a TMPop.
-func New(a store.Adapter, kv store.KeyValueStore, config *Config) (*TMPop, error) {
-	initialized, err := kv.GetValue(tmpopLastBlockKey)
+func New(ctx context.Context, a store.Adapter, kv store.KeyValueStore, config *Config) (*TMPop, error) {
+	initialized, err := kv.GetValue(ctx, tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
 	}
 	if initialized == nil {
 		log.Debug("No existing db, creating new db")
-		saveLastBlock(kv, LastBlock{
+		saveLastBlock(ctx, kv, LastBlock{
 			AppHash: types.NewBytes32FromBytes(nil),
 			Height:  0,
 		})
@@ -98,12 +104,12 @@ func New(a store.Adapter, kv store.KeyValueStore, config *Config) (*TMPop, error
 		log.Debug("Loading existing db")
 	}
 
-	lastBlock, err := ReadLastBlock(kv)
+	lastBlock, err := ReadLastBlock(ctx, kv)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot read the last block")
 	}
 
-	s, err := NewState(a, config)
+	s, err := NewState(ctx, a, config)
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +132,9 @@ func (t *TMPop) ConnectTendermint(tmClient TendermintClient) {
 
 // Info implements github.com/tendermint/abci/types.Application.Info.
 func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
+	_, span := trace.StartSpan(context.Background(), "tmpop/Info")
+	defer span.End()
+
 	// In case we don't have an app hash, Tendermint requires us to return
 	// an empty byte slice (instead of a 32-byte array of 0)
 	// Otherwise handshake will not work
@@ -152,25 +161,35 @@ func (t *TMPop) SetOption(req abci.RequestSetOption) abci.ResponseSetOption {
 
 // BeginBlock implements github.com/tendermint/abci/types.Application.BeginBlock.
 func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	ctx, span := trace.StartSpan(context.Background(), "tmpop/BeginBlock")
+	defer span.End()
+
 	t.currentHeader = &req.Header
 	if t.currentHeader == nil {
 		log.Error("Cannot begin block without header")
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: "Cannot begin block without header"})
 		return abci.ResponseBeginBlock{}
 	}
+
+	stats.Record(ctx, blockCount.M(1), txPerBlock.M(int64(t.currentHeader.NumTxs)))
 
 	// If the AppHash of the previous block is present in this block's header,
 	// consensus has been formed around it.
 	// This AppHash will never be denied in a future block so we can add
 	// evidence to the links that were added in the previous blocks.
 	if t.lastBlock.AppHash.EqualsBytes(t.currentHeader.AppHash) {
-		t.addTendermintEvidence(&req.Header)
+		t.addTendermintEvidence(ctx, &req.Header)
 	} else {
-		log.Warnf("Unexpected AppHash in BeginBlock, got %x, expected %x",
+		errorMessage := fmt.Sprintf(
+			"Unexpected AppHash in BeginBlock, got %x, expected %x",
 			t.currentHeader.AppHash,
-			*t.lastBlock.AppHash)
+			*t.lastBlock.AppHash,
+		)
+		log.Warn(errorMessage)
+		span.Annotate(nil, errorMessage)
 	}
 
-	t.state.UpdateValidators()
+	t.state.UpdateValidators(ctx)
 
 	t.state.previousAppHash = types.NewBytes32FromBytes(t.currentHeader.AppHash)
 
@@ -179,20 +198,30 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
 // DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx.
 func (t *TMPop) DeliverTx(tx []byte) abci.ResponseDeliverTx {
-	err := t.doTx(t.state.Deliver, tx)
+	ctx, span := trace.StartSpan(context.Background(), "tmpop/DeliverTx")
+	defer span.End()
+
+	err := t.doTx(ctx, t.state.Deliver, tx)
 	if !err.IsOK() {
+		ctx, _ = tag.New(ctx, tag.Upsert(txStatus, "invalid"))
+		stats.Record(ctx, txCount.M(1))
 		return abci.ResponseDeliverTx{
 			Code: err.Code,
 			Log:  err.Log,
 		}
 	}
 
+	ctx, _ = tag.New(ctx, tag.Upsert(txStatus, "valid"))
+	stats.Record(ctx, txCount.M(1))
 	return abci.ResponseDeliverTx{}
 }
 
 // CheckTx implements github.com/tendermint/abci/types.Application.CheckTx.
 func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
-	err := t.doTx(t.state.Check, tx)
+	ctx, span := trace.StartSpan(context.Background(), "tmpop/CheckTx")
+	defer span.End()
+
+	err := t.doTx(ctx, t.state.Check, tx)
 	if !err.IsOK() {
 		return abci.ResponseCheckTx{
 			Code: err.Code,
@@ -206,19 +235,25 @@ func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
 // Commit implements github.com/tendermint/abci/types.Application.Commit.
 // It actually commits the current state in the Store.
 func (t *TMPop) Commit() abci.ResponseCommit {
-	appHash, links, err := t.state.Commit()
+	ctx, span := trace.StartSpan(context.Background(), "tmpop/Commit")
+	defer span.End()
+
+	appHash, links, err := t.state.Commit(ctx)
 	if err != nil {
 		log.Errorf("Error while committing: %s", err)
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return abci.ResponseCommit{}
 	}
 
-	if err := t.saveValidatorHash(); err != nil {
+	if err := t.saveValidatorHash(ctx); err != nil {
 		log.Errorf("Error while saving validator hash: %s", err)
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return abci.ResponseCommit{}
 	}
 
-	if err := t.saveCommitLinkHashes(links); err != nil {
+	if err := t.saveCommitLinkHashes(ctx, links); err != nil {
 		log.Errorf("Error while saving committed link hashes: %s", err)
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return abci.ResponseCommit{}
 	}
 
@@ -227,7 +262,7 @@ func (t *TMPop) Commit() abci.ResponseCommit {
 	t.lastBlock.AppHash = appHash
 	t.lastBlock.Height = t.currentHeader.Height
 	t.lastBlock.LastHeader = t.currentHeader
-	saveLastBlock(t.kvDB, *t.lastBlock)
+	saveLastBlock(ctx, t.kvDB, *t.lastBlock)
 
 	return abci.ResponseCommit{
 		Data: appHash[:],
@@ -236,9 +271,14 @@ func (t *TMPop) Commit() abci.ResponseCommit {
 
 // Query implements github.com/tendermint/abci/types.Application.Query.
 func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) {
+	ctx, span := trace.StartSpan(context.Background(), "tmpop/Query")
+	span.AddAttributes(trace.StringAttribute("Path", reqQuery.Path))
+	defer span.End()
+
 	if reqQuery.Height != 0 {
 		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = "tmpop only supports queries on latest commit"
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: resQuery.Log})
 		return
 	}
 
@@ -261,7 +301,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 			break
 		}
 
-		result, err = t.adapter.GetSegment(linkHash)
+		result, err = t.adapter.GetSegment(ctx, linkHash)
 
 	case GetEvidences:
 		linkHash := &types.Bytes32{}
@@ -269,7 +309,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 			break
 		}
 
-		result, err = t.adapter.GetEvidences(linkHash)
+		result, err = t.adapter.GetEvidences(ctx, linkHash)
 
 	case AddEvidence:
 		evidence := &struct {
@@ -280,7 +320,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 			break
 		}
 
-		if err = t.adapter.AddEvidence(evidence.LinkHash, evidence.Evidence); err != nil {
+		if err = t.adapter.AddEvidence(ctx, evidence.LinkHash, evidence.Evidence); err != nil {
 			break
 		}
 
@@ -292,7 +332,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 			break
 		}
 
-		result, err = t.adapter.FindSegments(filter)
+		result, err = t.adapter.FindSegments(ctx, filter)
 
 	case GetMapIDs:
 		filter := &store.MapFilter{}
@@ -300,7 +340,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 			break
 		}
 
-		result, err = t.adapter.GetMapIDs(filter)
+		result, err = t.adapter.GetMapIDs(ctx, filter)
 
 	case PendingEvents:
 		result = t.eventsManager.GetPendingEvents()
@@ -313,14 +353,16 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	if err != nil {
 		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = err.Error()
-
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: resQuery.Log})
 		return
 	}
+
 	if result != nil {
 		resBytes, err := json.Marshal(result)
 		if err != nil {
 			resQuery.Code = CodeTypeInternalError
 			resQuery.Log = err.Error()
+			span.SetStatus(trace.Status{Code: monitoring.Internal, Message: resQuery.Log})
 		}
 
 		resQuery.Value = resBytes
@@ -329,7 +371,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	return
 }
 
-func (t *TMPop) doTx(createLink func(*cs.Link) *ABCIError, txBytes []byte) *ABCIError {
+func (t *TMPop) doTx(ctx context.Context, createLink func(context.Context, *cs.Link) *ABCIError, txBytes []byte) *ABCIError {
 	if len(txBytes) == 0 {
 		return &ABCIError{
 			CodeTypeValidation,
@@ -344,7 +386,7 @@ func (t *TMPop) doTx(createLink func(*cs.Link) *ABCIError, txBytes []byte) *ABCI
 
 	switch tx.TxType {
 	case CreateLink:
-		return createLink(tx.Link)
+		return createLink(ctx, tx.Link)
 	default:
 		return &ABCIError{
 			CodeTypeNotImplemented,
@@ -354,9 +396,14 @@ func (t *TMPop) doTx(createLink func(*cs.Link) *ABCIError, txBytes []byte) *ABCI
 }
 
 // addTendermintEvidence computes and stores new evidence
-func (t *TMPop) addTendermintEvidence(header *abci.Header) {
+func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) {
+	ctx, span := trace.StartSpan(ctx, "tmpop/addTendermintEvidence")
+	span.AddAttributes(trace.Int64Attribute("Height", header.Height))
+	defer span.End()
+
 	if t.tmClient == nil {
 		log.Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "TMPoP not connected to Tendermint Core."})
 		return
 	}
 
@@ -368,12 +415,14 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	// we need block N+2 to be committed.
 	evidenceHeight := header.Height - 3
 	if evidenceHeight <= 0 {
+		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition})
 		return
 	}
 
-	linkHashes, err := t.getCommitLinkHashes(evidenceHeight)
+	linkHashes, err := t.getCommitLinkHashes(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get link hashes for block %d. Evidence will not be generated.", header.Height)
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get link hashes"})
 		return
 	}
 
@@ -381,32 +430,39 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 		return
 	}
 
-	validatorHash, err := t.getValidatorHash(evidenceHeight)
+	span.AddAttributes(trace.Int64Attribute("LinksCount", int64(len(linkHashes))))
+
+	validatorHash, err := t.getValidatorHash(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get validator hash for block %d. Evidence will not be generated.", header.Height)
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not get validator hash"})
 		return
 	}
 
-	evidenceBlock, err := t.tmClient.Block(evidenceHeight)
+	evidenceBlock, err := t.tmClient.Block(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get block %d header: %v", header.Height, err)
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get block"})
 		return
 	}
 
-	evidenceNextBlock, err := t.tmClient.Block(evidenceHeight + 1)
+	evidenceNextBlock, err := t.tmClient.Block(ctx, evidenceHeight+1)
 	if err != nil {
 		log.Warnf("Could not get next block %d header: %v", header.Height, err)
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get next block"})
 		return
 	}
 
-	evidenceLastBlock, err := t.tmClient.Block(evidenceHeight + 2)
+	evidenceLastBlock, err := t.tmClient.Block(ctx, evidenceHeight+2)
 	if err != nil {
 		log.Warnf("Could not get last block %d header: %v", header.Height, err)
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get last block"})
 		return
 	}
 
 	if len(evidenceNextBlock.Votes) == 0 || len(evidenceLastBlock.Votes) == 0 {
 		log.Warnf("Block %d isn't signed by validator nodes. Evidence will not be generated.", header.Height)
+		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition, Message: "Votes are missing"})
 		return
 	}
 
@@ -419,6 +475,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	merkle, err := merkle.NewStaticTree(leaves)
 	if err != nil {
 		log.Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not create merkle tree"})
 		return
 	}
 
@@ -427,6 +484,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 	if err != nil {
 		log.Warnf("Could not compute app hash for block %d. Evidence will not be generated.", header.Height)
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not compute app hash"})
 		return
 	}
 	if !appHash.EqualsBytes(evidenceNextBlock.Header.AppHash) {
@@ -434,6 +492,7 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 			*appHash,
 			header.Height,
 			header.AppHash)
+		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition, Message: "AppHash mismatch"})
 		return
 	}
 
@@ -466,8 +525,9 @@ func (t *TMPop) addTendermintEvidence(header *abci.Header) {
 				},
 			}
 
-			if err := t.adapter.AddEvidence(linkHash, evidence); err != nil {
+			if err := t.adapter.AddEvidence(ctx, linkHash, evidence); err != nil {
 				log.Warnf("Evidence could not be added to local store: %v", err)
+				span.Annotatef(nil, "Evidence for %x could not be added: %s", *linkHash, err.Error())
 			}
 
 			newEvidences[linkHash] = evidence

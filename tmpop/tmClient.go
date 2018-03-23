@@ -18,19 +18,23 @@ package tmpop
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"go.opencensus.io/trace"
 )
 
 // TendermintClient is a light interface to query Tendermint Core.
 type TendermintClient interface {
-	Block(height int64) (*Block, error)
+	Block(ctx context.Context, height int64) (*Block, error)
 }
 
 // Block contains the parts of a Tendermint block that TMPoP is interested in.
@@ -58,9 +62,13 @@ func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 }
 
 // Block queries for a block at a specific height.
-func (c *TendermintClientWrapper) Block(height int64) (*Block, error) {
+func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Block, error) {
+	ctx, span := trace.StartSpan(ctx, "tmclient/Block")
+	defer span.End()
+
 	tmBlock, err := c.tmClient.Block(&height)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: err.Error()})
 		return nil, errors.Wrap(err, "could not get block from Tendermint Core")
 	}
 
@@ -73,6 +81,7 @@ func (c *TendermintClientWrapper) Block(height int64) (*Block, error) {
 	}
 	validators, err := c.tmClient.Validators(&prevHeight)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: err.Error()})
 		return nil, errors.Wrap(err, "could not get validators from Tendermint Core")
 	}
 
@@ -100,6 +109,7 @@ func (c *TendermintClientWrapper) Block(height int64) (*Block, error) {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {
 			log.Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
+			span.Annotatef(nil, "Could not unmarshall block Tx %+v.", tx)
 			continue
 		}
 

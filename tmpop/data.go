@@ -15,6 +15,7 @@
 package tmpop
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -31,8 +32,8 @@ func (t *TMPop) GetCurrentHeader() *abci.Header {
 }
 
 // ReadLastBlock returns the last block committed by TMPop
-func ReadLastBlock(kv store.KeyValueReader) (*LastBlock, error) {
-	lBytes, err := kv.GetValue(tmpopLastBlockKey)
+func ReadLastBlock(ctx context.Context, kv store.KeyValueReader) (*LastBlock, error) {
+	lBytes, err := kv.GetValue(ctx, tmpopLastBlockKey)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +51,8 @@ func ReadLastBlock(kv store.KeyValueReader) (*LastBlock, error) {
 }
 
 // saveLastBlock saves the last block committed by TMPop
-func saveLastBlock(a store.KeyValueWriter, l LastBlock) {
-	a.SetValue(tmpopLastBlockKey, wire.BinaryBytes(l))
+func saveLastBlock(ctx context.Context, a store.KeyValueWriter, l LastBlock) {
+	a.SetValue(ctx, tmpopLastBlockKey, wire.BinaryBytes(l))
 }
 
 func getValidatorHashKey(height int64) []byte {
@@ -60,7 +61,7 @@ func getValidatorHashKey(height int64) []byte {
 }
 
 // saveValidatorHash saves the hash of the validator used for the current block
-func (t *TMPop) saveValidatorHash() error {
+func (t *TMPop) saveValidatorHash(ctx context.Context) error {
 	if t.state.validator != nil {
 		key := getValidatorHashKey(t.currentHeader.Height)
 		h, err := t.state.validator.Hash()
@@ -68,7 +69,7 @@ func (t *TMPop) saveValidatorHash() error {
 			return err
 		}
 
-		if err := t.kvDB.SetValue(key, h[:]); err != nil {
+		if err := t.kvDB.SetValue(ctx, key, h[:]); err != nil {
 			return err
 		}
 	}
@@ -77,9 +78,9 @@ func (t *TMPop) saveValidatorHash() error {
 }
 
 // getValidatorHash gets the hash of the validator used for a block at a specific height
-func (t *TMPop) getValidatorHash(height int64) (*types.Bytes32, error) {
+func (t *TMPop) getValidatorHash(ctx context.Context, height int64) (*types.Bytes32, error) {
 	key := getValidatorHashKey(height)
-	value, err := t.kvDB.GetValue(key)
+	value, err := t.kvDB.GetValue(ctx, key)
 	if err != nil || value == nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func getCommitLinkHashesKey(height int64) []byte {
 // doesn't provide yet an easy way to know which transactions are invalid in
 // a block, this is useful to generate valid evidence and ignore invalid
 // transactions.
-func (t *TMPop) saveCommitLinkHashes(links []*cs.Link) error {
+func (t *TMPop) saveCommitLinkHashes(ctx context.Context, links []*cs.Link) error {
 	if len(links) > 0 {
 		key := getCommitLinkHashesKey(t.currentHeader.Height)
 
@@ -112,7 +113,7 @@ func (t *TMPop) saveCommitLinkHashes(links []*cs.Link) error {
 			return err
 		}
 
-		if err := t.kvDB.SetValue(key, value); err != nil {
+		if err := t.kvDB.SetValue(ctx, key, value); err != nil {
 			return err
 		}
 	}
@@ -122,9 +123,9 @@ func (t *TMPop) saveCommitLinkHashes(links []*cs.Link) error {
 
 // getCommitLinkHashes gets the link hashes included in a block at a specific height.
 // This is useful to ignore invalid links included in that block.
-func (t *TMPop) getCommitLinkHashes(height int64) ([]types.Bytes32, error) {
+func (t *TMPop) getCommitLinkHashes(ctx context.Context, height int64) ([]types.Bytes32, error) {
 	key := getCommitLinkHashesKey(height)
-	value, err := t.kvDB.GetValue(key)
+	value, err := t.kvDB.GetValue(ctx, key)
 	if err != nil || value == nil {
 		return nil, err
 	}

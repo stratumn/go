@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"crypto/sha256"
 	"strings"
 
@@ -102,7 +103,7 @@ func (pv pkiValidator) ShouldValidate(link *cs.Link) bool {
 
 // Validate checks that the provided signatures match the required ones.
 // a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
-func (pv pkiValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
+func (pv pkiValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
 	for _, required := range pv.RequiredSignatures {
 		fulfilled := false
 		for _, sig := range link.Signatures {

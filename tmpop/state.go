@@ -15,6 +15,7 @@
 package tmpop
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 
@@ -44,8 +45,8 @@ type State struct {
 }
 
 // NewState creates a new State.
-func NewState(a store.Adapter, config *Config) (*State, error) {
-	deliveredLinks, err := a.NewBatch()
+func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, error) {
+	deliveredLinks, err := a.NewBatch(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func NewState(a store.Adapter, config *Config) (*State, error) {
 		checkedLinks:   checkedLinks,
 	}
 
-	state.governance, err = validator.NewGovernanceManager(a, config.ValidatorFilename)
+	state.governance, err = validator.NewGovernanceManager(ctx, a, config.ValidatorFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -69,18 +70,18 @@ func NewState(a store.Adapter, config *Config) (*State, error) {
 }
 
 // UpdateValidators updates validators if a new version is available
-func (s *State) UpdateValidators() {
-	s.governance.UpdateValidators(&s.validator)
+func (s *State) UpdateValidators(ctx context.Context) {
+	s.governance.UpdateValidators(ctx, &s.validator)
 }
 
 // Check checks if creating this link is a valid operation
-func (s *State) Check(link *cs.Link) *ABCIError {
-	return s.checkLinkAndAddToBatch(link, s.checkedLinks)
+func (s *State) Check(ctx context.Context, link *cs.Link) *ABCIError {
+	return s.checkLinkAndAddToBatch(ctx, link, s.checkedLinks)
 }
 
 // Deliver adds a link to the list of links to be committed
-func (s *State) Deliver(link *cs.Link) *ABCIError {
-	res := s.checkLinkAndAddToBatch(link, s.deliveredLinks)
+func (s *State) Deliver(ctx context.Context, link *cs.Link) *ABCIError {
+	res := s.checkLinkAndAddToBatch(ctx, link, s.deliveredLinks)
 	if res.IsOK() {
 		s.deliveredLinksList = append(s.deliveredLinksList, link)
 	}
@@ -88,8 +89,8 @@ func (s *State) Deliver(link *cs.Link) *ABCIError {
 }
 
 // checkLinkAndAddToBatch validates the link's format and runs the validations (signatures, schema)
-func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIError {
-	err := link.Validate(batch.GetSegment)
+func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch store.Batch) *ABCIError {
+	err := link.Validate(ctx, batch.GetSegment)
 	if err != nil {
 		return &ABCIError{
 			CodeTypeValidation,
@@ -98,7 +99,7 @@ func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIEr
 	}
 
 	if s.validator != nil {
-		err = s.validator.Validate(batch, link)
+		err = s.validator.Validate(ctx, batch, link)
 		if err != nil {
 			return &ABCIError{
 				CodeTypeValidation,
@@ -107,7 +108,7 @@ func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIEr
 		}
 	}
 
-	if _, err := batch.CreateLink(link); err != nil {
+	if _, err := batch.CreateLink(ctx, link); err != nil {
 		return &ABCIError{
 			CodeTypeInternalError,
 			err.Error(),
@@ -121,17 +122,17 @@ func (s *State) checkLinkAndAddToBatch(link *cs.Link, batch store.Batch) *ABCIEr
 // resets delivered and checked state,
 // and returns the hash for the commit
 // and the list of committed links.
-func (s *State) Commit() (*types.Bytes32, []*cs.Link, error) {
+func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*cs.Link, error) {
 	appHash, err := s.computeAppHash()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if err := s.deliveredLinks.Write(); err != nil {
+	if err := s.deliveredLinks.Write(ctx); err != nil {
 		return nil, nil, err
 	}
 
-	if s.deliveredLinks, err = s.adapter.NewBatch(); err != nil {
+	if s.deliveredLinks, err = s.adapter.NewBatch(ctx); err != nil {
 		return nil, nil, err
 	}
 	s.checkedLinks = bufferedbatch.NewBatch(s.adapter)

@@ -15,6 +15,8 @@
 package validator
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
@@ -30,7 +32,7 @@ const (
 type Validator interface {
 	// Validate runs validations on a link and returns an error
 	// if the link is invalid.
-	Validate(store.SegmentReader, *cs.Link) error
+	Validate(context.Context, store.SegmentReader, *cs.Link) error
 
 	// ShouldValidate returns a boolean whether the link should be checked
 	ShouldValidate(*cs.Link) bool

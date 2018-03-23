@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -62,7 +63,7 @@ func (sv schemaValidator) ShouldValidate(link *cs.Link) bool {
 }
 
 // Validate validates the schema of a link's state.
-func (sv schemaValidator) Validate(_ store.SegmentReader, link *cs.Link) error {
+func (sv schemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
 	stateBytes, err := json.Marshal(link.State)
 	if err != nil {
 		return errors.WithStack(err)

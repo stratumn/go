@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"crypto/sha256"
 
 	cj "github.com/gibson042/canonicaljson-go"
@@ -56,7 +57,7 @@ func (tv transitionValidator) ShouldValidate(link *cs.Link) bool {
 // Validate checks that the link follows a valid transition.
 // If there is no previous link, an empty link has to be allowed,
 // Otherwise the meta.type of the prevLink must exist in authorized previous statement.
-func (tv transitionValidator) Validate(store store.SegmentReader, link *cs.Link) error {
+func (tv transitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *cs.Link) error {
 	error := func(src string) error {
 		return errors.Errorf("no transition found %s --> %s", src, tv.Config.LinkType)
 	}
@@ -71,7 +72,7 @@ func (tv transitionValidator) Validate(store store.SegmentReader, link *cs.Link)
 		return error("()")
 	}
 
-	seg, err := store.GetSegment(prevLinkHash)
+	seg, err := store.GetSegment(ctx, prevLinkHash)
 	if err != nil {
 		return errors.Wrapf(err, "cannot retrieve previous segment %s", prevLinkHash.String())
 	}

@@ -16,18 +16,16 @@
 package cs
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-
 	"reflect"
-
-	"github.com/pkg/errors"
-
-	"github.com/stratumn/go-indigocore/types"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
+	"github.com/pkg/errors"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // Segment contains a link and meta data about the link.
@@ -70,7 +68,7 @@ func (s *Segment) IsEmpty() bool {
 }
 
 // Validate checks for errors in a segment
-func (s *Segment) Validate(getSegment GetSegmentFunc) error {
+func (s *Segment) Validate(ctx context.Context, getSegment GetSegmentFunc) error {
 	if s.Meta.LinkHash == "" {
 		return errors.New("meta.linkHash should be a non empty string")
 	}
@@ -83,11 +81,11 @@ func (s *Segment) Validate(getSegment GetSegmentFunc) error {
 		return errors.New("meta.linkHash is not in sync with link")
 	}
 
-	return s.Link.Validate(getSegment)
+	return s.Link.Validate(ctx, getSegment)
 }
 
 // GetSegmentFunc is the function signature to retrieve a Segment
-type GetSegmentFunc func(linkHash *types.Bytes32) (*Segment, error)
+type GetSegmentFunc func(ctx context.Context, linkHash *types.Bytes32) (*Segment, error)
 
 // SegmentMeta contains additional information about the segment and a proof of existence
 type SegmentMeta struct {
@@ -193,7 +191,7 @@ func (m *LinkMeta) GetTagMap() map[string]struct{} {
 
 // Validate checks for errors in a link.
 // It checks the validity of: format, signatures and references.
-func (l *Link) Validate(getSegment GetSegmentFunc) error {
+func (l *Link) Validate(ctx context.Context, getSegment GetSegmentFunc) error {
 	if l.Meta.Process == "" {
 		return errors.New("link.meta.process should be a non empty string")
 	}
@@ -215,13 +213,13 @@ func (l *Link) Validate(getSegment GetSegmentFunc) error {
 		return err
 	}
 
-	return l.validateReferences(getSegment)
+	return l.validateReferences(ctx, getSegment)
 }
 
-func (l *Link) validateReferences(getSegment GetSegmentFunc) error {
+func (l *Link) validateReferences(ctx context.Context, getSegment GetSegmentFunc) error {
 	for refIdx, ref := range l.Meta.Refs {
 		if ref.Segment != nil {
-			if err := ref.Segment.Link.Validate(getSegment); err != nil {
+			if err := ref.Segment.Link.Validate(ctx, getSegment); err != nil {
 				return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
 			}
 		} else {
@@ -233,7 +231,7 @@ func (l *Link) validateReferences(getSegment GetSegmentFunc) error {
 				return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
 			}
 			if l.Meta.Process == ref.Process && getSegment != nil {
-				if seg, err := getSegment(linkHash); err != nil {
+				if seg, err := getSegment(ctx, linkHash); err != nil {
 					return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
 				} else if seg == nil {
 					return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)

@@ -16,6 +16,7 @@ package validator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 
 	"github.com/fsnotify/fsnotify"
@@ -51,7 +52,7 @@ type GovernanceManager struct {
 }
 
 // NewGovernanceManager enhances validator management with some governance concepts.
-func NewGovernanceManager(a store.Adapter, filename string) (*GovernanceManager, error) {
+func NewGovernanceManager(ctx context.Context, a store.Adapter, filename string) (*GovernanceManager, error) {
 	var err error
 	var govMgr = GovernanceManager{
 		adapter:       a,
@@ -59,8 +60,8 @@ func NewGovernanceManager(a store.Adapter, filename string) (*GovernanceManager,
 		validators:    make(map[string][]Validator, 0),
 	}
 
-	govMgr.loadValidatorsFromFile(filename)
-	govMgr.loadValidatorsFromStore()
+	govMgr.loadValidatorsFromFile(ctx, filename)
+	govMgr.loadValidatorsFromStore(ctx)
 	if len(govMgr.validators) > 0 {
 		govMgr.sendValidators()
 	}
@@ -76,10 +77,10 @@ func NewGovernanceManager(a store.Adapter, filename string) (*GovernanceManager,
 	return &govMgr, nil
 }
 
-func (m *GovernanceManager) loadValidatorsFromFile(filename string) (err error) {
+func (m *GovernanceManager) loadValidatorsFromFile(ctx context.Context, filename string) (err error) {
 	if filename != "" {
 		_, err = LoadConfig(filename, func(process string, schema rulesSchema, validators []Validator) {
-			m.validators[process] = m.updateValidatorInStore(process, schema, validators)
+			m.validators[process] = m.updateValidatorInStore(ctx, process, schema, validators)
 		})
 		if err != nil {
 			log.Errorf("Cannot load validator rules file %s: %s", filename, err)
@@ -88,10 +89,10 @@ func (m *GovernanceManager) loadValidatorsFromFile(filename string) (err error) 
 	return err
 }
 
-func (m *GovernanceManager) loadValidatorsFromStore() {
-	for _, process := range m.getAllProcesses() {
+func (m *GovernanceManager) loadValidatorsFromStore(ctx context.Context) {
+	for _, process := range m.getAllProcesses(ctx) {
 		if _, exist := m.validators[process]; !exist {
-			m.validators[process] = m.getValidators(process)
+			m.validators[process] = m.getValidators(ctx, process)
 		}
 	}
 }
@@ -104,10 +105,10 @@ func (m *GovernanceManager) sendValidators() {
 	m.validatorChan <- NewMultiValidator(v4ch)
 }
 
-func (m *GovernanceManager) getAllProcesses() []string {
+func (m *GovernanceManager) getAllProcesses(ctx context.Context) []string {
 	processSet := make(map[string]interface{}, 0)
 	for offset := 0; offset >= 0; {
-		segments, err := m.adapter.FindSegments(&store.SegmentFilter{
+		segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{Offset: offset, Limit: store.MaxLimit},
 			Process:    governanceProcessName,
 			Tags:       []string{validatorTag},
@@ -136,8 +137,8 @@ func (m *GovernanceManager) getAllProcesses() []string {
 	return ret
 }
 
-func (m *GovernanceManager) getValidators(process string) []Validator {
-	segments, err := m.adapter.FindSegments(&store.SegmentFilter{
+func (m *GovernanceManager) getValidators(ctx context.Context, process string) []Validator {
+	segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    governanceProcessName,
 		Tags:       []string{process, validatorTag},
@@ -168,8 +169,8 @@ func (m *GovernanceManager) getValidators(process string) []Validator {
 	return nil
 }
 
-func (m *GovernanceManager) updateValidatorInStore(process string, schema rulesSchema, validators []Validator) []Validator {
-	segments, err := m.adapter.FindSegments(&store.SegmentFilter{
+func (m *GovernanceManager) updateValidatorInStore(ctx context.Context, process string, schema rulesSchema, validators []Validator) []Validator {
+	segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    governanceProcessName,
 		Tags:       []string{process, validatorTag},
@@ -180,7 +181,7 @@ func (m *GovernanceManager) updateValidatorInStore(process string, schema rulesS
 	}
 	if len(segments) == 0 {
 		log.Warnf("No governance segments found for process %s", process)
-		if err = m.uploadValidator(process, schema, nil); err != nil {
+		if err = m.uploadValidator(ctx, process, schema, nil); err != nil {
 			log.Warnf("Cannot upload validator: %s", err)
 		}
 		return validators
@@ -189,7 +190,7 @@ func (m *GovernanceManager) updateValidatorInStore(process string, schema rulesS
 	if m.compareFromStore(link.State, "pki", schema.PKI) != nil ||
 		m.compareFromStore(link.State, "types", schema.Types) != nil {
 		log.Infof("Validator or process %s has to be updated in store", process)
-		if err = m.uploadValidator(process, schema, &link); err != nil {
+		if err = m.uploadValidator(ctx, process, schema, &link); err != nil {
 			log.Warnf("Cannot upload validator: %s", err)
 		}
 	}
@@ -225,7 +226,7 @@ func (m *GovernanceManager) compareFromStore(meta map[string]interface{}, key st
 	return nil
 }
 
-func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, prevLink *cs.Link) error {
+func (m *GovernanceManager) uploadValidator(ctx context.Context, process string, schema rulesSchema, prevLink *cs.Link) error {
 	priority := 0.
 	mapID := ""
 	prevLinkHash := ""
@@ -257,7 +258,7 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 		Signatures: cs.Signatures{},
 	}
 
-	hash, err := m.adapter.CreateLink(link)
+	hash, err := m.adapter.CreateLink(ctx, link)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create link for process governance %s", process)
 	}
@@ -266,7 +267,7 @@ func (m *GovernanceManager) uploadValidator(process string, schema rulesSchema, 
 }
 
 // UpdateValidators will replace validator if a new one is available
-func (m *GovernanceManager) UpdateValidators(v *Validator) bool {
+func (m *GovernanceManager) UpdateValidators(ctx context.Context, v *Validator) bool {
 	if m.validatorWatcher != nil {
 		var validatorFile string
 		select {
@@ -281,7 +282,7 @@ func (m *GovernanceManager) UpdateValidators(v *Validator) bool {
 		}
 		if validatorFile != "" {
 			go func() {
-				if m.loadValidatorsFromFile(validatorFile) == nil {
+				if m.loadValidatorsFromFile(ctx, validatorFile) == nil {
 					m.sendValidators()
 				}
 			}()

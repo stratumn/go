@@ -24,6 +24,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/types"
@@ -37,6 +38,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/jsonhttp"
+
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -59,7 +62,6 @@ const (
 // TMStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
 type TMStore struct {
 	config          *Config
-	ctx             context.Context
 	tmEventChan     chan interface{}
 	storeEventChans []chan *store.Event
 	tmClient        client.Client
@@ -87,13 +89,15 @@ type Info struct {
 func New(config *Config, tmClient client.Client) *TMStore {
 	return &TMStore{
 		config:   config,
-		ctx:      context.Background(),
 		tmClient: tmClient,
 	}
 }
 
 // StartWebsocket starts the websocket client and wait for New Block events.
-func (t *TMStore) StartWebsocket() error {
+func (t *TMStore) StartWebsocket(ctx context.Context) error {
+	ctx, span := trace.StartSpan(ctx, "tmstore/StartWebSocket")
+	defer span.End()
+
 	if !t.tmClient.IsRunning() {
 		if err := t.tmClient.Start(); err != nil && err != tmcommon.ErrAlreadyStarted {
 			return err
@@ -109,11 +113,11 @@ func (t *TMStore) StartWebsocket() error {
 				break
 			}
 
-			go t.notifyStoreChans()
+			go t.notifyStoreChans(context.Background())
 		}
 	}()
 
-	if err := t.tmClient.Subscribe(t.ctx, Name, tmtypes.EventQueryNewBlock, t.tmEventChan); err != nil && err.Error() != ErrAlreadySubscribed {
+	if err := t.tmClient.Subscribe(ctx, Name, tmtypes.EventQueryNewBlock, t.tmEventChan); err != nil && err.Error() != ErrAlreadySubscribed {
 		return err
 	}
 
@@ -122,9 +126,9 @@ func (t *TMStore) StartWebsocket() error {
 }
 
 // RetryStartWebsocket starts the websocket client and retries on errors.
-func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
+func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duration) error {
 	return utils.Retry(func(attempt int) (retry bool, err error) {
-		err = t.StartWebsocket()
+		err = t.StartWebsocket(ctx)
 		if err != nil {
 			if err.Error() == ErrAlreadySubscribed {
 				return false, nil
@@ -137,9 +141,12 @@ func (t *TMStore) RetryStartWebsocket(interval time.Duration) error {
 }
 
 // StopWebsocket stops the websocket client.
-func (t *TMStore) StopWebsocket() error {
+func (t *TMStore) StopWebsocket(ctx context.Context) error {
+	ctx, span := trace.StartSpan(ctx, "tmstore/StopWebSocket")
+	defer span.End()
+
 	// Note: no need to close t.tmEventChan, unsubscribing handles it
-	if err := t.tmClient.UnsubscribeAll(t.ctx, Name); err != nil {
+	if err := t.tmClient.UnsubscribeAll(ctx, Name); err != nil {
 		log.Warnf("Error unsubscribing to Tendermint events: %s", err.Error())
 		return err
 	}
@@ -154,9 +161,9 @@ func (t *TMStore) StopWebsocket() error {
 	return nil
 }
 
-func (t *TMStore) notifyStoreChans() {
+func (t *TMStore) notifyStoreChans(ctx context.Context) {
 	var pendingEvents []*store.Event
-	response, err := t.sendQuery(tmpop.PendingEvents, nil)
+	response, err := t.sendQuery(ctx, tmpop.PendingEvents, nil)
 	if err != nil || response.Value == nil {
 		log.Warn("Could not get pending events from TMPoP.")
 	}
@@ -179,8 +186,8 @@ func (t *TMStore) AddStoreEventChannel(storeChan chan *store.Event) {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (t *TMStore) GetInfo() (interface{}, error) {
-	response, err := t.sendQuery(tmpop.GetInfo, nil)
+func (t *TMStore) GetInfo(ctx context.Context) (interface{}, error) {
+	response, err := t.sendQuery(ctx, tmpop.GetInfo, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +208,7 @@ func (t *TMStore) GetInfo() (interface{}, error) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (t *TMStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (t *TMStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return linkHash, err
@@ -212,17 +219,18 @@ func (t *TMStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 		Link:     link,
 		LinkHash: linkHash,
 	}
-	_, err = t.broadcastTx(tx)
+	_, err = t.broadcastTx(ctx, tx)
 
 	return linkHash, err
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (t *TMStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (t *TMStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	// Adding an external evidence does not require consensus
 	// So it will not go through a blockchain transaction, but will rather
 	// be stored in TMPoP's store directly
 	_, err := t.sendQuery(
+		ctx,
 		tmpop.AddEvidence,
 		struct {
 			LinkHash *types.Bytes32
@@ -247,9 +255,9 @@ func (t *TMStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) er
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (t *TMStore) GetEvidences(linkHash *types.Bytes32) (evidences *cs.Evidences, err error) {
+func (t *TMStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (evidences *cs.Evidences, err error) {
 	evidences = &cs.Evidences{}
-	response, err := t.sendQuery(tmpop.GetEvidences, linkHash)
+	response, err := t.sendQuery(ctx, tmpop.GetEvidences, linkHash)
 	if err != nil {
 		return
 	}
@@ -266,8 +274,8 @@ func (t *TMStore) GetEvidences(linkHash *types.Bytes32) (evidences *cs.Evidences
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
-	response, err := t.sendQuery(tmpop.GetSegment, linkHash)
+func (t *TMStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segment *cs.Segment, err error) {
+	response, err := t.sendQuery(ctx, tmpop.GetSegment, linkHash)
 	if err != nil {
 		return
 	}
@@ -289,8 +297,8 @@ func (t *TMStore) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err 
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (t *TMStore) FindSegments(filter *store.SegmentFilter) (segmentSlice cs.SegmentSlice, err error) {
-	response, err := t.sendQuery(tmpop.FindSegments, filter)
+func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (segmentSlice cs.SegmentSlice, err error) {
+	response, err := t.sendQuery(ctx, tmpop.FindSegments, filter)
 	if err != nil {
 		return
 	}
@@ -304,8 +312,8 @@ func (t *TMStore) FindSegments(filter *store.SegmentFilter) (segmentSlice cs.Seg
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
-func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
-	response, err := t.sendQuery(tmpop.GetMapIDs, filter)
+func (t *TMStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (ids []string, err error) {
+	response, err := t.sendQuery(ctx, tmpop.GetMapIDs, filter)
 	err = json.Unmarshal(response.Value, &ids)
 	if err != nil {
 		return
@@ -315,46 +323,64 @@ func (t *TMStore) GetMapIDs(filter *store.MapFilter) (ids []string, err error) {
 }
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
-func (t *TMStore) NewBatch() (store.Batch, error) {
+func (t *TMStore) NewBatch(ctx context.Context) (store.Batch, error) {
 	return bufferedbatch.NewBatch(t), nil
 }
 
-func (t *TMStore) broadcastTx(tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
+func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
+	ctx, span := trace.StartSpan(ctx, "tmstore/broadcastTx")
+	defer span.End()
+
 	txBytes, err := json.Marshal(tx)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 
 	result, err := t.tmClient.BroadcastTxCommit(txBytes)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: err.Error()})
 		return nil, err
 	}
+
 	if result.CheckTx.IsErr() {
 		if result.CheckTx.Code == tmpop.CodeTypeValidation {
 			// TODO: this package should be HTTP unaware, so
 			// we need a better way to pass error types.
+			span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: result.CheckTx.Log})
 			return nil, jsonhttp.NewErrBadRequest(result.CheckTx.Log)
 		}
+
+		span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: result.CheckTx.Log})
 		return nil, fmt.Errorf(result.CheckTx.Log)
 	}
+
 	if result.DeliverTx.IsErr() {
+		span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: result.DeliverTx.Log})
 		return nil, fmt.Errorf(result.DeliverTx.Log)
 	}
 
 	return result, nil
 }
 
-func (t *TMStore) sendQuery(name string, args interface{}) (res *abci.ResponseQuery, err error) {
+func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) (res *abci.ResponseQuery, err error) {
+	ctx, span := trace.StartSpan(ctx, "tmstore/sendQuery")
+	defer span.End()
+
 	query, err := tmpop.BuildQueryBinary(args)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return
 	}
 
 	response, err := t.tmClient.ABCIQuery(name, query)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return
 	}
+
 	if !response.Response.IsOK() {
+		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: response.Response.Log})
 		return res, fmt.Errorf("NOK Response from TMPop: %v", response.Response)
 	}
 

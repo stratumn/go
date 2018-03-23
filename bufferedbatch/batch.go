@@ -15,6 +15,8 @@
 package bufferedbatch
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
@@ -35,8 +37,8 @@ func NewBatch(a store.Adapter) *Batch {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (b *Batch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	if err := link.Validate(b.GetSegment); err != nil {
+func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+	if err := link.Validate(ctx, b.GetSegment); err != nil {
 		return nil, err
 	}
 	b.Links = append(b.Links, link)
@@ -44,7 +46,7 @@ func (b *Batch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // GetSegment returns a segment from the cache or delegates the call to the store.
-func (b *Batch) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err error) {
+func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segment *cs.Segment, err error) {
 	for _, link := range b.Links {
 		lh, err := link.Hash()
 		if err != nil {
@@ -60,12 +62,12 @@ func (b *Batch) GetSegment(linkHash *types.Bytes32) (segment *cs.Segment, err er
 		return segment, nil
 	}
 
-	return b.originalStore.GetSegment(linkHash)
+	return b.originalStore.GetSegment(ctx, linkHash)
 }
 
 // FindSegments returns the union of segments in the store and not committed yet.
-func (b *Batch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
-	segments, err := b.originalStore.FindSegments(filter)
+func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+	segments, err := b.originalStore.FindSegments(ctx, filter)
 	if err != nil {
 		return segments, err
 	}
@@ -80,8 +82,8 @@ func (b *Batch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 }
 
 // GetMapIDs returns the union of mapIds in the store and not committed yet.
-func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
-	tmpMapIDs, err := b.originalStore.GetMapIDs(filter)
+func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
+	tmpMapIDs, err := b.originalStore.GetMapIDs(ctx, filter)
 	if err != nil {
 		return tmpMapIDs, err
 	}
@@ -106,9 +108,9 @@ func (b *Batch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 }
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
-func (b *Batch) Write() (err error) {
+func (b *Batch) Write(ctx context.Context) (err error) {
 	for _, link := range b.Links {
-		_, err = b.originalStore.CreateLink(link)
+		_, err = b.originalStore.CreateLink(ctx, link)
 		if err != nil {
 			break
 		}

@@ -16,6 +16,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 
 	log "github.com/sirupsen/logrus"
@@ -48,7 +49,7 @@ func main() {
 		},
 		tmClient)
 
-	go a.RetryStartWebsocket(*tmWsRetryInterval)
+	go a.RetryStartWebsocket(context.Background(), *tmWsRetryInterval)
 
 	storehttp.RunWithFlags(a)
 }

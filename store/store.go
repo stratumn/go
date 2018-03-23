@@ -16,6 +16,8 @@
 package store
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -32,14 +34,14 @@ const (
 type SegmentReader interface {
 	// Get a segment by link hash. Returns nil if no match is found.
 	// Will return link and evidences (if there are some in that store).
-	GetSegment(linkHash *types.Bytes32) (*cs.Segment, error)
+	GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error)
 
 	// Find segments. Returns an empty slice if there are no results.
 	// Will return links and evidences (if there are some).
-	FindSegments(filter *SegmentFilter) (cs.SegmentSlice, error)
+	FindSegments(ctx context.Context, filter *SegmentFilter) (cs.SegmentSlice, error)
 
 	// Get all the existing map IDs.
-	GetMapIDs(filter *MapFilter) ([]string, error)
+	GetMapIDs(ctx context.Context, filter *MapFilter) ([]string, error)
 }
 
 // LinkWriter is the interface for writing links to a store.
@@ -48,7 +50,7 @@ type LinkWriter interface {
 	// Create the immutable part of a segment.
 	// The input link is expected to be valid.
 	// Returns the link hash or an error.
-	CreateLink(link *cs.Link) (*types.Bytes32, error)
+	CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error)
 }
 
 // EvidenceReader is the interface for reading segment evidence from a store.
@@ -56,13 +58,13 @@ type EvidenceReader interface {
 	// Get the evidences for a segment.
 	// Can return a nil error with an empty evidence slice if
 	// the segment currently doesn't have evidence.
-	GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error)
+	GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error)
 }
 
 // EvidenceWriter is the interface for adding evidence to a segment in a store.
 type EvidenceWriter interface {
 	// Add an evidence to a segment.
-	AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error
+	AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error
 }
 
 // EvidenceStore is the interface for storing and reading segment evidence.
@@ -77,7 +79,7 @@ type Batch interface {
 	LinkWriter
 
 	// Write definitely writes the content of the Batch
-	Write() error
+	Write(ctx context.Context) error
 }
 
 // Adapter is the minimal interface that all stores should implement.
@@ -88,24 +90,24 @@ type Adapter interface {
 	EvidenceStore
 
 	// Returns arbitrary information about the adapter.
-	GetInfo() (interface{}, error)
+	GetInfo(ctx context.Context) (interface{}, error)
 
 	// Adds a channel that receives events from the store.
 	AddStoreEventChannel(chan *Event)
 
 	// Creates a new Batch
-	NewBatch() (Batch, error)
+	NewBatch(ctx context.Context) (Batch, error)
 }
 
 // KeyValueReader is the interface for reading key-value pairs.
 type KeyValueReader interface {
-	GetValue(key []byte) ([]byte, error)
+	GetValue(ctx context.Context, key []byte) ([]byte, error)
 }
 
 // KeyValueWriter is the interface for writing key-value pairs.
 type KeyValueWriter interface {
-	SetValue(key []byte, value []byte) error
-	DeleteValue(key []byte) ([]byte, error)
+	SetValue(ctx context.Context, key []byte, value []byte) error
+	DeleteValue(ctx context.Context, key []byte) ([]byte, error)
 }
 
 // KeyValueStore is the interface for a key-value store.
