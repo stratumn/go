@@ -15,26 +15,30 @@
 package tmpop
 
 import (
+	"context"
 	"runtime"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/tendermint/tendermint/rpc/client"
-
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tendermint"
+	"github.com/tendermint/tendermint/rpc/client"
 )
 
 // Run launches a TMPop Tendermint App
 func Run(a store.Adapter, kv store.KeyValueStore, config *Config) {
-	adapterInfo, err := a.GetInfo()
+	ctx := context.Background()
+
+	adapterInfo, err := a.GetInfo(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	tmpop, err := New(a, kv, config)
+	tmpop, err := New(ctx, a, kv, config)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	go exposeMetrics()
 
 	log.Infof("TMPop v%s@%s", config.Version, config.Commit[:7])
 	log.Infof("Adapter %v", adapterInfo)
