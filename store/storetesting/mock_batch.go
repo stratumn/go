@@ -15,6 +15,8 @@
 package storetesting
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
@@ -91,7 +93,7 @@ type MockBatchGetMapIDs struct {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.Batch.CreateLink.
-func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (a *MockBatch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
 	a.MockCreateLink.LastCalledWith = link
@@ -104,7 +106,7 @@ func (a *MockBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
-func (a *MockBatch) Write() error {
+func (a *MockBatch) Write(ctx context.Context) error {
 	a.MockWrite.CalledCount++
 
 	if a.MockWrite.Fn != nil {
@@ -114,7 +116,7 @@ func (a *MockBatch) Write() error {
 }
 
 // GetSegment delegates the call to a underlying store
-func (a *MockBatch) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *MockBatch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.MockGetSegment.CalledCount++
 
 	if a.MockGetSegment.Fn != nil {
@@ -124,7 +126,7 @@ func (a *MockBatch) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 }
 
 // FindSegments delegates the call to a underlying store
-func (a *MockBatch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *MockBatch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	a.MockFindSegments.CalledCount++
 
 	if a.MockFindSegments.Fn != nil {
@@ -134,7 +136,7 @@ func (a *MockBatch) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, 
 }
 
 // GetMapIDs delegates the call to a underlying store
-func (a *MockBatch) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+func (a *MockBatch) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	a.MockGetMapIDs.CalledCount++
 
 	if a.MockGetMapIDs.Fn != nil {
