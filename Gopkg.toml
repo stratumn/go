@@ -93,10 +93,6 @@
   branch = "fix-bell"
   source = "github.com/stratumn/readline"
 
-[[constraint]]
-  name = "go.opencensus.io"
-  version = "0.6.0"
-
 [[override]]
   # go.opencensus.io doesn't vendor dependencies and needs this
   name = "git.apache.org/thrift.git"
