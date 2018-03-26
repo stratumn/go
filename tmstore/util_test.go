@@ -21,6 +21,8 @@ of tests in various packages.
 **/
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/tmpop"
 	node "github.com/tendermint/tendermint/node"
@@ -47,7 +49,7 @@ func ResetNode() {
 func StartNode(config *tmpop.Config) *node.Node {
 	testDummyStore = dummystore.New(&dummystore.Config{})
 	var err error
-	testTmpop, err = tmpop.New(testDummyStore, testDummyStore, config)
+	testTmpop, err = tmpop.New(context.Background(), testDummyStore, testDummyStore, config)
 	if err != nil {
 		panic(err)
 	}

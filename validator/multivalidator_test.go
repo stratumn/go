@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -133,7 +134,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 		l.State["message"] = "test"
 		l.Signatures[0].PublicKey = "TESTKEY1"
 
-		err := mv.Validate(nil, l)
+		err := mv.Validate(context.Background(), nil, l)
 		assert.NoError(t, err)
 	})
 
@@ -143,7 +144,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 
 		process := l.Meta.Process
 
-		err := mv.Validate(nil, l)
+		err := mv.Validate(context.Background(), nil, l)
 		assert.EqualError(t, err, fmt.Sprintf("Validation failed: link with process: [%s] and type: [nomatch] does not match any validator", process))
 	})
 
@@ -152,7 +153,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 		l.Meta.Process = "p"
 		l.Meta.Type = "a2"
 
-		err := mv.Validate(nil, l)
+		err := mv.Validate(context.Background(), nil, l)
 		assert.EqualError(t, err, "link validation failed: [message: message is required]")
 	})
 
@@ -162,7 +163,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 		l.Meta.Type = "a1"
 		l.State["message"] = "test"
 
-		err := mv.Validate(nil, l)
+		err := mv.Validate(context.Background(), nil, l)
 		assert.Error(t, err)
 	})
 }

@@ -15,6 +15,7 @@
 package elasticsearchstore
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -24,8 +25,6 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/require"
-
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
@@ -33,6 +32,7 @@ import (
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
 	"github.com/stratumn/go-indigocore/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -135,7 +135,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		"last":   "salazar",
 		"common": "stratumn",
 	}
-	a.CreateLink(link1)
+	a.CreateLink(context.Background(), link1)
 	hash1, _ := link1.HashString()
 
 	link2 := cstesting.RandomLink()
@@ -147,7 +147,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		"last":   "daniel",
 		"common": "stratumn",
 	}
-	a.CreateLink(link2)
+	a.CreateLink(context.Background(), link2)
 	hash2, _ := link2.HashString()
 
 	t.Run("Simple Search Query", func(t *testing.T) {

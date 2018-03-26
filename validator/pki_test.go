@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"testing"
@@ -132,7 +133,7 @@ func TestPKIValidator(t *testing.T) {
 		sv := newPkiValidator(baseCfg, tt.requiredSignatures, pki)
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := sv.Validate(nil, tt.link())
+			err := sv.Validate(context.Background(), nil, tt.link())
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {

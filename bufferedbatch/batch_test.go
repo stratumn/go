@@ -15,6 +15,7 @@
 package bufferedbatch
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -31,12 +32,13 @@ func TestBatch_CreateLink(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(a)
 
+	ctx := context.Background()
 	l := cstesting.RandomLink()
 
 	wantedErr := errors.New("error on MockCreateLink")
 	a.MockCreateLink.Fn = func(link *cs.Link) (*types.Bytes32, error) { return nil, wantedErr }
 
-	if _, err := batch.CreateLink(l); err != nil {
+	if _, err := batch.CreateLink(ctx, l); err != nil {
 		t.Fatalf("batch.CreateLink(): err: %s", err)
 	}
 	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
@@ -47,7 +49,7 @@ func TestBatch_CreateLink(t *testing.T) {
 	}
 
 	l.Meta.MapID = ""
-	if _, err := batch.CreateLink(l); err == nil {
+	if _, err := batch.CreateLink(ctx, l); err == nil {
 		t.Fatal("batch.CreateLink() should return an error when mapId is missing")
 	}
 }
@@ -56,13 +58,15 @@ func TestBatch_GetSegment(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(a)
 
+	ctx := context.Background()
+
 	storedLink := cstesting.RandomLink()
 	storedLinkHash, _ := storedLink.Hash()
 	batchLink1 := cstesting.RandomLink()
 	batchLink2 := cstesting.RandomLink()
 
-	batchLinkHash1, _ := batch.CreateLink(batchLink1)
-	batchLinkHash2, _ := batch.CreateLink(batchLink2)
+	batchLinkHash1, _ := batch.CreateLink(ctx, batchLink1)
+	batchLinkHash2, _ := batch.CreateLink(ctx, batchLink2)
 
 	notFoundErr := errors.New("Unit test error")
 	a.MockGetSegment.Fn = func(linkHash *types.Bytes32) (*cs.Segment, error) {
@@ -76,7 +80,7 @@ func TestBatch_GetSegment(t *testing.T) {
 	var segment *cs.Segment
 	var err error
 
-	segment, err = batch.GetSegment(batchLinkHash1)
+	segment, err = batch.GetSegment(ctx, batchLinkHash1)
 	if err != nil {
 		t.Fatalf("batch.GetSegment(): err: %s", err)
 	}
@@ -84,7 +88,7 @@ func TestBatch_GetSegment(t *testing.T) {
 		t.Errorf("link = %v want %v", got, want)
 	}
 
-	segment, err = batch.GetSegment(batchLinkHash2)
+	segment, err = batch.GetSegment(ctx, batchLinkHash2)
 	if err != nil {
 		t.Fatalf("batch.GetSegment(): err: %s", err)
 	}
@@ -92,7 +96,7 @@ func TestBatch_GetSegment(t *testing.T) {
 		t.Errorf("link = %v want %v", got, want)
 	}
 
-	segment, err = batch.GetSegment(storedLinkHash)
+	segment, err = batch.GetSegment(ctx, storedLinkHash)
 	if err != nil {
 		t.Fatalf("batch.GetSegment(): err: %s", err)
 	}
@@ -100,7 +104,7 @@ func TestBatch_GetSegment(t *testing.T) {
 		t.Errorf("link = %v want %v", got, want)
 	}
 
-	segment, err = batch.GetSegment(testutil.RandomHash())
+	segment, err = batch.GetSegment(ctx, testutil.RandomHash())
 	if got, want := err, notFoundErr; got != want {
 		t.Errorf("GetSegment should return an error: %s want %s", got, want)
 	}
@@ -110,6 +114,8 @@ func TestBatch_FindSegments(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(a)
 
+	ctx := context.Background()
+
 	storedLink := cstesting.RandomLink()
 	storedLink.Meta.Process = "Foo"
 	l1 := cstesting.RandomLink()
@@ -117,8 +123,8 @@ func TestBatch_FindSegments(t *testing.T) {
 	l2 := cstesting.RandomLink()
 	l2.Meta.Process = "Bar"
 
-	batch.CreateLink(l1)
-	batch.CreateLink(l2)
+	batch.CreateLink(ctx, l1)
+	batch.CreateLink(ctx, l2)
 
 	notFoundErr := errors.New("Unit test error")
 	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
@@ -135,7 +141,7 @@ func TestBatch_FindSegments(t *testing.T) {
 	var segments cs.SegmentSlice
 	var err error
 
-	segments, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})
+	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})
 	if err != nil {
 		t.Fatalf("batch.FindSegments(): err: %s", err)
 	}
@@ -143,7 +149,7 @@ func TestBatch_FindSegments(t *testing.T) {
 		t.Errorf("segment slice length = %d want %d", got, want)
 	}
 
-	segments, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Bar"})
+	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Bar"})
 	if err != nil {
 		t.Fatalf("batch.FindSegments(): err: %s", err)
 	}
@@ -151,7 +157,7 @@ func TestBatch_FindSegments(t *testing.T) {
 		t.Errorf("segment slice length = %d want %d", got, want)
 	}
 
-	_, err = batch.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
+	_, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
 	if got, want := err, notFoundErr; got != want {
 		t.Errorf("FindSegments should return an error: %s want %s", got, want)
 	}
@@ -160,6 +166,8 @@ func TestBatch_FindSegments(t *testing.T) {
 func TestBatch_GetMapIDs(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(a)
+
+	ctx := context.Background()
 
 	storedLink1 := cstesting.RandomLink()
 	storedLink1.Meta.MapID = "Foo1"
@@ -175,8 +183,8 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	batchLink2.Meta.MapID = "Yin"
 	batchLink2.Meta.Process = "YinProcess"
 
-	batch.CreateLink(batchLink1)
-	batch.CreateLink(batchLink2)
+	batch.CreateLink(ctx, batchLink1)
+	batch.CreateLink(ctx, batchLink2)
 
 	a.MockGetMapIDs.Fn = func(filter *store.MapFilter) ([]string, error) {
 		if filter.Process == storedLink1.Meta.Process {
@@ -195,7 +203,7 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	var mapIDs []string
 	var err error
 
-	mapIDs, err = batch.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+	mapIDs, err = batch.GetMapIDs(ctx, &store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 	if err != nil {
 		t.Fatalf("batch.GetMapIDs(): err: %s", err)
 	}
@@ -207,7 +215,7 @@ func TestBatch_GetMapIDs(t *testing.T) {
 		Process:    "FooProcess",
 		Pagination: store.Pagination{Limit: store.DefaultLimit},
 	}
-	mapIDs, err = batch.GetMapIDs(processFilter)
+	mapIDs, err = batch.GetMapIDs(ctx, processFilter)
 	if err != nil {
 		t.Fatalf("batch.GetMapIDs(): err: %s", err)
 	}
@@ -228,13 +236,15 @@ func TestBatch_GetMapIDsWithStoreReturningAnErrorOnGetMapIDs(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(a)
 
+	ctx := context.Background()
+
 	wantedMapIds := []string{"Foo", "Bar"}
 	notFoundErr := errors.New("Unit test error")
 	a.MockGetMapIDs.Fn = func(filter *store.MapFilter) ([]string, error) {
 		return wantedMapIds, notFoundErr
 	}
 
-	if mapIDs, err := batch.GetMapIDs(&store.MapFilter{}); err == nil {
+	if mapIDs, err := batch.GetMapIDs(ctx, &store.MapFilter{}); err == nil {
 		t.Fatal("batch.GetMapIDs() should return an error")
 	} else if got, want := len(mapIDs), len(wantedMapIds); got != want {
 		t.Fatalf("mapIds length = %d want %d", got, want)
@@ -247,14 +257,16 @@ func TestBatch_WriteLink(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	l := cstesting.RandomLink()
 
+	ctx := context.Background()
+
 	batch := NewBatch(a)
 
-	_, err := batch.CreateLink(l)
+	_, err := batch.CreateLink(ctx, l)
 	if err != nil {
 		t.Fatalf("batch.CreateLink(): err: %s", err)
 	}
 
-	err = batch.Write()
+	err = batch.Write(ctx)
 	if err != nil {
 		t.Fatalf("batch.Write(): err: %s", err)
 	}
@@ -272,6 +284,8 @@ func TestBatch_WriteLinkWithFailure(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	mockError := errors.New("Error")
 
+	ctx := context.Background()
+
 	la := cstesting.RandomLink()
 	lb := cstesting.RandomLink()
 
@@ -284,17 +298,17 @@ func TestBatch_WriteLinkWithFailure(t *testing.T) {
 
 	batch := NewBatch(a)
 
-	_, err := batch.CreateLink(la)
+	_, err := batch.CreateLink(ctx, la)
 	if err != nil {
 		t.Fatalf("batch.CreateLink(): err: %s", err)
 	}
 
-	_, err = batch.CreateLink(lb)
+	_, err = batch.CreateLink(ctx, lb)
 	if err != nil {
 		t.Fatalf("batch.CreateLink(): err: %s", err)
 	}
 
-	if got, want := batch.Write(), mockError; got != want {
+	if got, want := batch.Write(ctx), mockError; got != want {
 		t.Errorf("batch.Write returned %v want %v", got, want)
 	}
 }

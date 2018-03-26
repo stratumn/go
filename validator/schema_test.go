@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs/cstesting"
@@ -137,7 +138,7 @@ func TestSchemaValidator(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := sv.Validate(nil, tt.link())
+			err := sv.Validate(context.Background(), nil, tt.link())
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {

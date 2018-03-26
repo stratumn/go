@@ -15,6 +15,7 @@
 package cs_test
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"sort"
@@ -60,13 +61,13 @@ func TestSegmentSetLinkHash(t *testing.T) {
 
 func TestLinkValidate_valid(t *testing.T) {
 	l := cstesting.RandomLink()
-	err := l.Validate(nil)
+	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err, "l.Validate()")
 }
 
 func TestSegmentValidate_valid(t *testing.T) {
 	s := cstesting.RandomSegment()
-	err := s.Validate(nil)
+	err := s.Validate(context.Background(), nil)
 	assert.NoError(t, err, "s.Validate()")
 }
 
@@ -77,7 +78,7 @@ func TestSegmentValidate_invalidLinkHash(t *testing.T) {
 			LinkHash: testutil.RandomString(24),
 		},
 	}
-	err := s.Validate(nil)
+	err := s.Validate(context.Background(), nil)
 	assert.Error(t, err)
 }
 
@@ -96,14 +97,14 @@ func TestLinkValidate_mapIDEmpty(t *testing.T) {
 func TestLinkValidate_prevLinkHashEmpty(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Meta.PrevLinkHash = ""
-	err := l.Validate(nil)
+	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err, "l.Validate()")
 }
 
 func TestLinkValidate_tagsNil(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Meta.Tags = nil
-	err := l.Validate(nil)
+	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err, "l.Validate()")
 }
 
@@ -117,7 +118,7 @@ func TestLinkValidate_refGoodLink(t *testing.T) {
 	l := cstesting.RandomLink()
 	ref := cstesting.RandomLink()
 	appendRefSegment(l, ref)
-	err := l.Validate(nil)
+	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err, "l.Validate()")
 }
 
@@ -150,14 +151,14 @@ func TestLinkValidate_refLinkHashBadType(t *testing.T) {
 func TestLinkValidate_refGoodLinkNotChecked(t *testing.T) {
 	l := cstesting.RandomLink()
 	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
-	err := l.Validate(nil)
+	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err)
 }
 
 func TestLinkValidate_refGoodLinkChecked(t *testing.T) {
 	l := cstesting.RandomLink()
 	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
-	err := l.Validate(func(linkHash *types.Bytes32) (*cs.Segment, error) {
+	err := l.Validate(context.Background(), func(_ context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 		return cstesting.RandomSegment(), nil
 	})
 	assert.NoError(t, err)
@@ -166,7 +167,7 @@ func TestLinkValidate_refGoodLinkChecked(t *testing.T) {
 func TestLinkValidate_refGoodLinkNotFound(t *testing.T) {
 	l := cstesting.RandomLink()
 	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
-	testLinkValidateErrorWrapper(t, l, func(linkHash *types.Bytes32) (*cs.Segment, error) {
+	testLinkValidateErrorWrapper(t, l, func(_ context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 		return nil, errors.New("Bad mood")
 	}, "Bad mood")
 }
@@ -174,14 +175,14 @@ func TestLinkValidate_refGoodLinkNotFound(t *testing.T) {
 func TestLinkValidate_refGoodNilLink(t *testing.T) {
 	l := cstesting.RandomLink()
 	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
-	testLinkValidateError(t, l, func(linkHash *types.Bytes32) (*cs.Segment, error) {
+	testLinkValidateError(t, l, func(_ context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 		return nil, nil
 	}, "link.meta.refs[0] segment is nil")
 }
 
 func TestLinkValidate_validSignature(t *testing.T) {
 	l := cstesting.SignLink(cstesting.RandomLink())
-	err := l.Validate(nil)
+	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err, "l.Validate()")
 }
 

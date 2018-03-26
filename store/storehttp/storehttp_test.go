@@ -210,10 +210,10 @@ func TestAddEvidence_err(t *testing.T) {
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
-	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
+	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
-	if got, want := body["error"].(string), jsonhttp.NewErrBadRequest("test").Error(); got != want {
+	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
 	}
 	if got, want := a.MockAddEvidence.CalledCount, 1; got != want {

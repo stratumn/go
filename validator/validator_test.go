@@ -15,20 +15,19 @@
 package validator_test
 
 import (
+	"context"
 	"encoding/base64"
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/utils"
-
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/validator"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
@@ -52,7 +51,7 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		},
 	}
 	priv, _ := base64.StdEncoding.DecodeString(validator.AlicePrivateKey)
-	initAuctionLinkHash, err := store.CreateLink(cstesting.SignLinkWithKey(initAuctionLink, priv))
+	initAuctionLinkHash, err := store.CreateLink(context.Background(), cstesting.SignLinkWithKey(initAuctionLink, priv))
 	require.NoError(t, err)
 
 	var testCases = []testCase{{
@@ -123,7 +122,7 @@ func TestValidator(t *testing.T) {
 	store, testCases := initTestCases(t)
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := v.Validate(store, tt.link)
+			err := v.Validate(context.Background(), store, tt.link)
 			if tt.valid {
 				assert.NoError(t, err, "v.Validate()")
 			} else {

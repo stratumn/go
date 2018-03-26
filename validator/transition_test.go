@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/dummystore"
@@ -71,13 +72,13 @@ func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
 	links.createdProduct = cstesting.RandomLinkWithProcess(process)
 	links.createdProduct.Meta.PrevLinkHash = ""
 	links.createdProduct.Meta.Type = stateCreatedProduct
-	_, err := store.CreateLink(links.createdProduct)
+	_, err := store.CreateLink(context.Background(), links.createdProduct)
 	require.NoError(t, err)
 
 	appendLink := func(prevLink *cs.Link, state string) *cs.Link {
 		l := cstesting.RandomBranch(prevLink)
 		l.Meta.Type = state
-		_, err := store.CreateLink(l)
+		_, err := store.CreateLink(context.Background(), l)
 		require.NoError(t, err)
 		return l
 	}
@@ -164,7 +165,7 @@ func TestTransitionValidator(t *testing.T) {
 			require.NoError(t, err)
 			v := newTransitionValidator(baseCfg, tt.transitions)
 
-			err = v.Validate(store, tt.link)
+			err = v.Validate(context.Background(), store, tt.link)
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {

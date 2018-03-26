@@ -150,21 +150,6 @@ type MockGetEvidences struct {
 	Fn func(*types.Bytes32) (*cs.Evidences, error)
 }
 
-// MockDeleteSegment mocks the DeleteSegment function.
-type MockDeleteSegment struct {
-	// The number of times the function was called.
-	CalledCount int
-
-	// The link hash that was passed to each call.
-	CalledWith []*types.Bytes32
-
-	// The last link hash that was passed.
-	LastCalledWith *types.Bytes32
-
-	// An optional implementation of the function.
-	Fn func(*types.Bytes32) (*cs.Segment, error)
-}
-
 // MockFindSegments mocks the FindSegments function.
 type MockFindSegments struct {
 	// The number of times the function was called.

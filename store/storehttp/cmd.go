@@ -62,6 +62,7 @@ func Run(
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
+	h.exposeMetrics()
 
 	go func() {
 		sigc := make(chan os.Signal)

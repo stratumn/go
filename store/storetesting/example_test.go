@@ -15,6 +15,7 @@
 package storetesting_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -34,7 +35,7 @@ func ExampleMockAdapter() {
 	}
 
 	// Execute GetInfo on the mock.
-	i, err := m.GetInfo()
+	i, err := m.GetInfo(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}

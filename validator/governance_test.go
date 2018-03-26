@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -29,14 +30,13 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetesting"
 	"github.com/stratumn/go-indigocore/utils"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func waitForUpdate(gov *GovernanceManager, v *Validator) error {
 	return utils.Retry(func(attempt int) (retry bool, err error) {
-		if gov.UpdateValidators(v) {
+		if gov.UpdateValidators(context.Background(), v) {
 			return false, nil
 		}
 		time.Sleep(25 * time.Millisecond)
@@ -48,7 +48,7 @@ func TestGovernanceCreation(t *testing.T) {
 	t.Run("Governance without file", func(t *testing.T) {
 		var v Validator
 		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(a, "")
+		gov, err := NewGovernanceManager(context.Background(), a, "")
 		assert.NoError(t, err, "Gouvernance is initialized by store")
 		assert.NotNil(t, gov, "Gouvernance is initialized by store")
 
@@ -61,7 +61,7 @@ func TestGovernanceCreation(t *testing.T) {
 		var v Validator
 		a := dummystore.New(nil)
 		populateStoreWithValidData(t, a)
-		gov, err := NewGovernanceManager(a, "")
+		gov, err := NewGovernanceManager(context.Background(), a, "")
 		assert.NoError(t, err, "Gouvernance is initialized by store")
 		assert.NotNil(t, gov, "Gouvernance is initialized by store")
 
@@ -75,7 +75,7 @@ func TestGovernanceCreation(t *testing.T) {
 		a := new(storetesting.MockAdapter)
 		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
-		gov, err := NewGovernanceManager(a, testFile)
+		gov, err := NewGovernanceManager(context.Background(), a, testFile)
 		assert.NoError(t, err, "Gouvernance is initialized by file and store")
 		assert.NotNil(t, gov, "Gouvernance is initialized by file and store")
 
@@ -87,7 +87,7 @@ func TestGovernanceCreation(t *testing.T) {
 	t.Run("Governance with invalid file", func(t *testing.T) {
 		var v Validator
 		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(a, "governance_test.go")
+		gov, err := NewGovernanceManager(context.Background(), a, "governance_test.go")
 		assert.NoError(t, err, "Gouvernance is initialized by store")
 		assert.NotNil(t, gov, "Gouvernance is initialized by store")
 
@@ -98,14 +98,14 @@ func TestGovernanceCreation(t *testing.T) {
 
 	t.Run("Governance with unexisting file", func(t *testing.T) {
 		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(a, "/foo/bar")
+		gov, err := NewGovernanceManager(context.Background(), a, "/foo/bar")
 		assert.Error(t, err, "Cannot initialize gouvernance with bad file")
 		assert.Nil(t, gov, "Cannot initialize gouvernance with bad file")
 	})
 }
 
 func checkLastValidatorPriority(t *testing.T, a store.Adapter, process string, expected float64) {
-	segs, err := a.FindSegments(&store.SegmentFilter{
+	segs, err := a.FindSegments(context.Background(), &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    governanceProcessName,
 		Tags:       []string{process, validatorTag},
@@ -123,7 +123,7 @@ func TestGovernanceUpdate(t *testing.T) {
 		checkLastValidatorPriority(t, a, "auction", 1.)
 		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
-		gov, err := NewGovernanceManager(a, testFile)
+		gov, err := NewGovernanceManager(context.Background(), a, testFile)
 		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
 
 		err = waitForUpdate(gov, &v)
@@ -138,7 +138,7 @@ func TestGovernanceUpdate(t *testing.T) {
 		a := dummystore.New(nil)
 		testFile := utils.CreateTempFile(t, validJSON)
 		defer os.Remove(testFile)
-		gov, err := NewGovernanceManager(a, testFile)
+		gov, err := NewGovernanceManager(context.Background(), a, testFile)
 		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
 
 		err = waitForUpdate(gov, &v)
@@ -166,18 +166,18 @@ func TestGovernanceUpdate(t *testing.T) {
 func TestGetAllProcesses(t *testing.T) {
 	t.Run("No process", func(t *testing.T) {
 		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(a, "")
+		gov, err := NewGovernanceManager(context.Background(), a, "")
 		require.NoError(t, err, "Gouvernance is initialized by store")
-		processes := gov.getAllProcesses()
+		processes := gov.getAllProcesses(context.Background())
 		assert.Empty(t, processes)
 	})
 
 	t.Run("2 processes", func(t *testing.T) {
 		a := dummystore.New(nil)
 		populateStoreWithValidData(t, a)
-		gov, err := NewGovernanceManager(a, "")
+		gov, err := NewGovernanceManager(context.Background(), a, "")
 		require.NoError(t, err, "Gouvernance is initialized by store")
-		processes := gov.getAllProcesses()
+		processes := gov.getAllProcesses(context.Background())
 		assert.Len(t, processes, 2)
 	})
 
@@ -187,12 +187,12 @@ func TestGetAllProcesses(t *testing.T) {
 			link := cstesting.RandomLink()
 			link.Meta.Process = governanceProcessName
 			link.Meta.Tags = []string{fmt.Sprintf("p%d", i), validatorTag}
-			_, err := a.CreateLink(link)
+			_, err := a.CreateLink(context.Background(), link)
 			assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 		}
-		gov, err := NewGovernanceManager(a, "")
+		gov, err := NewGovernanceManager(context.Background(), a, "")
 		require.NoError(t, err, "Gouvernance is initialized by store")
-		processes := gov.getAllProcesses()
+		processes := gov.getAllProcesses(context.Background())
 		assert.Len(t, processes, store.MaxLimit+42)
 	})
 }
@@ -201,7 +201,7 @@ func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
 	auctionPKI := json.RawMessage(ValidAuctionJSONPKIConfig)
 	auctionTypes := json.RawMessage(ValidAuctionJSONTypesConfig)
 	link := createGovernanceLink("auction", auctionPKI, auctionTypes)
-	hash, err := a.CreateLink(link)
+	hash, err := a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 	assert.NotNil(t, hash, "LinkHash should not be nil")
 
@@ -209,13 +209,13 @@ func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
 	link = createGovernanceLink("auction", auctionPKI, auctionTypes)
 	link.Meta.PrevLinkHash = hash.String()
 	link.Meta.Priority = 1.
-	_, err = a.CreateLink(link)
+	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 
 	chatPKI := json.RawMessage(ValidChatJSONPKIConfig)
 	chatTypes := json.RawMessage(ValidChatJSONTypesConfig)
 	link = createGovernanceLink("chat", chatPKI, chatTypes)
-	_, err = a.CreateLink(link)
+	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 }
 

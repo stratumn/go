@@ -100,8 +100,6 @@ func New(
 		storeEventsChan: make(chan *store.Event, config.StoreEventsChanSize),
 	}
 
-	s.exposeMetrics()
-
 	s.Get("/", s.root)
 	s.Post("/links", s.createLink)
 	s.Post("/evidences/:linkHash", s.addEvidence)

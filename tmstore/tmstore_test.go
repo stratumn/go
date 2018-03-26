@@ -15,6 +15,7 @@
 package tmstore
 
 import (
+	"context"
 	"encoding/base64"
 	"io/ioutil"
 	"net/http"
@@ -42,7 +43,7 @@ var (
 
 func newTestTMStore() (store.Adapter, error) {
 	tmstore = NewTestClient()
-	err := tmstore.RetryStartWebsocket(DefaultWsRetryInterval)
+	err := tmstore.RetryStartWebsocket(context.Background(), DefaultWsRetryInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func TestTMStore(t *testing.T) {
 	})
 
 	t.Run("Validation", func(t *testing.T) {
-		tmstore.StartWebsocket()
+		tmstore.StartWebsocket(context.Background())
 		updateValidatorRulesFile(t, filepath.Join("testdata", "rules.json"), rulesFilename)
 
 		var err error
@@ -107,7 +108,7 @@ func TestTMStore(t *testing.T) {
 			ITPrivateKey := ed25519.PrivateKey(privBytes)
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
 
-			_, err = tmstore.CreateLink(l)
+			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.NoError(t, err, "CreateLink() failed")
 		})
 
@@ -117,7 +118,7 @@ func TestTMStore(t *testing.T) {
 			l.Meta.Type = "init"
 			l.State["string"] = 42
 
-			_, err = tmstore.CreateLink(l)
+			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
 
 			errHTTP, ok := err.(jsonhttp.ErrHTTP)
@@ -132,7 +133,7 @@ func TestTMStore(t *testing.T) {
 			l.Meta.Type = "init"
 			l.State["string"] = "test"
 
-			_, err = tmstore.CreateLink(l)
+			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
 
 			errHTTP, ok := err.(jsonhttp.ErrHTTP)
@@ -146,7 +147,7 @@ func TestTMStore(t *testing.T) {
 			prevLink.Meta.PrevLinkHash = ""
 			prevLink.Meta.Type = "init"
 
-			_, err = tmstore.CreateLink(prevLink)
+			_, err = tmstore.CreateLink(context.Background(), prevLink)
 			assert.NoError(t, err, "CreateLink(init) failed")
 
 			l := cstesting.RandomBranch(prevLink)
@@ -158,7 +159,7 @@ func TestTMStore(t *testing.T) {
 			ITPrivateKey := ed25519.PrivateKey(privBytes)
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
 
-			_, err = tmstore.CreateLink(l)
+			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.NoError(t, err, "CreateLink() failed")
 
 			updateValidatorRulesFile(t, filepath.Join("testdata", "rules.new.json"), rulesFilename)
@@ -170,7 +171,7 @@ func TestTMStore(t *testing.T) {
 
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
 
-			_, err = tmstore.CreateLink(l)
+			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "CreateLink() should failed because signature is missing")
 		})
 	})
@@ -178,26 +179,26 @@ func TestTMStore(t *testing.T) {
 	// TestWebSocket tests how the web socket with Tendermint behaves
 	t.Run("Websocket", func(t *testing.T) {
 		t.Run("Start and stop websocket", func(t *testing.T) {
-			err := tmstore.StartWebsocket()
+			err := tmstore.StartWebsocket(context.Background())
 			assert.NoError(t, err)
 
-			err = tmstore.StopWebsocket()
+			err = tmstore.StopWebsocket(context.Background())
 			assert.NoError(t, err)
 		})
 
 		t.Run("Start websocket multiple times", func(t *testing.T) {
-			err := tmstore.StartWebsocket()
+			err := tmstore.StartWebsocket(context.Background())
 			assert.NoError(t, err)
 
-			err = tmstore.StartWebsocket()
+			err = tmstore.StartWebsocket(context.Background())
 			assert.NoError(t, err)
 
-			err = tmstore.StopWebsocket()
+			err = tmstore.StopWebsocket(context.Background())
 			assert.NoError(t, err)
 		})
 
 		t.Run("Stop already stopped websocket", func(t *testing.T) {
-			err := tmstore.StopWebsocket()
+			err := tmstore.StopWebsocket(context.Background())
 			assert.EqualError(t, err, "subscription not found")
 		})
 	})

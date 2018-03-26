@@ -15,6 +15,7 @@
 package cs_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -28,7 +29,7 @@ func strEqual(lhs, rhs string) bool {
 }
 
 func innerTestLinkValidate(t *testing.T, l *cs.Link, getSegment cs.GetSegmentFunc, want string, strComp func(lhs, rhs string) bool) {
-	err := l.Validate(getSegment)
+	err := l.Validate(context.Background(), getSegment)
 	require.Error(t, err, "l.Validate() expected error")
 	assert.True(t, strComp(err.Error(), want), "Unexpected error:\n%s\n", want, err.Error())
 }
