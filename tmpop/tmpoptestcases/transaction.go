@@ -108,7 +108,7 @@ func (f Factory) TestCommitTx(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	tmClientMock := tmpoptestcasesmocks.NewMockTendermintClient(ctrl)
-	tmClientMock.EXPECT().Block(gomock.Any()).Return(&tmpop.Block{}, nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), gomock.Any()).Return(&tmpop.Block{}, nil).AnyTimes()
 	h.ConnectTendermint(tmClientMock)
 
 	previousAppHash := req.Header.AppHash

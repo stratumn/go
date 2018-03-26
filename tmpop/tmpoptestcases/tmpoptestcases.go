@@ -15,6 +15,7 @@
 package tmpoptestcases
 
 import (
+	"context"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -77,7 +78,7 @@ func (f *Factory) newTMPop(t *testing.T, config *tmpop.Config) (*tmpop.TMPop, ab
 	if config == nil {
 		config = &tmpop.Config{}
 	}
-	h, err := tmpop.New(f.adapter, f.kv, config)
+	h, err := tmpop.New(context.Background(), f.adapter, f.kv, config)
 	if err != nil {
 		t.Fatalf("tmpop.New(): err: %s", err)
 	}

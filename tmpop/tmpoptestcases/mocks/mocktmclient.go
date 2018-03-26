@@ -4,6 +4,7 @@
 package tmpoptestcasesmocks
 
 import (
+	context "context"
 	gomock "github.com/golang/mock/gomock"
 	tmpop "github.com/stratumn/go-indigocore/tmpop"
 	reflect "reflect"
@@ -33,14 +34,14 @@ func (_m *MockTendermintClient) EXPECT() *MockTendermintClientMockRecorder {
 }
 
 // Block mocks base method
-func (_m *MockTendermintClient) Block(_param0 int64) (*tmpop.Block, error) {
-	ret := _m.ctrl.Call(_m, "Block", _param0)
+func (_m *MockTendermintClient) Block(_param0 context.Context, _param1 int64) (*tmpop.Block, error) {
+	ret := _m.ctrl.Call(_m, "Block", _param0, _param1)
 	ret0, _ := ret[0].(*tmpop.Block)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Block indicates an expected call of Block
-func (_mr *MockTendermintClientMockRecorder) Block(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "Block", reflect.TypeOf((*MockTendermintClient)(nil).Block), arg0)
+func (_mr *MockTendermintClientMockRecorder) Block(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "Block", reflect.TypeOf((*MockTendermintClient)(nil).Block), arg0, arg1)
 }

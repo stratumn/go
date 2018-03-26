@@ -15,6 +15,7 @@
 package tmpoptestcases
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/tmpop"
@@ -31,7 +32,7 @@ func (f Factory) TestLastBlock(t *testing.T) {
 	lastAppHash := req.Header.AppHash
 
 	t.Run("Commit stores last block information", func(t *testing.T) {
-		got, err := tmpop.ReadLastBlock(f.kv)
+		got, err := tmpop.ReadLastBlock(context.Background(), f.kv)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,7 +49,7 @@ func (f Factory) TestLastBlock(t *testing.T) {
 	})
 
 	t.Run("Restart with existing history", func(t *testing.T) {
-		h2, err := tmpop.New(f.adapter, f.kv, &tmpop.Config{})
+		h2, err := tmpop.New(context.Background(), f.adapter, f.kv, &tmpop.Config{})
 		if err != nil {
 			t.Fatalf("Couldn't start tmpop with existing store: %s", err)
 		}

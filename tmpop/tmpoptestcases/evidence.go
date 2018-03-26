@@ -105,7 +105,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: invalidLink1}},
 		Validators: validatorSet,
 	}
-	tmClientMock.EXPECT().Block(int64(1)).Return(blocks[1], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(1)).Return(blocks[1], nil).AnyTimes()
 
 	// Block2
 	link1 := cstesting.RandomLink()
@@ -124,7 +124,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[1].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(2)).Return(blocks[2], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(2)).Return(blocks[2], nil).AnyTimes()
 
 	// Block3
 	link3, req := commitRandomLink(t, h, req)
@@ -137,7 +137,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[2].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(3)).Return(blocks[3], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(3)).Return(blocks[3], nil).AnyTimes()
 
 	// Block4
 	invalidLink2 := cstesting.RandomLink()
@@ -151,7 +151,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[3].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(4)).Return(blocks[4], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(4)).Return(blocks[4], nil).AnyTimes()
 
 	// Block5
 	link4, req := commitRandomLink(t, h, req)
@@ -164,7 +164,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[4].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(5)).Return(blocks[5], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(5)).Return(blocks[5], nil).AnyTimes()
 
 	// Block6
 	link5, req := commitRandomLink(t, h, req)
@@ -176,7 +176,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[5].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(6)).Return(blocks[6], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(6)).Return(blocks[6], nil).AnyTimes()
 
 	// Block7: missing votes for the previous block
 	link6, req := commitRandomLink(t, h, req)
@@ -188,7 +188,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		// No votes here: should not generate evidence
 	}
-	tmClientMock.EXPECT().Block(int64(7)).Return(blocks[7], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(7)).Return(blocks[7], nil).AnyTimes()
 
 	// Block8: error from Tendermint Core
 	link7, req := commitRandomLink(t, h, req)
@@ -202,7 +202,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[7].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(8)).Return(nil, errors.New("internal error")).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(8)).Return(nil, errors.New("internal error")).AnyTimes()
 
 	// Block9
 	link8, req := commitRandomLink(t, h, req)
@@ -215,7 +215,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[8].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(9)).Return(blocks[9], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(9)).Return(blocks[9], nil).AnyTimes()
 
 	// Block10
 	link9, req := commitRandomLink(t, h, req)
@@ -228,7 +228,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[9].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(10)).Return(blocks[10], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(10)).Return(blocks[10], nil).AnyTimes()
 
 	// Block11
 	link10, req := commitRandomLink(t, h, req)
@@ -240,7 +240,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[10].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(11)).Return(blocks[11], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(11)).Return(blocks[11], nil).AnyTimes()
 
 	// Block12
 	link11, req := commitRandomLink(t, h, req)
@@ -252,7 +252,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		Validators: validatorSet,
 		Votes:      vote(blocks[11].Header),
 	}
-	tmClientMock.EXPECT().Block(int64(12)).Return(blocks[12], nil).AnyTimes()
+	tmClientMock.EXPECT().Block(gomock.Any(), int64(12)).Return(blocks[12], nil).AnyTimes()
 
 	t.Run("Adds evidence when block is properly signed", func(t *testing.T) {
 		got := &cs.Segment{}
