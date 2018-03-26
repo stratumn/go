@@ -17,6 +17,7 @@
 package rethinkstore
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -159,7 +160,7 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (a *Store) GetInfo() (interface{}, error) {
+func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -185,7 +186,7 @@ func formatLink(link *cs.Link) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	prevLinkHash := link.Meta.GetPrevLinkHash()
 
 	formatLink(link)
@@ -223,7 +224,7 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	cur, err := a.links.Get(linkHash[:]).Run(a.session)
 
 	if err != nil {
@@ -240,7 +241,7 @@ func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 	}
 
 	segment := w.Content.Segmentify()
-	if evidences, err := a.GetEvidences(segment.Meta.GetLinkHash()); evidences != nil && err == nil {
+	if evidences, err := a.GetEvidences(ctx, segment.Meta.GetLinkHash()); evidences != nil && err == nil {
 		segment.Meta.Evidences = *evidences
 	}
 
@@ -248,7 +249,7 @@ func (a *Store) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var prevLinkHash []byte
 	q := a.links
 
@@ -342,7 +343,7 @@ func (a *Store) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, erro
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
-func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	q := a.links
 	if process := filter.Process; len(process) > 0 {
 
@@ -385,7 +386,7 @@ func (a *Store) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
 		return err
@@ -427,7 +428,7 @@ func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) erro
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *Store) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *Store) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
 		return nil, err
@@ -445,7 +446,7 @@ func (a *Store) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
-func (a *Store) GetValue(key []byte) ([]byte, error) {
+func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	cur, err := a.values.Get(key).Run(a.session)
 	if err != nil {
 		return nil, err
@@ -464,7 +465,7 @@ func (a *Store) GetValue(key []byte) ([]byte, error) {
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (a *Store) SetValue(key, value []byte) error {
+func (a *Store) SetValue(ctx context.Context, key, value []byte) error {
 	v := &valueWrapper{
 		ID:    key,
 		Value: value,
@@ -474,7 +475,7 @@ func (a *Store) SetValue(key, value []byte) error {
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
-func (a *Store) DeleteValue(key []byte) ([]byte, error) {
+func (a *Store) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	res, err := a.values.
 		Get(key).
 		Delete(rethink.DeleteOpts{ReturnChanges: true}).
@@ -503,13 +504,13 @@ type rethinkBufferedBatch struct {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (b *rethinkBufferedBatch) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	formatLink(link)
-	return b.Batch.CreateLink(link)
+	return b.Batch.CreateLink(ctx, link)
 }
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
-func (a *Store) NewBatch() (store.Batch, error) {
+func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	bbBatch := bufferedbatch.NewBatch(a)
 	if bbBatch == nil {
 		return nil, errors.New("cannot create underlying batch")
