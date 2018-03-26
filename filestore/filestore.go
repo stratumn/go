@@ -294,17 +294,17 @@ func (a *FileStore) getLink(linkHash *types.Bytes32) (*cs.Link, error) {
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
 func (a *FileStore) SetValue(ctx context.Context, key []byte, value []byte) error {
-	return a.kvDB.SetValue(key, value)
+	return a.kvDB.SetValue(ctx, key, value)
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
 func (a *FileStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
-	return a.kvDB.GetValue(key)
+	return a.kvDB.GetValue(ctx, key)
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
 func (a *FileStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
-	return a.kvDB.DeleteValue(key)
+	return a.kvDB.DeleteValue(ctx, key)
 }
 
 /********** Utilities **********/

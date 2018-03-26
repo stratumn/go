@@ -15,6 +15,7 @@
 package elasticsearchstore
 
 import (
+	"context"
 	"encoding/hex"
 
 	"github.com/olivere/elastic"
@@ -136,7 +137,7 @@ func New(config *Config) (*ESStore, error) {
 /********** Store adapter implementation **********/
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (es *ESStore) GetInfo() (interface{}, error) {
+func (es *ESStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -151,14 +152,14 @@ func (es *ESStore) AddStoreEventChannel(eventChan chan *store.Event) {
 }
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
-func (es *ESStore) NewBatch() (store.Batch, error) {
+func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 	return bufferedbatch.NewBatch(es), nil
 }
 
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (es *ESStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (es *ESStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := es.createLink(link)
 	if err != nil {
 		return nil, err
@@ -172,7 +173,7 @@ func (es *ESStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (es *ESStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (es *ESStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	if err := es.addEvidence(linkHash.String(), evidence); err != nil {
 		return err
 	}
@@ -188,45 +189,45 @@ func (es *ESStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) e
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (es *ESStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	link, err := es.getLink(linkHash.String())
 	if err != nil || link == nil {
 		return nil, err
 	}
-	return es.segmentify(link), nil
+	return es.segmentify(ctx, link), nil
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (es *ESStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	return es.findSegments(filter)
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
-func (es *ESStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+func (es *ESStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	return es.getMapIDs(filter)
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (es *ESStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (es *ESStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
 	return es.getEvidences(linkHash.String())
 }
 
 /********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (es *ESStore) SetValue(key, value []byte) error {
+func (es *ESStore) SetValue(ctx context.Context, key, value []byte) error {
 	hexKey := hex.EncodeToString(key)
 	return es.setValue(hexKey, value)
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.Adapter.GetValue.
-func (es *ESStore) GetValue(key []byte) ([]byte, error) {
+func (es *ESStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
 	return es.getValue(hexKey)
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.Adapter.DeleteValue.
-func (es *ESStore) DeleteValue(key []byte) ([]byte, error) {
+func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
 	return es.deleteValue(hexKey)
 

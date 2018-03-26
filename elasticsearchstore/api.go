@@ -384,10 +384,10 @@ func (es *ESStore) deleteValue(key string) ([]byte, error) {
 	return value, es.deleteDocument(valuesIndex, key)
 }
 
-func (es *ESStore) segmentify(link *cs.Link) *cs.Segment {
+func (es *ESStore) segmentify(ctx context.Context, link *cs.Link) *cs.Segment {
 	segment := link.Segmentify()
 
-	evidences, err := es.GetEvidences(segment.Meta.GetLinkHash())
+	evidences, err := es.GetEvidences(ctx, segment.Meta.GetLinkHash())
 	if evidences != nil && err == nil {
 		segment.Meta.Evidences = *evidences
 	}
@@ -523,7 +523,7 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 		if err := json.Unmarshal(*hit.Source, &link); err != nil {
 			return nil, err
 		}
-		res = append(res, es.segmentify(&link))
+		res = append(res, es.segmentify(ctx, &link))
 	}
 
 	sort.Sort(res)

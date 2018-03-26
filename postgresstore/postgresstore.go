@@ -93,7 +93,7 @@ func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 }
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
-func (a *Store) NewBatch() (store.Batch, error) {
+func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	for b := range a.batches {
 		if b.done {
 			delete(a.batches, b)
