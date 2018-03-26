@@ -162,16 +162,23 @@ func (t *TMStore) StopWebsocket(ctx context.Context) error {
 }
 
 func (t *TMStore) notifyStoreChans(ctx context.Context) {
+	ctx, span := trace.StartSpan(ctx, "tmstore/notifyStoreChans")
+	defer span.End()
+
 	var pendingEvents []*store.Event
 	response, err := t.sendQuery(ctx, tmpop.PendingEvents, nil)
 	if err != nil || response.Value == nil {
+		span.Annotate(nil, "No pending events in TMPoP")
 		log.Warn("Could not get pending events from TMPoP.")
 	}
 
 	err = json.Unmarshal(response.Value, &pendingEvents)
 	if err != nil {
+		span.Annotatef(nil, "TMPoP pending events could not be unmarshalled: %s", err.Error())
 		log.Warn("TMPoP pending events could not be unmarshalled.")
 	}
+
+	span.AddAttributes(trace.Int64Attribute("EventCount", int64(len(pendingEvents))))
 
 	for _, event := range pendingEvents {
 		for _, c := range t.storeEventChans {
