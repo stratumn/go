@@ -22,6 +22,7 @@
 package filestore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -93,7 +94,7 @@ func New(config *Config) (*FileStore, error) {
 /********** Store adapter implementation **********/
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (a *FileStore) GetInfo() (interface{}, error) {
+func (a *FileStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -108,14 +109,14 @@ func (a *FileStore) AddStoreEventChannel(eventChan chan *store.Event) {
 }
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
-func (a *FileStore) NewBatch() (store.Batch, error) {
+func (a *FileStore) NewBatch(ctx context.Context) (store.Batch, error) {
 	return NewBatch(a), nil
 }
 
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *FileStore) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (a *FileStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
@@ -153,8 +154,8 @@ func (a *FileStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
-	currentEvidences, err := a.GetEvidences(linkHash)
+func (a *FileStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	currentEvidences, err := a.GetEvidences(ctx, linkHash)
 	if err != nil {
 		return err
 	}
@@ -169,7 +170,7 @@ func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) 
 		return err
 	}
 
-	if err = a.SetValue(key, value); err != nil {
+	if err = a.SetValue(ctx, key, value); err != nil {
 		return err
 	}
 
@@ -186,20 +187,20 @@ func (a *FileStore) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) 
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (a *FileStore) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *FileStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
-	return a.getSegment(linkHash)
+	return a.getSegment(ctx, linkHash)
 }
 
-func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *FileStore) getSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	link, err := a.getLink(linkHash)
 	if err != nil || link == nil {
 		return nil, err
 	}
 
-	evidences, err := a.GetEvidences(linkHash)
+	evidences, err := a.GetEvidences(ctx, linkHash)
 	if err != nil {
 		return nil, err
 	}
@@ -214,10 +215,10 @@ func (a *FileStore) getSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *FileStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var segments cs.SegmentSlice
 
-	a.forEach(func(segment *cs.Segment) error {
+	a.forEach(ctx, func(segment *cs.Segment) error {
 		if filter.Match(segment) {
 			segments = append(segments, segment)
 		}
@@ -230,9 +231,9 @@ func (a *FileStore) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, 
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
-func (a *FileStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+func (a *FileStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	set := map[string]struct{}{}
-	a.forEach(func(segment *cs.Segment) error {
+	a.forEach(ctx, func(segment *cs.Segment) error {
 		if filter.Match(segment) {
 			set[segment.Link.Meta.MapID] = struct{}{}
 		}
@@ -249,9 +250,9 @@ func (a *FileStore) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *FileStore) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *FileStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
 	key := getEvidenceKey(linkHash)
-	evidencesData, err := a.GetValue(key)
+	evidencesData, err := a.GetValue(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -292,17 +293,17 @@ func (a *FileStore) getLink(linkHash *types.Bytes32) (*cs.Link, error) {
 /********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (a *FileStore) SetValue(key []byte, value []byte) error {
+func (a *FileStore) SetValue(ctx context.Context, key []byte, value []byte) error {
 	return a.kvDB.SetValue(key, value)
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
-func (a *FileStore) GetValue(key []byte) ([]byte, error) {
+func (a *FileStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	return a.kvDB.GetValue(key)
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
-func (a *FileStore) DeleteValue(key []byte) ([]byte, error) {
+func (a *FileStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	return a.kvDB.DeleteValue(key)
 }
 
@@ -323,7 +324,7 @@ func (a *FileStore) getLinkPath(linkHash *types.Bytes32) string {
 
 var linkFileRegex = regexp.MustCompile("(.*)\\.json$")
 
-func (a *FileStore) forEach(fn func(*cs.Segment) error) error {
+func (a *FileStore) forEach(ctx context.Context, fn func(*cs.Segment) error) error {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -344,7 +345,7 @@ func (a *FileStore) forEach(fn func(*cs.Segment) error) error {
 				return err
 			}
 
-			segment, err := a.getSegment(linkHash)
+			segment, err := a.getSegment(ctx, linkHash)
 			if err != nil {
 				return err
 			}

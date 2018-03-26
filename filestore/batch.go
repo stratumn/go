@@ -15,6 +15,8 @@
 package filestore
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 )
 
@@ -34,7 +36,7 @@ func NewBatch(a *FileStore) *Batch {
 }
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write
-func (b *Batch) Write() (err error) {
+func (b *Batch) Write(ctx context.Context) (err error) {
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()
 
