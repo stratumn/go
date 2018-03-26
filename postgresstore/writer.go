@@ -15,6 +15,7 @@
 package postgresstore
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/lib/pq"
@@ -27,7 +28,7 @@ type writer struct {
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (a *writer) SetValue(key []byte, value []byte) error {
+func (a *writer) SetValue(ctx context.Context, key []byte, value []byte) error {
 	_, err := a.stmts.SaveValue.Exec(key, value)
 	if err != nil {
 		return err
@@ -37,7 +38,7 @@ func (a *writer) SetValue(key []byte, value []byte) error {
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
-func (a *writer) DeleteValue(key []byte) ([]byte, error) {
+func (a *writer) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
 	if err := a.stmts.DeleteValue.QueryRow(key).Scan(&data); err != nil {
@@ -51,7 +52,7 @@ func (a *writer) DeleteValue(key []byte) ([]byte, error) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
-func (a *writer) CreateLink(link *cs.Link) (*types.Bytes32, error) {
+func (a *writer) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	var (
 		priority     = link.Meta.Priority
 		mapID        = link.Meta.MapID

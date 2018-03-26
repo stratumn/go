@@ -16,6 +16,7 @@ package postgresstore
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 
@@ -30,7 +31,7 @@ type reader struct {
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	var segments = make(cs.SegmentSlice, 0, 1)
 
 	rows, err := a.stmts.GetSegment.Query(linkHash[:])
@@ -50,7 +51,7 @@ func (a *reader) GetSegment(linkHash *types.Bytes32) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *reader) FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var (
 		rows         *sql.Rows
 		err          error
@@ -180,7 +181,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
-func (a *reader) GetMapIDs(filter *store.MapFilter) ([]string, error) {
+func (a *reader) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	rows, err := a.stmts.GetMapIDs.Query(filter.Pagination.Offset, filter.Pagination.Limit, filter.Process)
 	if err != nil {
 		return nil, err
@@ -203,7 +204,7 @@ func (a *reader) GetMapIDs(filter *store.MapFilter) ([]string, error) {
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
-func (a *reader) GetValue(key []byte) ([]byte, error) {
+func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
 	if err := a.stmts.GetValue.QueryRow(key).Scan(&data); err != nil {
@@ -217,7 +218,7 @@ func (a *reader) GetValue(key []byte) ([]byte, error) {
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *reader) GetEvidences(linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *reader) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
 	var evidences cs.Evidences
 
 	rows, err := a.stmts.GetEvidences.Query(linkHash[:])

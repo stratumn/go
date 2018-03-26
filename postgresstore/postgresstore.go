@@ -18,6 +18,7 @@
 package postgresstore
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 
@@ -82,7 +83,7 @@ func New(config *Config) (*Store, error) {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (a *Store) GetInfo() (interface{}, error) {
+func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -118,8 +119,8 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
-	linkHash, err := a.writer.CreateLink(link)
+func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+	linkHash, err := a.writer.CreateLink(ctx, link)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +134,7 @@ func (a *Store) CreateLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *Store) AddEvidence(linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	data, err := json.Marshal(evidence)
 	if err != nil {
 		return err
