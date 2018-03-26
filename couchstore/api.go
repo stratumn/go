@@ -16,6 +16,7 @@ package couchstore
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -187,10 +188,10 @@ func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 	return c.saveDocument(dbEvidences, linkHash, *currentDoc)
 }
 
-func (c *CouchStore) segmentify(link *cs.Link) *cs.Segment {
+func (c *CouchStore) segmentify(ctx context.Context, link *cs.Link) *cs.Segment {
 	segment := link.Segmentify()
 
-	if evidences, err := c.GetEvidences(segment.Meta.GetLinkHash()); evidences != nil && err == nil {
+	if evidences, err := c.GetEvidences(ctx, segment.Meta.GetLinkHash()); evidences != nil && err == nil {
 		segment.Meta.Evidences = *evidences
 	}
 	return segment
