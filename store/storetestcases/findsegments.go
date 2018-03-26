@@ -15,15 +15,15 @@
 package storetestcases
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"sync/atomic"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs/evidences"
-
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +36,7 @@ func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Lin
 	if prepareLink != nil {
 		prepareLink(link)
 	}
-	adapter.CreateLink(link)
+	adapter.CreateLink(context.Background(), link)
 	return link
 }
 
@@ -110,7 +110,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	createLinkBranch(a, link4, nil)
 
 	t.Run("Should order by priority", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: testPageSize,
 			},
@@ -120,7 +121,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Should support pagination", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Offset: testPageSize,
 				Limit:  testPageSize,
@@ -131,14 +133,16 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Should return no results for invalid tag filter", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Tags: []string{"blablabla"},
 		})
 		verifyResultsCount(t, err, slice, 0)
 	})
 
 	t.Run("Supports tags filtering", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -148,7 +152,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering on multiple tags", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -158,7 +163,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering on map ID", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -168,7 +174,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering on multiple map IDs", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -178,7 +185,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering on map ID and tag at the same time", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -189,7 +197,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Returns no results for map ID not found", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -199,7 +208,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering on link hashes", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			LinkHashes: []string{
 				linkHash4.String(),
 				testutil.RandomHash().String(),
@@ -213,7 +223,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering on link hash and process at the same time", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			LinkHashes: []string{
 				linkHash4.String(),
 				linkHash6.String(),
@@ -227,7 +238,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Should return no results for unknown link hashes", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			LinkHashes: []string{
 				testutil.RandomHash().String(),
 				testutil.RandomHash().String(),
@@ -240,7 +252,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering for segments with empty previous link hash", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination:   store.Pagination{Limit: segmentsTotalCount},
 			PrevLinkHash: &emptyPrevLinkHash,
 		})
@@ -248,8 +261,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering by previous link hash", func(t *testing.T) {
+		ctx := context.Background()
 		prevLinkHash := linkHash4.String()
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -259,8 +273,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
+		ctx := context.Background()
 		prevLinkHash := linkHash4.String()
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -271,8 +286,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
+		ctx := context.Background()
 		prevLinkHash := linkHash4.String()
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -283,8 +299,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Returns no result when filtering on good previous link hash but invalid map ID", func(t *testing.T) {
+		ctx := context.Background()
 		prevLinkHash := linkHash4.String()
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -295,8 +312,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Returns no result for previous link hash not found", func(t *testing.T) {
+		ctx := context.Background()
 		notFoundPrevLinkHash := testutil.RandomHash().String()
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -306,7 +324,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Supports filtering by process", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -316,7 +335,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Returns no result for process not found", func(t *testing.T) {
-		slice, err := a.FindSegments(&store.SegmentFilter{
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -326,6 +346,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	})
 
 	t.Run("Returns its evidences", func(t *testing.T) {
+		ctx := context.Background()
 		e1 := cs.Evidence{Backend: "TMPop", Provider: "1", Proof: &evidences.TendermintProof{Root: testutil.RandomHash()}}
 		e2 := cs.Evidence{Backend: "dummy", Provider: "2", Proof: &cs.GenericProof{}}
 		e3 := cs.Evidence{Backend: "batch", Provider: "3", Proof: &evidences.BatchProof{}}
@@ -334,11 +355,11 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		testEvidences := []cs.Evidence{e1, e2, e3, e4, e5}
 
 		for _, e := range testEvidences {
-			err := a.AddEvidence(linkHash4, &e)
+			err := a.AddEvidence(ctx, linkHash4, &e)
 			assert.NoError(t, err, "a.AddEvidence()")
 		}
 
-		got, err := a.FindSegments(&store.SegmentFilter{
+		got, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
@@ -360,7 +381,7 @@ func (f Factory) BenchmarkFindSegments(b *testing.B, numLinks int, createLinkFun
 	defer f.freeAdapter(a)
 
 	for i := 0; i < numLinks; i++ {
-		a.CreateLink(createLinkFunc(b, numLinks, i))
+		a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
 	}
 
 	filters := make([]*store.SegmentFilter, b.N)
@@ -372,7 +393,7 @@ func (f Factory) BenchmarkFindSegments(b *testing.B, numLinks int, createLinkFun
 	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
-		if s, err := a.FindSegments(filters[i]); err != nil {
+		if s, err := a.FindSegments(context.Background(), filters[i]); err != nil {
 			b.Fatal(err)
 		} else if s == nil {
 			b.Error("s = nil want cs.SegmentSlice")
@@ -509,7 +530,7 @@ func (f Factory) BenchmarkFindSegmentsParallel(b *testing.B, numLinks int, creat
 	defer f.freeAdapter(a)
 
 	for i := 0; i < numLinks; i++ {
-		a.CreateLink(createLinkFunc(b, numLinks, i))
+		a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
 	}
 
 	filters := make([]*store.SegmentFilter, b.N)
@@ -525,7 +546,7 @@ func (f Factory) BenchmarkFindSegmentsParallel(b *testing.B, numLinks int, creat
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := int(atomic.AddUint64(&counter, 1) - 1)
-			if s, err := a.FindSegments(filters[i]); err != nil {
+			if s, err := a.FindSegments(context.Background(), filters[i]); err != nil {
 				b.Error(err)
 			} else if s == nil {
 				b.Error("s = nil want cs.SegmentSlice")

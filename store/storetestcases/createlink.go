@@ -15,6 +15,7 @@
 package storetestcases
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"sync/atomic"
@@ -31,47 +32,52 @@ func (f Factory) TestCreateLink(t *testing.T) {
 	defer f.freeAdapter(a)
 
 	t.Run("CreateLink should not produce an error", func(t *testing.T) {
+		ctx := context.Background()
 		l := cstesting.RandomLink()
-		_, err := a.CreateLink(l)
+		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink with no priority should not produce an error", func(t *testing.T) {
+		ctx := context.Background()
 		l := cstesting.RandomLink()
 		delete(l.Meta.Data, "priority")
 
-		_, err := a.CreateLink(l)
+		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink and update state should not produce an error", func(t *testing.T) {
+		ctx := context.Background()
 		l := cstesting.RandomLink()
-		_, err := a.CreateLink(l)
+		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
 		l = cstesting.ChangeState(l)
-		_, err = a.CreateLink(l)
+		_, err = a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink and update map ID should not produce an error", func(t *testing.T) {
+		ctx := context.Background()
 		l1 := cstesting.RandomLink()
-		_, err := a.CreateLink(l1)
+		_, err := a.CreateLink(ctx, l1)
 		assert.NoError(t, err, "a.CreateLink()")
 
 		l2 := cstesting.ChangeMapID(l1)
-		_, err = a.CreateLink(l2)
+		_, err = a.CreateLink(ctx, l2)
 		assert.NoError(t, err, "a.CreateLink()")
 
 	})
 
 	t.Run("CreateLink with previous link hash should not produce an error", func(t *testing.T) {
+		ctx := context.Background()
 		l := cstesting.RandomLink()
-		_, err := a.CreateLink(l)
+		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
 		l = cstesting.RandomBranch(l)
-		_, err = a.CreateLink(l)
+		_, err = a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 }
@@ -90,7 +96,7 @@ func (f Factory) BenchmarkCreateLink(b *testing.B) {
 	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
-		if _, err := a.CreateLink(slice[i]); err != nil {
+		if _, err := a.CreateLink(context.Background(), slice[i]); err != nil {
 			b.Error(err)
 		}
 	}
@@ -114,7 +120,7 @@ func (f Factory) BenchmarkCreateLinkParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := atomic.AddUint64(&counter, 1) - 1
-			if _, err := a.CreateLink(slice[i]); err != nil {
+			if _, err := a.CreateLink(context.Background(), slice[i]); err != nil {
 				b.Error(err)
 			}
 		}

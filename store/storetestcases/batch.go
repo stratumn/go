@@ -15,6 +15,7 @@
 package storetestcases
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -26,7 +27,7 @@ import (
 )
 
 func initBatch(t *testing.T, a store.Adapter) store.Batch {
-	b, err := a.NewBatch()
+	b, err := a.NewBatch(context.Background())
 	require.NoError(t, err, "a.NewBatch()")
 	assert.NotNil(t, b, "Batch should not be nil")
 	return b
@@ -34,6 +35,7 @@ func initBatch(t *testing.T, a store.Adapter) store.Batch {
 
 // TestBatch runs all tests for the store.Batch interface
 func (f Factory) TestBatch(t *testing.T) {
+	ctx := context.Background()
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
@@ -41,68 +43,72 @@ func (f Factory) TestBatch(t *testing.T) {
 	for i := 0; i < 6; i++ {
 		link := cstesting.RandomLink()
 		link.Meta.MapID = fmt.Sprintf("map%d", i%3)
-		a.CreateLink(link)
+		a.CreateLink(ctx, link)
 	}
 
 	t.Run("CreateLink should not write to underlying store", func(t *testing.T) {
+		ctx = context.Background()
 		b := initBatch(t, a)
 
 		link := cstesting.RandomLink()
-		linkHash, err := b.CreateLink(link)
+		linkHash, err := b.CreateLink(ctx, link)
 		assert.NoError(t, err, "b.CreateLink()")
 
-		found, err := a.GetSegment(linkHash)
+		found, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err, "a.GetSegment()")
 		assert.Nil(t, found, "Link should not be found in adapter until Write is called")
 	})
 
 	t.Run("Write should write to the underlying store", func(t *testing.T) {
+		ctx = context.Background()
 		b := initBatch(t, a)
 
 		link := cstesting.RandomLink()
-		linkHash, err := b.CreateLink(link)
+		linkHash, err := b.CreateLink(ctx, link)
 		assert.NoError(t, err, "b.CreateLink()")
 
-		err = b.Write()
+		err = b.Write(ctx)
 		assert.NoError(t, err, "b.Write()")
 
-		found, err := a.GetSegment(linkHash)
+		found, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err, "a.GetSegment()")
 		require.NotNil(t, found, "a.GetSegment()")
 		assert.EqualValues(t, *link, found.Link, "Link should be found in adapter after a Write")
 	})
 
 	t.Run("Finding segments should find in both batch and underlying store", func(t *testing.T) {
+		ctx = context.Background()
 		b := initBatch(t, a)
 
 		var segs cs.SegmentSlice
 		var err error
-		segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
 		adapterLinksCount := len(segs)
 
-		b.CreateLink(cstesting.RandomLink())
-		b.CreateLink(cstesting.RandomLink())
+		b.CreateLink(ctx, cstesting.RandomLink())
+		b.CreateLink(ctx, cstesting.RandomLink())
 
-		segs, err = b.FindSegments(&store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
 		assert.Equal(t, adapterLinksCount+2, len(segs), "Invalid number of segments found")
 	})
 
 	t.Run("Finding maps should find in both batch and underlying store", func(t *testing.T) {
+		ctx = context.Background()
 		b := initBatch(t, a)
 
-		mapIDs, err := b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+		mapIDs, err := b.GetMapIDs(ctx, &store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.GetMapIDs()")
 		adapterMapIdsCount := len(mapIDs)
 
 		for _, mapID := range []string{"map42", "map43"} {
 			link := cstesting.RandomLink()
 			link.Meta.MapID = mapID
-			b.CreateLink(link)
+			b.CreateLink(ctx, link)
 		}
 
-		mapIDs, err = b.GetMapIDs(&store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
+		mapIDs, err = b.GetMapIDs(ctx, &store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.GetMapIDs()")
 		assert.Equal(t, adapterMapIdsCount+2, len(mapIDs), "Invalid number of maps")
 

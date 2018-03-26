@@ -15,6 +15,7 @@
 package storetestcases
 
 import (
+	"context"
 	"testing"
 )
 
@@ -23,7 +24,7 @@ func (f Factory) TestGetInfo(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	info, err := a.GetInfo()
+	info, err := a.GetInfo(context.Background())
 	if err != nil {
 		t.Fatalf("a.GetInfo(): err: %s", err)
 	}

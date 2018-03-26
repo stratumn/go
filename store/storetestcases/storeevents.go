@@ -15,6 +15,7 @@
 package storetestcases
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -32,7 +33,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 	a.AddStoreEventChannel(c)
 
 	link := cstesting.RandomLink()
-	linkHash, err := a.CreateLink(link)
+	linkHash, err := a.CreateLink(context.Background(), link)
 	assert.NoError(t, err, "a.CreateLink()")
 
 	t.Run("Link saved event should be sent to channel", func(t *testing.T) {
@@ -44,8 +45,9 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 	})
 
 	t.Run("Evidence saved event should be sent to channel", func(t *testing.T) {
+		ctx := context.Background()
 		evidence := cstesting.RandomEvidence()
-		err = a.AddEvidence(linkHash, evidence)
+		err = a.AddEvidence(ctx, linkHash, evidence)
 		assert.NoError(t, err, "a.AddEvidence()")
 
 		var got *store.Event

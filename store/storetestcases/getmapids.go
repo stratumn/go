@@ -15,6 +15,7 @@
 package storetestcases
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -39,12 +40,13 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 			l := cstesting.RandomLink()
 			l.Meta.MapID = fmt.Sprintf("map%d", i)
 			l.Meta.Process = processNames[i%2]
-			a.CreateLink(l)
+			a.CreateLink(context.Background(), l)
 		}
 	}
 
 	t.Run("Getting all map IDs should work", func(t *testing.T) {
-		slice, err := a.GetMapIDs(&store.MapFilter{
+		ctx := context.Background()
+		slice, err := a.GetMapIDs(ctx, &store.MapFilter{
 			Pagination: store.Pagination{Limit: testPageSize * testPageSize},
 		})
 		assert.NoError(t, err)
@@ -58,7 +60,8 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	})
 
 	t.Run("Map ID pagination should work", func(t *testing.T) {
-		slice, err := a.GetMapIDs(&store.MapFilter{
+		ctx := context.Background()
+		slice, err := a.GetMapIDs(ctx, &store.MapFilter{
 			Pagination: store.Pagination{Offset: 1, Limit: 2},
 		})
 		assert.NoError(t, err)
@@ -66,7 +69,8 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	})
 
 	t.Run("Map ID outside pagination limits should return an empty slice", func(t *testing.T) {
-		slice, err := a.GetMapIDs(&store.MapFilter{
+		ctx := context.Background()
+		slice, err := a.GetMapIDs(ctx, &store.MapFilter{
 			Pagination: store.Pagination{Offset: 100000, Limit: 5},
 		})
 		assert.NoError(t, err)
@@ -74,8 +78,9 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	})
 
 	t.Run("Filtering by process should work", func(t *testing.T) {
+		ctx := context.Background()
 		processName := processNames[0]
-		slice, err := a.GetMapIDs(&store.MapFilter{
+		slice, err := a.GetMapIDs(ctx, &store.MapFilter{
 			Pagination: store.Pagination{Limit: testPageSize * testPageSize},
 			Process:    processName,
 		})
@@ -96,7 +101,7 @@ func (f Factory) BenchmarkGetMapIDs(b *testing.B, numLinks int, createLinkFunc C
 	defer f.freeAdapter(a)
 
 	for i := 0; i < numLinks; i++ {
-		a.CreateLink(createLinkFunc(b, numLinks, i))
+		a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
 	}
 
 	filters := make([]*store.MapFilter, b.N)
@@ -108,7 +113,7 @@ func (f Factory) BenchmarkGetMapIDs(b *testing.B, numLinks int, createLinkFunc C
 	log.SetOutput(ioutil.Discard)
 
 	for i := 0; i < b.N; i++ {
-		if s, err := a.GetMapIDs(filters[i]); err != nil {
+		if s, err := a.GetMapIDs(context.Background(), filters[i]); err != nil {
 			b.Fatal(err)
 		} else if s == nil {
 			b.Error("s = nil want []string")
@@ -137,7 +142,7 @@ func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numLinks int, createLi
 	defer f.freeAdapter(a)
 
 	for i := 0; i < numLinks; i++ {
-		a.CreateLink(createLinkFunc(b, numLinks, i))
+		a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
 	}
 
 	filters := make([]*store.MapFilter, b.N)
@@ -153,7 +158,7 @@ func (f Factory) BenchmarkGetMapIDsParallel(b *testing.B, numLinks int, createLi
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			i := int(atomic.AddUint64(&counter, 1) - 1)
-			if s, err := a.GetMapIDs(filters[i]); err != nil {
+			if s, err := a.GetMapIDs(context.Background(), filters[i]); err != nil {
 				b.Error(err)
 			} else if s == nil {
 				b.Error("s = nil want []string")

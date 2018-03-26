@@ -15,6 +15,7 @@
 package storetestcases
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -29,11 +30,12 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 	defer f.freeAdapter(a)
 
 	l := cstesting.RandomLink()
-	linkHash, _ := a.CreateLink(l)
+	linkHash, _ := a.CreateLink(context.Background(), l)
 
 	s := store.EvidenceStore(a)
 
 	t.Run("Adding evidences to a segment should work", func(t *testing.T) {
+		ctx := context.Background()
 		e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
 		e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
 		e3 := cs.Evidence{Backend: "batch", Provider: "3"}
@@ -42,11 +44,11 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 		evidences := []*cs.Evidence{&e1, &e2, &e3, &e4, &e5}
 
 		for _, evidence := range evidences {
-			err := s.AddEvidence(linkHash, evidence)
-			assert.NoError(t, err, "s.AddEvidence()")
+			err := s.AddEvidence(ctx, linkHash, evidence)
+			assert.NoError(t, err, "s.AddEvidence(ctx, )")
 		}
 
-		storedEvidences, err := s.GetEvidences(linkHash)
+		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
 		assert.Equal(t, 5, len(*storedEvidences), "Invalid number of evidences")
 
@@ -57,13 +59,14 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 	})
 
 	t.Run("Duplicate evidences should be discarded", func(t *testing.T) {
+		ctx := context.Background()
 		e1 := cs.Evidence{Backend: "TMPop", Provider: "42"}
 		e2 := cs.Evidence{Backend: "dummy", Provider: "42"}
 
-		s.AddEvidence(linkHash, &e1)
-		s.AddEvidence(linkHash, &e2)
+		s.AddEvidence(ctx, linkHash, &e1)
+		s.AddEvidence(ctx, linkHash, &e2)
 
-		storedEvidences, err := s.GetEvidences(linkHash)
+		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
 		assert.Equal(t, 6, len(*storedEvidences), "Invalid number of evidences")
 		assert.EqualValues(t, e1.Backend, storedEvidences.GetEvidence("42").Backend, "Invalid evidence backend")
