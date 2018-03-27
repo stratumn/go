@@ -27,7 +27,7 @@ var (
 func RegisterFlags() {
 	flag.BoolVar(&monitor, "monitoring.active", true, "Set to true to activate monitoring")
 	flag.IntVar(&metricsPort, "monitoring.port", 0, "Port to use to expose metrics, for example 5001")
-	flag.StringVar(&jaegerEndpoint, "monitoring.jaeger_endpoint", "http://jaeger:14268", "Endpoint where a Jaeger agent is running")
+	flag.StringVar(&jaegerEndpoint, "monitoring.jaeger_endpoint", DefaultJaegerEndpoint, "Endpoint where a Jaeger agent is running")
 	flag.Float64Var(&traceSamplingRatio, "monitoring.trace_sampling_ratio", 1.0, "Set an appropriate sampling ratio depending on your load")
 }
 

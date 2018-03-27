@@ -24,6 +24,12 @@ import (
 	"go.opencensus.io/trace"
 )
 
+const (
+	// DefaultJaegerEndpoint is the default endpoint exposed
+	// by the Jaeger collector.
+	DefaultJaegerEndpoint = "http://jaeger:14268"
+)
+
 // Config contains options for monitoring.
 type Config struct {
 	// Set to true to monitor Indigo components.
@@ -57,7 +63,7 @@ func Configure(config *Config, serviceName string) *prometheus.Exporter {
 	view.SetReportingPeriod(1 * time.Second)
 
 	if len(config.JaegerEndpoint) == 0 {
-		config.JaegerEndpoint = "http://jaeger:14268"
+		config.JaegerEndpoint = DefaultJaegerEndpoint
 	}
 
 	traceExporter, err := jaeger.NewExporter(jaeger.Options{
