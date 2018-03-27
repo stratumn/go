@@ -21,6 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	_ "github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/filestore"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/tendermint"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/validator"
@@ -35,6 +36,7 @@ var (
 
 func init() {
 	tendermint.RegisterFlags()
+	monitoring.RegisterFlags()
 }
 
 func main() {
@@ -45,6 +47,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, ValidatorFilename: *validatorFilename}
+	tmpopConfig := &tmpop.Config{
+		Commit:            commit,
+		Version:           version,
+		ValidatorFilename: *validatorFilename,
+		Monitoring:        monitoring.ConfigurationFromFlags(),
+	}
 	tmpop.Run(a, a, tmpopConfig)
 }

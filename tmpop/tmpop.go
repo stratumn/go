@@ -63,6 +63,9 @@ type Config struct {
 
 	// JSON schema rules definition
 	ValidatorFilename string
+
+	// Monitoring configuration
+	Monitoring *monitoring.Config
 }
 
 // TMPop is the type of the application that implements github.com/tendermint/abci/types.Application,

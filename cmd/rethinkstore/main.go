@@ -20,6 +20,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store/storehttp"
 
 	"github.com/stratumn/go-indigocore/rethinkstore"
@@ -33,6 +34,7 @@ var (
 func init() {
 	storehttp.RegisterFlags()
 	rethinkstore.RegisterFlags()
+	monitoring.RegisterFlags()
 }
 
 func main() {

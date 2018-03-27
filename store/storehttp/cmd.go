@@ -27,6 +27,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/jsonws"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 )
 
@@ -52,6 +53,7 @@ var (
 func Run(
 	a store.Adapter,
 	config *Config,
+	monitoringConfig *monitoring.Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
 	bufConnConfig *jsonws.BufferedConnConfig,
@@ -62,7 +64,7 @@ func Run(
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
-	h.exposeMetrics()
+	h.exposeMetrics(monitoringConfig)
 
 	go func() {
 		sigc := make(chan os.Signal)
@@ -110,6 +112,7 @@ func RunWithFlags(a store.Adapter) {
 	config := &Config{
 		StoreEventsChanSize: storeEventsChanSize,
 	}
+	monitoringConfig := monitoring.ConfigurationFromFlags()
 	httpConfig := &jsonhttp.Config{
 		Address:        addr,
 		ReadTimeout:    readTimeout,
@@ -133,6 +136,7 @@ func RunWithFlags(a store.Adapter) {
 	Run(
 		a,
 		config,
+		monitoringConfig,
 		httpConfig,
 		basicConfig,
 		bufConnConfig,

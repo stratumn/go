@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/rethinkstore"
 	"github.com/stratumn/go-indigocore/tendermint"
 	"github.com/stratumn/go-indigocore/tmpop"
@@ -33,14 +34,18 @@ var (
 func init() {
 	tendermint.RegisterFlags()
 	rethinkstore.RegisterFlags()
+	monitoring.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
 
 	a := rethinkstore.InitializeWithFlags(version, commit)
-
-	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, ValidatorFilename: *validatorFilename}
-
+	tmpopConfig := &tmpop.Config{
+		Commit:            commit,
+		Version:           version,
+		ValidatorFilename: *validatorFilename,
+		Monitoring:        monitoring.ConfigurationFromFlags(),
+	}
 	tmpop.Run(a, a, tmpopConfig)
 }

@@ -19,6 +19,7 @@ import (
 	"flag"
 
 	"github.com/stratumn/go-indigocore/dummystore"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/tendermint"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/validator"
@@ -32,12 +33,18 @@ var (
 
 func init() {
 	tendermint.RegisterFlags()
+	monitoring.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
 
 	a := dummystore.New(&dummystore.Config{Version: version, Commit: commit})
-	tmpopConfig := &tmpop.Config{Commit: commit, Version: version, ValidatorFilename: *validatorFilename}
+	tmpopConfig := &tmpop.Config{
+		Commit:            commit,
+		Version:           version,
+		ValidatorFilename: *validatorFilename,
+		Monitoring:        monitoring.ConfigurationFromFlags(),
+	}
 	tmpop.Run(a, a, tmpopConfig)
 }

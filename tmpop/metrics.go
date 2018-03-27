@@ -15,17 +15,15 @@
 package tmpop
 
 import (
+	"fmt"
 	"net/http"
-	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-indigocore/monitoring"
 
-	"go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
 )
 
 var (
@@ -92,27 +90,19 @@ func init() {
 
 // exposeMetrics configures metrics and traces exporters and
 // exposes them to collectors.
-func exposeMetrics() {
-	metricsExporter, err := prometheus.NewExporter(prometheus.Options{})
-	if err != nil {
-		log.Fatal(err)
+func exposeMetrics(config *monitoring.Config) {
+	if !config.Monitor {
+		return
 	}
 
-	view.RegisterExporter(metricsExporter)
-	view.SetReportingPeriod(1 * time.Second)
-
-	traceExporter, err := jaeger.NewExporter(jaeger.Options{
-		Endpoint:    "http://jaeger:14268",
-		ServiceName: "indigo-tmpop",
-	})
-	if err != nil {
-		log.Fatal(err)
+	if config.MetricsPort == 0 {
+		config.MetricsPort = 5001
 	}
 
-	trace.SetDefaultSampler(trace.AlwaysSample())
-	trace.RegisterExporter(traceExporter)
+	metricsExporter := monitoring.Configure(config, "indigo-tmpop")
+	metricsAddr := fmt.Sprintf(":%d", config.MetricsPort)
 
-	log.Infof("Exposing metrics on :5001")
+	log.Infof("Exposing metrics on %s", metricsAddr)
 	http.Handle("/metrics", metricsExporter)
-	http.ListenAndServe(":5001", nil)
+	http.ListenAndServe(metricsAddr, nil)
 }

@@ -16,16 +16,13 @@ package storehttp
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-indigocore/monitoring"
 
-	"go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
-	"go.opencensus.io/trace"
 )
 
 func init() {
@@ -36,26 +33,12 @@ func init() {
 
 // exposeMetrics configures metrics and traces exporters and
 // exposes them to collectors.
-func (s *Server) exposeMetrics() {
-	metricsExporter, err := prometheus.NewExporter(prometheus.Options{})
-	if err != nil {
-		log.Fatal(err)
+func (s *Server) exposeMetrics(config *monitoring.Config) {
+	if !config.Monitor {
+		return
 	}
 
-	view.RegisterExporter(metricsExporter)
-	view.SetReportingPeriod(1 * time.Second)
-
-	traceExporter, err := jaeger.NewExporter(jaeger.Options{
-		Endpoint:    "http://jaeger:14268",
-		ServiceName: "indigo-store",
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	trace.SetDefaultSampler(trace.AlwaysSample())
-	trace.RegisterExporter(traceExporter)
-
+	metricsExporter := monitoring.Configure(config, "indigo-store")
 	s.GetRaw(
 		"/metrics",
 		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
