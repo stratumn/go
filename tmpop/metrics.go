@@ -26,6 +26,11 @@ import (
 	"go.opencensus.io/tag"
 )
 
+const (
+	// DefaultMetricsPort is the default port used to expose metrics.
+	DefaultMetricsPort = 5090
+)
+
 var (
 	blockCount *stats.Int64Measure
 
@@ -96,7 +101,7 @@ func exposeMetrics(config *monitoring.Config) {
 	}
 
 	if config.MetricsPort == 0 {
-		config.MetricsPort = 5001
+		config.MetricsPort = DefaultMetricsPort
 	}
 
 	metricsExporter := monitoring.Configure(config, "indigo-tmpop")
