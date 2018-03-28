@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stretchr/testify/assert"
@@ -47,8 +48,8 @@ func TestPKIValidator(t *testing.T) {
 		return cstesting.SignLinkWithKey(l, priv)
 	}
 
-	_, priv1, _ := ed25519.GenerateKey(rand.Reader)
-	_, priv2, _ := ed25519.GenerateKey(rand.Reader)
+	_, priv1, _ := keys.NewEd25519KeyPair()
+	_, priv2, _ := keys.NewEd25519KeyPair()
 	link1 := createValidLinkWithKey(priv1)
 	link2 := createValidLinkWithKey(priv2)
 

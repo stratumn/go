@@ -88,6 +88,10 @@
   name = "github.com/manifoldco/promptui"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/stratumn/go-crypto"
+  branch = "master"
+
 [[override]]
   name = "github.com/chzyer/readline"
   branch = "fix-bell"

@@ -26,6 +26,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
+	"go.opencensus.io/plugin/ochttp"
 )
 
 const (
@@ -83,9 +84,8 @@ func New(config *Config) *Server {
 	router := httprouter.New()
 	router.NotFound = notFoundHandler{config, NotFound}.ServeHTTP
 	server := &http.Server{
-		Addr:    config.Address,
-		Handler: router,
-		// Handler:        &ochttp.Handler{Handler: router},
+		Addr:           config.Address,
+		Handler:        &ochttp.Handler{Handler: router},
 		ReadTimeout:    config.ReadTimeout,
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
