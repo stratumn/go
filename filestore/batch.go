@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"go.opencensus.io/trace"
 )
 
@@ -39,7 +40,7 @@ func NewBatch(ctx context.Context, a *FileStore) *Batch {
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write
 func (b *Batch) Write(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "filestore/batch/Write")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()

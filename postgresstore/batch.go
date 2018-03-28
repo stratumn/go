@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/stratumn/go-indigocore/monitoring"
 	"go.opencensus.io/trace"
 )
 
@@ -44,9 +45,9 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 }
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
-func (b *Batch) Write(ctx context.Context) error {
+func (b *Batch) Write(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "postgresstore/batch/Write")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	b.done = true
 	return b.tx.Commit()

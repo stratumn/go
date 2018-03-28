@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
@@ -162,9 +163,9 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
+func (a *Store) GetInfo(ctx context.Context) (_ interface{}, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/GetInfo")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	return &Info{
 		Name:        Name,
@@ -191,9 +192,9 @@ func formatLink(link *cs.Link) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/CreateLink")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	prevLinkHash := link.Meta.GetPrevLinkHash()
 
@@ -232,9 +233,9 @@ func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, 
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/GetSegment")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	cur, err := a.links.Get(linkHash[:]).Run(a.session)
 
@@ -260,9 +261,9 @@ func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Se
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentSlice, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/FindSegments")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	var prevLinkHash []byte
 	q := a.links
@@ -357,9 +358,9 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
-func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
+func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/GetMapIDs")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	q := a.links
 	if process := filter.Process; len(process) > 0 {
@@ -403,9 +404,9 @@ func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]strin
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) (err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/AddEvidence")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
@@ -448,9 +449,9 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, eviden
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *Store) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *Store) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Evidences, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/GetEvidences")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
@@ -469,9 +470,9 @@ func (a *Store) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
-func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
+func (a *Store) GetValue(ctx context.Context, key []byte) (_ []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/GetValue")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	cur, err := a.values.Get(key).Run(a.session)
 	if err != nil {
@@ -491,9 +492,9 @@ func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (a *Store) SetValue(ctx context.Context, key, value []byte) error {
+func (a *Store) SetValue(ctx context.Context, key, value []byte) (err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/SetValue")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	v := &valueWrapper{
 		ID:    key,
@@ -504,9 +505,9 @@ func (a *Store) SetValue(ctx context.Context, key, value []byte) error {
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
-func (a *Store) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
+func (a *Store) DeleteValue(ctx context.Context, key []byte) (_ []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/DeleteValue")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	res, err := a.values.
 		Get(key).
@@ -536,9 +537,9 @@ type rethinkBufferedBatch struct {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
 	ctx, span := trace.StartSpan(ctx, "rethinkstore/CreateLink")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	formatLink(link)
 	return b.Batch.CreateLink(ctx, link)

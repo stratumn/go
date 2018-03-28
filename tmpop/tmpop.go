@@ -208,6 +208,7 @@ func (t *TMPop) DeliverTx(tx []byte) abci.ResponseDeliverTx {
 	if !err.IsOK() {
 		ctx, _ = tag.New(ctx, tag.Upsert(txStatus, "invalid"))
 		stats.Record(ctx, txCount.M(1))
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Log})
 		return abci.ResponseDeliverTx{
 			Code: err.Code,
 			Log:  err.Log,
@@ -226,6 +227,7 @@ func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
 
 	err := t.doTx(ctx, t.state.Check, tx)
 	if !err.IsOK() {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Log})
 		return abci.ResponseCheckTx{
 			Code: err.Code,
 			Log:  err.Log,

@@ -23,6 +23,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"go.opencensus.io/trace"
@@ -111,9 +112,9 @@ func New(config *Config) (*CouchStore, error) {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (c *CouchStore) GetInfo(ctx context.Context) (interface{}, error) {
+func (c *CouchStore) GetInfo(ctx context.Context) (_ interface{}, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/GetInfo")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	return &Info{
 		Name:        Name,
@@ -137,9 +138,9 @@ func (c *CouchStore) notifyEvent(event *store.Event) {
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (c *CouchStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (c *CouchStore) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/CreateLink")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	linkHash, err := c.createLink(link)
 	if err != nil {
@@ -154,12 +155,12 @@ func (c *CouchStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Byte
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (c *CouchStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (c *CouchStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) (err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/AddEvidence")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
-	if err := c.addEvidence(linkHash.String(), evidence); err != nil {
-		return err
+	if err = c.addEvidence(linkHash.String(), evidence); err != nil {
+		return
 	}
 
 	evidenceEvent := store.NewSavedEvidences()
@@ -173,9 +174,9 @@ func (c *CouchStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, e
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (c *CouchStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (c *CouchStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/GetSegment")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	linkDoc, err := c.getDocument(dbLink, linkHash.String())
 	if err != nil || linkDoc == nil {
@@ -185,9 +186,9 @@ func (c *CouchStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentSlice, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/FindSegments")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	queryBytes, err := NewSegmentQuery(filter)
 	if err != nil {
@@ -218,9 +219,9 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
-func (c *CouchStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
+func (c *CouchStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/GetMapIDs")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	queryBytes, err := NewMapQuery(filter)
 	if err != nil {
@@ -250,9 +251,9 @@ func (c *CouchStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (c *CouchStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (c *CouchStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Evidences, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/GetEvidences")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	evidencesDoc, err := c.getDocument(dbEvidences, linkHash.String())
 	if err != nil {
@@ -267,9 +268,9 @@ func (c *CouchStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) 
 /********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (c *CouchStore) SetValue(ctx context.Context, key, value []byte) error {
+func (c *CouchStore) SetValue(ctx context.Context, key, value []byte) (err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/SetValue")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	hexKey := hex.EncodeToString(key)
 	valueDoc, err := c.getDocument(dbValue, hexKey)
@@ -289,9 +290,9 @@ func (c *CouchStore) SetValue(ctx context.Context, key, value []byte) error {
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.Adapter.GetValue.
-func (c *CouchStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
+func (c *CouchStore) GetValue(ctx context.Context, key []byte) (_ []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/GetValue")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	hexKey := hex.EncodeToString(key)
 	valueDoc, err := c.getDocument(dbValue, hexKey)
@@ -307,9 +308,9 @@ func (c *CouchStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.Adapter.DeleteValue.
-func (c *CouchStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
+func (c *CouchStore) DeleteValue(ctx context.Context, key []byte) (_ []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, "couchstore/DeleteValue")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	hexKey := hex.EncodeToString(key)
 	valueDoc, err := c.deleteDocument(dbValue, hexKey)

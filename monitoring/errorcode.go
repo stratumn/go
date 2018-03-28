@@ -14,6 +14,8 @@
 
 package monitoring
 
+import "go.opencensus.io/trace"
+
 // Taken from https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
 // as recommended by the OpenCensus documentation.
 const (
@@ -170,3 +172,17 @@ const (
 	// HTTP Mapping: 500 Internal Server Error
 	DataLoss = 15
 )
+
+// SetSpanStatusAndEnd sets the status of the span depending on the error
+// and ends it. You should usually call defer SetSpanStatusAndEnd(span, err)
+// at the beginning of your function.
+func SetSpanStatusAndEnd(span *trace.Span, err error) {
+	if err != nil {
+		span.SetStatus(trace.Status{
+			Code:    Unknown,
+			Message: err.Error(),
+		})
+	}
+
+	span.End()
+}

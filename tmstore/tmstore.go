@@ -94,13 +94,13 @@ func New(config *Config, tmClient client.Client) *TMStore {
 }
 
 // StartWebsocket starts the websocket client and wait for New Block events.
-func (t *TMStore) StartWebsocket(ctx context.Context) error {
+func (t *TMStore) StartWebsocket(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "tmstore/StartWebSocket")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	if !t.tmClient.IsRunning() {
-		if err := t.tmClient.Start(); err != nil && err != tmcommon.ErrAlreadyStarted {
-			return err
+		if err = t.tmClient.Start(); err != nil && err != tmcommon.ErrAlreadyStarted {
+			return
 		}
 	}
 
@@ -117,8 +117,8 @@ func (t *TMStore) StartWebsocket(ctx context.Context) error {
 		}
 	}()
 
-	if err := t.tmClient.Subscribe(ctx, Name, tmtypes.EventQueryNewBlock, t.tmEventChan); err != nil && err.Error() != ErrAlreadySubscribed {
-		return err
+	if err = t.tmClient.Subscribe(ctx, Name, tmtypes.EventQueryNewBlock, t.tmEventChan); err != nil && err.Error() != ErrAlreadySubscribed {
+		return
 	}
 
 	log.Info("Connected to TMPoP")
@@ -141,20 +141,20 @@ func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duratio
 }
 
 // StopWebsocket stops the websocket client.
-func (t *TMStore) StopWebsocket(ctx context.Context) error {
+func (t *TMStore) StopWebsocket(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "tmstore/StopWebSocket")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	// Note: no need to close t.tmEventChan, unsubscribing handles it
-	if err := t.tmClient.UnsubscribeAll(ctx, Name); err != nil {
+	if err = t.tmClient.UnsubscribeAll(ctx, Name); err != nil {
 		log.Warnf("Error unsubscribing to Tendermint events: %s", err.Error())
-		return err
+		return
 	}
 
 	if t.tmClient.IsRunning() {
-		if err := t.tmClient.Stop(); err != nil && err != tmcommon.ErrAlreadyStopped {
+		if err = t.tmClient.Stop(); err != nil && err != tmcommon.ErrAlreadyStopped {
 			log.Warnf("Error stopping Tendermint client: %s", err.Error())
-			return err
+			return
 		}
 	}
 
@@ -175,6 +175,7 @@ func (t *TMStore) notifyStoreChans(ctx context.Context) {
 	err = json.Unmarshal(response.Value, &pendingEvents)
 	if err != nil {
 		span.Annotatef(nil, "TMPoP pending events could not be unmarshalled: %s", err.Error())
+		span.SetStatus(trace.Status{Code: monitoring.Internal})
 		log.Warn("TMPoP pending events could not be unmarshalled.")
 	}
 
@@ -331,7 +332,7 @@ func (t *TMStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (ids [
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (t *TMStore) NewBatch(ctx context.Context) (store.Batch, error) {
-	return bufferedbatch.NewBatch(t), nil
+	return bufferedbatch.NewBatch(ctx, t), nil
 }
 
 func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
@@ -372,22 +373,19 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 
 func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) (res *abci.ResponseQuery, err error) {
 	ctx, span := trace.StartSpan(ctx, "tmstore/sendQuery")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	query, err := tmpop.BuildQueryBinary(args)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return
 	}
 
 	response, err := t.tmClient.ABCIQuery(name, query)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 		return
 	}
 
 	if !response.Response.IsOK() {
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: response.Response.Log})
 		return res, fmt.Errorf("NOK Response from TMPop: %v", response.Response)
 	}
 

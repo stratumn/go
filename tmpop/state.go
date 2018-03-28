@@ -53,7 +53,7 @@ func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, err
 
 	// With transactional databases we cannot really use two transactions as they'd lock each other
 	// (more exactly, checked links would lock out delivered links)
-	checkedLinks := bufferedbatch.NewBatch(a)
+	checkedLinks := bufferedbatch.NewBatch(ctx, a)
 
 	state := &State{
 		adapter:        a,
@@ -135,7 +135,7 @@ func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*cs.Link, error) 
 	if s.deliveredLinks, err = s.adapter.NewBatch(ctx); err != nil {
 		return nil, nil, err
 	}
-	s.checkedLinks = bufferedbatch.NewBatch(s.adapter)
+	s.checkedLinks = bufferedbatch.NewBatch(ctx, s.adapter)
 
 	committedLinks := make([]*cs.Link, len(s.deliveredLinksList))
 	copy(committedLinks, s.deliveredLinksList)

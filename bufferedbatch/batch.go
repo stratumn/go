@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 
@@ -42,9 +43,9 @@ func NewBatch(ctx context.Context, a store.Adapter) *Batch {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	if err := link.Validate(ctx, b.GetSegment); err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, 
 // GetSegment returns a segment from the cache or delegates the call to the store.
 func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segment *cs.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetSegment")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	for _, link := range b.Links {
 		lh, err := link.Hash()
@@ -77,9 +78,9 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segmen
 }
 
 // FindSegments returns the union of segments in the store and not committed yet.
-func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentSlice, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/FindSegments")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	segments, err := b.originalStore.FindSegments(ctx, filter)
 	if err != nil {
@@ -96,9 +97,9 @@ func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 }
 
 // GetMapIDs returns the union of mapIds in the store and not committed yet.
-func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
+func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetMapIDs")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	tmpMapIDs, err := b.originalStore.GetMapIDs(ctx, filter)
 	if err != nil {
@@ -127,7 +128,7 @@ func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]strin
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/Write")
-	defer span.End()
+	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	stats.Record(ctx, linksPerBatch.M(int64(len(b.Links))))
 
