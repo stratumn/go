@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
+	"go.opencensus.io/trace"
 )
 
 // Batch is the type that implements github.com/stratumn/go-indigocore/store.Batch.
@@ -28,15 +29,18 @@ type Batch struct {
 }
 
 // NewBatch creates a new Batch
-func NewBatch(a *FileStore) *Batch {
+func NewBatch(ctx context.Context, a *FileStore) *Batch {
 	return &Batch{
-		Batch:             bufferedbatch.NewBatch(a),
+		Batch:             bufferedbatch.NewBatch(ctx, a),
 		originalFileStore: a,
 	}
 }
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write
 func (b *Batch) Write(ctx context.Context) (err error) {
+	ctx, span := trace.StartSpan(ctx, "filestore/batch/Write")
+	defer span.End()
+
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()
 
