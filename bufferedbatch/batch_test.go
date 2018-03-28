@@ -29,10 +29,11 @@ import (
 )
 
 func TestBatch_CreateLink(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	batch := NewBatch(a)
-
 	ctx := context.Background()
+
+	a := &storetesting.MockAdapter{}
+	batch := NewBatch(ctx, a)
+
 	l := cstesting.RandomLink()
 
 	wantedErr := errors.New("error on MockCreateLink")
@@ -55,10 +56,10 @@ func TestBatch_CreateLink(t *testing.T) {
 }
 
 func TestBatch_GetSegment(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	batch := NewBatch(a)
-
 	ctx := context.Background()
+
+	a := &storetesting.MockAdapter{}
+	batch := NewBatch(ctx, a)
 
 	storedLink := cstesting.RandomLink()
 	storedLinkHash, _ := storedLink.Hash()
@@ -111,10 +112,10 @@ func TestBatch_GetSegment(t *testing.T) {
 }
 
 func TestBatch_FindSegments(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	batch := NewBatch(a)
-
 	ctx := context.Background()
+
+	a := &storetesting.MockAdapter{}
+	batch := NewBatch(ctx, a)
 
 	storedLink := cstesting.RandomLink()
 	storedLink.Meta.Process = "Foo"
@@ -164,10 +165,10 @@ func TestBatch_FindSegments(t *testing.T) {
 }
 
 func TestBatch_GetMapIDs(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	batch := NewBatch(a)
-
 	ctx := context.Background()
+
+	a := &storetesting.MockAdapter{}
+	batch := NewBatch(ctx, a)
 
 	storedLink1 := cstesting.RandomLink()
 	storedLink1.Meta.MapID = "Foo1"
@@ -233,10 +234,10 @@ func TestBatch_GetMapIDs(t *testing.T) {
 }
 
 func TestBatch_GetMapIDsWithStoreReturningAnErrorOnGetMapIDs(t *testing.T) {
-	a := &storetesting.MockAdapter{}
-	batch := NewBatch(a)
-
 	ctx := context.Background()
+
+	a := &storetesting.MockAdapter{}
+	batch := NewBatch(ctx, a)
 
 	wantedMapIds := []string{"Foo", "Bar"}
 	notFoundErr := errors.New("Unit test error")
@@ -259,7 +260,7 @@ func TestBatch_WriteLink(t *testing.T) {
 
 	ctx := context.Background()
 
-	batch := NewBatch(a)
+	batch := NewBatch(ctx, a)
 
 	_, err := batch.CreateLink(ctx, l)
 	if err != nil {
@@ -296,7 +297,7 @@ func TestBatch_WriteLinkWithFailure(t *testing.T) {
 		return l.Hash()
 	}
 
-	batch := NewBatch(a)
+	batch := NewBatch(ctx, a)
 
 	_, err := batch.CreateLink(ctx, la)
 	if err != nil {
