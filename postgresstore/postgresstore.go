@@ -25,6 +25,7 @@ import (
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -84,6 +85,9 @@ func New(config *Config) (*Store, error) {
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
 func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/GetInfo")
+	defer span.End()
+
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -94,6 +98,9 @@ func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 
 // NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
 func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/NewBatch")
+	defer span.End()
+
 	for b := range a.batches {
 		if b.done {
 			delete(a.batches, b)
@@ -120,6 +127,9 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/CreateLink")
+	defer span.End()
+
 	linkHash, err := a.writer.CreateLink(ctx, link)
 	if err != nil {
 		return nil, err
@@ -135,6 +145,9 @@ func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, 
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/AddEvidence")
+	defer span.End()
+
 	data, err := json.Marshal(evidence)
 	if err != nil {
 		return err

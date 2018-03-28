@@ -17,6 +17,8 @@ package postgresstore
 import (
 	"context"
 	"database/sql"
+
+	"go.opencensus.io/trace"
 )
 
 // Batch is the type that implements github.com/stratumn/go-indigocore/store.Batch.
@@ -43,6 +45,9 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) error {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/batch/Write")
+	defer span.End()
+
 	b.done = true
 	return b.tx.Commit()
 }

@@ -24,6 +24,8 @@ import (
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
+
+	"go.opencensus.io/trace"
 )
 
 type reader struct {
@@ -32,6 +34,9 @@ type reader struct {
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
 func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/GetSegment")
+	defer span.End()
+
 	var segments = make(cs.SegmentSlice, 0, 1)
 
 	rows, err := a.stmts.GetSegment.Query(linkHash[:])
@@ -52,6 +57,9 @@ func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.S
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
 func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/FindSegments")
+	defer span.End()
+
 	var (
 		rows         *sql.Rows
 		err          error
@@ -182,6 +190,9 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
 func (a *reader) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/GetMapIDs")
+	defer span.End()
+
 	rows, err := a.stmts.GetMapIDs.Query(filter.Pagination.Offset, filter.Pagination.Limit, filter.Process)
 	if err != nil {
 		return nil, err
@@ -205,6 +216,9 @@ func (a *reader) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]stri
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
 func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/GetValue")
+	defer span.End()
+
 	var data []byte
 
 	if err := a.stmts.GetValue.QueryRow(key).Scan(&data); err != nil {
@@ -219,6 +233,9 @@ func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
 func (a *reader) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+	ctx, span := trace.StartSpan(ctx, "postgresstore/GetEvidences")
+	defer span.End()
+
 	var evidences cs.Evidences
 
 	rows, err := a.stmts.GetEvidences.Query(linkHash[:])
