@@ -16,7 +16,6 @@ package tmstore
 
 import (
 	"context"
-	"encoding/base64"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -24,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/store"
@@ -32,10 +32,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/abci/types"
-	"golang.org/x/crypto/ed25519"
 )
 
-const itPrivKey = "3t39DaJp54JXnBuBR31K889hqAFNms3V5U5cWqaY5VmGbG8T5z0/AZRIRVlDXRE9pM/lKS5NHrSkn4GHCqKHjw=="
+const itPrivKey = `-----BEGIN ED25519 PRIVATE KEY-----
+BEB2RfLeMdUq/tPbnCdByOLXvlP1NvEG34p0svCTpOaCdy/LCHJWt/f722QPhM6Z
+eCrxVaLwefeJHgQz2j1Rr5q7
+-----END ED25519 PRIVATE KEY-----`
 
 var (
 	tmstore *TMStore
@@ -104,8 +106,7 @@ func TestTMStore(t *testing.T) {
 			l.Meta.Type = "init"
 			l.State["string"] = "test"
 
-			privBytes, _ := base64.StdEncoding.DecodeString(itPrivKey)
-			ITPrivateKey := ed25519.PrivateKey(privBytes)
+			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -155,8 +156,7 @@ func TestTMStore(t *testing.T) {
 			l.Meta.Type = "processing"
 			l.State["string"] = "test"
 
-			privBytes, _ := base64.StdEncoding.DecodeString(itPrivKey)
-			ITPrivateKey := ed25519.PrivateKey(privBytes)
+			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
 			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
 
 			_, err = tmstore.CreateLink(context.Background(), l)

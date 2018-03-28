@@ -2,11 +2,15 @@
   "testProcess": {
     "pki": {
       "alice.vandenbudenmayer@stratumn.com": {
-        "keys": ["TESTKEY1"],
+        "keys": [
+          "-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAO0U2B1DjM7k+AWLUBl9oK+ZhX/gpwrx5Z7RxCUgccDo=\n-----END ED25519 PUBLIC KEY-----\n"
+        ],
         "roles": ["employee"]
       },
       "Bob Wagner": {
-        "keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+        "keys": [
+          "-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAL8sIcla39/vbZA+Ezpl4KvFVovB594keBDPaPVGvmrs=\n-----END ED25519 PUBLIC KEY-----\n"
+        ],
         "roles": ["manager", "it"]
       }
     },

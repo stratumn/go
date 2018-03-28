@@ -18,14 +18,20 @@ package cs
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
+
+	"github.com/stratumn/go-crypto/signatures"
+
 	"reflect"
+
+	"github.com/pkg/errors"
+
+	sigencoding "github.com/stratumn/go-crypto/encoding"
+	"github.com/stratumn/go-crypto/keys"
+	"github.com/stratumn/go-indigocore/types"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
-	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/types"
 )
 
 // Segment contains a link and meta data about the link.
@@ -248,10 +254,10 @@ func (l *Link) validateSignatures() error {
 		for _, sig := range l.Signatures {
 			if sig.Type == "" {
 				return errors.New("signature.Type cannot be empty")
-			} else if _, err := base64.StdEncoding.DecodeString(sig.PublicKey); err != nil || sig.PublicKey == "" {
-				return errors.Errorf("signature.PublicKey [%s] has to be a base64-encoded string", sig.PublicKey)
-			} else if _, err := base64.StdEncoding.DecodeString(sig.Signature); err != nil || sig.Signature == "" {
-				return errors.Errorf("signature.Signature [%s] has to be a base64-encoded string", sig.Signature)
+			} else if _, err := keys.ParsePublicKey([]byte(sig.PublicKey)); err != nil {
+				return errors.Wrapf(err, "failed to parse public key [%s]", sig.PublicKey)
+			} else if _, err := sigencoding.DecodePEM([]byte(sig.Signature), signatures.SignaturePEMLabel); err != nil {
+				return errors.Wrapf(err, "failed to parse signature [%s]", sig.Signature)
 			} else if _, err := jmespath.Compile(sig.Payload); err != nil {
 				return errors.Errorf("signature.Payload [%s] has to be a JMESPATH expression, got: %s", sig.Payload, err.Error())
 			}

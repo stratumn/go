@@ -29,7 +29,7 @@ const testValidationConfig = `
 	"testProcess": {
 	    "pki": {
 		"alice.vandenbudenmayer@stratumn.com": {
-		    "keys": ["TESTKEY1"],
+		    "keys": ["-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAO0U2B1DjM7k+AWLUBl9oK+ZhX/gpwrx5Z7RxCUgccDo=\n-----END ED25519 PUBLIC KEY-----\n"],
 		    "roles": ["employee"]
 		}
 	    },
@@ -101,7 +101,10 @@ func (f Factory) TestValidation(t *testing.T) {
 		l.Meta.Type = "init"
 		l.State["string"] = "test"
 		l = cstesting.SignLink(l)
-		l.Signatures[0].Signature = "test"
+		l.Signatures[0].Signature = `-----BEGIN MESSAGE-----
+BEDZR29+Zk8M72ZlgWstb3o96MdKNXeT0Q7LfzDFQKjv9dLjeHpRL4BSjkjPWbuA
+Kmq1nHIk7T7bpLBohyy0lRYO
+-----END MESSAGE-----`
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
 

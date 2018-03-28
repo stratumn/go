@@ -15,12 +15,12 @@
 package validator
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/stratumn/go-crypto/keys"
 )
 
 var (
@@ -107,8 +107,8 @@ func loadPKIConfig(data json.RawMessage) (*PKI, error) {
 
 	for _, id := range jsonData {
 		for _, key := range id.Keys {
-			if _, err := base64.StdEncoding.DecodeString(key); key == "" || err != nil {
-				return nil, errors.Wrap(ErrBadPublicKey, "error while parsing PKI")
+			if _, err := keys.ParsePublicKey([]byte(key)); err != nil {
+				return nil, errors.Wrapf(err, "error while parsing public key [%s]", key)
 			}
 		}
 	}

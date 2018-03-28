@@ -16,14 +16,11 @@
 package cs
 
 import (
-	"encoding/base64"
-
+	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
 	"github.com/pkg/errors"
 
-	cj "github.com/gibson042/canonicaljson-go"
-
-	signatures "github.com/stratumn/go-indigocore/cs/signatures"
+	"github.com/stratumn/go-crypto/signatures"
 )
 
 const (
@@ -51,7 +48,7 @@ type Signature struct {
 
 // NewSignature creates a new signature for a link.
 // Only the data matching the JMESPATH query will be signed
-func NewSignature(signatureType, payloadPath string, privateKey []byte, l *Link) (*Signature, error) {
+func NewSignature(payloadPath string, privateKey []byte, l *Link) (*Signature, error) {
 	payload, err := jmespath.Search(payloadPath, l)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrBadJMESPATHQuery)
@@ -65,14 +62,15 @@ func NewSignature(signatureType, payloadPath string, privateKey []byte, l *Link)
 		return nil, errors.WithStack(err)
 	}
 
-	publicKey, signature, err := signatures.Sign(signatureType, privateKey, payloadBytes)
+	signature, err := signatures.Sign(privateKey, payloadBytes)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Signature{
-		Type:      signatureType,
-		PublicKey: publicKey,
-		Signature: signature,
+		Type:      signature.AI,
+		PublicKey: string(signature.PublicKey),
+		Signature: string(signature.Signature),
 		Payload:   payloadPath,
 	}, nil
 }
@@ -80,9 +78,6 @@ func NewSignature(signatureType, payloadPath string, privateKey []byte, l *Link)
 // Verify takes a link as input, computes the signed part using the signature payload
 // and runs the signature verification depending on its type.
 func (s Signature) Verify(l *Link) error {
-	keyBytes, _ := base64.StdEncoding.DecodeString(s.PublicKey)
-	sigBytes, _ := base64.StdEncoding.DecodeString(s.Signature)
-
 	payload, err := jmespath.Search(s.Payload, l)
 	if err != nil {
 		return errors.Wrap(err, ErrBadJMESPATHQuery)
@@ -96,7 +91,12 @@ func (s Signature) Verify(l *Link) error {
 		return errors.WithStack(err)
 	}
 
-	if err := signatures.Verify(s.Type, keyBytes, sigBytes, payloadBytes); err != nil {
+	if err := signatures.Verify(&signatures.Signature{
+		AI:        s.Type,
+		PublicKey: []byte(s.PublicKey),
+		Message:   payloadBytes,
+		Signature: []byte(s.Signature),
+	}); err != nil {
 		return errors.WithStack(err)
 	}
 	return nil

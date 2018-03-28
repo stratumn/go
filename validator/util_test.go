@@ -18,8 +18,13 @@ import (
 	"fmt"
 )
 
-const AlicePrivateKey = `XyvgStfhWJ3uq/peoh/VyIIl0kTkCKQ1Fv5VQC4f5w3a+HASh6jEKKWYBvrALvSZpOaiR+c0ak3O0Oqa9kJ44w==`
-const AlicePublicKey = `2vhwEoeoxCilmAb6wC70maTmokfnNGpNztDqmvZCeOM=`
+const (
+	AlicePrivateKey = `-----BEGIN ED25519 PRIVATE KEY-----\nBEC0TyVE2Y7+OgPHcSAAIAjUHCVA68swAp235LkQZBIrZnUfW/lss95djRXjIeX+\nezH5bdbVe7s4wbPJRBiej+it\n-----END ED25519 PRIVATE KEY-----\n`
+	AlicePublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAdR9b+Wyz3l2NFeMh5f57Mflt1tV7uzjBs8lEGJ6P6K0=\n-----END ED25519 PUBLIC KEY-----\n`
+
+	BobPrivateKey = `-----BEGIN ED25519 PRIVATE KEY-----\nBED2FCm0Wxbq0WGpsf+7qNEUe3WXM2rGDey8ZuYn723qJPraxU3A4L+KAsOOc2Hq\nXD7nmG3Bq0+2B2lO5VvcjcSe\n-----END ED25519 PRIVATE KEY-----\n`
+	BobPublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEA+trFTcDgv4oCw45zYepcPueYbcGrT7YHaU7lW9yNxJ4=\n-----END ED25519 PUBLIC KEY-----\n`
+)
 
 var ValidAuctionJSONPKIConfig = fmt.Sprintf(`
 {
@@ -28,11 +33,11 @@ var ValidAuctionJSONPKIConfig = fmt.Sprintf(`
 		"roles": ["employee"]
 	},
 	"Bob Wagner": {
-		"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+		"keys": ["%s"],
 		"roles": ["manager", "it"]
 	}
 }
-`, AlicePublicKey)
+`, AlicePublicKey, BobPublicKey)
 
 const ValidAuctionJSONTypesConfig = `
 {
@@ -75,14 +80,14 @@ const ValidAuctionJSONTypesConfig = `
 }
 `
 
-const ValidChatJSONPKIConfig = `
+var ValidChatJSONPKIConfig = fmt.Sprintf(`
 {
 	"Bob Wagner": {
-		"keys": ["hmxvE+c9PwGUSEVZQ10RPaTP5SkuTR60pJ+Bhwqih48="],
+		"keys": ["%s"],
 		"roles": ["manager", "it"]
 	}
 }
-`
+`, BobPublicKey)
 
 const ValidChatJSONTypesConfig = `
 {

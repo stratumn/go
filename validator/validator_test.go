@@ -16,18 +16,19 @@ package validator_test
 
 import (
 	"context"
-	"encoding/base64"
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/utils"
 	"github.com/stratumn/go-indigocore/validator"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
@@ -35,6 +36,10 @@ type testCase struct {
 	link  *cs.Link
 	valid bool
 }
+
+const (
+	AlicePrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nBEC0TyVE2Y7+OgPHcSAAIAjUHCVA68swAp235LkQZBIrZnUfW/lss95djRXjIeX+\nezH5bdbVe7s4wbPJRBiej+it\n-----END ED25519 PRIVATE KEY-----\n"
+)
 
 func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 	store := dummystore.New(nil)
@@ -50,7 +55,7 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 			Type:    "init",
 		},
 	}
-	priv, _ := base64.StdEncoding.DecodeString(validator.AlicePrivateKey)
+	priv, _, err := keys.ParseSecretKey([]byte(AlicePrivateKey))
 	initAuctionLinkHash, err := store.CreateLink(context.Background(), cstesting.SignLinkWithKey(initAuctionLink, priv))
 	require.NoError(t, err)
 

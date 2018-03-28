@@ -15,6 +15,7 @@
 package validator
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -67,12 +68,12 @@ func TestLoadConfig_Success(t *testing.T) {
 
 	t.Run("Null signatures", func(T *testing.T) {
 
-		const validJSONSig = `
+		var validJSONSig = fmt.Sprintf(`
 		{
 			"testProcess": {
 			  "pki": {
 			    "alice.vandenbudenmayer@stratumn.com": {
-					"keys": ["TESTKEY1"],
+					"keys": ["%s"],
 					"name": "Alice Van den Budenmayer",
 					"roles": ["employee"]
 			    }
@@ -84,7 +85,7 @@ func TestLoadConfig_Success(t *testing.T) {
 					}
 			  	}
 			}
-		}`
+		}`, AlicePublicKey)
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -99,12 +100,12 @@ func TestLoadConfig_Success(t *testing.T) {
 
 	t.Run("Empty signatures", func(T *testing.T) {
 
-		const validJSONSig = `
+		var validJSONSig = fmt.Sprintf(`
 		{
 			"test": {
 			    "pki": {
 					"alice.vandenbudenmayer@stratumn.com": {
-						"keys": ["TESTKEY1"],
+						"keys": ["%s"],
 						"name": "Alice Van den Budenmayer",
 						"roles": ["employee"]
 					}
@@ -116,7 +117,7 @@ func TestLoadConfig_Success(t *testing.T) {
 					}
 			    }
 			}
-		}`
+		}`, AlicePublicKey)
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -328,7 +329,7 @@ func TestLoadPKI_Error(t *testing.T) {
 			"test": {
 			  "pki": {
 			    "alice.vandenbudenmayer@stratumn.com": {
-			      "keys": ["t€st"],
+			      "keys": ["badPrivateKey"],
 			      "name": "Alice Van den Budenmayer",
 			      "roles": ["employee"]
 			    }
@@ -347,6 +348,6 @@ func TestLoadPKI_Error(t *testing.T) {
 		validators, err := LoadConfig(testFile, nil)
 
 		assert.Nil(t, validators)
-		assert.EqualError(t, err, "error while parsing PKI: public key must be a non null base64 encoded string")
+		assert.EqualError(t, err, "error while parsing public key [badPrivateKey]: failed to decode PEM block")
 	})
 }

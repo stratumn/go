@@ -28,6 +28,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testPublicKey = `-----BEGIN ED25519 PUBLIC KEY-----
+MCowBQYDK2VwAyEAcNqssqdHS2mzFEMf1n2II5r0Hyc4+zZckyzYscs75pw=
+-----END ED25519 PUBLIC KEY-----`
+
+const testSignature = `-----BEGIN MESSAGE-----
+e57BHH+DGZuvXzzJ/3dnA5r5ZPdt9TYX/5DiHe+f7CYIlpaWFUnu4mUBsDM1B3Oq
+05PnjrLZbKsxoU2at1YOBA==
+-----END MESSAGE-----`
+
 func TestSegmentGetLinkHash(t *testing.T) {
 	l := cstesting.RandomLink()
 	lh, _ := l.Hash()
@@ -198,33 +207,33 @@ func TestLinkValidate_wrongPublicKeyFormat(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
 		Type:      "ok",
-		PublicKey: "*test*",
+		PublicKey: "test",
 	})
-	testLinkValidateError(t, l, nil, "signature.PublicKey [*test*] has to be a base64-encoded string")
+	testLinkValidateError(t, l, nil, "failed to parse public key [test]: failed to decode PEM block")
 }
 
 func TestLinkValidate_wrongSignatureFormat(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
 		Type:      "ok",
-		PublicKey: "AeZ4",
-		Signature: "*test*",
+		PublicKey: testPublicKey,
+		Signature: "test",
 	})
-	testLinkValidateError(t, l, nil, "signature.Signature [*test*] has to be a base64-encoded string")
+	testLinkValidateError(t, l, nil, "failed to parse signature [test]: failed to decode PEM block")
 }
 
 func TestLinkValidate_badSignature(t *testing.T) {
 	l := cstesting.SignLink(cstesting.RandomLink())
-	l.Signatures[0].Signature = "test"
-	testLinkValidateError(t, l, nil, "signature verification failed")
+	l.Signatures[0].Signature = testSignature
+	testLinkValidateError(t, l, nil, "invalid ed25519 signature: signature verification failed")
 }
 
 func TestLinkValidate_wrongPaylodExpression(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
 		Type:      "ok",
-		PublicKey: "deadbeef",
-		Signature: "deadbeef",
+		PublicKey: testPublicKey,
+		Signature: testSignature,
 		Payload:   "",
 	})
 	testLinkValidateError(t, l, nil, "signature.Payload [] has to be a JMESPATH expression, got: SyntaxError: Incomplete expression")

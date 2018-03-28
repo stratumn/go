@@ -15,15 +15,18 @@
 package cs_test
 
 import (
-	"crypto/rand"
+	"crypto/x509"
 	"testing"
 
-	"github.com/agl/ed25519"
-	"github.com/stretchr/testify/assert"
+	"github.com/stratumn/go-crypto/signatures"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/stratumn/go-crypto/encoding"
+	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
-	sig "github.com/stratumn/go-indigocore/cs/signatures"
 )
 
 func TestGetSignatures(t *testing.T) {
@@ -53,26 +56,27 @@ func TestGetSignatures_NotFound(t *testing.T) {
 }
 
 func TestNewSignature(t *testing.T) {
-	_, priv, _ := ed25519.GenerateKey(rand.Reader)
+	_, privPEM, err := keys.GenerateKey(keys.ED25519)
+	require.NoError(t, err)
 	link := cstesting.RandomLink()
 
 	t.Run("Valid signature", func(t *testing.T) {
 		payloadPath := "[state,meta]"
-		sig, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
-		assert.NoError(t, err)
+		sig, err := cs.NewSignature(payloadPath, privPEM, link)
+		require.NoError(t, err)
 		assert.NoError(t, sig.Verify(link), "signature verification failed")
 	})
 
 	t.Run("Bad payload", func(t *testing.T) {
 		payloadPath := ""
-		_, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
+		_, err := cs.NewSignature(payloadPath, privPEM, link)
 		assert.EqualError(t, err, cs.ErrBadJMESPATHQuery+": SyntaxError: Incomplete expression")
 	})
 
 	t.Run("Canonicaljson failed", func(t *testing.T) {
 		payloadPath := "[state,meta]"
 		link.State["lol"] = func() {}
-		_, err := cs.NewSignature(sig.Ed25519, payloadPath, priv[:], link)
+		_, err := cs.NewSignature(payloadPath, privPEM, link)
 		assert.EqualError(t, err, "canonicaljson: unsupported type: func()")
 	})
 
@@ -97,7 +101,7 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "unsupported-signature-type",
 			valid: false,
-			err:   "Unhandled signature scheme [test]: " + sig.ErrUnsupportedSignatureType.Error(),
+			err:   x509.ErrUnsupportedAlgorithm.Error(),
 			signature: func() *cs.Signature {
 				s := cstesting.RandomSignature(payload)
 				s.Type = "test"
@@ -127,10 +131,11 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:  "wrong-signature",
 			valid: false,
-			err:   sig.ErrInvalidSignature.Error(),
+			err:   "invalid ed25519 signature: signature verification failed",
 			signature: func() *cs.Signature {
 				s := cstesting.RandomSignature(payload)
-				s.Signature = "test"
+				wrongSigPEM, _ := encoding.EncodePEM([]byte("test"), signatures.SignaturePEMLabel)
+				s.Signature = string(wrongSigPEM)
 				return s
 			},
 		},

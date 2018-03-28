@@ -17,15 +17,14 @@ package cstesting
 
 import (
 	"crypto"
-	crand "crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"math/rand"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
-	"golang.org/x/crypto/ed25519"
 
+	"github.com/stratumn/go-crypto/keys"
+	"github.com/stratumn/go-crypto/signatures"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/testutil"
 )
@@ -148,37 +147,37 @@ func SignLink(l *cs.Link) *cs.Link {
 
 // SignLinkWithKey signs the link with the provided private key.
 // The key must be an instance of ed25519.PrivateKey
-func SignLinkWithKey(l *cs.Link, priv ed25519.PrivateKey) *cs.Link {
+func SignLinkWithKey(l *cs.Link, priv crypto.PrivateKey) *cs.Link {
 	l.Signatures = append(l.Signatures, SignatureWithKey(l, priv))
 	return l
 }
 
 // RandomSignature returns an arbitrary signature from a generated key pair
 func RandomSignature(l *cs.Link) *cs.Signature {
-	pub, priv, _ := ed25519.GenerateKey(crand.Reader)
+	_, priv, _ := keys.GenerateKey(keys.ED25519)
 	payloadPath := "[state, meta]"
 	payload, _ := jmespath.Search(payloadPath, l)
 	payloadBytes, _ := cj.Marshal(payload)
-	sigBytes, _ := priv.Sign(crand.Reader, payloadBytes, crypto.Hash(0))
+	sig, _ := signatures.Sign(priv, payloadBytes)
 	return &cs.Signature{
-		Type:      "ed25519",
-		PublicKey: base64.StdEncoding.EncodeToString(pub),
-		Signature: base64.StdEncoding.EncodeToString(sigBytes),
+		Type:      sig.AI,
+		PublicKey: string(sig.PublicKey),
+		Signature: string(sig.Signature),
 		Payload:   payloadPath,
 	}
 }
 
 // SignatureWithKey returns a signature of a link using the provided private key
-func SignatureWithKey(l *cs.Link, priv ed25519.PrivateKey) *cs.Signature {
-	pub := priv.Public().(ed25519.PublicKey)
+func SignatureWithKey(l *cs.Link, priv crypto.PrivateKey) *cs.Signature {
+	privPEM, _ := keys.EncodeSecretkey(priv)
 	payloadPath := "[state, meta]"
 	payload, _ := jmespath.Search(payloadPath, l)
 	payloadBytes, _ := cj.Marshal(payload)
-	sigBytes, _ := priv.Sign(crand.Reader, payloadBytes, crypto.Hash(0))
+	sig, _ := signatures.Sign(privPEM, payloadBytes)
 	return &cs.Signature{
-		Type:      "ed25519",
-		PublicKey: base64.StdEncoding.EncodeToString(pub),
-		Signature: base64.StdEncoding.EncodeToString(sigBytes),
+		Type:      sig.AI,
+		PublicKey: string(sig.PublicKey),
+		Signature: string(sig.Signature),
 		Payload:   payloadPath,
 	}
 }

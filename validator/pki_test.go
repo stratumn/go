@@ -16,6 +16,7 @@ package validator
 
 import (
 	"context"
+	"crypto"
 	"crypto/rand"
 	"encoding/base64"
 	"testing"
@@ -39,7 +40,7 @@ func TestPKIValidator(t *testing.T) {
 		return cstesting.SignLink(l)
 	}
 
-	createValidLinkWithKey := func(priv ed25519.PrivateKey) *cs.Link {
+	createValidLinkWithKey := func(priv crypto.PrivateKey) *cs.Link {
 		l := cstesting.RandomLink()
 		l.Meta.Process = process
 		l.Meta.Type = linkType
