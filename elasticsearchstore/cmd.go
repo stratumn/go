@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/utils"
 )
@@ -83,5 +82,4 @@ func RegisterFlags() {
 func InitializeWithFlags(version, commit string) *ESStore {
 	config := &Config{URL: url, Version: version, Commit: commit, Sniffing: sniffing, LogLevel: logLevel}
 	return Initialize(config)
-
 }
