@@ -24,6 +24,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/dummyfossilizer"
 	"github.com/stratumn/go-indigocore/fossilizer/fossilizerhttp"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/utils"
 )
 
@@ -34,6 +35,7 @@ var (
 
 func init() {
 	fossilizerhttp.RegisterFlags()
+	monitoring.RegisterFlags()
 }
 
 func main() {

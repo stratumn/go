@@ -36,7 +36,7 @@ func TestGetInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
 	}
-	got, err := a.GetInfo()
+	got, err := a.GetInfo(context.Background())
 	if err != nil {
 		t.Fatalf("a.GetInfo(): err: %s", err)
 	}
@@ -101,6 +101,8 @@ func TestFossilize_Interval(t *testing.T) {
 }
 
 func TestStop_StopBatch(t *testing.T) {
+	ctx := context.Background()
+
 	t.Parallel()
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
@@ -120,19 +122,19 @@ func TestStop_StopBatch(t *testing.T) {
 		}
 	}()
 
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 
@@ -178,6 +180,8 @@ func TestFossilize_Archive(t *testing.T) {
 }
 
 func TestNew_recover(t *testing.T) {
+	ctx := context.Background()
+
 	t.Parallel()
 	path, err := ioutil.TempDir("", "batchfossilizer")
 	if err != nil {
@@ -198,19 +202,19 @@ func TestNew_recover(t *testing.T) {
 		}
 	}()
 
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
-	if err := a.Fossilize(atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
+	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 

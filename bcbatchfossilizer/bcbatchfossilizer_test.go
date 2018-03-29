@@ -15,6 +15,7 @@
 package bcbatchfossilizer
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"testing"
@@ -32,7 +33,7 @@ func TestGetInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New(): err: %s", err)
 	}
-	got, err := a.GetInfo()
+	got, err := a.GetInfo(context.Background())
 	if err != nil {
 		t.Fatalf("a.GetInfo(): err: %s", err)
 	}

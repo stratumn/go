@@ -16,20 +16,22 @@
 package fossilizer
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/cs"
 )
 
 // Adapter must be implemented by a fossilier.
 type Adapter interface {
 	// Returns arbitrary information about the adapter.
-	GetInfo() (interface{}, error)
+	GetInfo(context.Context) (interface{}, error)
 
 	// Adds a channel that receives events from the fossilizer
 	AddFossilizerEventChan(chan *Event)
 
 	// Requests data to be fossilized.
 	// Meta is arbitrary data that will be forwarded to the websocket.
-	Fossilize(data []byte, meta []byte) error
+	Fossilize(ctx context.Context, data []byte, meta []byte) error
 }
 
 // Result is the type sent to the result channels.

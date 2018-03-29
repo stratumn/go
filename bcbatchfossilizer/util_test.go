@@ -56,7 +56,7 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest) (
 	<-a.Started()
 
 	for _, test := range tests {
-		if err := a.Fossilize(test.data, test.meta); err != nil {
+		if err := a.Fossilize(context.Background(), test.data, test.meta); err != nil {
 			t.Errorf("a.Fossilize(): err: %s", err)
 		}
 		if test.sleep > 0 {
@@ -131,7 +131,7 @@ func benchmarkFossilize(b *testing.B, config *Config, batchConfig *batchfossiliz
 
 	go func() {
 		for i := 0; i < n; i++ {
-			if err := a.Fossilize(data[i], data[i]); err != nil {
+			if err := a.Fossilize(context.Background(), data[i], data[i]); err != nil {
 				b.Errorf("a.Fossilize(): err: %s", err)
 			}
 		}

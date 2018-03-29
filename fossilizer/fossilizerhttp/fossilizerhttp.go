@@ -33,10 +33,12 @@ import (
 	"sync"
 
 	"github.com/julienschmidt/httprouter"
-
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/jsonws"
+	"github.com/stratumn/go-indigocore/monitoring"
+
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -161,7 +163,10 @@ func (s *Server) handleEvents() {
 }
 
 func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	adapterInfo, err := s.adapter.GetInfo()
+	ctx, span := trace.StartSpan(r.Context(), "fossilizerhttp/root")
+	defer span.End()
+
+	adapterInfo, err := s.adapter.GetInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -171,13 +176,16 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 	}, nil
 }
 
-func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
+func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.Params) (_ interface{}, err error) {
+	ctx, span := trace.StartSpan(r.Context(), "fossilizerhttp/fossilize")
+	defer monitoring.SetSpanStatusAndEnd(span, err)
+
 	data, process, err := s.parseFossilizeValues(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.adapter.Fossilize(data, []byte(process)); err != nil {
+	if err := s.adapter.Fossilize(ctx, data, []byte(process)); err != nil {
 		return nil, err
 	}
 
