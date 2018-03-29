@@ -46,5 +46,9 @@ func main() {
 		ValidatorFilename: *validatorFilename,
 		Monitoring:        monitoring.ConfigurationFromFlags(),
 	}
-	tmpop.Run(a, a, tmpopConfig)
+	tmpop.Run(
+		monitoring.NewStoreAdapter(a, "dummystore"),
+		monitoring.NewKeyValueStoreAdapter(a, "dummystore"),
+		tmpopConfig,
+	)
 }

@@ -47,5 +47,9 @@ func main() {
 		ValidatorFilename: *validatorFilename,
 		Monitoring:        monitoring.ConfigurationFromFlags(),
 	}
-	tmpop.Run(a, a, tmpopConfig)
+	tmpop.Run(
+		monitoring.NewStoreAdapter(a, "rethinkstore"),
+		monitoring.NewKeyValueStoreAdapter(a, "rethinkstore"),
+		tmpopConfig,
+	)
 }

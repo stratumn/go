@@ -35,6 +35,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/leveldbstore"
+	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -55,7 +56,7 @@ type FileStore struct {
 	config     *Config
 	eventChans []chan *store.Event
 	mutex      sync.RWMutex // simple global mutex
-	kvDB       *leveldbstore.LevelDBStore
+	kvDB       store.KeyValueStore
 }
 
 // Config contains configuration options for the store.
@@ -88,7 +89,12 @@ func New(config *Config) (*FileStore, error) {
 		return nil, err
 	}
 
-	return &FileStore{config, nil, sync.RWMutex{}, db}, nil
+	return &FileStore{
+		config,
+		nil,
+		sync.RWMutex{},
+		monitoring.NewKeyValueStoreAdapter(db, "leveldbstore"),
+	}, nil
 }
 
 /********** Store adapter implementation **********/
