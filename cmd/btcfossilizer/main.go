@@ -51,6 +51,9 @@ func main() {
 
 	bcy := blockcypher.RunWithFlags(ctx, *key)
 	ts := btctimestamper.InitializeWithFlags(version, commit, *key, bcy, bcy)
-	a := bcbatchfossilizer.RunWithFlags(ctx, version, commit, ts)
+	a := monitoring.NewFossilizerAdapter(
+		bcbatchfossilizer.RunWithFlags(ctx, version, commit, ts),
+		"bcbatchfossilizer",
+	)
 	fossilizerhttp.RunWithFlags(ctx, a)
 }

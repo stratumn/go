@@ -24,8 +24,6 @@ import (
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/fossilizer"
-
-	"go.opencensus.io/trace"
 )
 
 const (
@@ -102,9 +100,6 @@ func New(config *Config) *DummyFossilizer {
 
 // GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *DummyFossilizer) GetInfo(ctx context.Context) (interface{}, error) {
-	ctx, span := trace.StartSpan(ctx, "dummyfossilizer/GetInfo")
-	defer span.End()
-
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -121,9 +116,6 @@ func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossi
 
 // Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
-	ctx, span := trace.StartSpan(ctx, "dummyfossilizer/Fossilize")
-	defer span.End()
-
 	r := &fossilizer.Result{
 		Evidence: cs.Evidence{
 			Backend:  Name,
