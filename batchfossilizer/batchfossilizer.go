@@ -376,6 +376,7 @@ func (a *Fossilizer) batch(b *batch) {
 						"file":  filepath.Base(path),
 						"error": err,
 					}).Warn("Failed to remove batch file")
+					span.Annotatef(nil, "Failed to remove batch file: %s", err.Error())
 				}
 			}
 		}
