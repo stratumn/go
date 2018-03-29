@@ -18,7 +18,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
-	"strconv"
 
 	"github.com/spf13/cobra"
 	"github.com/stratumn/go-crypto/keys"
@@ -43,31 +42,29 @@ var keyCmd = &cobra.Command{
 It currently supports 3 key algorithms : ED25519, RSA and ECDSA`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		in := generator.StringSelect{
+		in := generator.GenericSelect{
 			InputShared: generator.InputShared{
-				Prompt: "What kind of key would you like to generate ?",
+				Prompt: "Which type of key would you like to generate ?",
 			},
-			Options: generator.StringSelectOptions{},
+			Options: generator.GenericSelectOptions{},
 		}
 		keyOptions := map[x509.PublicKeyAlgorithm]string{
 			keys.ED25519: "ED25519",
 			x509.RSA:     "RSA",
 			x509.ECDSA:   "ECDSA",
 		}
-		for id, algoName := range keyOptions {
-			in.Options[strconv.Itoa(int(id))] = algoName
+
+		for name, id := range keyOptions {
+			in.Options[name] = id
 		}
 		ret, err := in.Run()
 		if err != nil {
 			return err
 		}
 
-		algo, err := strconv.Atoi(ret.(string))
-		if err != nil {
-			return err
-		}
+		algo := ret
 
-		pub, priv, err := keys.GenerateKey(x509.PublicKeyAlgorithm(algo))
+		pub, priv, err := keys.GenerateKey(algo.(x509.PublicKeyAlgorithm))
 		if err != nil {
 			return err
 		}

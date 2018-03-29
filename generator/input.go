@@ -233,6 +233,60 @@ func (in *StringSelect) Run() (interface{}, error) {
 	return in.Options.FindValue(txt), err
 }
 
+// GenericSelectOptions is a map of options that can have any type
+type GenericSelectOptions map[interface{}]string
+
+// FindText have to be replaced when []StringSelectOption will be a map[string]string
+func (options GenericSelectOptions) FindText(value string) string {
+	if ret, ok := options[value]; ok {
+		return ret
+	}
+	return value
+}
+
+// FindValue have to be replaced when []StringSelectOption will be a map[string]string
+func (options GenericSelectOptions) FindValue(text string) interface{} {
+	for k, v := range options {
+		if text == v {
+			return k
+		}
+	}
+	return text
+}
+
+// GenericSelect contains properties for generic select input.
+type GenericSelect struct {
+	InputShared
+
+	// Default is the default value.
+	Default string `json:"default"`
+
+	// Options is a map of possible values.
+	Options GenericSelectOptions `json:"options"`
+}
+
+// Run implements github.com/stratumn/sdk/generator.Input.
+func (in *GenericSelect) Run() (interface{}, error) {
+	prompt := promptui.Select{
+		Label: in.Prompt,
+		Items: func() (items []interface{}) {
+			items = make([]interface{}, 0, len(in.Options))
+			if in.Default != "" {
+				items = append(items, in.Options.FindText(in.Default))
+			}
+			for k, v := range in.Options {
+				if in.Default == "" || k != in.Default {
+					items = append(items, v)
+				}
+			}
+			return
+		}(),
+		Size: len(in.Options),
+	}
+	_, txt, err := prompt.Run()
+	return in.Options.FindValue(txt), err
+}
+
 // StringSelectMulti contains properties for multiple select inputs.
 type StringSelectMulti struct {
 	InputShared
