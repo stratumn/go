@@ -16,6 +16,7 @@ package dummyfossilizer
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ import (
 
 func TestGetInfo(t *testing.T) {
 	a := New(&Config{})
-	got, err := a.GetInfo()
+	got, err := a.GetInfo(context.Background())
 	if err != nil {
 		t.Fatalf("a.GetInfo(): err: %s", err)
 	}
@@ -45,7 +46,7 @@ func TestFossilize(t *testing.T) {
 	)
 
 	go func() {
-		if err := a.Fossilize(data, meta); err != nil {
+		if err := a.Fossilize(context.Background(), data, meta); err != nil {
 			t.Errorf("a.Fossilize(): err: %s", err)
 		}
 	}()
@@ -76,7 +77,7 @@ func TestDummyProof(t *testing.T) {
 	)
 
 	go func() {
-		if err := a.Fossilize(data, meta); err != nil {
+		if err := a.Fossilize(context.Background(), data, meta); err != nil {
 			t.Errorf("a.Fossilize(): err: %s", err)
 		}
 	}()

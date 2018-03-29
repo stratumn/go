@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/jsonws"
+	"github.com/stratumn/go-indigocore/monitoring"
 )
 
 var (
@@ -53,6 +54,7 @@ func Run(
 	ctx context.Context,
 	a fossilizer.Adapter,
 	config *Config,
+	monitoringConfig *monitoring.Config,
 	httpConfig *jsonhttp.Config,
 	basicConfig *jsonws.BasicConfig,
 	bufConnConfig *jsonws.BufferedConnConfig,
@@ -63,6 +65,7 @@ func Run(
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
+	h.exposeMetrics(monitoringConfig)
 
 	go func() {
 		<-ctx.Done()
@@ -108,6 +111,7 @@ func RunWithFlags(ctx context.Context, a fossilizer.Adapter) {
 		MaxDataLen:              maxDataLen,
 		FossilizerEventChanSize: fossilizerEventChanSize,
 	}
+	monitoringConfig := monitoring.ConfigurationFromFlags()
 	httpConfig := &jsonhttp.Config{
 		Address:        addr,
 		ReadTimeout:    readTimeout,
@@ -132,6 +136,7 @@ func RunWithFlags(ctx context.Context, a fossilizer.Adapter) {
 		ctx,
 		a,
 		config,
+		monitoringConfig,
 		httpConfig,
 		basicConfig,
 		bufConnConfig,

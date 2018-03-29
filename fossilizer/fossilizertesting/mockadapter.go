@@ -15,6 +15,8 @@
 package fossilizertesting
 
 import (
+	"context"
+
 	"github.com/stratumn/go-indigocore/fossilizer"
 )
 
@@ -78,7 +80,7 @@ type MockFossilize struct {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
-func (a *MockAdapter) GetInfo() (interface{}, error) {
+func (a *MockAdapter) GetInfo(_ context.Context) (interface{}, error) {
 	a.MockGetInfo.CalledCount++
 
 	if a.MockGetInfo.Fn != nil {
@@ -101,7 +103,7 @@ func (a *MockAdapter) AddFossilizerEventChan(eventChan chan *fossilizer.Event) {
 }
 
 // Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
-func (a *MockAdapter) Fossilize(data []byte, meta []byte) error {
+func (a *MockAdapter) Fossilize(_ context.Context, data []byte, meta []byte) error {
 	a.MockFossilize.CalledCount++
 	a.MockFossilize.CalledWithData = append(a.MockFossilize.CalledWithData, data)
 	a.MockFossilize.LastCalledWithData = data

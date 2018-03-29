@@ -12,37 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package fossilizerhttp
 
 import (
-	"context"
-	"flag"
+	"log"
+	"net/http"
 
-	"github.com/stratumn/go-indigocore/fossilizer/fossilizerhttp"
+	"github.com/julienschmidt/httprouter"
 	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/utils"
 
-	"github.com/stratumn/go-indigocore/bcbatchfossilizer"
-	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
-)
-
-var (
-	version = "x.x.x"
-	commit  = "00000000000000000000000000000000"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/stats/view"
 )
 
 func init() {
-	fossilizerhttp.RegisterFlags()
-	bcbatchfossilizer.RegisterFlags()
-	monitoring.RegisterFlags()
+	if err := view.Subscribe(ochttp.DefaultServerViews...); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func main() {
-	flag.Parse()
+// exposeMetrics configures metrics and traces exporters and
+// exposes them to collectors.
+func (s *Server) exposeMetrics(config *monitoring.Config) {
+	if !config.Monitor {
+		return
+	}
 
-	ctx := context.Background()
-	ctx = utils.CancelOnInterrupt(ctx)
-
-	a := bcbatchfossilizer.RunWithFlags(ctx, version, commit, dummytimestamper.Timestamper{})
-	fossilizerhttp.RunWithFlags(ctx, a)
+	metricsExporter := monitoring.Configure(config, "indigo-fossilizer")
+	s.GetRaw(
+		"/metrics",
+		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+			metricsExporter.ServeHTTP(w, r)
+		},
+	)
 }

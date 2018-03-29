@@ -15,6 +15,7 @@
 package fossilizertesting
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -24,12 +25,12 @@ import (
 func TestMockAdapter_GetInfo(t *testing.T) {
 	a := &MockAdapter{}
 
-	if _, err := a.GetInfo(); err != nil {
+	if _, err := a.GetInfo(context.Background()); err != nil {
 		t.Fatalf("a.GetInfo(): err: %s", err)
 	}
 
 	a.MockGetInfo.Fn = func() (interface{}, error) { return map[string]string{"name": "test"}, nil }
-	info, err := a.GetInfo()
+	info, err := a.GetInfo(context.Background())
 	if err != nil {
 		t.Fatalf("a.GetInfo(): err: %s", err)
 	}
@@ -74,7 +75,7 @@ func TestMockAdapter_Fossilize(t *testing.T) {
 	d1 := []byte("data1")
 	m1 := []byte("meta1")
 
-	if err := a.Fossilize(d1, m1); err != nil {
+	if err := a.Fossilize(context.Background(), d1, m1); err != nil {
 		t.Fatalf("a.Fossilize(): err: %s", err)
 	}
 
@@ -83,7 +84,7 @@ func TestMockAdapter_Fossilize(t *testing.T) {
 	d2 := []byte("data2")
 	m2 := []byte("meta2")
 
-	if err := a.Fossilize(d2, m2); err != nil {
+	if err := a.Fossilize(context.Background(), d2, m2); err != nil {
 		t.Errorf("a.Fossilize(): err: %s", err)
 	}
 
