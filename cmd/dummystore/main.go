@@ -38,6 +38,9 @@ func init() {
 func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", dummystore.Description, version, commit[:7])
-	a := dummystore.New(&dummystore.Config{Version: version, Commit: commit})
+	a := monitoring.NewStoreAdapter(
+		dummystore.New(&dummystore.Config{Version: version, Commit: commit}),
+		"dummystore",
+	)
 	storehttp.RunWithFlags(a)
 }

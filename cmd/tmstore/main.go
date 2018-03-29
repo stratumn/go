@@ -53,5 +53,5 @@ func main() {
 
 	go a.RetryStartWebsocket(context.Background(), *tmWsRetryInterval)
 
-	storehttp.RunWithFlags(a)
+	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "tmstore"))
 }

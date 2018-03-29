@@ -26,11 +26,8 @@ import (
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
-
-	"go.opencensus.io/trace"
 )
 
 const (
@@ -89,10 +86,7 @@ func New(config *Config) *DummyStore {
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (a *DummyStore) GetInfo(ctx context.Context) (_ interface{}, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/GetInfo")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -109,10 +103,7 @@ func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *DummyStore) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/CreateLink")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
@@ -146,10 +137,7 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *DummyStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) (err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/AddEvidence")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
@@ -185,10 +173,7 @@ func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (a *DummyStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Segment, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/GetSegment")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -219,10 +204,7 @@ func (a *DummyStore) getSegment(linkHash string) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentSlice, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/FindSegments")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -247,10 +229,7 @@ func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
-func (a *DummyStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/GetMapIDs")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -269,10 +248,7 @@ func (a *DummyStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ 
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *DummyStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Evidences, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/GetEvidences")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -283,10 +259,7 @@ func (a *DummyStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) 
 /********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
 
 // GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
-func (a *DummyStore) GetValue(ctx context.Context, key []byte) (_ []byte, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/GetValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -294,10 +267,7 @@ func (a *DummyStore) GetValue(ctx context.Context, key []byte) (_ []byte, err er
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (a *DummyStore) SetValue(ctx context.Context, key, value []byte) (err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/SetValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) SetValue(ctx context.Context, key, value []byte) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
@@ -312,10 +282,7 @@ func (a *DummyStore) setValue(key, value []byte) error {
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
-func (a *DummyStore) DeleteValue(ctx context.Context, key []byte) (_ []byte, err error) {
-	_, span := trace.StartSpan(ctx, "dummystore/DeleteValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *DummyStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 

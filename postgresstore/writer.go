@@ -20,10 +20,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/types"
-
-	"go.opencensus.io/trace"
 )
 
 type writer struct {
@@ -31,19 +28,13 @@ type writer struct {
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (a *writer) SetValue(ctx context.Context, key []byte, value []byte) (err error) {
-	ctx, span := trace.StartSpan(ctx, "postgresstore/SetValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
-	_, err = a.stmts.SaveValue.Exec(key, value)
-	return
+func (a *writer) SetValue(ctx context.Context, key []byte, value []byte) error {
+	_, err := a.stmts.SaveValue.Exec(key, value)
+	return err
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
-func (a *writer) DeleteValue(ctx context.Context, key []byte) (_ []byte, err error) {
-	ctx, span := trace.StartSpan(ctx, "postgresstore/DeleteValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *writer) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
 	if err := a.stmts.DeleteValue.QueryRow(key).Scan(&data); err != nil {
@@ -57,10 +48,7 @@ func (a *writer) DeleteValue(ctx context.Context, key []byte) (_ []byte, err err
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
-func (a *writer) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
-	ctx, span := trace.StartSpan(ctx, "postgresstore/CreateLink")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *writer) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	var (
 		priority     = link.Meta.Priority
 		mapID        = link.Meta.MapID

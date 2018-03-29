@@ -69,5 +69,6 @@ func main() {
 	if err != nil {
 		log.Fatal(storeErr)
 	}
-	storehttp.RunWithFlags(a)
+
+	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "couchstore"))
 }

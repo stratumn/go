@@ -42,6 +42,9 @@ func main() {
 
 	log.Infof("%s v%s@%s", elasticsearchstore.Description, version, commit[:7])
 
-	a := elasticsearchstore.InitializeWithFlags(version, commit)
+	a := monitoring.NewStoreAdapter(
+		elasticsearchstore.InitializeWithFlags(version, commit),
+		"elasticsearchstore",
+	)
 	storehttp.RunWithFlags(a)
 }

@@ -42,6 +42,9 @@ func main() {
 
 	log.Infof("%s v%s@%s", rethinkstore.Description, version, commit[:7])
 
-	a := rethinkstore.InitializeWithFlags(version, commit)
+	a := monitoring.NewStoreAdapter(
+		rethinkstore.InitializeWithFlags(version, commit),
+		"rethinkstore",
+	)
 	storehttp.RunWithFlags(a)
 }

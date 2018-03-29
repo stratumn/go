@@ -22,10 +22,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
-	"go.opencensus.io/trace"
 )
 
 const (
@@ -139,10 +137,7 @@ func New(config *Config) (*ESStore, error) {
 /********** Store adapter implementation **********/
 
 // GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
-func (es *ESStore) GetInfo(ctx context.Context) (_ interface{}, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/GetInfo")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -164,10 +159,7 @@ func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (es *ESStore) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/CreateLink")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := es.createLink(link)
 	if err != nil {
 		return nil, err
@@ -181,10 +173,7 @@ func (es *ESStore) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Byte
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (es *ESStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) (err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/AddEvidence")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
 	if err := es.addEvidence(linkHash.String(), evidence); err != nil {
 		return err
 	}
@@ -200,10 +189,7 @@ func (es *ESStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evi
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Segment, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/GetSegment")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 	link, err := es.getLink(linkHash.String())
 	if err != nil || link == nil {
 		return nil, err
@@ -212,54 +198,36 @@ func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (_ *
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentSlice, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/FindSegments")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	return es.findSegments(filter)
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
-func (es *ESStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/GetMapIDs")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	return es.getMapIDs(filter)
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (es *ESStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (_ *cs.Evidences, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/GetEvidences")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
 	return es.getEvidences(linkHash.String())
 }
 
 /********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
-func (es *ESStore) SetValue(ctx context.Context, key, value []byte) (err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/SetValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) SetValue(ctx context.Context, key, value []byte) error {
 	hexKey := hex.EncodeToString(key)
 	return es.setValue(hexKey, value)
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.Adapter.GetValue.
-func (es *ESStore) GetValue(ctx context.Context, key []byte) (_ []byte, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/GetValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
 	return es.getValue(hexKey)
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.Adapter.DeleteValue.
-func (es *ESStore) DeleteValue(ctx context.Context, key []byte) (_ []byte, err error) {
-	ctx, span := trace.StartSpan(ctx, "elasticsearchstore/DeleteValue")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
 	return es.deleteValue(hexKey)
 

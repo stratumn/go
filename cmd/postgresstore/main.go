@@ -42,6 +42,9 @@ func main() {
 
 	log.Infof("%s v%s@%s", postgresstore.Description, version, commit[:7])
 
-	a := postgresstore.InitializeWithFlags(version, commit)
+	a := monitoring.NewStoreAdapter(
+		postgresstore.InitializeWithFlags(version, commit),
+		"postgresstore",
+	)
 	storehttp.RunWithFlags(a)
 }

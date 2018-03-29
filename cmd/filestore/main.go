@@ -47,5 +47,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	storehttp.RunWithFlags(a)
+	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "filestore"))
 }
