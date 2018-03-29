@@ -43,6 +43,9 @@ func main() {
 	ctx := context.Background()
 	ctx = utils.CancelOnInterrupt(ctx)
 
-	a := bcbatchfossilizer.RunWithFlags(ctx, version, commit, dummytimestamper.Timestamper{})
+	a := monitoring.NewFossilizerAdapter(
+		bcbatchfossilizer.RunWithFlags(ctx, version, commit, dummytimestamper.Timestamper{}),
+		"dummybatchfossilizer",
+	)
 	fossilizerhttp.RunWithFlags(ctx, a)
 }

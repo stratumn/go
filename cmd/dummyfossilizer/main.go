@@ -45,6 +45,9 @@ func main() {
 	ctx = utils.CancelOnInterrupt(ctx)
 
 	log.Infof("%s v%s@%s", dummyfossilizer.Description, version, commit[:7])
-	a := dummyfossilizer.New(&dummyfossilizer.Config{Version: version, Commit: commit})
+	a := monitoring.NewFossilizerAdapter(
+		dummyfossilizer.New(&dummyfossilizer.Config{Version: version, Commit: commit}),
+		"dummyfossilizer",
+	)
 	fossilizerhttp.RunWithFlags(ctx, a)
 }

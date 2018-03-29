@@ -195,9 +195,6 @@ func New(config *Config) (*Fossilizer, error) {
 
 // GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
-	ctx, span := trace.StartSpan(ctx, "batchfossilizer/GetInfo")
-	defer span.End()
-
 	return &Info{
 		Name:        Name,
 		Description: Description,
@@ -215,15 +212,11 @@ func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer
 }
 
 // Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
-func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) (err error) {
-	ctx, span := trace.StartSpan(ctx, "batchfossilizer/Fossilize")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
-
+func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
 	f := fossil{Meta: meta}
 	f.Data = data
 	a.fossilChan <- &f
-	err = <-a.resultChan
-	return
+	return <-a.resultChan
 }
 
 // Start starts the fossilizer.
