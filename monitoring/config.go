@@ -74,7 +74,7 @@ func Configure(config *Config, serviceName string) *prometheus.Exporter {
 		log.Fatal(err)
 	}
 
-	trace.SetDefaultSampler(trace.ProbabilitySampler(config.TraceSamplingRatio))
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(config.TraceSamplingRatio)})
 	trace.RegisterExporter(traceExporter)
 
 	return metricsExporter
