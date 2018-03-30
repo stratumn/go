@@ -40,31 +40,25 @@ var (
 )
 
 func init() {
-	var err error
-	if blockCount, err = stats.Int64(
+	blockCount = stats.Int64(
 		"stratumn/indigocore/tmpop/block_count",
 		"number of blocks created",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
-	if txCount, err = stats.Int64(
+	txCount = stats.Int64(
 		"stratumn/indigocore/tmpop/tx_count",
 		"number of transactions received",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
-	if txPerBlock, err = stats.Int64(
+	txPerBlock = stats.Int64(
 		"stratumn/indigocore/tmpop/tx_per_block",
 		"number of transactions per block",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
+	var err error
 	if txStatus, err = tag.NewKey("tx_status"); err != nil {
 		log.Fatal(err)
 	}

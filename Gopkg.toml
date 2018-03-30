@@ -101,3 +101,7 @@
   # go.opencensus.io doesn't vendor dependencies and needs this
   name = "git.apache.org/thrift.git"
   branch = "master"
+
+  [[constraint]]
+  name = "go.opencensus.io"
+  branch = "master"

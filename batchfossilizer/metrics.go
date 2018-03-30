@@ -27,24 +27,19 @@ var (
 )
 
 func init() {
-	var err error
-	if batchCount, err = stats.Int64(
+	batchCount = stats.Int64(
 		"stratumn/indigocore/batchfossilizer/batch_count",
 		"number of batches sent",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
-	if fossilizedLinksCount, err = stats.Int64(
+	fossilizedLinksCount = stats.Int64(
 		"stratumn/indigocore/batchfossilizer/fossilized_links_count",
 		"number of links fossilized",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
-	if err = view.Subscribe(
+	if err := view.Subscribe(
 		&view.View{
 			Name:        "batch_count",
 			Description: "number of batches sent",

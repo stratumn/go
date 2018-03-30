@@ -30,31 +30,25 @@ var (
 )
 
 func init() {
-	var err error
-	if batchCount, err = stats.Int64(
+	batchCount = stats.Int64(
 		"stratumn/indigocore/bufferedbatch/batch_count",
 		"number of batches created",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
-	if linksPerBatch, err = stats.Int64(
+	linksPerBatch = stats.Int64(
 		"stratumn/indigocore/bufferedbatch/links_per_batch",
 		"number of links per batch",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
-	if writeCount, err = stats.Int64(
+	writeCount = stats.Int64(
 		"stratumn/indigocore/bufferedbatch/write_count",
 		"number of batch writes",
 		stats.UnitNone,
-	); err != nil {
-		log.Fatal(err)
-	}
+	)
 
+	var err error
 	if writeStatus, err = tag.NewKey("batch_write_status"); err != nil {
 		log.Fatal(err)
 	}
