@@ -1,5 +1,22 @@
 # Change log
 
+## 0.3.0 - BREAKING CHANGES
+
+* Updated to Tendermint 0.16.0
+* Repository was renamed to _go-indigocore_
+* Validation engine was refactored
+  * A new PKI section allows users to define users who will take part in a process
+  * Signature validation has been implemented
+  * Transition validation has been implemented
+  * Validation rules are now stored in (and loaded from) the store
+* Chainscript-related data structures have been improved
+* The Tendermint evidence can now be fully validated independently from the store
+* Monitoring has been added on the whole indigocore stack
+* Added new store implementation (Elasticsearch)
+* `strat` CLI is more interactive and easier to use
+* `strat` CLI features key generation (RSA, ECDSA, ED25519)
+* All stores are now compatible with fossilizers
+
 ## 0.2.0 - BREAKING CHANGES
 
 * Updated to Tendermint 0.13.0
