@@ -49,7 +49,7 @@ func (a *FossilizerAdapter) AddFossilizerEventChan(c chan *fossilizer.Event) {
 	_, span := trace.StartSpan(context.Background(), fmt.Sprintf("%s/AddFossilizerEventChan", a.name))
 	defer span.End()
 
-	a.AddFossilizerEventChan(c)
+	a.f.AddFossilizerEventChan(c)
 }
 
 // Fossilize instruments the call and delegates to the underlying fossilizer.
