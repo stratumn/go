@@ -19,6 +19,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetestcases"
+	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
 )
 
 func TestStore(t *testing.T) {
@@ -31,6 +32,13 @@ func TestStore(t *testing.T) {
 
 	factory.RunStoreTests(t)
 	factory.RunKeyValueStoreTests(t)
+}
+
+func TestPostgresTMPop(t *testing.T) {
+	tmpoptestcases.Factory{
+		New:  createAdapterTMPop,
+		Free: freeAdapterTMPop,
+	}.RunTests(t)
 }
 
 func createStore() (*Store, error) {
@@ -67,4 +75,12 @@ func freeAdapter(s store.Adapter) {
 
 func freeKeyValueStore(s store.KeyValueStore) {
 	freeStore(s.(*Store))
+}
+
+func createAdapterTMPop() (store.Adapter, store.KeyValueStore, error) {
+	a, err := createStore()
+	return a, a, err
+}
+func freeAdapterTMPop(a store.Adapter, _ store.KeyValueStore) {
+	freeAdapter(a)
 }

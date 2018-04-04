@@ -114,7 +114,7 @@ func RandomBranch(parent *cs.Link) *cs.Link {
 
 // RandomTags creates between zero and four random tags.
 func RandomTags() []string {
-	var tags []string
+	tags := make([]string, 0)
 	for i := 0; i < rand.Intn(5); i++ {
 		tags = append(tags, testutil.RandomString(12))
 	}
@@ -124,7 +124,7 @@ func RandomTags() []string {
 // RandomInterfaces creates between zero and four random values of type string/float/bool.
 // int type is not generated because of assertion failure on float/int interpretation
 func RandomInterfaces() []interface{} {
-	var ret []interface{}
+	ret := make([]interface{}, 0)
 	for i := 0; i < rand.Intn(5); i++ {
 		switch rand.Intn(3) {
 		case 0:
