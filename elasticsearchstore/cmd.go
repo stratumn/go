@@ -74,7 +74,7 @@ func RegisterFlags() {
 	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("ELASTICSEARCH_URL"), DefaultURL), "URL of the ElasticSearch database")
 	flag.BoolVar(&sniffing, "sniffing", false, "turn on elastic search nodes sniffing")
 	flag.BoolVar(&drop, "drop", false, "drop indexes then exit")
-	flag.StringVar(&logLevel, "log_level", "info", "set logrus log level")
+	flag.StringVar(&logLevel, "es_log_level", "info", "set logrus log level")
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
