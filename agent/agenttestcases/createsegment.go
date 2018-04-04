@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	cj "github.com/gibson042/canonicaljson-go"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/testutil"
@@ -41,7 +42,7 @@ func (f Factory) TestCreateSegmentOK(t *testing.T) {
 func (f Factory) TestCreateSegmentWithRefs(t *testing.T) {
 	process, action := "test", "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
-	refs := []cs.SegmentReference{{Process: "other", LinkHash: testutil.RandomHash().String()}}
+	refs := []cs.SegmentReference{{Process: "other", MapID: uuid.NewV4().String(), LinkHash: testutil.RandomHash().String()}}
 
 	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, "one")
 	assert.NoError(t, err)
@@ -61,7 +62,7 @@ func (f Factory) TestCreateSegmentWithBadRefs(t *testing.T) {
 
 	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, arg)
 	assert.Error(t, err, "missing segment or (process and linkHash)")
-	assert.Contains(t, err.Error(), "linkHash should be a non empty string")
+	assert.EqualError(t, err, "cannot decode references: link.meta.refs[0].mapId should be a valid UUID V4")
 	assert.Nil(t, segment)
 }
 

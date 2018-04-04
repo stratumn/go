@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	uuid "github.com/satori/go.uuid"
 	"github.com/stratumn/go-crypto/signatures"
 
 	"reflect"
@@ -130,6 +131,7 @@ func (s *SegmentMeta) FindEvidences(backend string) (res Evidences) {
 // SegmentReference is a reference to a segment or a linkHash
 type SegmentReference struct {
 	Segment  *Segment `json:"segment"`
+	MapID    string   `json:"mapId"`
 	Process  string   `json:"process"`
 	LinkHash string   `json:"linkHash"`
 }
@@ -231,6 +233,9 @@ func (l *Link) validateReferences(ctx context.Context, getSegment GetSegmentFunc
 		} else {
 			if ref.Process == "" {
 				return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
+			}
+			if mapID, err := uuid.FromString(ref.MapID); err != nil || mapID.Version() != uuid.V4 {
+				return errors.Errorf("link.meta.refs[%d].mapId should be a valid UUID V4", refIdx)
 			}
 			linkHash, err := types.NewBytes32FromString(ref.LinkHash)
 			if err != nil {

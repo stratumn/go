@@ -46,9 +46,10 @@ func appendRefSegment(l, ref *cs.Link) {
 	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{Segment: ref.Segmentify()})
 }
 
-func appendRefLink(l *cs.Link, process, linkHash string) {
+func appendRefLink(l *cs.Link, process, mapID, linkHash string) {
 	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{
 		Process:  process,
 		LinkHash: linkHash,
+		MapID:    mapID,
 	})
 }
