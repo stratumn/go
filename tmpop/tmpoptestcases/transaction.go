@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
@@ -43,6 +44,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 		link := cstesting.RandomLink()
 		link.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
 			Process:  "proc",
+			MapID:    uuid.NewV4().String(),
 			LinkHash: "invalidLinkHash",
 		}}
 		tx := makeCreateLinkTx(t, link)
@@ -60,6 +62,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 		linkWithRef := cstesting.RandomLinkWithProcess(link.Meta.Process)
 		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
 			Process:  link.Meta.Process,
+			MapID:    uuid.NewV4().String(),
 			LinkHash: linkHash.String(),
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
@@ -92,6 +95,7 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		linkWithRef := cstesting.RandomLinkWithProcess(link.Meta.Process)
 		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
 			Process:  link.Meta.Process,
+			MapID:    uuid.NewV4().String(),
 			LinkHash: linkHash.String(),
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)

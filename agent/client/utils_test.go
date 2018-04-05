@@ -15,7 +15,9 @@
 package client_test
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -26,6 +28,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/golang/mock/gomock"
@@ -34,6 +37,7 @@ import (
 	"github.com/stratumn/go-indigocore/agent/agenttestcases"
 	"github.com/stratumn/go-indigocore/agent/client"
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
 )
 
@@ -52,32 +56,32 @@ func (m *mockHTTPServer) decodeRefs(input interface{}) ([]cs.SegmentReference, e
 	if input == nil {
 		return []cs.SegmentReference{}, nil
 	}
-	inputSlice, ok := input.([]interface{})
-	if !ok {
-		return nil, errors.New("refs should be a slice")
+	refBytes, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
 	}
 	var refs []cs.SegmentReference
-	for refIdx, in := range inputSlice {
-		ref, ok := in.(map[string]interface{})
-		if !ok {
-			return nil, errors.Errorf("refs[%d] should be a map", refIdx)
-		}
-		if jsonSeg, ok := ref["segment"].(string); ok {
-			var seg cs.Segment
-			if err := json.Unmarshal([]byte(jsonSeg), &seg); err != nil {
-				return nil, errors.Errorf("refs[%d].segment should be a valid json segment", refIdx)
+	if err := json.Unmarshal(refBytes, &refs); err != nil {
+		return nil, err
+	}
+	for refIdx, ref := range refs {
+		if ref.Segment != nil {
+			if err := ref.Segment.Link.Validate(context.Background(), nil); err != nil {
+				return nil, errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
 			}
-			refs = append(refs, cs.SegmentReference{Segment: &seg})
+
 		} else {
-			process, ok := ref["process"].(string)
-			if !ok || process == "" {
-				return nil, errors.Errorf("refs[%d].process should be a non empty string", refIdx)
+			if ref.Process == "" {
+				return nil, errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
 			}
-			linkHashStr, ok := ref["linkHash"].(string)
-			if !ok || linkHashStr == "" {
-				return nil, errors.Errorf("refs[%d].linkHash should be a non empty string", refIdx)
+			if mapID, err := uuid.FromString(ref.MapID); err != nil || mapID.Version() != uuid.V4 {
+				return nil, errors.Errorf("link.meta.refs[%d].mapId should be a valid UUID V4", refIdx)
 			}
-			refs = append(refs, cs.SegmentReference{Process: process, LinkHash: linkHashStr})
+
+			_, err := types.NewBytes32FromString(ref.LinkHash)
+			if err != nil {
+				return nil, errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
+			}
 		}
 	}
 	return refs, nil

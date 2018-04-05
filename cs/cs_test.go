@@ -21,6 +21,7 @@ import (
 	"sort"
 	"testing"
 
+	uuid "github.com/satori/go.uuid"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/testutil"
@@ -141,32 +142,38 @@ func TestLinkValidate_refBadLink(t *testing.T) {
 
 func TestLinkValidate_refMissingProcess(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, "", testutil.RandomHash().String())
+	appendRefLink(l, "", uuid.NewV4().String(), testutil.RandomHash().String())
 	testLinkValidateError(t, l, nil, "link.meta.refs[0].process should be a non empty string")
+}
+
+func TestLinkValidate_refBadMapID(t *testing.T) {
+	l := cstesting.RandomLink()
+	appendRefLink(l, testutil.RandomString(24), "test", testutil.RandomHash().String())
+	testLinkValidateError(t, l, nil, "link.meta.refs[0].mapId should be a valid UUID V4")
 }
 
 func TestLinkValidate_refMissingLinkHash(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, testutil.RandomString(24), "")
+	appendRefLink(l, testutil.RandomString(24), uuid.NewV4().String(), "")
 	testLinkValidateError(t, l, nil, "link.meta.refs[0].linkHash should be a bytes32 field")
 }
 
 func TestLinkValidate_refLinkHashBadType(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, testutil.RandomString(24), "FooBar")
+	appendRefLink(l, testutil.RandomString(24), uuid.NewV4().String(), "FooBar")
 	testLinkValidateError(t, l, nil, "link.meta.refs[0].linkHash should be a bytes32 field")
 }
 
 func TestLinkValidate_refGoodLinkNotChecked(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
+	appendRefLink(l, l.Meta.Process, uuid.NewV4().String(), testutil.RandomHash().String())
 	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err)
 }
 
 func TestLinkValidate_refGoodLinkChecked(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
+	appendRefLink(l, l.Meta.Process, uuid.NewV4().String(), testutil.RandomHash().String())
 	err := l.Validate(context.Background(), func(_ context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 		return cstesting.RandomSegment(), nil
 	})
@@ -175,7 +182,7 @@ func TestLinkValidate_refGoodLinkChecked(t *testing.T) {
 
 func TestLinkValidate_refGoodLinkNotFound(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
+	appendRefLink(l, l.Meta.Process, uuid.NewV4().String(), testutil.RandomHash().String())
 	testLinkValidateErrorWrapper(t, l, func(_ context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 		return nil, errors.New("Bad mood")
 	}, "Bad mood")
@@ -183,7 +190,7 @@ func TestLinkValidate_refGoodLinkNotFound(t *testing.T) {
 
 func TestLinkValidate_refGoodNilLink(t *testing.T) {
 	l := cstesting.RandomLink()
-	appendRefLink(l, l.Meta.Process, testutil.RandomHash().String())
+	appendRefLink(l, l.Meta.Process, uuid.NewV4().String(), testutil.RandomHash().String())
 	testLinkValidateError(t, l, func(_ context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
 		return nil, nil
 	}, "link.meta.refs[0] segment is nil")
