@@ -201,9 +201,8 @@ docker_files: $(DOCKER_FILES)
 DOCKER_EXTRA=./$(COMMAND_DIR)/$*/Docker
 
 $(DIST_DIR)/%.Dockerfile: $(DOCKER_FILE_TEMPLATE)
-	mkdir -p $(DIST_DIR)
-	sed 's/{{CMD}}/$*/g' $(DOCKER_FILE_TEMPLATE) > $@
-	echo $(DOCKER_EXTRA)
+	@mkdir -p $(DIST_DIR)
+	@sed 's/{{CMD}}/$*/g' $(DOCKER_FILE_TEMPLATE) > $@
 	@if [[ -f $(DOCKER_EXTRA) ]]; then \
 		echo cat $(DOCKER_EXTRA) \>\> $@; \
 		cat $(DOCKER_EXTRA) >> $@; \
@@ -215,7 +214,17 @@ docker_images: $(DOCKER_IMAGE_LIST)
 DOCKER_IMAGE=$(DOCKER_USER)/$*
 
 $(DOCKER_IMAGE_LIST): docker_image_%: $(DIST_DIR)/%.Dockerfile $(DIST_DIR)/linux-amd64/%
-	$(DOCKER_BUILD) -f $(DIST_DIR)/$*.Dockerfile -t $(DOCKER_IMAGE):$(VERSION) -t $(DOCKER_IMAGE):latest .
+	@echo $(DOCKER_BUILD) -f $*.Dockerfile -t $(DOCKER_IMAGE):$(VERSION) -t $(DOCKER_IMAGE):latest .
+	@# docker context is built in a temporary directory to improve performances. \
+	# - Copy mandatory files or directories in the context directory \
+	# - Rename copied files without project hierarchy in Dockerfile to fit with context directory
+	@mkdir -p $(DIST_DIR)/$* && \
+		cd $(DIST_DIR)/$* && \
+		ln ../linux-amd64/$* && \
+		for i in `sed -n 's/^COPY *\([^ ]*\).*/\1/p' ../$*.Dockerfile`; do test `basename $$i` != $* && cp -r ../../$$i .; done; \
+		sed 's!^COPY *.*/\([^/]*\) \(.*\)!COPY \1 \2!' ../$*.Dockerfile > $*.Dockerfile; \
+		$(DOCKER_BUILD) -f $*.Dockerfile -t $(DOCKER_IMAGE):$(VERSION) -t $(DOCKER_IMAGE):latest . ; \
+		cd - ; rm -fr $(DIST_DIR)/$*
 
 # == docker_push ==============================================================
 docker_push: $(DOCKER_PUSH_LIST)
