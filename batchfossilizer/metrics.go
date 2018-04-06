@@ -38,8 +38,7 @@ func init() {
 		"number of links fossilized",
 		stats.UnitNone,
 	)
-
-	if err := view.Subscribe(
+	if err := view.Register(
 		&view.View{
 			Name:        "batch_count",
 			Description: "number of batches sent",

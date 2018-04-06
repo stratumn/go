@@ -53,7 +53,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if err = view.Subscribe(
+	if err = view.Register(
 		&view.View{
 			Name:        "batch_count",
 			Description: "number of batches created",

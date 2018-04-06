@@ -29,7 +29,8 @@
   branch = "master"
   name = "git.apache.org/thrift.git"
   packages = ["lib/go/thrift"]
-  revision = "e41de0fbcb43c51a0f1ede40207c80bd3409f99f"
+  revision = "a0cf38ed312a5342eb05574719485b725fa52eee"
+  source = "github.com/apache/thrift"
 
 [[projects]]
   name = "github.com/Microsoft/go-winio"
@@ -41,7 +42,7 @@
   branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
-  revision = "4c0e84591b9aa9e6dcfdf3e020114cd81f89d5f9"
+  revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
   name = "github.com/blockcypher/gobcy"
@@ -80,8 +81,8 @@
 [[projects]]
   name = "github.com/cenkalti/backoff"
   packages = ["."]
-  revision = "61153c768f31ee5f130071d08fc82b85208528de"
-  version = "v1.1.0"
+  revision = "2ea60e5f094469f9e65adb9cd103795b73ae743e"
+  version = "v2.0.0"
 
 [[projects]]
   branch = "fix-bell"
@@ -174,10 +175,10 @@
   version = "v0.5"
 
 [[projects]]
-  branch = "master"
   name = "github.com/golang/mock"
   packages = ["gomock"]
-  revision = "58cd061d09382b6011f84c1291ebe50ef2e25bab"
+  revision = "c34cdb4725f4c3844d095133c6e40e448b86589b"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -201,7 +202,7 @@
   branch = "master"
   name = "github.com/google/go-github"
   packages = ["github"]
-  revision = "d2b80df1e3eeccae96eb1cb489e65372cc9550c8"
+  revision = "88eb4e9dc91cb2db1bbc56c936f1ee39bbe72ba5"
 
 [[projects]]
   branch = "master"
@@ -248,7 +249,7 @@
     "json/scanner",
     "json/token"
   ]
-  revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
+  revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -302,7 +303,7 @@
     ".",
     "oid"
   ]
-  revision = "88edab0803230a3898347e77b474f8c1820a1f20"
+  revision = "d34b9ff171c21ad295489235aec8b6626023cd04"
 
 [[projects]]
   branch = "master"
@@ -325,7 +326,7 @@
     "jlexer",
     "jwriter"
   ]
-  revision = "f594efddfa171111dc4349cd6e78e8f61dc7936f"
+  revision = "8b799c424f57fa123fc63a99d6383bc6e4c02578"
 
 [[projects]]
   branch = "master"
@@ -374,8 +375,8 @@
     "config",
     "uritemplates"
   ]
-  revision = "75baf8966312d026cc7f59ac3fc7457199425d8a"
-  version = "v6.1.9"
+  revision = "d6362604399c7af560b54f048b4fcfbdd6eff293"
+  version = "v6.1.14"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"
@@ -443,7 +444,7 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "e4aa40a9169a88835b849a6efb71e05dc04b88f0"
+  revision = "38c53a9f4bfcd932d1b00bfc65e256a7fba6b37a"
 
 [[projects]]
   branch = "master"
@@ -454,7 +455,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "54d17b57dd7d4a3aa092476596b3f8a933bde349"
+  revision = "780932d4fbbe0e69b84c34c20f5c8d0981e109ea"
 
 [[projects]]
   branch = "master"
@@ -480,8 +481,8 @@
     ".",
     "mem"
   ]
-  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
-  version = "v1.0.2"
+  revision = "63644898a8da0bc22138abf860edaf5277b6102e"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/spf13/cast"
@@ -493,7 +494,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "c6c44e6fdcc30161c7f4480754da7230d01c06e3"
+  revision = "4dab30cb33e6633c33c787106bafbfbfdde7842d"
 
 [[projects]]
   branch = "master"
@@ -502,16 +503,16 @@
   revision = "7c0cea34c8ece3fbeb2b27ab9b59511d360fb394"
 
 [[projects]]
+  branch = "master"
   name = "github.com/spf13/pflag"
   packages = ["."]
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
-  version = "v1.0.0"
+  revision = "1ce0cc6db4029d97571db82f85092fccedb572ce"
 
 [[projects]]
   branch = "master"
   name = "github.com/spf13/viper"
   packages = ["."]
-  revision = "aafc9e6bc7b7bb53ddaa75a5ef49a17d6e654be5"
+  revision = "8dc2790b029dc41e2b8ff772c63c26adbb1db70d"
 
 [[projects]]
   branch = "master"
@@ -558,18 +559,18 @@
     "leveldb/table",
     "leveldb/util"
   ]
-  revision = "169b1b37be738edb2813dab48c97a549bcf99bb5"
+  revision = "714f901b98fdb3aa954b4193d8cbd64a28d80cad"
 
 [[projects]]
   name = "github.com/tendermint/abci"
   packages = [
     "client",
     "example/code",
-    "example/dummy",
+    "example/kvstore",
     "types"
   ]
-  revision = "68592f4d8ee34e97db94b7a7976b1309efdb7eb9"
-  version = "v0.10.0"
+  revision = "46686763ba8ea595ede16530ed4a40fb38f49f94"
+  version = "v0.10.2"
 
 [[projects]]
   branch = "master"
@@ -593,7 +594,9 @@
     ".",
     "data"
   ]
-  revision = "b6fc872b42d41158a60307db4da051dd6f179415"
+  revision = "fa721242b042ecd4c6ed1a934ee740db4f74e45c"
+  source = "github.com/tendermint/go-amino"
+  version = "v0.7.3"
 
 [[projects]]
   name = "github.com/tendermint/tendermint"
@@ -625,10 +628,12 @@
     "state/txindex/kv",
     "state/txindex/null",
     "types",
-    "version"
+    "types/priv_validator",
+    "version",
+    "wire"
   ]
-  revision = "c8a2bdf78ba7aaaf4284fa78c1b9b05c5e7342bc"
-  version = "v0.16.0"
+  revision = "6f9956990c444d53f62f2a3905ed410cfe9afe77"
+  version = "v0.17.1"
 
 [[projects]]
   name = "github.com/tendermint/tmlibs"
@@ -644,8 +649,8 @@
     "pubsub",
     "pubsub/query"
   ]
-  revision = "1b9b5652a199ab0be2e781393fb275b66377309d"
-  version = "v0.7.0"
+  revision = "24da7009c3d8c019b40ba4287495749e3160caca"
+  version = "v0.7.1"
 
 [[projects]]
   branch = "master"
@@ -681,9 +686,10 @@
     "stats/view",
     "tag",
     "trace",
+    "trace/internal",
     "trace/propagation"
   ]
-  revision = "8069fe56546c2cdcfbeb5290f5c6130590927308"
+  revision = "ead56c48fbe540f3601b21ff9eeea1fb60300740"
 
 [[projects]]
   branch = "master"
@@ -707,7 +713,7 @@
     "salsa20/salsa",
     "ssh/terminal"
   ]
-  revision = "c4a91bd4f524f10d064139674cf55852e055ad01"
+  revision = "b2aa35443fbc700ab74c586ae79b81c171851023"
 
 [[projects]]
   branch = "master"
@@ -723,7 +729,7 @@
     "proxy",
     "trace"
   ]
-  revision = "892bf7b0c6e2f93b51166bf3882e50277fa5afc6"
+  revision = "b3c676e531a6dc479fa1b35ac961c13f5e2b4d2e"
 
 [[projects]]
   branch = "master"
@@ -732,7 +738,7 @@
     ".",
     "internal"
   ]
-  revision = "7af32f14d0a25aec7873e0683e8e48dcead159a8"
+  revision = "921ae394b9430ed4fb549668d7b087601bd60a81"
 
 [[projects]]
   branch = "master"
@@ -747,7 +753,7 @@
     "unix",
     "windows"
   ]
-  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
+  revision = "1d206c9fa8975fb4cf00df1dc8bf3283dc24ba0e"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -774,7 +780,7 @@
   branch = "master"
   name = "google.golang.org/api"
   packages = ["support/bundler"]
-  revision = "24928b980e6919be4c72647aacd53ebcbb8c4bab"
+  revision = "3097bf831ede4a24e08a3316254e29ca726383e3"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -794,20 +800,16 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "df60624c1e9b9d2973e889c7a1cff73155da81c4"
+  revision = "aae13d27a44d62f039eeeb93e74e893886673932"
 
 [[projects]]
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
-    "balancer/base",
-    "balancer/roundrobin",
     "codes",
     "connectivity",
     "credentials",
-    "encoding",
-    "encoding/proto",
     "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "internal",
@@ -816,15 +818,13 @@
     "naming",
     "peer",
     "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
     "stats",
     "status",
     "tap",
     "transport"
   ]
-  revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
-  version = "v1.10.0"
+  revision = "5b3c4e850e90a4cf6a20ebd46c8b32a0a3afcb9e"
+  version = "v1.7.5"
 
 [[projects]]
   name = "gopkg.in/dancannon/gorethink.v4"
@@ -851,12 +851,12 @@
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b57aa53405ec381fba3d5ff77ece498585fb2b10924674a41d0d27de23728d18"
+  inputs-digest = "a31f7f8fbe83cf10c1c66e994fb28f4db173dad54c63905a2582f9029bc9473c"
   solver-name = "gps-cdcl"
   solver-version = 1

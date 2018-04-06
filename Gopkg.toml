@@ -30,25 +30,22 @@
   branch = "master"
   name = "github.com/spf13/cobra"
 
+[[override]]
+  branch = "master"
+  name = "github.com/spf13/pflag"
+
 [[constraint]]
   name = "github.com/spf13/viper"
   branch = "master"
 
 [[constraint]]
-  name = "github.com/tendermint/abci"
-  version = "0.10.0"
-
-[[constraint]]
   name = "github.com/tendermint/go-wire"
-  revision = "b6fc872b42d41158a60307db4da051dd6f179415"
+  source = "github.com/tendermint/go-amino"
+  version = "~0.7.3"
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.16.0"
-
-[[constraint]]
-  name = "github.com/tendermint/tmlibs"
-  version = "0.7.0"
+  version = "0.17.1"
 
 [[constraint]]
   branch = "master"
@@ -97,11 +94,11 @@
   branch = "fix-bell"
   source = "github.com/stratumn/readline"
 
-[[override]]
-  # go.opencensus.io doesn't vendor dependencies and needs this
-  name = "git.apache.org/thrift.git"
-  branch = "master"
-
-  [[constraint]]
+[[constraint]]
   name = "go.opencensus.io"
   branch = "master"
+
+[[override]]
+  branch = "master"
+  name = "git.apache.org/thrift.git"
+  source = "github.com/apache/thrift"

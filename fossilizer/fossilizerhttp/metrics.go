@@ -26,7 +26,7 @@ import (
 )
 
 func init() {
-	if err := view.Subscribe(ochttp.DefaultServerViews...); err != nil {
+	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
 		log.Fatal(err)
 	}
 }

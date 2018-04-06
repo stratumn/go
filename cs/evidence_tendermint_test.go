@@ -329,7 +329,7 @@ func vote(header *tmtypes.Header) []*evidences.TendermintVote {
 			},
 		}
 
-		sig := privKey.Sign(tmtypes.SignBytes(header.ChainID, v.Vote))
+		sig := privKey.Sign(v.Vote.SignBytes(header.ChainID))
 		v.Vote.Signature = sig
 
 		votes[i] = v
