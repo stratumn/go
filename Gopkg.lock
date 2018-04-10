@@ -29,7 +29,7 @@
   branch = "master"
   name = "git.apache.org/thrift.git"
   packages = ["lib/go/thrift"]
-  revision = "a0cf38ed312a5342eb05574719485b725fa52eee"
+  revision = "606f1ef31447526b908244933d5b716397a6bad8"
   source = "github.com/apache/thrift"
 
 [[projects]]
@@ -118,8 +118,8 @@
 [[projects]]
   name = "github.com/docker/go-units"
   packages = ["."]
-  revision = "0dadbb0345b35ec7ef35e228dabb8de89a65bf52"
-  version = "v0.3.2"
+  revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
+  version = "v0.3.3"
 
 [[projects]]
   branch = "master"
@@ -175,10 +175,10 @@
   version = "v0.5"
 
 [[projects]]
+  branch = "master"
   name = "github.com/golang/mock"
   packages = ["gomock"]
-  revision = "c34cdb4725f4c3844d095133c6e40e448b86589b"
-  version = "v1.1.1"
+  revision = "8b2eeeb0ca5f56c78bec5efde9c4a21d9201126c"
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -455,13 +455,13 @@
     "nfs",
     "xfs"
   ]
-  revision = "780932d4fbbe0e69b84c34c20f5c8d0981e109ea"
+  revision = "8b1c2da0d56deffdbb9e48d4414b4e674bd8083e"
 
 [[projects]]
   branch = "master"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
-  revision = "8732c616f52954686704c8645fe1a9d59e9df7c1"
+  revision = "d932a24a8ccb8fcadc993e5c6c58f93dac168294"
 
 [[projects]]
   name = "github.com/satori/go.uuid"
@@ -494,7 +494,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "4dab30cb33e6633c33c787106bafbfbfdde7842d"
+  revision = "cd30c2a7e91a1d63fd9a0027accf18a681e9d50b"
 
 [[projects]]
   branch = "master"
@@ -569,8 +569,8 @@
     "example/kvstore",
     "types"
   ]
-  revision = "46686763ba8ea595ede16530ed4a40fb38f49f94"
-  version = "v0.10.2"
+  revision = "78a8905690ef54f9d57e3b2b0ee7ad3a04ef3f1f"
+  version = "v0.10.3"
 
 [[projects]]
   branch = "master"
@@ -632,8 +632,8 @@
     "version",
     "wire"
   ]
-  revision = "6f9956990c444d53f62f2a3905ed410cfe9afe77"
-  version = "v0.17.1"
+  revision = "4930b61a381b9fb9bc530eb5deb56ea6429a1c3a"
+  version = "v0.18.0"
 
 [[projects]]
   name = "github.com/tendermint/tmlibs"
@@ -649,8 +649,8 @@
     "pubsub",
     "pubsub/query"
   ]
-  revision = "24da7009c3d8c019b40ba4287495749e3160caca"
-  version = "v0.7.1"
+  revision = "2e24b64fc121dcdf1cabceab8dc2f7257675483c"
+  version = "v0.8.1"
 
 [[projects]]
   branch = "master"
@@ -668,10 +668,9 @@
   branch = "master"
   name = "github.com/xeipuuv/gojsonschema"
   packages = ["."]
-  revision = "8bcffc811467a5f691810420385be6e66b35a317"
+  revision = "2c8e4be869c17540b336bab0ea18b8d73e6a28b7"
 
 [[projects]]
-  branch = "master"
   name = "go.opencensus.io"
   packages = [
     "exporter/jaeger",
@@ -689,7 +688,8 @@
     "trace/internal",
     "trace/propagation"
   ]
-  revision = "ead56c48fbe540f3601b21ff9eeea1fb60300740"
+  revision = "0095aec66ae14801c6711210f6f0716411cefdd3"
+  version = "v0.8.0"
 
 [[projects]]
   branch = "master"
@@ -713,7 +713,7 @@
     "salsa20/salsa",
     "ssh/terminal"
   ]
-  revision = "b2aa35443fbc700ab74c586ae79b81c171851023"
+  revision = "beb2a9779c3b677077c41673505f150149fce895"
 
 [[projects]]
   branch = "master"
@@ -724,12 +724,13 @@
     "http2",
     "http2/hpack",
     "idna",
+    "internal/socks",
     "internal/timeseries",
     "lex/httplex",
     "proxy",
     "trace"
   ]
-  revision = "b3c676e531a6dc479fa1b35ac961c13f5e2b4d2e"
+  revision = "61147c48b25b599e5b561d2e9c4f3e1ef489ca41"
 
 [[projects]]
   branch = "master"
@@ -753,7 +754,7 @@
     "unix",
     "windows"
   ]
-  revision = "1d206c9fa8975fb4cf00df1dc8bf3283dc24ba0e"
+  revision = "3b87a42e500a6dc65dae1a55d0b641295971163e"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -780,7 +781,7 @@
   branch = "master"
   name = "google.golang.org/api"
   packages = ["support/bundler"]
-  revision = "3097bf831ede4a24e08a3316254e29ca726383e3"
+  revision = "9f7560f3b05bd90f33f9d56a449e5afd4dab15b3"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -800,7 +801,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "aae13d27a44d62f039eeeb93e74e893886673932"
+  revision = "51d0944304c3cbce4afe9e5247e21100037bff78"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -857,6 +858,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a31f7f8fbe83cf10c1c66e994fb28f4db173dad54c63905a2582f9029bc9473c"
+  inputs-digest = "4df815f3ec58c40657147214498fcc389779aad6b3e914047a978551e275c1f4"
   solver-name = "gps-cdcl"
   solver-version = 1

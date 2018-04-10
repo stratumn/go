@@ -1,22 +1,6 @@
 [[constraint]]
-  name = "github.com/sirupsen/logrus"
-  version = "1.0.2"
-
-[[constraint]]
   branch = "master"
   name = "github.com/google/go-github"
-
-[[constraint]]
-  name = "github.com/gorilla/websocket"
-  version = "1.2.0"
-
-[[constraint]]
-  name = "github.com/gorilla/mux"
-  version = "1.6.0"
-
-[[constraint]]
-  name = "github.com/julienschmidt/httprouter"
-  version = "1.1.0"
 
 [[constraint]]
   branch = "master"
@@ -45,7 +29,7 @@
 
 [[constraint]]
   name = "github.com/tendermint/tendermint"
-  version = "0.17.1"
+  version = "0.18.0"
 
 [[constraint]]
   branch = "master"
@@ -58,10 +42,6 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/oauth2"
-
-[[constraint]]
-  name = "github.com/stretchr/testify"
-  version = "1.1.4"
 
 [[constraint]]
   name = "github.com/golang/mock"
