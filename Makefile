@@ -221,8 +221,8 @@ $(DOCKER_IMAGE_LIST): docker_image_%: $(DIST_DIR)/%.Dockerfile $(DIST_DIR)/linux
 	@mkdir -p $(DIST_DIR)/$* && \
 		cd $(DIST_DIR)/$* && \
 		ln ../linux-amd64/$* && \
-		for i in `sed -n 's/^COPY *\([^ ]*\).*/\1/p' ../$*.Dockerfile`; do test `basename $$i` != $* && cp -r ../../$$i .; done; \
-		sed 's!^COPY *.*/\([^/]*\) \(.*\)!COPY \1 \2!' ../$*.Dockerfile > $*.Dockerfile; \
+		for i in `sed -n 's/^COPY *\([^ ]*\).*/\1/p' ../$*.Dockerfile`; do test `basename $$i` = $* || cp -r ../../$$i .; done && \
+		sed 's!^COPY *.*/\([^/]*\) \(.*\)!COPY \1 \2!' ../$*.Dockerfile > $*.Dockerfile && \
 		$(DOCKER_BUILD) -f $*.Dockerfile -t $(DOCKER_IMAGE):$(VERSION) -t $(DOCKER_IMAGE):latest . ; \
 		cd - ; rm -fr $(DIST_DIR)/$*
 
