@@ -65,20 +65,20 @@ func init() {
 
 	if err = view.Register(
 		&view.View{
-			Name:        "block_count",
+			Name:        "stratumn_tmpop_block_count",
 			Description: "number of blocks created",
 			Measure:     blockCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "tx_count",
+			Name:        "stratumn_tmpop_tx_count",
 			Description: "number of transactions received",
 			Measure:     txCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{txStatus},
 		},
 		&view.View{
-			Name:        "tx_per_block",
+			Name:        "stratumn_tmpop_tx_per_block",
 			Description: "number of transactions per block",
 			Measure:     txPerBlock,
 			Aggregation: view.Distribution(1, 5, 10, 50, 100),

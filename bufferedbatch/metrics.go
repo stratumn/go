@@ -55,20 +55,20 @@ func init() {
 
 	if err = view.Register(
 		&view.View{
-			Name:        "batch_count",
+			Name:        "stratumn_bufferedbatch_batch_count",
 			Description: "number of batches created",
 			Measure:     batchCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "write_count",
+			Name:        "stratumn_bufferedbatch_write_count",
 			Description: "number of batch writes",
 			Measure:     writeCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{writeStatus},
 		},
 		&view.View{
-			Name:        "links_per_batch",
+			Name:        "stratumn_bufferedbatch_links_per_batch",
 			Description: "number of links per batch",
 			Measure:     linksPerBatch,
 			Aggregation: view.Distribution(1, 5, 10, 50, 100),

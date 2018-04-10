@@ -40,13 +40,13 @@ func init() {
 	)
 	if err := view.Register(
 		&view.View{
-			Name:        "batch_count",
+			Name:        "stratumn_batchfossilizer_batch_count",
 			Description: "number of batches sent",
 			Measure:     batchCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "fossilized_links_count",
+			Name:        "stratumn_batchfossilizer_fossilized_links_count",
 			Description: "number of links fossilized",
 			Measure:     fossilizedLinksCount,
 			Aggregation: view.Count(),
