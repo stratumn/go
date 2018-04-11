@@ -313,28 +313,56 @@ type StringSelectMulti struct {
 	IsRequired bool `json:"isRequired"`
 }
 
-func appendIfNotSelected(value string, input, output []string) []string {
+func isSelected(value string, input []string) bool {
 	for _, val := range input {
 		if val == value {
-			return output
+			return true
 		}
 	}
+	return false
+}
+
+func appendIfNotSelected(value string, input, output []string) []string {
+	if isSelected(value, input) {
+		return output
+	}
 	return append(output, value)
+}
+
+// CreateItems create items list sorted by name.
+// Default value is the first element of the list.
+func (in *StringSelectMulti) CreateItems(values []string) (items []interface{}) {
+	if len(values) == len(in.Options) {
+		return nil
+	}
+	stringItems := make([]string, 0)
+	for k, v := range in.Options {
+		if in.Default == "" || k != in.Default {
+			stringItems = appendIfNotSelected(v, values, stringItems)
+		}
+	}
+	sort.StringSlice(stringItems).Sort()
+	items = make([]interface{}, 0, len(in.Options))
+	defaultValue := in.Options.FindText(in.Default)
+	if in.Default != "" &&
+		len(stringItems) != (len(in.Options)-len(values)) &&
+		!isSelected(defaultValue, values) {
+		items = append(items, defaultValue)
+	}
+	items = append(items, "")
+	for _, s := range stringItems {
+		items = append(items, s)
+	}
+	return
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
 func (in *StringSelectMulti) Run() (interface{}, error) {
 	values := make([]string, 0)
 	for {
-		options := make([]string, 0)
-		if in.Default != "" {
-			options = appendIfNotSelected(in.Options.FindText(in.Default), values, options)
-		}
-		options = append(options, "")
-		for k, v := range in.Options {
-			if in.Default == "" || k != in.Default {
-				options = appendIfNotSelected(v, values, options)
-			}
+		options := in.CreateItems(values)
+		if len(options) == 0 {
+			break
 		}
 		prompt := promptui.Select{
 			Label: in.Prompt,
