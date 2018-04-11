@@ -270,30 +270,30 @@ func (options GenericSelectOptions) FindValue(text string) interface{} {
 type GenericSelect struct {
 	InputShared
 
-	// Default is the default value.
-	Default string `json:"default"`
-
 	// Options is a map of possible values.
 	Options GenericSelectOptions `json:"options"`
+}
+
+// CreateItems create items list sorted by name.
+func (in *GenericSelect) CreateItems() (items []interface{}) {
+	stringItems := make([]string, 0, len(in.Options))
+	for _, v := range in.Options {
+		stringItems = append(stringItems, v)
+	}
+	sort.StringSlice(stringItems).Sort()
+	items = make([]interface{}, len(in.Options))
+	for i, s := range stringItems {
+		items[i] = s
+	}
+	return
 }
 
 // Run implements github.com/stratumn/sdk/generator.Input.
 func (in *GenericSelect) Run() (interface{}, error) {
 	prompt := promptui.Select{
 		Label: in.Prompt,
-		Items: func() (items []interface{}) {
-			items = make([]interface{}, 0, len(in.Options))
-			if in.Default != "" {
-				items = append(items, in.Options.FindText(in.Default))
-			}
-			for k, v := range in.Options {
-				if in.Default == "" || k != in.Default {
-					items = append(items, v)
-				}
-			}
-			return
-		}(),
-		Size: len(in.Options),
+		Items: in.CreateItems(),
+		Size:  len(in.Options),
 	}
 	_, txt, err := prompt.Run()
 	return in.Options.FindValue(txt), err

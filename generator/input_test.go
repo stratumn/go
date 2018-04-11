@@ -164,3 +164,53 @@ func TestStringSelect_CreateItems(t *testing.T) {
 		})
 	}
 }
+
+func TestGenericSelect_CreateItems(t *testing.T) {
+	type fields struct {
+		InputShared InputShared
+		Options     GenericSelectOptions
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		wantItems []interface{}
+	}{
+		{
+			name: "empty",
+			fields: fields{
+				Options: map[interface{}]string{},
+			},
+			wantItems: []interface{}{},
+		},
+		{
+			name: "sorted",
+			fields: fields{
+				Options: map[interface{}]string{42: "A", "foo": "B", 26.0: "C"},
+			},
+			wantItems: []interface{}{"A", "B", "C"},
+		},
+		{
+			name: "reverse",
+			fields: fields{
+				Options: map[interface{}]string{26.0: "C", "foo": "B", 42: "A"},
+			},
+			wantItems: []interface{}{"A", "B", "C"},
+		},
+		{
+			name: "case sensitive",
+			fields: fields{
+				Options: map[interface{}]string{42: "a", "foo": "B", 26.0: "C"},
+			},
+			wantItems: []interface{}{"B", "C", "a"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := &GenericSelect{
+				InputShared: tt.fields.InputShared,
+				Options:     tt.fields.Options,
+			}
+			assert.EqualValues(t, tt.wantItems, in.CreateItems())
+		})
+	}
+}
