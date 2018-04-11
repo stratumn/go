@@ -85,11 +85,10 @@ func TestInputSliceUnmarshalJSON(t *testing.T) {
 	})
 }
 
-func TestStringSelect_CreateItems(t *testing.T) {
+func TestStringSelect_createItems(t *testing.T) {
 	type fields struct {
-		InputShared InputShared
-		Default     string
-		Options     StringSelectOptions
+		Default string
+		Options StringSelectOptions
 	}
 	tests := []struct {
 		name      string
@@ -99,7 +98,6 @@ func TestStringSelect_CreateItems(t *testing.T) {
 		{
 			name: "empty",
 			fields: fields{
-				Default: "",
 				Options: map[string]string{},
 			},
 			wantItems: []interface{}{},
@@ -107,7 +105,6 @@ func TestStringSelect_CreateItems(t *testing.T) {
 		{
 			name: "sorted",
 			fields: fields{
-				Default: "",
 				Options: map[string]string{"a": "A", "b": "B", "c": "C"},
 			},
 			wantItems: []interface{}{"A", "B", "C"},
@@ -115,7 +112,6 @@ func TestStringSelect_CreateItems(t *testing.T) {
 		{
 			name: "reverse",
 			fields: fields{
-				Default: "",
 				Options: map[string]string{"c": "C", "b": "B", "a": "A"},
 			},
 			wantItems: []interface{}{"A", "B", "C"},
@@ -123,7 +119,6 @@ func TestStringSelect_CreateItems(t *testing.T) {
 		{
 			name: "case sensitive",
 			fields: fields{
-				Default: "",
 				Options: map[string]string{"a": "a", "b": "B", "c": "C"},
 			},
 			wantItems: []interface{}{"B", "C", "a"},
@@ -156,19 +151,17 @@ func TestStringSelect_CreateItems(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			in := &StringSelect{
-				InputShared: tt.fields.InputShared,
-				Default:     tt.fields.Default,
-				Options:     tt.fields.Options,
+				Default: tt.fields.Default,
+				Options: tt.fields.Options,
 			}
-			assert.EqualValues(t, tt.wantItems, in.CreateItems())
+			assert.EqualValues(t, tt.wantItems, in.createItems())
 		})
 	}
 }
 
-func TestGenericSelect_CreateItems(t *testing.T) {
+func TestGenericSelect_createItems(t *testing.T) {
 	type fields struct {
-		InputShared InputShared
-		Options     GenericSelectOptions
+		Options GenericSelectOptions
 	}
 	tests := []struct {
 		name      string
@@ -207,15 +200,14 @@ func TestGenericSelect_CreateItems(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			in := &GenericSelect{
-				InputShared: tt.fields.InputShared,
-				Options:     tt.fields.Options,
+				Options: tt.fields.Options,
 			}
-			assert.EqualValues(t, tt.wantItems, in.CreateItems())
+			assert.EqualValues(t, tt.wantItems, in.createItems())
 		})
 	}
 }
 
-func TestStringSelectMulti_CreateItems(t *testing.T) {
+func TestStringSelectMulti_createItems(t *testing.T) {
 	type fields struct {
 		Default    string
 		Options    StringSelectOptions
@@ -342,7 +334,7 @@ func TestStringSelectMulti_CreateItems(t *testing.T) {
 				Options:    tt.fields.Options,
 				IsRequired: tt.fields.IsRequired,
 			}
-			assert.EqualValues(t, tt.wantItems, in.CreateItems(tt.args.values))
+			assert.EqualValues(t, tt.wantItems, in.createItems(tt.args.values))
 		})
 	}
 }

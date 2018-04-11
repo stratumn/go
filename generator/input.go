@@ -212,9 +212,9 @@ type StringSelect struct {
 	Options StringSelectOptions `json:"options"`
 }
 
-// CreateItems create items list sorted by name.
+// createItems create items list sorted by name.
 // Default value is the first element of the list.
-func (in *StringSelect) CreateItems() (items []interface{}) {
+func (in *StringSelect) createItems() (items []interface{}) {
 	stringItems := make([]string, 0, len(in.Options))
 	for k, v := range in.Options {
 		if in.Default == "" || k != in.Default {
@@ -238,7 +238,7 @@ func (in *StringSelect) CreateItems() (items []interface{}) {
 func (in *StringSelect) Run() (interface{}, error) {
 	prompt := promptui.Select{
 		Label: in.Prompt,
-		Items: in.CreateItems(),
+		Items: in.createItems(),
 		Size:  len(in.Options),
 	}
 	_, txt, err := prompt.Run()
@@ -274,8 +274,8 @@ type GenericSelect struct {
 	Options GenericSelectOptions `json:"options"`
 }
 
-// CreateItems create items list sorted by name.
-func (in *GenericSelect) CreateItems() (items []interface{}) {
+// createItems create items list sorted by name.
+func (in *GenericSelect) createItems() (items []interface{}) {
 	stringItems := make([]string, 0, len(in.Options))
 	for _, v := range in.Options {
 		stringItems = append(stringItems, v)
@@ -292,7 +292,7 @@ func (in *GenericSelect) CreateItems() (items []interface{}) {
 func (in *GenericSelect) Run() (interface{}, error) {
 	prompt := promptui.Select{
 		Label: in.Prompt,
-		Items: in.CreateItems(),
+		Items: in.createItems(),
 		Size:  len(in.Options),
 	}
 	_, txt, err := prompt.Run()
@@ -329,9 +329,9 @@ func appendIfNotSelected(value string, input, output []string) []string {
 	return append(output, value)
 }
 
-// CreateItems create items list sorted by name.
+// createItems create items list sorted by name.
 // Default value is the first element of the list.
-func (in *StringSelectMulti) CreateItems(values []string) (items []interface{}) {
+func (in *StringSelectMulti) createItems(values []string) (items []interface{}) {
 	if len(values) == len(in.Options) {
 		return nil
 	}
@@ -360,7 +360,7 @@ func (in *StringSelectMulti) CreateItems(values []string) (items []interface{}) 
 func (in *StringSelectMulti) Run() (interface{}, error) {
 	values := make([]string, 0)
 	for {
-		options := in.CreateItems(values)
+		options := in.createItems(values)
 		if len(options) == 0 {
 			break
 		}
