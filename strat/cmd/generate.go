@@ -62,6 +62,7 @@ It asks which generator to use, then uses that generator to generate a project i
 				InputShared: generator.InputShared{
 					Prompt: "What would you like to generate?",
 				},
+				Default: "agent-basic-js",
 				Options: generator.StringSelectOptions{},
 			}
 			for _, desc := range list {

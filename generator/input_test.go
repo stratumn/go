@@ -84,3 +84,83 @@ func TestInputSliceUnmarshalJSON(t *testing.T) {
 		assert.Error(t, err, "invalid json")
 	})
 }
+
+func TestStringSelect_CreateItems(t *testing.T) {
+	type fields struct {
+		InputShared InputShared
+		Default     string
+		Options     StringSelectOptions
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		wantItems []interface{}
+	}{
+		{
+			name: "empty",
+			fields: fields{
+				Default: "",
+				Options: map[string]string{},
+			},
+			wantItems: []interface{}{},
+		},
+		{
+			name: "sorted",
+			fields: fields{
+				Default: "",
+				Options: map[string]string{"a": "A", "b": "B", "c": "C"},
+			},
+			wantItems: []interface{}{"A", "B", "C"},
+		},
+		{
+			name: "reverse",
+			fields: fields{
+				Default: "",
+				Options: map[string]string{"c": "C", "b": "B", "a": "A"},
+			},
+			wantItems: []interface{}{"A", "B", "C"},
+		},
+		{
+			name: "case sensitive",
+			fields: fields{
+				Default: "",
+				Options: map[string]string{"a": "a", "b": "B", "c": "C"},
+			},
+			wantItems: []interface{}{"B", "C", "a"},
+		},
+		{
+			name: "reverse with first default",
+			fields: fields{
+				Default: "a",
+				Options: map[string]string{"c": "C", "b": "B", "a": "A"},
+			},
+			wantItems: []interface{}{"A", "B", "C"},
+		},
+		{
+			name: "reverse with last default",
+			fields: fields{
+				Default: "c",
+				Options: map[string]string{"c": "C", "b": "B", "a": "A"},
+			},
+			wantItems: []interface{}{"C", "A", "B"},
+		},
+		{
+			name: "reverse with unknown default",
+			fields: fields{
+				Default: "foo",
+				Options: map[string]string{"c": "C", "b": "B", "a": "A"},
+			},
+			wantItems: []interface{}{"A", "B", "C"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			in := &StringSelect{
+				InputShared: tt.fields.InputShared,
+				Default:     tt.fields.Default,
+				Options:     tt.fields.Options,
+			}
+			assert.EqualValues(t, tt.wantItems, in.CreateItems())
+		})
+	}
+}

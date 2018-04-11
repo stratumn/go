@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 
 	"github.com/manifoldco/promptui"
@@ -211,23 +212,34 @@ type StringSelect struct {
 	Options StringSelectOptions `json:"options"`
 }
 
+// CreateItems create items list sorted by name.
+// Default value is the first element of the list.
+func (in *StringSelect) CreateItems() (items []interface{}) {
+	stringItems := make([]string, 0, len(in.Options))
+	for k, v := range in.Options {
+		if in.Default == "" || k != in.Default {
+			stringItems = append(stringItems, v)
+		}
+	}
+	sort.StringSlice(stringItems).Sort()
+	items = make([]interface{}, len(in.Options))
+	idx := 0
+	if in.Default != "" && len(stringItems) != len(in.Options) {
+		items[idx] = in.Options.FindText(in.Default)
+		idx++
+	}
+	for i, s := range stringItems {
+		items[i+idx] = s
+	}
+	return
+}
+
 // Run implements github.com/stratumn/sdk/generator.Input.
 func (in *StringSelect) Run() (interface{}, error) {
 	prompt := promptui.Select{
 		Label: in.Prompt,
-		Items: func() (items []interface{}) {
-			items = make([]interface{}, 0, len(in.Options))
-			if in.Default != "" {
-				items = append(items, in.Options.FindText(in.Default))
-			}
-			for k, v := range in.Options {
-				if in.Default == "" || k != in.Default {
-					items = append(items, v)
-				}
-			}
-			return
-		}(),
-		Size: len(in.Options),
+		Items: in.CreateItems(),
+		Size:  len(in.Options),
 	}
 	_, txt, err := prompt.Run()
 	return in.Options.FindValue(txt), err
