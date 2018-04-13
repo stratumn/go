@@ -2,7 +2,7 @@
 
 ## 0.3.0 - BREAKING CHANGES
 
-* Updated to Tendermint 0.17.1
+* Updated to Tendermint 0.18.0
 * Repository was renamed to _go-indigocore_
 * Validation engine was refactored
   * A new PKI section allows users to define users who will take part in a process
