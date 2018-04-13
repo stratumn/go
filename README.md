@@ -1,4 +1,4 @@
-[![Logo](logo.png)](https://indigoframework.com)
+[![Logo](logo.png)](https://indigocore.org)
 
 # IndigoCore
 
@@ -12,10 +12,10 @@
 
 ---
 
-This repository includes tools to build [Proof of Process Networks](https://proofofprocess.org) using the [Indigo Framework](https://indigoframework.com).
+This repository includes tools to build [Proof of Process Networks](https://proofofprocess.org) using [Indigo Core](https://indigocore.org).
 
-To get started, visit the Indigo Framework website:
-https://indigoframework.com
+To get started, visit the Indigo Core website:
+https://indigocore.org
 
 ## Run tests
 
