@@ -19,7 +19,9 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
-	abci "github.com/tendermint/abci/types"
+	// Needed to deserialize test proofs.
+	_ "github.com/stratumn/go-indigocore/cs/evidences"
+	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
 )
 
 const (
@@ -28,11 +30,6 @@ const (
 )
 
 var (
-	header = &abci.Header{
-		Height:  height,
-		ChainID: TestChainId,
-	}
-
 	TestEvidence = cs.Evidence{
 		Provider: TestChainId,
 		Backend:  "generic",
@@ -80,38 +77,6 @@ var (
 			"backend": "bcbatch",
 			"provider": "testChain3",
 			"proof": {}
-		},
-		{
-			"backend": "TMPop",
-			"provider": "testChain4",
-			"proof": {
-				"original": {
-					"blockHeight": 2,
-					"header": {
-						"app_hash": "eQg/Pe/PaO3amW1Jkn+vpTH0ldU=",
-						"chain_id": "test-chain-D9z7EJ",
-						"height": 2744,
-						"last_block_id": {
-							"hash": "g6/ewNOerE0++Lg3f2xEnSxhNW0=",
-							"parts": {
-								"hash": "fH/X/N6l+2q3XHPqMsXOM0W4d1I=",
-								"total": 1
-							}
-						}
-					},
-					"merkleProof": {
-						"InnerNodes": [{
-							"Height": 1,
-							"Left": "",
-							"Right": "DWDp+PJUmkoXzXthUq4cIsEyPvw=",
-							"Size": 2
-						}],
-						"LeafHash": "wisCGdiVRAAMNDosjHdlEvPmCo0=",
-						"RootHash": "eQg/Pe/PaO3amW1Jkn+vpTH0ldU="
-					}
-
-				}
-			}
 		}
 		]
 	`
@@ -124,7 +89,7 @@ func TestSerializeEvidence(t *testing.T) {
 		t.Error(err)
 	}
 
-	if len(evidences) != 5 {
+	if len(evidences) != 4 {
 		t.Errorf("Could not parse all the evidences")
 	}
 

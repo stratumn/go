@@ -99,7 +99,11 @@ func (e *Evidence) MarshalRQL() (interface{}, error) {
 	return json.Marshal(e)
 }
 
-// Proof is the generic interface which a custom proof type has to implement
+// Proof is the generic interface which a custom proof type has to implement.
+// Each package defining its own implementation of the cs.Proof interface
+// needs to provide a way to serialize/deserialize such proof.
+// The init() function of each such package should register the deserialize
+// method to the DeserializeMethods map.
 type Proof interface {
 	Time() uint64            // returns the timestamp (UNIX format) contained in the proof
 	FullProof() []byte       // returns data to independently validate the proof

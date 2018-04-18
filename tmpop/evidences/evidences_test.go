@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cs_test
+package evidences_test
 
 import (
 	"crypto/sha256"
@@ -21,12 +21,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/merkle"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	crypto "github.com/tendermint/go-crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
@@ -77,6 +79,77 @@ func TestTendermintProof(t *testing.T) {
 		name string
 		test func(*testing.T)
 	}{{
+		"deserialize",
+		func(t *testing.T) {
+			jsonTestEvidences := `[{
+				"backend": "TMPop",
+				"provider": "testTendermintChain",
+				"proof": {
+					"block_height": 42,
+					"merkle_root":
+					  "59655543574b735862477952414f6d4254764b534a666a7a614c62745a73794d",
+					"merkle_path": [],
+					"validations_hash":
+					  "4e7377594e734752757373566d616f7a465a4273624f4a694651475a736e7754",
+					"header": {
+					  "chain_id": "testchain",
+					  "height": 42,
+					  "time": "1970-01-01T01:00:42+01:00",
+					  "num_txs": 1,
+					  "last_block_id": {
+					    "hash":
+					      "4765754474527A514D44516959434F6867484F7667536579634A504A48594E75",
+					    "parts": { "total": 0, "hash": "" }
+					  },
+					  "total_txs": 1,
+					  "last_commit_hash": "",
+					  "data_hash": "",
+					  "validators_hash": "15F8466100A26952601BF93E18D738AC2278DB5F",
+					  "consensus_hash": "",
+					  "app_hash":
+					    "4B536D566F69474C4F7062554F7045644B7570644F4D6552566A61527A4C4E54",
+					  "last_results_hash": "",
+					  "evidence_hash": ""
+					},
+					"header_votes": [],
+					"header_validator_set": {
+					  "validators": [],
+					  "proposer": null
+					},
+					"next_header": {
+					  "chain_id": "testchain",
+					  "height": 43,
+					  "time": "1970-01-01T01:00:43+01:00",
+					  "num_txs": 0,
+					  "last_block_id": {
+					    "hash": "C74CD8C8FF218EBB95EBF35F03A8F21E1BBFDD30",
+					    "parts": { "total": 0, "hash": "" }
+					  },
+					  "total_txs": 0,
+					  "last_commit_hash": "",
+					  "data_hash": "",
+					  "validators_hash": "15F8466100A26952601BF93E18D738AC2278DB5F",
+					  "consensus_hash": "",
+					  "app_hash":
+					    "0394E1FDEF366159793C5544577EF7207C6FFFEE7F157FB91E2A9807FB9D3F1D",
+					  "last_results_hash": "",
+					  "evidence_hash": ""
+					},
+					"next_header_votes": [],
+					"next_header_validator_set": {
+					  "validators": [],
+					  "proposer": null
+					}
+				}
+			}]`
+			proofs := cs.Evidences{}
+			require.NoError(t, json.Unmarshal([]byte(jsonTestEvidences), &proofs))
+			require.Len(t, proofs, 1)
+			assert.Equal(t, "testTendermintChain", proofs[0].Provider)
+			assert.NotNil(t, proofs[0].Proof)
+			assert.Equal(t, "testchain", proofs[0].Proof.(*evidences.TendermintProof).Header.ChainID)
+		},
+	}, {
 		"time",
 		func(t *testing.T) {
 			e := &evidences.TendermintProof{Header: &tmtypes.Header{Time: time.Unix(42, 0)}}
