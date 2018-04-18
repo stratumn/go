@@ -22,9 +22,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/batchfossilizer"
+	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
+	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/blockchain"
 	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -106,7 +107,7 @@ func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 
 func (a *Fossilizer) transform(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error) {
 	var (
-		root = evidence.Proof.(*evidences.BatchProof).Root
+		root = evidence.Proof.(*batchevidences.BatchProof).Root
 		txid types.TransactionID
 		err  error
 	)
@@ -128,7 +129,7 @@ func (a *Fossilizer) transform(evidence *cs.Evidence, data, meta []byte) (*fossi
 	evidence.Provider = a.config.HashTimestamper.GetInfo().Network.String()
 	evidence.Backend = Name
 	evidence.Proof = &evidences.BcBatchProof{
-		Batch:         *evidence.Proof.(*evidences.BatchProof),
+		Batch:         *evidence.Proof.(*batchevidences.BatchProof),
 		TransactionID: a.lastTransactionID,
 	}
 

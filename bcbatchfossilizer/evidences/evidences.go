@@ -12,59 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package evidences defines some common proofs.
-// It is needed by a store to know how to deserialize a segment containing those proofs.
+// Package evidences defines bcbatchfossilizer evidence types.
 package evidences
 
 import (
 	"encoding/json"
 
+	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/types"
-	mktypes "github.com/stratumn/merkle/types"
 )
 
 var (
-	//BatchFossilizerName is the name used as the BatchProof backend
-	BatchFossilizerName = "batch"
 	//BcBatchFossilizerName is the name used as the BcBatchProof backend
 	BcBatchFossilizerName = "bcbatch"
 )
 
-// BatchProof implements the Proof interface
-type BatchProof struct {
-	Timestamp int64          `json:"timestamp"`
-	Root      *types.Bytes32 `json:"merkleRoot"`
-	Path      mktypes.Path   `json:"merklePath"`
-}
-
-// Time returns the timestamp from the block header
-func (p *BatchProof) Time() uint64 {
-	return uint64(p.Timestamp)
-}
-
-// FullProof returns a JSON formatted proof
-func (p *BatchProof) FullProof() []byte {
-	bytes, err := json.MarshalIndent(p, "", "   ")
-	if err != nil {
-		return nil
-	}
-	return bytes
-}
-
-// Verify returns true if the proof of a given linkHash is correct
-func (p *BatchProof) Verify(linkHash interface{}) bool {
-	err := p.Path.Validate()
-	if err != nil {
-		return false
-	}
-	return true
-}
-
 // BcBatchProof implements the Proof interface
 type BcBatchProof struct {
-	Batch         BatchProof          `json:"batch"`
-	TransactionID types.TransactionID `json:"txid"`
+	Batch         batchevidences.BatchProof `json:"batch"`
+	TransactionID types.TransactionID       `json:"txid"`
 }
 
 // Time returns the timestamp from the block header
@@ -91,13 +58,6 @@ func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 }
 
 func init() {
-	cs.DeserializeMethods[BatchFossilizerName] = func(rawProof json.RawMessage) (cs.Proof, error) {
-		p := BatchProof{}
-		if err := json.Unmarshal(rawProof, &p); err != nil {
-			return nil, err
-		}
-		return &p, nil
-	}
 	cs.DeserializeMethods[BcBatchFossilizerName] = func(rawProof json.RawMessage) (cs.Proof, error) {
 		p := BcBatchProof{}
 		if err := json.Unmarshal(rawProof, &p); err != nil {

@@ -21,9 +21,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	_ "github.com/stratumn/go-indigocore/cs/evidences"
-	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
 	"github.com/stratumn/go-indigocore/elasticsearchstore"
+	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store/storehttp"
 )

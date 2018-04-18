@@ -21,9 +21,10 @@ import (
 	"sync/atomic"
 	"testing"
 
+	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
+	bcbatchevidences "github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
-	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
@@ -348,8 +349,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("Returns its evidences", func(t *testing.T) {
 		ctx := context.Background()
 		e1 := cs.Evidence{Backend: "dummy", Provider: "1", Proof: &cs.GenericProof{}}
-		e2 := cs.Evidence{Backend: "batch", Provider: "2", Proof: &evidences.BatchProof{}}
-		e3 := cs.Evidence{Backend: "bcbatch", Provider: "3", Proof: &evidences.BcBatchProof{}}
+		e2 := cs.Evidence{Backend: "batch", Provider: "2", Proof: &batchevidences.BatchProof{}}
+		e3 := cs.Evidence{Backend: "bcbatch", Provider: "3", Proof: &bcbatchevidences.BcBatchProof{}}
 		e4 := cs.Evidence{Backend: "generic", Provider: "4"}
 		testEvidences := []cs.Evidence{e1, e2, e3, e4}
 

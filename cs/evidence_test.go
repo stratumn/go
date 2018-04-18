@@ -19,9 +19,8 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
-	// Needed to deserialize test proofs.
-	_ "github.com/stratumn/go-indigocore/cs/evidences"
-	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
+	// Needed to deserialize fossilizer evidences.
+	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 )
 
 const (

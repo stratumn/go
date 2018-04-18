@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-indigocore/batchfossilizer"
-	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"

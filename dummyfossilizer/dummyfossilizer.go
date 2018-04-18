@@ -19,17 +19,14 @@ package dummyfossilizer
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/dummyfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
 )
 
 const (
-	// Name is the name set in the fossilizer's information.
-	Name = "dummy"
-
 	// Description is the description set in the fossilizer's information.
 	Description = "Indigo's Dummy Fossilizer"
 )
@@ -58,41 +55,6 @@ type DummyFossilizer struct {
 	fossilizerEventChans []chan *fossilizer.Event
 }
 
-// DummyProof implements the cs.Proof interface
-type DummyProof struct {
-	Timestamp uint64 `json:"timestamp"`
-}
-
-// Time returns the timestamp from the block header
-func (p *DummyProof) Time() uint64 {
-	return p.Timestamp
-}
-
-// FullProof returns a JSON formatted proof
-func (p *DummyProof) FullProof() []byte {
-	bytes, err := json.MarshalIndent(p, "", "   ")
-	if err != nil {
-		return nil
-	}
-	return bytes
-}
-
-// Verify returns true if the proof of a given linkHash is correct
-func (p *DummyProof) Verify(interface{}) bool {
-	return true
-}
-
-// init needs to define a way to deserialize a DummyProof
-func init() {
-	cs.DeserializeMethods[Name] = func(rawProof json.RawMessage) (cs.Proof, error) {
-		p := DummyProof{}
-		if err := json.Unmarshal(rawProof, &p); err != nil {
-			return nil, err
-		}
-		return &p, nil
-	}
-}
-
 // New creates an instance of a DummyFossilizer.
 func New(config *Config) *DummyFossilizer {
 	return &DummyFossilizer{config, nil}
@@ -101,7 +63,7 @@ func New(config *Config) *DummyFossilizer {
 // GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *DummyFossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
-		Name:        Name,
+		Name:        evidences.Name,
 		Description: Description,
 		Version:     a.config.Version,
 		Commit:      a.config.Commit,
@@ -118,9 +80,9 @@ func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossi
 func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
 	r := &fossilizer.Result{
 		Evidence: cs.Evidence{
-			Backend:  Name,
-			Provider: Name,
-			Proof: &DummyProof{
+			Backend:  evidences.Name,
+			Provider: evidences.Name,
+			Proof: &evidences.DummyProof{
 				Timestamp: uint64(time.Now().Unix()),
 			},
 		},

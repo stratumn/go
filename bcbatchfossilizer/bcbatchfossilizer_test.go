@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/stratumn/go-indigocore/batchfossilizer"
+	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
-	"github.com/stratumn/go-indigocore/cs/evidences"
 )
 
 func TestGetInfo(t *testing.T) {

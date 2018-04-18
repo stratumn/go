@@ -24,8 +24,6 @@ import (
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/testutil"
-	// import common evidence types to verify we can deserialize them
-	_ "github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )

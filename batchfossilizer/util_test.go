@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs/evidences"
+	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
