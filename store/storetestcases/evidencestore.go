@@ -25,8 +25,6 @@ import (
 	// Needed to serialize dummyfossilizer evidence types.
 	_ "github.com/stratumn/go-indigocore/dummyfossilizer"
 	"github.com/stratumn/go-indigocore/store"
-	// Needed to serialize tendermint evidence types.
-	_ "github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stretchr/testify/assert"
 )
 

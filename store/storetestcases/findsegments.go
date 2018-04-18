@@ -26,7 +26,6 @@ import (
 	"github.com/stratumn/go-indigocore/cs/evidences"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
-	tmevidences "github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -348,12 +347,11 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "TMPop", Provider: "1", Proof: &tmevidences.TendermintProof{Root: testutil.RandomHash()}}
-		e2 := cs.Evidence{Backend: "dummy", Provider: "2", Proof: &cs.GenericProof{}}
-		e3 := cs.Evidence{Backend: "batch", Provider: "3", Proof: &evidences.BatchProof{}}
-		e4 := cs.Evidence{Backend: "bcbatch", Provider: "4", Proof: &evidences.BcBatchProof{}}
-		e5 := cs.Evidence{Backend: "generic", Provider: "5"}
-		testEvidences := []cs.Evidence{e1, e2, e3, e4, e5}
+		e1 := cs.Evidence{Backend: "dummy", Provider: "1", Proof: &cs.GenericProof{}}
+		e2 := cs.Evidence{Backend: "batch", Provider: "2", Proof: &evidences.BatchProof{}}
+		e3 := cs.Evidence{Backend: "bcbatch", Provider: "3", Proof: &evidences.BcBatchProof{}}
+		e4 := cs.Evidence{Backend: "generic", Provider: "4"}
+		testEvidences := []cs.Evidence{e1, e2, e3, e4}
 
 		for _, e := range testEvidences {
 			err := a.AddEvidence(ctx, linkHash4, &e)
@@ -371,7 +369,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		assert.NoError(t, err, "a.FindSegments()")
 		assert.NotNil(t, got)
 		require.Len(t, got, 1)
-		assert.True(t, len(got[0].Meta.Evidences) >= 5)
+		assert.True(t, len(got[0].Meta.Evidences) >= 4)
 	})
 
 }
