@@ -24,8 +24,10 @@ import (
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/testutil"
-	// import every type of evidence to see if we can deserialize all of them
+	// import common evidence types to verify we can deserialize them
 	_ "github.com/stratumn/go-indigocore/cs/evidences"
+	// import tendermint evidence to verify we can deserialize them
+	_ "github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
