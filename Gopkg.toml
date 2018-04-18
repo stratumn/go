@@ -56,10 +56,10 @@
   branch="master"
 
 [[override]] 
-  # This is required because Tendermint needs v0.5
-  # but Docker claims it needs v0.4 (but probably not intentionnally)
+  # This is required because Tendermint needs ~1.0.0
+  # but Docker claims it needs ^0.4.
   name = "github.com/gogo/protobuf"
-  version = "v0.5"
+  version = "~1.0.0"
 
 [[constraint]]
   name = "github.com/manifoldco/promptui"
@@ -77,8 +77,3 @@
 [[constraint]]
   name = "go.opencensus.io"
   branch = "master"
-
-[[override]]
-  branch = "master"
-  name = "git.apache.org/thrift.git"
-  source = "github.com/apache/thrift"
