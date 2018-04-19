@@ -2,16 +2,14 @@ package validator
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
+	"github.com/stratumn/go-indigocore/testutil"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,16 +17,7 @@ import (
 
 func TestScriptValidator(t *testing.T) {
 	testLink := cstesting.RandomLinkWithProcess("test")
-	testLink.Meta.Type = "valid"
-
-	sourceFile := filepath.Join("testdata", "custom_validator.go")
-	pluginFile := filepath.Join("testdata", "custom_validator.so")
-	defer os.Remove(pluginFile)
-
-	fmt.Println("Compiling go plugin...")
-	cmd := exec.Command("go", "build", "-o", pluginFile, "-buildmode=plugin", sourceFile)
-	require.NoError(t, cmd.Run())
-	fmt.Println("Done!")
+	testLink.Meta.Type = "init"
 
 	t.Run("New", func(t *testing.T) {
 
@@ -45,7 +34,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "valid-config",
 				baseCfg: &validatorBaseConfig{
 					Process:  "test",
-					LinkType: "valid",
+					LinkType: "init",
 				},
 				scriptCfg: &scriptConfig{
 					File: pluginFile,
@@ -124,15 +113,12 @@ func TestScriptValidator(t *testing.T) {
 
 	t.Run("Hash", func(t *testing.T) {
 		// in this test, we try to load the same symbol from different files to check that the hash are different
-		baseCfg, err := newValidatorBaseConfig("test", "valid")
+		baseCfg, err := newValidatorBaseConfig("test", "init")
 		require.NoError(t, err)
 
-		byzantineSourceFile := filepath.Join("testdata", "byzantine_validator.go")
-		byzantinePluginFile := filepath.Join("testdata", "byzantine_validator.so")
+		byzantinePluginFile, err := testutil.CompileGoPlugin(pluginsPath, "byzantine_validator.go")
+		require.NoError(t, err)
 		defer os.Remove(byzantinePluginFile)
-
-		cmd := exec.Command("go", "build", "-o", byzantinePluginFile, "-buildmode=plugin", byzantineSourceFile)
-		require.NoError(t, cmd.Run())
 
 		scriptCfg1 := &scriptConfig{
 			Type: "go",
@@ -178,7 +164,7 @@ func TestScriptValidator(t *testing.T) {
 				ret:  true,
 				baseCfg: &validatorBaseConfig{
 					Process:  "test",
-					LinkType: "valid",
+					LinkType: "init",
 				},
 				link: testLink,
 			},
@@ -187,7 +173,7 @@ func TestScriptValidator(t *testing.T) {
 				ret:  false,
 				baseCfg: &validatorBaseConfig{
 					Process:  "bad",
-					LinkType: "valid",
+					LinkType: "init",
 				},
 				link: cstesting.RandomLinkWithProcess("test"),
 			},
@@ -230,7 +216,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "valid-link",
 				baseCfg: &validatorBaseConfig{
 					Process:  "test",
-					LinkType: "valid",
+					LinkType: "init",
 				},
 				testLink: testLink,
 				valid:    true,

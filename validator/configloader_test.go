@@ -27,11 +27,12 @@ import (
 
 func TestLoadConfig_Success(t *testing.T) {
 
-	t.Run("schema & signatures & transitions", func(T *testing.T) {
+	t.Run("schema & signatures & transitions & plugins", func(T *testing.T) {
 		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
 		validators, err := LoadConfig(&Config{
-			RulesPath: testFile,
+			RulesPath:   testFile,
+			PluginsPath: pluginsPath,
 		}, nil)
 
 		assert.NoError(t, err, "LoadConfig()")
@@ -52,13 +53,14 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.Equal(t, 4, transitionValidatorCount)
 	})
 
-	t.Run("schema & signatures & transitions with listener", func(T *testing.T) {
+	t.Run("schema & signatures & transitions & plugins with listener", func(T *testing.T) {
 		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
 		validatorProcessCount := 0
 		validatorCount := 0
 		validators, err := LoadConfig(&Config{
-			RulesPath: testFile,
+			RulesPath:   testFile,
+			PluginsPath: pluginsPath,
 		}, func(process string, schema rulesSchema, validators []Validator) {
 			validatorProcessCount++
 			validatorCount = validatorCount + len(validators)
@@ -66,7 +68,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 		assert.Equal(t, 2, validatorProcessCount)
-		assert.Equal(t, 9, validatorCount)
+		assert.Equal(t, 10, validatorCount)
 		assert.Len(t, validators, validatorCount)
 	})
 

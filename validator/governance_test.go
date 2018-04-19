@@ -76,7 +76,8 @@ func TestGovernanceCreation(t *testing.T) {
 		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
 		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath: testFile,
+			RulesPath:   testFile,
+			PluginsPath: pluginsPath,
 		})
 		assert.NoError(t, err, "Gouvernance is initialized by file and store")
 		assert.NotNil(t, gov, "Gouvernance is initialized by file and store")
@@ -130,7 +131,8 @@ func TestGovernanceUpdate(t *testing.T) {
 		testFile := utils.CreateTempFile(t, ValidJSONConfig)
 		defer os.Remove(testFile)
 		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath: testFile,
+			RulesPath:   testFile,
+			PluginsPath: pluginsPath,
 		})
 		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
 

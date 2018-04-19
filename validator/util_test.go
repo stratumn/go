@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	AlicePrivateKey = `-----BEGIN ED25519 PRIVATE KEY-----\nBEC0TyVE2Y7+OgPHcSAAIAjUHCVA68swAp235LkQZBIrZnUfW/lss95djRXjIeX+\nezH5bdbVe7s4wbPJRBiej+it\n-----END ED25519 PRIVATE KEY-----\n`
+	AlicePrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nBEC0TyVE2Y7+OgPHcSAAIAjUHCVA68swAp235LkQZBIrZnUfW/lss95djRXjIeX+\nezH5bdbVe7s4wbPJRBiej+it\n-----END ED25519 PRIVATE KEY-----\n"
 	AlicePublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAdR9b+Wyz3l2NFeMh5f57Mflt1tV7uzjBs8lEGJ6P6K0=\n-----END ED25519 PUBLIC KEY-----\n`
 
-	BobPrivateKey = `-----BEGIN ED25519 PRIVATE KEY-----\nBED2FCm0Wxbq0WGpsf+7qNEUe3WXM2rGDey8ZuYn723qJPraxU3A4L+KAsOOc2Hq\nXD7nmG3Bq0+2B2lO5VvcjcSe\n-----END ED25519 PRIVATE KEY-----\n`
+	BobPrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nBED2FCm0Wxbq0WGpsf+7qNEUe3WXM2rGDey8ZuYn723qJPraxU3A4L+KAsOOc2Hq\nXD7nmG3Bq0+2B2lO5VvcjcSe\n-----END ED25519 PRIVATE KEY-----\n"
 	BobPublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEA+trFTcDgv4oCw45zYepcPueYbcGrT7YHaU7lW9yNxJ4=\n-----END ED25519 PUBLIC KEY-----\n`
 )
 
@@ -59,7 +59,11 @@ const ValidAuctionJSONTypesConfig = `
 			},
 			"required": ["seller", "lot", "initialPrice"]
 		},
-		"transitions": [""]
+		"transitions": [""],
+		"script": {
+			"file": "custom_validator.so",
+			"type": "go"
+		}
 	},
 	"bid": {
 		"schema": {

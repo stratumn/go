@@ -27,6 +27,7 @@ import (
 
 var (
 	validatorFilename = flag.String("rules_filename", validator.DefaultFilename, "Path to filename containing validation rules")
+	pluginsPath       = flag.String("plugins_path", validator.DefaultPluginsDirectory, "Path to the directory containing validation plugins")
 	version           = "x.x.x"
 	commit            = "00000000000000000000000000000000"
 )
@@ -41,10 +42,13 @@ func main() {
 
 	a := dummystore.New(&dummystore.Config{Version: version, Commit: commit})
 	tmpopConfig := &tmpop.Config{
-		Commit:            commit,
-		Version:           version,
-		ValidatorFilename: *validatorFilename,
-		Monitoring:        monitoring.ConfigurationFromFlags(),
+		Commit:  commit,
+		Version: version,
+		ValidationCfg: &validator.Config{
+			RulesPath:   *validatorFilename,
+			PluginsPath: *pluginsPath,
+		},
+		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(
 		monitoring.NewStoreAdapter(a, "dummystore"),

@@ -8,8 +8,8 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 )
 
-// Valid validates the transition towards the "valid" state
-func Valid(storeReader store.SegmentReader, l *cs.Link) error {
+// Init validates the transition towards the "init" state
+func Init(storeReader store.SegmentReader, l *cs.Link) error {
 	return nil
 }
 

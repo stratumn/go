@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 )
 
-// Valid validates the transition towards the "valid" state
-func Valid(storeReader store.SegmentReader, l *cs.Link) error {
-	return nil
+// Init validates the transition towards the "init" state
+func Init(storeReader store.SegmentReader, l *cs.Link) error {
+	return errors.New("error")
 }

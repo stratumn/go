@@ -21,6 +21,9 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -95,4 +98,13 @@ func RandomKey() []byte {
 	b := make([]byte, c)
 	rand.Read(b)
 	return b
+}
+
+// CompileGoPlugin calls the go compiler to build a plugin binary from a go source file.
+func CompileGoPlugin(pluginsPath, pluginName string) (string, error) {
+	sourceFile := filepath.Join(pluginsPath, pluginName)
+	pluginFile := filepath.Join(pluginsPath, strings.Replace(pluginName, ".go", ".so", 1))
+
+	cmd := exec.Command("go", "build", "-o", pluginFile, "-buildmode=plugin", sourceFile)
+	return pluginFile, cmd.Run()
 }

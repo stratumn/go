@@ -61,7 +61,7 @@ func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, err
 		checkedLinks:   checkedLinks,
 	}
 
-	state.governance, err = validator.NewGovernanceManager(ctx, a, config.ValidatorCfg)
+	state.governance, err = validator.NewGovernanceManager(ctx, a, config.ValidationCfg)
 	if err != nil {
 		return nil, err
 	}

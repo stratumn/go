@@ -80,7 +80,7 @@ func NewGovernanceManager(ctx context.Context, a store.Adapter, validationCfg *C
 }
 
 func (m *GovernanceManager) loadValidatorsFromFile(ctx context.Context) (err error) {
-	if m.validationCfg.RulesPath != "" {
+	if m.validationCfg != nil && m.validationCfg.RulesPath != "" {
 		_, err = LoadConfig(m.validationCfg, func(process string, schema rulesSchema, validators []Validator) {
 			m.validators[process] = m.updateValidatorInStore(ctx, process, schema, validators)
 		})
@@ -94,7 +94,7 @@ func (m *GovernanceManager) loadValidatorsFromFile(ctx context.Context) (err err
 func (m *GovernanceManager) loadValidatorsFromStore(ctx context.Context) {
 	for _, process := range m.getAllProcesses(ctx) {
 		if _, exist := m.validators[process]; !exist {
-			m.validators[process] = m.getValidators(ctx, process, m.validationCfg.PluginsPath)
+			m.validators[process] = m.getValidators(ctx, process)
 		}
 	}
 }
@@ -139,7 +139,7 @@ func (m *GovernanceManager) getAllProcesses(ctx context.Context) []string {
 	return ret
 }
 
-func (m *GovernanceManager) getValidators(ctx context.Context, process string, pluginsPath string) []Validator {
+func (m *GovernanceManager) getValidators(ctx context.Context, process string) []Validator {
 	segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    governanceProcessName,
@@ -164,7 +164,7 @@ func (m *GovernanceManager) getValidators(ctx context.Context, process string, p
 			PKI:   rawPKI,
 			Types: rawTypes,
 		},
-	}, pluginsPath, nil)
+	}, m.validationCfg.PluginsPath, nil)
 	if err != nil {
 		return v
 	}

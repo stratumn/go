@@ -21,6 +21,7 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/utils"
+	validation "github.com/stratumn/go-indigocore/validator"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -58,7 +59,7 @@ func (f Factory) TestValidation(t *testing.T) {
 	testFilename := utils.CreateTempFile(t, testValidationConfig)
 	defer os.Remove(testFilename)
 
-	h, req := f.newTMPop(t, &tmpop.Config{ValidatorFilename: testFilename})
+	h, req := f.newTMPop(t, &tmpop.Config{ValidationCfg: &validation.Config{RulesPath: testFilename}})
 	defer f.free()
 
 	h.BeginBlock(req)
