@@ -61,21 +61,16 @@ func TestMain(m *testing.M) {
 
 func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 	store := dummystore.New(nil)
-	initAuctionLink := &cs.Link{
-		State: map[string]interface{}{
-			"buyer":        "alice",
-			"seller":       "bob",
-			"lot":          "painting",
-			"initialPrice": 12,
-		},
-		Meta: cs.LinkMeta{
-			Process: "auction",
-			Type:    "init",
-		},
+	state := map[string]interface{}{
+		"buyer":        "alice",
+		"seller":       "bob",
+		"lot":          "painting",
+		"initialPrice": 12,
 	}
 	priv, _, err := keys.ParseSecretKey([]byte(validator.AlicePrivateKey))
+	initAuctionLink := cstesting.NewLinkBuilder().WithProcess("auction").WithType("init").WithPrevLinkHash("").WithState(state).SignWithKey(priv).Build()
 	require.NoError(t, err)
-	initAuctionLinkHash, err := store.CreateLink(context.Background(), cstesting.SignLinkWithKey(initAuctionLink, priv))
+	initAuctionLinkHash, err := store.CreateLink(context.Background(), initAuctionLink)
 	require.NoError(t, err)
 
 	var testCases = []testCase{{

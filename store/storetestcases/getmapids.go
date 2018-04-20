@@ -37,9 +37,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	testPageSize := 3
 	for i := 0; i < testPageSize; i++ {
 		for j := 0; j < testPageSize; j++ {
-			l := cstesting.RandomLink()
-			l.Meta.MapID = fmt.Sprintf("map%d", i)
-			l.Meta.Process = processNames[i%2]
+			l := cstesting.NewLinkBuilder().WithProcess(processNames[i%2]).WithMapID(fmt.Sprintf("map%d", i)).Build()
 			a.CreateLink(context.Background(), l)
 		}
 	}

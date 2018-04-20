@@ -94,8 +94,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	blocks[0] = &tmpop.Block{Header: createHeader(0)}
 
 	// Block1
-	invalidLink1 := cstesting.RandomLink()
-	invalidLink1.Meta.MapID = ""
+	invalidLink1 := cstesting.NewLinkBuilder().Invalid().Build()
 	invalidLinkHash1, _ := invalidLink1.Hash()
 	req = commitLink(t, h, invalidLink1, req)
 
@@ -140,8 +139,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	tmClientMock.EXPECT().Block(gomock.Any(), int64(3)).Return(blocks[3], nil).AnyTimes()
 
 	// Block4
-	invalidLink2 := cstesting.RandomLink()
-	invalidLink2.Meta.MapID = ""
+	invalidLink2 := cstesting.NewLinkBuilder().Invalid().Build()
 	req = commitLink(t, h, invalidLink2, req)
 
 	appHashes[4] = req.Header.AppHash

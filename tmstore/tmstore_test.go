@@ -98,27 +98,20 @@ func TestTMStore(t *testing.T) {
 	t.Run("Validation", func(t *testing.T) {
 		tmstore.StartWebsocket(context.Background())
 		updateValidatorRulesFile(t, filepath.Join("testdata", "rules.json"), rulesFilename)
+		state := map[string]interface{}{"string": "test"}
 
 		var err error
 		t.Run("Validation succeeds", func(t *testing.T) {
-			l := cstesting.RandomLink()
-			l.Meta.Process = "testProcess"
-			l.Meta.PrevLinkHash = ""
-			l.Meta.Type = "init"
-			l.State["string"] = "test"
-
 			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
-			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
+			l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithPrevLinkHash("").WithType("init").WithState(state).SignWithKey(ITPrivateKey).Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.NoError(t, err, "CreateLink() failed")
 		})
 
 		t.Run("Schema validation failed", func(t *testing.T) {
-			l := cstesting.RandomLink()
-			l.Meta.Process = "testProcess"
-			l.Meta.Type = "init"
-			l.State["string"] = 42
+			badState := map[string]interface{}{"string": 42}
+			l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").WithState(badState).Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
@@ -129,48 +122,31 @@ func TestTMStore(t *testing.T) {
 		})
 
 		t.Run("Signature validation failed", func(t *testing.T) {
-			l := cstesting.RandomLink()
-			l = cstesting.SignLink(l)
-			l.Meta.Process = "testProcess"
-			l.Meta.Type = "init"
-			l.State["string"] = "test"
+			// here we sign the link before modifying the state, making the signature out-of-date
+			l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").Sign().WithState(state).Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
-
 			errHTTP, ok := err.(jsonhttp.ErrHTTP)
 			assert.True(t, ok, "Invalid error received: want ErrHTTP")
 			assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
 		})
 
 		t.Run("Validation rules update succeeds", func(t *testing.T) {
-			prevLink := cstesting.RandomLink()
-			prevLink.Meta.Process = "testProcess"
-			prevLink.Meta.PrevLinkHash = ""
-			prevLink.Meta.Type = "init"
+			prevLink := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").Build()
 
 			_, err = tmstore.CreateLink(context.Background(), prevLink)
 			assert.NoError(t, err, "CreateLink(init) failed")
 
-			l := cstesting.RandomBranch(prevLink)
-			l.Meta.Process = "testProcess"
-			l.Meta.Type = "processing"
-			l.State["string"] = "test"
-
 			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
-			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
+			l := cstesting.NewLinkBuilder().Branch(prevLink).WithType("processing").WithState(state).SignWithKey(ITPrivateKey).Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.NoError(t, err, "CreateLink() failed")
 
 			updateValidatorRulesFile(t, filepath.Join("testdata", "rules.new.json"), rulesFilename)
 
-			l = cstesting.RandomLink()
-			l.Meta.Process = "testProcess"
-			l.Meta.Type = "processing"
-			l.State["string"] = "test"
-
-			l = cstesting.SignLinkWithKey(l, ITPrivateKey)
+			l = cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("processing").WithState(state).SignWithKey(ITPrivateKey).Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "CreateLink() should failed because signature is missing")

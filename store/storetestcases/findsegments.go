@@ -46,7 +46,7 @@ func createRandomLink(adapter store.Adapter, prepareLink func(l *cs.Link)) *cs.L
 }
 
 func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
-	return createLink(adapter, cstesting.RandomBranch(parent), prepareLink)
+	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
 }
 
 func verifyPriorityOrdering(t *testing.T, slice cs.SegmentSlice) {

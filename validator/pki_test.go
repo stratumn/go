@@ -16,7 +16,6 @@ package validator
 
 import (
 	"context"
-	"crypto"
 	"crypto/rand"
 	"encoding/base64"
 	"testing"
@@ -34,24 +33,10 @@ func TestPKIValidator(t *testing.T) {
 	process := "p1"
 	linkType := "test"
 
-	createValidLink := func() *cs.Link {
-		l := cstesting.RandomLink()
-		l.Meta.Process = process
-		l.Meta.Type = linkType
-		return cstesting.SignLink(l)
-	}
-
-	createValidLinkWithKey := func(priv crypto.PrivateKey) *cs.Link {
-		l := cstesting.RandomLink()
-		l.Meta.Process = process
-		l.Meta.Type = linkType
-		return cstesting.SignLinkWithKey(l, priv)
-	}
-
 	_, priv1, _ := keys.NewEd25519KeyPair()
 	_, priv2, _ := keys.NewEd25519KeyPair()
-	link1 := createValidLinkWithKey(priv1)
-	link2 := createValidLinkWithKey(priv2)
+	link1 := cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build()
+	link2 := cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv2).Build()
 
 	pki := &PKI{
 		"Alice Van den Budenmayer": &Identity{
@@ -66,7 +51,7 @@ func TestPKIValidator(t *testing.T) {
 
 	type testCase struct {
 		name               string
-		link               func() *cs.Link
+		link               *cs.Link
 		valid              bool
 		err                string
 		requiredSignatures []string
@@ -76,55 +61,43 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:  "valid-link",
 			valid: true,
-			link:  createValidLink,
+			link:  cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
 		},
 		{
-			name:  "required-signature-pubkey",
-			valid: true,
-			link: func() *cs.Link {
-				return link1
-			},
+			name:               "required-signature-pubkey",
+			valid:              true,
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build(),
 			requiredSignatures: []string{link1.Signatures[0].PublicKey},
 		},
 		{
-			name:  "required-signature-name",
-			valid: true,
-			link: func() *cs.Link {
-				return link1
-			},
+			name:               "required-signature-name",
+			valid:              true,
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build(),
 			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 		{
-			name:  "required-signature-role",
-			valid: true,
-			link: func() *cs.Link {
-				return link1
-			},
+			name:               "required-signature-role",
+			valid:              true,
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build(),
 			requiredSignatures: []string{"employee"},
 		},
 		{
-			name:  "required-signature-extra",
-			valid: true,
-			link: func() *cs.Link {
-				tmpLink := *link1
-				return cstesting.SignLink(&tmpLink)
-			},
+			name:               "required-signature-extra",
+			valid:              true,
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Sign().Build(),
 			requiredSignatures: []string{"employee"},
 		},
 		{
-			name:  "required-signature-multi",
-			valid: true,
-			link: func() *cs.Link {
-				tmpLink := *link1
-				return cstesting.SignLinkWithKey(&tmpLink, priv2)
-			},
+			name:               "required-signature-multi",
+			valid:              true,
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).SignWithKey(priv2).Build(),
 			requiredSignatures: []string{"employee", "it", "Bob Wagner"},
 		},
 		{
 			name:               "required-signature-fails",
 			valid:              false,
 			err:                "Missing signatory for validator test of process p1: signature from Alice Van den Budenmayer is required",
-			link:               createValidLink,
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
 			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 	}
@@ -135,7 +108,7 @@ func TestPKIValidator(t *testing.T) {
 		sv := newPkiValidator(baseCfg, tt.requiredSignatures, pki)
 
 		t.Run(tt.name, func(t *testing.T) {
-			err := sv.Validate(context.Background(), nil, tt.link())
+			err := sv.Validate(context.Background(), nil, tt.link)
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {

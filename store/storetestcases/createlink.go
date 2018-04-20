@@ -76,7 +76,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
-		l = cstesting.RandomBranch(l)
+		l = cstesting.NewLinkBuilder().Branch(l).Build()
 		_, err = a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})

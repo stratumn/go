@@ -100,10 +100,8 @@ func TestBatch_FindSegments(t *testing.T) {
 
 	storedLink := cstesting.RandomLink()
 	storedLink.Meta.Process = "Foo"
-	l1 := cstesting.RandomLink()
-	l1.Meta.Process = "Foo"
-	l2 := cstesting.RandomLink()
-	l2.Meta.Process = "Bar"
+	l1 := cstesting.NewLinkBuilder().WithProcess("Foo").Build()
+	l2 := cstesting.NewLinkBuilder().WithProcess("Bar").Build()
 
 	batch.CreateLink(ctx, l1)
 	batch.CreateLink(ctx, l2)

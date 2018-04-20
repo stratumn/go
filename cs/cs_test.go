@@ -190,7 +190,7 @@ func TestLinkValidate_refGoodNilLink(t *testing.T) {
 }
 
 func TestLinkValidate_validSignature(t *testing.T) {
-	l := cstesting.SignLink(cstesting.RandomLink())
+	l := cstesting.NewLinkBuilder().Sign().Build()
 	err := l.Validate(context.Background(), nil)
 	assert.NoError(t, err, "l.Validate()")
 }
@@ -223,7 +223,7 @@ func TestLinkValidate_wrongSignatureFormat(t *testing.T) {
 }
 
 func TestLinkValidate_badSignature(t *testing.T) {
-	l := cstesting.SignLink(cstesting.RandomLink())
+	l := cstesting.NewLinkBuilder().Sign().Build()
 	l.Signatures[0].Signature = testSignature
 	testLinkValidateError(t, l, nil, "invalid ed25519 signature: signature verification failed")
 }

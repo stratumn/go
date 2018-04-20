@@ -126,27 +126,21 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	assert.NotNil(t, a, "ES adapter")
 	defer freeTestElasticSearchStore(a)
 
-	link1 := cstesting.RandomLink()
-	link1.Meta.MapID = "foo bar"
-	link1.Meta.Process = "something crazy"
-	link1.Meta.Tags = []string{"one", "two", "three"}
-	link1.State["nested"] = map[string]interface{}{
+	state1 := map[string]interface{}{"nested": map[string]interface{}{
 		"first":  "hector",
 		"last":   "salazar",
 		"common": "stratumn",
-	}
+	}}
+	link1 := cstesting.NewLinkBuilder().WithProcess("something crazy").WithTags([]string{"one", "two", "three"}).WithMapID("foo bar").WithState(state1).Build()
 	a.CreateLink(context.Background(), link1)
 	hash1, _ := link1.HashString()
 
-	link2 := cstesting.RandomLink()
-	link2.Meta.MapID = "stupid madness"
-	link2.Meta.Process = "fly emirates"
-	link2.Meta.Tags = []string{"urban", "paranoia", "city"}
-	link2.State["nested"] = map[string]interface{}{
+	state2 := map[string]interface{}{"nested": map[string]interface{}{
 		"first":  "james",
 		"last":   "daniel",
 		"common": "stratumn",
-	}
+	}}
+	link2 := cstesting.NewLinkBuilder().WithProcess("fly emirates").WithTags([]string{"urban", "paranoia", "city"}).WithMapID("stupid madness").WithState(state2).Build()
 	a.CreateLink(context.Background(), link2)
 	hash2, _ := link2.HashString()
 

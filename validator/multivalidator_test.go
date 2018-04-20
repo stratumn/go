@@ -160,11 +160,10 @@ func TestMultiValidator_Validate(t *testing.T) {
 		validators: []Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2},
 	}
 
+	testState := map[string]interface{}{"message": "test"}
+
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
-		l := cstesting.SignLink(cstesting.RandomLink())
-		l.Meta.Process = "p"
-		l.Meta.Type = "a1"
-		l.State["message"] = "test"
+		l := cstesting.NewLinkBuilder().WithProcess("p").WithType("a1").WithState(testState).Sign().Build()
 		l.Signatures[0].PublicKey = "TESTKEY1"
 
 		err := mv.Validate(context.Background(), nil, l)
@@ -172,9 +171,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 	})
 
 	t.Run("Validate fails if no validator matches the given segment", func(t *testing.T) {
-		l := cstesting.RandomLink()
-		l.Meta.Type = "nomatch"
-
+		l := cstesting.NewLinkBuilder().WithType("nomatch").Build()
 		process := l.Meta.Process
 
 		err := mv.Validate(context.Background(), nil, l)
@@ -182,19 +179,14 @@ func TestMultiValidator_Validate(t *testing.T) {
 	})
 
 	t.Run("Validate fails if one of the children fails (schema)", func(t *testing.T) {
-		l := cstesting.RandomLink()
-		l.Meta.Process = "p"
-		l.Meta.Type = "a2"
+		l := cstesting.NewLinkBuilder().WithProcess("p").WithType("a2").Build()
 
 		err := mv.Validate(context.Background(), nil, l)
 		assert.EqualError(t, err, "link validation failed: [message: message is required]")
 	})
 
 	t.Run("Validate fails if one of the children fails (pki)", func(t *testing.T) {
-		l := cstesting.SignLink(cstesting.RandomLink())
-		l.Meta.Process = "p"
-		l.Meta.Type = "a1"
-		l.State["message"] = "test"
+		l := cstesting.NewLinkBuilder().WithProcess("p").WithType("a1").WithState(testState).Sign().Build()
 
 		err := mv.Validate(context.Background(), nil, l)
 		assert.Error(t, err)

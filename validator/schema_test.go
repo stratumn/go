@@ -104,41 +104,36 @@ func TestSchemaValidator(t *testing.T) {
 	sv, err := newSchemaValidator(baseCfg, schema)
 	require.NoError(t, err)
 
-	createValidLink := func() *cs.Link {
-		l := cstesting.RandomLink()
-		l.Meta.Process = "p1"
-		l.Meta.Type = "sell"
-		l.State["seller"] = "Alice"
-		l.State["lot"] = "Secret key"
-		l.State["initialPrice"] = 42
-		return l
+	rightState := map[string]interface{}{
+		"seller":       "Alice",
+		"lot":          "Secret key",
+		"initialPrice": 42,
 	}
 
-	createInvalidLink := func() *cs.Link {
-		l := createValidLink()
-		delete(l.State, "seller")
-		return l
+	badState := map[string]interface{}{
+		"lot":          "Secret key",
+		"initialPrice": 42,
 	}
 
 	type testCase struct {
 		name  string
-		link  func() *cs.Link
+		link  *cs.Link
 		valid bool
 	}
 
 	testCases := []testCase{{
 		name:  "valid-link",
 		valid: true,
-		link:  createValidLink,
+		link:  cstesting.NewLinkBuilder().WithProcess("p1").WithType("sell").WithState(rightState).Build(),
 	}, {
 		name:  "invalid-link",
 		valid: false,
-		link:  createInvalidLink,
+		link:  cstesting.NewLinkBuilder().WithProcess("p1").WithType("sell").WithState(badState).Build(),
 	}}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := sv.Validate(context.Background(), nil, tt.link())
+			err := sv.Validate(context.Background(), nil, tt.link)
 			if tt.valid {
 				assert.NoError(t, err)
 			} else {

@@ -86,15 +86,9 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	createValidLink := func() *cs.Link {
-		l := cstesting.RandomLink()
-		l.Meta.Process = process
-		l.Meta.Type = linkType
-		return cstesting.SignLink(l)
-	}
 	type testCase struct {
 		name           string
-		link           func() *cs.Link
+		link           *cs.Link
 		shouldValidate bool
 	}
 
@@ -102,49 +96,33 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 		{
 			name:           "valid-link",
 			shouldValidate: true,
-			link:           createValidLink,
+			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
 		},
 		{
 			name:           "no-process",
 			shouldValidate: false,
-			link: func() *cs.Link {
-				l := createValidLink()
-				l.Meta.Process = ""
-				return l
-			},
+			link:           cstesting.NewLinkBuilder().WithProcess("").WithType(linkType).Sign().Build(),
 		},
 		{
 			name:           "process-no-match",
 			shouldValidate: false,
-			link: func() *cs.Link {
-				l := createValidLink()
-				l.Meta.Process = "test"
-				return l
-			},
+			link:           cstesting.NewLinkBuilder().WithProcess("test").WithType(linkType).Sign().Build(),
 		},
 		{
 			name:           "no-type",
 			shouldValidate: false,
-			link: func() *cs.Link {
-				l := createValidLink()
-				l.Meta.Type = ""
-				return l
-			},
+			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("").Sign().Build(),
 		},
 		{
 			name:           "type-no-match",
 			shouldValidate: false,
-			link: func() *cs.Link {
-				l := createValidLink()
-				l.Meta.Type = "test"
-				return l
-			},
+			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("test").Sign().Build(),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			res := cfg.ShouldValidate(tt.link())
+			res := cfg.ShouldValidate(tt.link)
 			assert.Equal(t, tt.shouldValidate, res)
 		})
 	}

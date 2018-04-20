@@ -41,8 +41,7 @@ func (f Factory) TestBatch(t *testing.T) {
 
 	// Initialize the adapter with a few links with specific map ids
 	for i := 0; i < 6; i++ {
-		link := cstesting.RandomLink()
-		link.Meta.MapID = fmt.Sprintf("map%d", i%3)
+		link := cstesting.NewLinkBuilder().WithMapID(fmt.Sprintf("map%d", i%3)).Build()
 		a.CreateLink(ctx, link)
 	}
 
@@ -103,8 +102,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		adapterMapIdsCount := len(mapIDs)
 
 		for _, mapID := range []string{"map42", "map43"} {
-			link := cstesting.RandomLink()
-			link.Meta.MapID = mapID
+			link := cstesting.NewLinkBuilder().WithMapID(mapID).Build()
 			b.CreateLink(ctx, link)
 		}
 

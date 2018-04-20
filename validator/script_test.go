@@ -30,8 +30,8 @@ import (
 )
 
 func TestScriptValidator(t *testing.T) {
-	testLink := cstesting.RandomLinkWithProcess("test")
-	testLink.Meta.Type = "init"
+
+	testLink := cstesting.NewLinkBuilder().WithProcess("test").WithType("init").Build()
 	pluginFile := "testdata/custom_validator.so"
 
 	t.Run("New", func(t *testing.T) {
@@ -190,7 +190,7 @@ func TestScriptValidator(t *testing.T) {
 					Process:  "bad",
 					LinkType: "init",
 				},
-				link: cstesting.RandomLinkWithProcess("test"),
+				link: cstesting.NewLinkBuilder().WithProcess("test").Build(),
 			},
 			{
 				name: "bad type",
@@ -199,7 +199,7 @@ func TestScriptValidator(t *testing.T) {
 					Process:  "test",
 					LinkType: "invalid",
 				},
-				link: cstesting.RandomLinkWithType("test"),
+				link: cstesting.NewLinkBuilder().WithType("init").Build(),
 			},
 		}
 
@@ -242,7 +242,7 @@ func TestScriptValidator(t *testing.T) {
 					Process:  "test",
 					LinkType: "fetchLink",
 				},
-				testLink: cstesting.RandomLinkWithType("fetchLink"),
+				testLink: cstesting.NewLinkBuilder().WithType("fetchLink").Build(),
 				valid:    true,
 			},
 			{
@@ -251,7 +251,7 @@ func TestScriptValidator(t *testing.T) {
 					Process:  "test",
 					LinkType: "invalid",
 				},
-				testLink: cstesting.RandomLinkWithType("invalid"),
+				testLink: cstesting.NewLinkBuilder().WithType("invalid").Build(),
 				valid:    false,
 				err:      "error",
 			},

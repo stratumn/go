@@ -30,7 +30,7 @@ import (
 )
 
 // CreateLink creates a minimal link.
-func CreateLink(process, linkType, mapID, prevLinkHash string, tags []string, priority float64) *cs.Link {
+func createLink(process, linkType, mapID, prevLinkHash string, tags []string, priority float64) *cs.Link {
 	linkMeta := cs.LinkMeta{
 		Process:      process,
 		MapID:        mapID,
@@ -59,32 +59,13 @@ func CreateLink(process, linkType, mapID, prevLinkHash string, tags []string, pr
 
 // RandomLink creates a random link.
 func RandomLink() *cs.Link {
-	return CreateLink(testutil.RandomString(24), testutil.RandomString(24), testutil.RandomString(24),
+	return createLink(testutil.RandomString(24), testutil.RandomString(24), testutil.RandomString(24),
 		testutil.RandomHash().String(), RandomTags(), rand.Float64())
 }
 
 // RandomSegment creates a random segment.
 func RandomSegment() *cs.Segment {
 	return RandomLink().Segmentify()
-}
-
-// RandomLinkWithProcess creates a random link in a specific process.
-func RandomLinkWithProcess(process string) *cs.Link {
-	return CreateLink(process, testutil.RandomString(24), testutil.RandomString(24),
-		testutil.RandomHash().String(), RandomTags(), rand.Float64())
-}
-
-// RandomLinkWithType creates a random link in a specific type.
-func RandomLinkWithType(linkType string) *cs.Link {
-	return CreateLink(testutil.RandomString(24), linkType, testutil.RandomString(24),
-		testutil.RandomHash().String(), RandomTags(), rand.Float64())
-}
-
-// InvalidLinkWithProcess creates a random invalid link.
-func InvalidLinkWithProcess(process string) *cs.Link {
-	// A link with no MapId is invalid
-	return CreateLink(process, testutil.RandomString(24), "",
-		testutil.RandomHash().String(), RandomTags(), rand.Float64())
 }
 
 // RandomEvidence creates a random evidence.
@@ -107,15 +88,6 @@ func ChangeMapID(l *cs.Link) *cs.Link {
 	clone := Clone(l)
 	clone.Meta.MapID = testutil.RandomString(24)
 	return clone
-}
-
-// RandomBranch appends a random link to a link.
-func RandomBranch(parent *cs.Link) *cs.Link {
-	linkHash, _ := parent.HashString()
-	branch := CreateLink(testutil.RandomString(24), testutil.RandomString(24), testutil.RandomString(24),
-		linkHash, RandomTags(), rand.Float64())
-	branch.Meta.MapID = parent.Meta.MapID
-	return branch
 }
 
 // RandomTags creates between zero and four random tags.
@@ -142,20 +114,6 @@ func RandomInterfaces() []interface{} {
 		}
 	}
 	return ret
-}
-
-// SignLink adds a signature to a link.
-// The ed25519 signature algorithm is used.
-func SignLink(l *cs.Link) *cs.Link {
-	l.Signatures = append(l.Signatures, RandomSignature(l))
-	return l
-}
-
-// SignLinkWithKey signs the link with the provided private key.
-// The key must be an instance of ed25519.PrivateKey
-func SignLinkWithKey(l *cs.Link, priv crypto.PrivateKey) *cs.Link {
-	l.Signatures = append(l.Signatures, SignatureWithKey(l, priv))
-	return l
 }
 
 // RandomSignature returns an arbitrary signature from a generated key pair

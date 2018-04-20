@@ -35,11 +35,11 @@ func (f Factory) TestQuery(t *testing.T) {
 
 	link1, req := commitRandomLink(t, h, req)
 
-	invalidLink := cstesting.InvalidLinkWithProcess(link1.Meta.Process)
+	invalidLink := cstesting.NewLinkBuilder().Invalid().WithProcess(link1.Meta.Process).Build()
 	invalidLinkHash, _ := invalidLink.Hash()
 	req = commitLink(t, h, invalidLink, req)
 
-	link2 := cstesting.RandomLinkWithProcess(link1.Meta.Process)
+	link2 := cstesting.NewLinkBuilder().WithProcess(link1.Meta.Process).Build()
 	linkHash2, _ := link2.Hash()
 	commitLink(t, h, link2, req)
 
