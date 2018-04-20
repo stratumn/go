@@ -47,9 +47,6 @@ func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
-	if err := link.Validate(ctx, b.GetSegment); err != nil {
-		return nil, err
-	}
 	b.Links = append(b.Links, link)
 	return link.Hash()
 }

@@ -17,7 +17,6 @@ package bufferedbatch
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -26,6 +25,7 @@ import (
 	"github.com/stratumn/go-indigocore/store/storetesting"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBatch_CreateLink(t *testing.T) {
@@ -39,20 +39,15 @@ func TestBatch_CreateLink(t *testing.T) {
 	wantedErr := errors.New("error on MockCreateLink")
 	a.MockCreateLink.Fn = func(link *cs.Link) (*types.Bytes32, error) { return nil, wantedErr }
 
-	if _, err := batch.CreateLink(ctx, l); err != nil {
-		t.Fatalf("batch.CreateLink(): err: %s", err)
-	}
-	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
-		t.Errorf("batch.MockCreateLink.CalledCount = %d want %d", got, want)
-	}
-	if got, want := len(batch.Links), 1; got != want {
-		t.Errorf("len(batch.Links) = %d want %d", got, want)
-	}
+	_, err := batch.CreateLink(ctx, l)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, a.MockCreateLink.CalledCount)
+	assert.Equal(t, 1, len(batch.Links))
 
+	// Batch shouldn't do any kind of validation.
 	l.Meta.MapID = ""
-	if _, err := batch.CreateLink(ctx, l); err == nil {
-		t.Fatal("batch.CreateLink() should return an error when mapId is missing")
-	}
+	_, err = batch.CreateLink(ctx, l)
+	assert.NoError(t, err)
 }
 
 func TestBatch_GetSegment(t *testing.T) {
@@ -82,33 +77,19 @@ func TestBatch_GetSegment(t *testing.T) {
 	var err error
 
 	segment, err = batch.GetSegment(ctx, batchLinkHash1)
-	if err != nil {
-		t.Fatalf("batch.GetSegment(): err: %s", err)
-	}
-	if got, want := segment.Link, *batchLink1; !reflect.DeepEqual(got, want) {
-		t.Errorf("link = %v want %v", got, want)
-	}
+	assert.NoError(t, err, "batch.GetSegment()")
+	assert.Equal(t, batchLink1, &segment.Link)
 
 	segment, err = batch.GetSegment(ctx, batchLinkHash2)
-	if err != nil {
-		t.Fatalf("batch.GetSegment(): err: %s", err)
-	}
-	if got, want := segment.Link, *batchLink2; !reflect.DeepEqual(got, want) {
-		t.Errorf("link = %v want %v", got, want)
-	}
+	assert.NoError(t, err, "batch.GetSegment()")
+	assert.Equal(t, batchLink2, &segment.Link)
 
 	segment, err = batch.GetSegment(ctx, storedLinkHash)
-	if err != nil {
-		t.Fatalf("batch.GetSegment(): err: %s", err)
-	}
-	if got, want := segment.Link, *storedLink; !reflect.DeepEqual(got, want) {
-		t.Errorf("link = %v want %v", got, want)
-	}
+	assert.NoError(t, err, "batch.GetSegment()")
+	assert.Equal(t, storedLink, &segment.Link)
 
 	segment, err = batch.GetSegment(ctx, testutil.RandomHash())
-	if got, want := err, notFoundErr; got != want {
-		t.Errorf("GetSegment should return an error: %s want %s", got, want)
-	}
+	assert.EqualError(t, err, notFoundErr.Error())
 }
 
 func TestBatch_FindSegments(t *testing.T) {
@@ -143,25 +124,15 @@ func TestBatch_FindSegments(t *testing.T) {
 	var err error
 
 	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})
-	if err != nil {
-		t.Fatalf("batch.FindSegments(): err: %s", err)
-	}
-	if got, want := len(segments), 2; got != want {
-		t.Errorf("segment slice length = %d want %d", got, want)
-	}
+	assert.NoError(t, err, "batch.FindSegments()")
+	assert.Equal(t, 2, len(segments))
 
 	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Bar"})
-	if err != nil {
-		t.Fatalf("batch.FindSegments(): err: %s", err)
-	}
-	if got, want := len(segments), 1; got != want {
-		t.Errorf("segment slice length = %d want %d", got, want)
-	}
+	assert.NoError(t, err, "batch.FindSegments()")
+	assert.Equal(t, 1, len(segments))
 
 	_, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
-	if got, want := err, notFoundErr; got != want {
-		t.Errorf("FindSegments should return an error: %s want %s", got, want)
-	}
+	assert.EqualError(t, err, notFoundErr.Error())
 }
 
 func TestBatch_GetMapIDs(t *testing.T) {
@@ -205,31 +176,22 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	var err error
 
 	mapIDs, err = batch.GetMapIDs(ctx, &store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
-	if err != nil {
-		t.Fatalf("batch.GetMapIDs(): err: %s", err)
-	}
-	if got, want := len(mapIDs), 4; got != want {
-		t.Errorf("mapIds length = %d want %d / values = %v", got, want, mapIDs)
-	}
+	assert.NoError(t, err, "batch.GetMapIDs()")
+	assert.Equal(t, 4, len(mapIDs))
 
 	processFilter := &store.MapFilter{
 		Process:    "FooProcess",
 		Pagination: store.Pagination{Limit: store.DefaultLimit},
 	}
 	mapIDs, err = batch.GetMapIDs(ctx, processFilter)
-	if err != nil {
-		t.Fatalf("batch.GetMapIDs(): err: %s", err)
-	}
-	if got, want := len(mapIDs), 2; got != want {
-		t.Errorf("mapIds length = %d want %d / values = %v", got, want, mapIDs)
-	}
+	assert.NoError(t, err, "batch.GetMapIDs()")
+	assert.Equal(t, 2, len(mapIDs))
+
 	for _, mapID := range []string{
 		storedLink1.Meta.MapID,
 		batchLink1.Meta.MapID,
 	} {
-		if mapIDs[0] != mapID && mapIDs[1] != mapID {
-			t.Errorf("Invalid mapId returned: %v", mapID)
-		}
+		assert.True(t, mapIDs[0] == mapID || mapIDs[1] == mapID)
 	}
 }
 
@@ -245,47 +207,34 @@ func TestBatch_GetMapIDsWithStoreReturningAnErrorOnGetMapIDs(t *testing.T) {
 		return wantedMapIds, notFoundErr
 	}
 
-	if mapIDs, err := batch.GetMapIDs(ctx, &store.MapFilter{}); err == nil {
-		t.Fatal("batch.GetMapIDs() should return an error")
-	} else if got, want := len(mapIDs), len(wantedMapIds); got != want {
-		t.Fatalf("mapIds length = %d want %d", got, want)
-	} else if got, want := mapIDs, wantedMapIds; !reflect.DeepEqual(got, want) {
-		t.Fatalf("mapIds = %v want %v", got, want)
-	}
+	mapIDs, err := batch.GetMapIDs(ctx, &store.MapFilter{})
+	assert.EqualError(t, err, notFoundErr.Error(), "batch.GetMapIDs()")
+	assert.Equal(t, len(wantedMapIds), len(mapIDs))
+	assert.Equal(t, wantedMapIds, mapIDs)
 }
 
 func TestBatch_WriteLink(t *testing.T) {
+	ctx := context.Background()
+
 	a := &storetesting.MockAdapter{}
 	l := cstesting.RandomLink()
-
-	ctx := context.Background()
 
 	batch := NewBatch(ctx, a)
 
 	_, err := batch.CreateLink(ctx, l)
-	if err != nil {
-		t.Fatalf("batch.CreateLink(): err: %s", err)
-	}
+	assert.NoError(t, err, "batch.CreateLink()")
 
 	err = batch.Write(ctx)
-	if err != nil {
-		t.Fatalf("batch.Write(): err: %s", err)
-	}
-
-	if got, want := a.MockCreateLink.CalledCount, 1; got != want {
-		t.Errorf("batch.Write(): expected to have called CreateLink %d time, got %d", want, got)
-	}
-
-	if got, want := a.MockCreateLink.LastCalledWith, l; got != want {
-		t.Errorf("batch.Write(): expected to have called CreateLink with %v, got %v", want, got)
-	}
+	assert.NoError(t, err, "batch.Write()")
+	assert.Equal(t, 1, a.MockCreateLink.CalledCount)
+	assert.Equal(t, l, a.MockCreateLink.LastCalledWith)
 }
 
 func TestBatch_WriteLinkWithFailure(t *testing.T) {
+	ctx := context.Background()
+
 	a := &storetesting.MockAdapter{}
 	mockError := errors.New("Error")
-
-	ctx := context.Background()
 
 	la := cstesting.RandomLink()
 	lb := cstesting.RandomLink()
@@ -300,16 +249,11 @@ func TestBatch_WriteLinkWithFailure(t *testing.T) {
 	batch := NewBatch(ctx, a)
 
 	_, err := batch.CreateLink(ctx, la)
-	if err != nil {
-		t.Fatalf("batch.CreateLink(): err: %s", err)
-	}
+	assert.NoError(t, err, "batch.CreateLink()")
 
 	_, err = batch.CreateLink(ctx, lb)
-	if err != nil {
-		t.Fatalf("batch.CreateLink(): err: %s", err)
-	}
+	assert.NoError(t, err, "batch.CreateLink()")
 
-	if got, want := batch.Write(ctx), mockError; got != want {
-		t.Errorf("batch.Write returned %v want %v", got, want)
-	}
+	err = batch.Write(ctx)
+	assert.EqualError(t, err, mockError.Error())
 }
