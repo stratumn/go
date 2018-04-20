@@ -96,6 +96,12 @@ func (lb *LinkBuilder) SignWithKey(priv crypto.PrivateKey) *LinkBuilder {
 	return lb
 }
 
+// From assigns a clone of the provided link to its internal link
+func (lb *LinkBuilder) From(l *cs.Link) *LinkBuilder {
+	lb.Link = Clone(l)
+	return lb
+}
+
 // Build returns the underlying link.
 func (lb *LinkBuilder) Build() *cs.Link {
 	return lb.Link

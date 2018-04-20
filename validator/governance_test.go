@@ -240,7 +240,7 @@ func createGovernanceLink(process string, pki, types json.RawMessage) *cs.Link {
 	json.Unmarshal(types, &unmarshalledData)
 	state["types"] = unmarshalledData
 
-	link := cstesting.NewLinkBuilder().WithProcess(governanceProcessName).WithTags([]string{process, validatorTag}).Build()
+	link := cstesting.NewLinkBuilder().WithProcess(governanceProcessName).WithTags([]string{process, validatorTag}).WithState(state).Build()
 	link.Meta.Priority = 0.
 	return link
 }

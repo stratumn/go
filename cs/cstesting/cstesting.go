@@ -29,7 +29,7 @@ import (
 	"github.com/stratumn/go-indigocore/testutil"
 )
 
-// CreateLink creates a minimal link.
+// createLink creates a minimal link.
 func createLink(process, linkType, mapID, prevLinkHash string, tags []string, priority float64) *cs.Link {
 	linkMeta := cs.LinkMeta{
 		Process:      process,

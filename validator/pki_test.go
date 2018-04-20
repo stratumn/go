@@ -66,31 +66,31 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:               "required-signature-pubkey",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build(),
+			link:               link1,
 			requiredSignatures: []string{link1.Signatures[0].PublicKey},
 		},
 		{
 			name:               "required-signature-name",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build(),
+			link:               link1,
 			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 		{
 			name:               "required-signature-role",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build(),
+			link:               link1,
 			requiredSignatures: []string{"employee"},
 		},
 		{
 			name:               "required-signature-extra",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Sign().Build(),
+			link:               cstesting.NewLinkBuilder().From(link1).Sign().Build(),
 			requiredSignatures: []string{"employee"},
 		},
 		{
 			name:               "required-signature-multi",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).SignWithKey(priv2).Build(),
+			link:               cstesting.NewLinkBuilder().From(link1).SignWithKey(priv2).Build(),
 			requiredSignatures: []string{"employee", "it", "Bob Wagner"},
 		},
 		{
