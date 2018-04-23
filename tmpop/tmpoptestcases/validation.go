@@ -66,7 +66,13 @@ func (f Factory) TestValidation(t *testing.T) {
 	state := map[string]interface{}{"string": "test"}
 
 	t.Run("Validation succeeded", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").WithState(state).Sign().Build()
+		l := cstesting.NewLinkBuilder().
+			WithProcess("testProcess").
+			WithType("init").
+			WithPrevLinkHash("").
+			WithState(state).
+			Sign().
+			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
 
@@ -74,7 +80,11 @@ func (f Factory) TestValidation(t *testing.T) {
 	})
 
 	t.Run("Link does not match any validator", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("notfound").WithPrevLinkHash("").Build()
+		l := cstesting.NewLinkBuilder().
+			WithProcess("testProcess").
+			WithType("notfound").
+			WithPrevLinkHash("").
+			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
 
@@ -84,7 +94,12 @@ func (f Factory) TestValidation(t *testing.T) {
 
 	t.Run("Schema validation failed", func(t *testing.T) {
 		badState := map[string]interface{}{"string": 42}
-		l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").WithState(badState).Build()
+		l := cstesting.NewLinkBuilder().
+			WithProcess("testProcess").
+			WithType("init").
+			WithPrevLinkHash("").
+			WithState(badState).
+			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
 
@@ -93,7 +108,11 @@ func (f Factory) TestValidation(t *testing.T) {
 	})
 
 	t.Run("Signature validation failed", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").WithState(state).Sign().Build()
+		l := cstesting.NewLinkBuilder().
+			WithProcess("testProcess").
+			WithType("init").WithPrevLinkHash("").
+			WithState(state).Sign().
+			Build()
 		l.Signatures[0].Signature = `-----BEGIN MESSAGE-----
 BEDZR29+Zk8M72ZlgWstb3o96MdKNXeT0Q7LfzDFQKjv9dLjeHpRL4BSjkjPWbuA
 Kmq1nHIk7T7bpLBohyy0lRYO

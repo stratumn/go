@@ -103,7 +103,13 @@ func TestTMStore(t *testing.T) {
 		var err error
 		t.Run("Validation succeeds", func(t *testing.T) {
 			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
-			l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithPrevLinkHash("").WithType("init").WithState(state).SignWithKey(ITPrivateKey).Build()
+			l := cstesting.NewLinkBuilder().
+				WithProcess("testProcess").
+				WithPrevLinkHash("").
+				WithType("init").
+				WithState(state).
+				SignWithKey(ITPrivateKey).
+				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.NoError(t, err, "CreateLink() failed")
@@ -111,7 +117,12 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Schema validation failed", func(t *testing.T) {
 			badState := map[string]interface{}{"string": 42}
-			l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").WithState(badState).Build()
+			l := cstesting.NewLinkBuilder().
+				WithProcess("testProcess").
+				WithType("init").
+				WithPrevLinkHash("").
+				WithState(badState).
+				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
@@ -123,7 +134,13 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Signature validation failed", func(t *testing.T) {
 			// here we sign the link before modifying the state, making the signature out-of-date
-			l := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").Sign().WithState(state).Build()
+			l := cstesting.NewLinkBuilder().
+				WithProcess("testProcess").
+				WithType("init").
+				WithPrevLinkHash("").
+				Sign().
+				WithState(state).
+				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
@@ -133,20 +150,34 @@ func TestTMStore(t *testing.T) {
 		})
 
 		t.Run("Validation rules update succeeds", func(t *testing.T) {
-			prevLink := cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("init").WithPrevLinkHash("").Build()
+			prevLink := cstesting.NewLinkBuilder().
+				WithProcess("testProcess").
+				WithType("init").
+				WithPrevLinkHash("").
+				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), prevLink)
 			assert.NoError(t, err, "CreateLink(init) failed")
 
 			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
-			l := cstesting.NewLinkBuilder().Branch(prevLink).WithType("processing").WithState(state).SignWithKey(ITPrivateKey).Build()
+			l := cstesting.NewLinkBuilder().
+				Branch(prevLink).
+				WithType("processing").
+				WithState(state).
+				SignWithKey(ITPrivateKey).
+				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.NoError(t, err, "CreateLink() failed")
 
 			updateValidatorRulesFile(t, filepath.Join("testdata", "rules.new.json"), rulesFilename)
 
-			l = cstesting.NewLinkBuilder().WithProcess("testProcess").WithType("processing").WithState(state).SignWithKey(ITPrivateKey).Build()
+			l = cstesting.NewLinkBuilder().
+				WithProcess("testProcess").
+				WithType("processing").
+				WithState(state).
+				SignWithKey(ITPrivateKey).
+				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "CreateLink() should failed because signature is missing")

@@ -70,12 +70,19 @@ func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
 
 	var links stateMachineLinks
 
-	links.createdProduct = cstesting.NewLinkBuilder().WithProcess(process).WithType(stateCreatedProduct).WithPrevLinkHash("").Build()
+	links.createdProduct = cstesting.NewLinkBuilder().
+		WithProcess(process).
+		WithType(stateCreatedProduct).
+		WithPrevLinkHash("").
+		Build()
 	_, err := store.CreateLink(context.Background(), links.createdProduct)
 	require.NoError(t, err)
 
 	appendLink := func(prevLink *cs.Link, linkType string) *cs.Link {
-		l := cstesting.NewLinkBuilder().Branch(prevLink).WithType(linkType).Build()
+		l := cstesting.NewLinkBuilder().
+			Branch(prevLink).
+			WithType(linkType).
+			Build()
 		_, err := store.CreateLink(context.Background(), l)
 		require.NoError(t, err)
 		return l

@@ -200,13 +200,17 @@ func RandomLinkMapID(b *testing.B, numLinks, i int) *cs.Link {
 // previous link hash.
 // The previous link hash will be one of ten possible values.
 func RandomLinkPrevLinkHash(b *testing.B, numLinks, i int) *cs.Link {
-	return cstesting.NewLinkBuilder().WithPrevLinkHash(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)).Build()
+	return cstesting.NewLinkBuilder().
+		WithPrevLinkHash(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)).
+		Build()
 }
 
 // RandomLinkTags is a CreateLinkFunc that creates a random link with tags.
 // The tags will contain one of ten possible values.
 func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
-	return cstesting.NewLinkBuilder().WithTags([]string{fmt.Sprintf("%d", i%10)}).Build()
+	return cstesting.NewLinkBuilder().
+		WithTags([]string{fmt.Sprintf("%d", i%10)}).
+		Build()
 }
 
 // RandomLinkMapIDTags is a CreateLinkFunc that creates a random link with map
@@ -214,7 +218,10 @@ func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
 // The map ID will be one of ten possible values.
 // The tags will contain one of ten possible values.
 func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
-	return cstesting.NewLinkBuilder().WithTags([]string{fmt.Sprintf("%d", i%10)}).WithMapID(fmt.Sprintf("%d", i%10)).Build()
+	return cstesting.NewLinkBuilder().
+		WithTags([]string{fmt.Sprintf("%d", i%10)}).
+		WithMapID(fmt.Sprintf("%d", i%10)).
+		Build()
 }
 
 // RandomLinkPrevLinkHashTags is a CreateLinkFunc that creates a random link
@@ -222,7 +229,10 @@ func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
 // The previous link hash will be one of ten possible values.
 // The tags will contain one of ten possible values.
 func RandomLinkPrevLinkHashTags(b *testing.B, numLinks, i int) *cs.Link {
-	return cstesting.NewLinkBuilder().WithTags([]string{fmt.Sprintf("%d", i%10)}).WithPrevLinkHash(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)).Build()
+	return cstesting.NewLinkBuilder().
+		WithTags([]string{fmt.Sprintf("%d", i%10)}).
+		WithPrevLinkHash(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)).
+		Build()
 }
 
 // MapFilterFunc is a type for a function that creates a mapId filter for

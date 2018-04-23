@@ -35,8 +35,14 @@ func TestPKIValidator(t *testing.T) {
 
 	_, priv1, _ := keys.NewEd25519KeyPair()
 	_, priv2, _ := keys.NewEd25519KeyPair()
-	link1 := cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv1).Build()
-	link2 := cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).SignWithKey(priv2).Build()
+	link1 := cstesting.NewLinkBuilder().
+		WithProcess(process).WithType(linkType).
+		SignWithKey(priv1).
+		Build()
+	link2 := cstesting.NewLinkBuilder().
+		WithProcess(process).WithType(linkType).
+		SignWithKey(priv2).
+		Build()
 
 	pki := &PKI{
 		"Alice Van den Budenmayer": &Identity{

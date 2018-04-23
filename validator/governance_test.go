@@ -198,7 +198,10 @@ func TestGetAllProcesses(t *testing.T) {
 	t.Run("Lot of processeses", func(t *testing.T) {
 		a := dummystore.New(nil)
 		for i := 0; i < store.MaxLimit+42; i++ {
-			link := cstesting.NewLinkBuilder().WithProcess(governanceProcessName).WithTags([]string{fmt.Sprintf("p%d", i), validatorTag}).Build()
+			link := cstesting.NewLinkBuilder().
+				WithProcess(governanceProcessName).
+				WithTags([]string{fmt.Sprintf("p%d", i), validatorTag}).
+				Build()
 			_, err := a.CreateLink(context.Background(), link)
 			assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 		}
@@ -240,7 +243,11 @@ func createGovernanceLink(process string, pki, types json.RawMessage) *cs.Link {
 	json.Unmarshal(types, &unmarshalledData)
 	state["types"] = unmarshalledData
 
-	link := cstesting.NewLinkBuilder().WithProcess(governanceProcessName).WithTags([]string{process, validatorTag}).WithState(state).Build()
+	link := cstesting.NewLinkBuilder().
+		WithProcess(governanceProcessName).
+		WithTags([]string{process, validatorTag}).
+		WithState(state).
+		Build()
 	link.Meta.Priority = 0.
 	return link
 }

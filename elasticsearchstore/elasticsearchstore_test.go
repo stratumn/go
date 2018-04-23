@@ -131,7 +131,12 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		"last":   "salazar",
 		"common": "stratumn",
 	}}
-	link1 := cstesting.NewLinkBuilder().WithProcess("something crazy").WithTags([]string{"one", "two", "three"}).WithMapID("foo bar").WithState(state1).Build()
+	link1 := cstesting.NewLinkBuilder().
+		WithProcess("something crazy").
+		WithTags([]string{"one", "two", "three"}).
+		WithMapID("foo bar").
+		WithState(state1).
+		Build()
 	a.CreateLink(context.Background(), link1)
 	hash1, _ := link1.HashString()
 
@@ -140,7 +145,12 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 		"last":   "daniel",
 		"common": "stratumn",
 	}}
-	link2 := cstesting.NewLinkBuilder().WithProcess("fly emirates").WithTags([]string{"urban", "paranoia", "city"}).WithMapID("stupid madness").WithState(state2).Build()
+	link2 := cstesting.NewLinkBuilder().
+		WithProcess("fly emirates").
+		WithTags([]string{"urban", "paranoia", "city"}).
+		WithMapID("stupid madness").
+		WithState(state2).
+		Build()
 	a.CreateLink(context.Background(), link2)
 	hash2, _ := link2.HashString()
 
