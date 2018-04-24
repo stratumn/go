@@ -71,7 +71,7 @@ func (lb *LinkBuilder) WithTag(tag string) *LinkBuilder {
 }
 
 // WithTags fills the link's tags.
-func (lb *LinkBuilder) WithTags(tags []string) *LinkBuilder {
+func (lb *LinkBuilder) WithTags(tags ...string) *LinkBuilder {
 	lb.Link.Meta.Tags = tags
 	return lb
 }
