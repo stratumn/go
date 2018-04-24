@@ -209,7 +209,7 @@ func RandomLinkPrevLinkHash(b *testing.B, numLinks, i int) *cs.Link {
 // The tags will contain one of ten possible values.
 func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
 	return cstesting.NewLinkBuilder().
-		WithTags([]string{fmt.Sprintf("%d", i%10)}).
+		WithTags(fmt.Sprintf("%d", i%10)).
 		Build()
 }
 
@@ -219,7 +219,7 @@ func RandomLinkTags(b *testing.B, numLinks, i int) *cs.Link {
 // The tags will contain one of ten possible values.
 func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
 	return cstesting.NewLinkBuilder().
-		WithTags([]string{fmt.Sprintf("%d", i%10)}).
+		WithTags(fmt.Sprintf("%d", i%10)).
 		WithMapID(fmt.Sprintf("%d", i%10)).
 		Build()
 }
@@ -230,7 +230,7 @@ func RandomLinkMapIDTags(b *testing.B, numLinks, i int) *cs.Link {
 // The tags will contain one of ten possible values.
 func RandomLinkPrevLinkHashTags(b *testing.B, numLinks, i int) *cs.Link {
 	return cstesting.NewLinkBuilder().
-		WithTags([]string{fmt.Sprintf("%d", i%10)}).
+		WithTags(fmt.Sprintf("%d", i%10)).
 		WithPrevLinkHash(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10)).
 		Build()
 }

@@ -200,7 +200,7 @@ func TestGetAllProcesses(t *testing.T) {
 		for i := 0; i < store.MaxLimit+42; i++ {
 			link := cstesting.NewLinkBuilder().
 				WithProcess(governanceProcessName).
-				WithTags([]string{fmt.Sprintf("p%d", i), validatorTag}).
+				WithTags(fmt.Sprintf("p%d", i), validatorTag).
 				Build()
 			_, err := a.CreateLink(context.Background(), link)
 			assert.NoErrorf(t, err, "Cannot insert link %+v", link)
@@ -245,7 +245,7 @@ func createGovernanceLink(process string, pki, types json.RawMessage) *cs.Link {
 
 	link := cstesting.NewLinkBuilder().
 		WithProcess(governanceProcessName).
-		WithTags([]string{process, validatorTag}).
+		WithTags(process, validatorTag).
 		WithState(state).
 		Build()
 	link.Meta.Priority = 0.

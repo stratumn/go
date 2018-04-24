@@ -133,7 +133,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	}}
 	link1 := cstesting.NewLinkBuilder().
 		WithProcess("something crazy").
-		WithTags([]string{"one", "two", "three"}).
+		WithTags("one", "two", "three").
 		WithMapID("foo bar").
 		WithState(state1).
 		Build()
@@ -147,7 +147,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	}}
 	link2 := cstesting.NewLinkBuilder().
 		WithProcess("fly emirates").
-		WithTags([]string{"urban", "paranoia", "city"}).
+		WithTags("urban", "paranoia", "city").
 		WithMapID("stupid madness").
 		WithState(state2).
 		Build()
