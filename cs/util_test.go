@@ -42,10 +42,6 @@ func testLinkValidateErrorWrapper(t *testing.T, l *cs.Link, getSegment cs.GetSeg
 	innerTestLinkValidate(t, l, getSegment, want, strings.Contains)
 }
 
-func appendRefSegment(l, ref *cs.Link) {
-	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{Segment: ref.Segmentify()})
-}
-
 func appendRefLink(l *cs.Link, process, linkHash string) {
 	l.Meta.Refs = append(l.Meta.Refs, cs.SegmentReference{
 		Process:  process,

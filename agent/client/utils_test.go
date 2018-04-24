@@ -25,11 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/agent"
 	"github.com/stratumn/go-indigocore/agent/agenttestcases"
 	"github.com/stratumn/go-indigocore/agent/client"
@@ -62,23 +61,16 @@ func (m *mockHTTPServer) decodeRefs(input interface{}) ([]cs.SegmentReference, e
 		if !ok {
 			return nil, errors.Errorf("refs[%d] should be a map", refIdx)
 		}
-		if jsonSeg, ok := ref["segment"].(string); ok {
-			var seg cs.Segment
-			if err := json.Unmarshal([]byte(jsonSeg), &seg); err != nil {
-				return nil, errors.Errorf("refs[%d].segment should be a valid json segment", refIdx)
-			}
-			refs = append(refs, cs.SegmentReference{Segment: &seg})
-		} else {
-			process, ok := ref["process"].(string)
-			if !ok || process == "" {
-				return nil, errors.Errorf("refs[%d].process should be a non empty string", refIdx)
-			}
-			linkHashStr, ok := ref["linkHash"].(string)
-			if !ok || linkHashStr == "" {
-				return nil, errors.Errorf("refs[%d].linkHash should be a non empty string", refIdx)
-			}
-			refs = append(refs, cs.SegmentReference{Process: process, LinkHash: linkHashStr})
+
+		process, ok := ref["process"].(string)
+		if !ok || process == "" {
+			return nil, errors.Errorf("refs[%d].process should be a non empty string", refIdx)
 		}
+		linkHashStr, ok := ref["linkHash"].(string)
+		if !ok || linkHashStr == "" {
+			return nil, errors.Errorf("refs[%d].linkHash should be a non empty string", refIdx)
+		}
+		refs = append(refs, cs.SegmentReference{Process: process, LinkHash: linkHashStr})
 	}
 	return refs, nil
 }

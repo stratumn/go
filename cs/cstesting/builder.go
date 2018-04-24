@@ -70,7 +70,7 @@ func (lb *LinkBuilder) WithTag(tag string) *LinkBuilder {
 	return lb
 }
 
-// WithTags fills the link's tags.
+// WithTags replaces the link's tags.
 func (lb *LinkBuilder) WithTags(tags ...string) *LinkBuilder {
 	lb.Link.Meta.Tags = tags
 	return lb
@@ -100,14 +100,6 @@ func (lb *LinkBuilder) WithRef(link *cs.Link) *LinkBuilder {
 	lb.Link.Meta.Refs = append(lb.Link.Meta.Refs, cs.SegmentReference{
 		LinkHash: refHash,
 		Process:  link.Meta.Process,
-	})
-	return lb
-}
-
-// WithSegmentRef adds a reference to the link by fully including the segment.
-func (lb *LinkBuilder) WithSegmentRef(s *cs.Segment) *LinkBuilder {
-	lb.Link.Meta.Refs = append(lb.Link.Meta.Refs, cs.SegmentReference{
-		Segment: s,
 	})
 	return lb
 }

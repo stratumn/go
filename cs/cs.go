@@ -18,20 +18,15 @@ package cs
 import (
 	"context"
 	"crypto/sha256"
-	"fmt"
-
-	"github.com/stratumn/go-crypto/signatures"
-
 	"reflect"
-
-	"github.com/pkg/errors"
-
-	sigencoding "github.com/stratumn/go-crypto/encoding"
-	"github.com/stratumn/go-crypto/keys"
-	"github.com/stratumn/go-indigocore/types"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
+	"github.com/pkg/errors"
+	sigencoding "github.com/stratumn/go-crypto/encoding"
+	"github.com/stratumn/go-crypto/keys"
+	"github.com/stratumn/go-crypto/signatures"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 // Segment contains a link and meta data about the link.
@@ -129,9 +124,8 @@ func (s *SegmentMeta) FindEvidences(backend string) (res Evidences) {
 
 // SegmentReference is a reference to a segment or a linkHash
 type SegmentReference struct {
-	Segment  *Segment `json:"segment"`
-	Process  string   `json:"process"`
-	LinkHash string   `json:"linkHash"`
+	Process  string `json:"process"`
+	LinkHash string `json:"linkHash"`
 }
 
 // LinkMeta contains the typed meta data of a Link and data
@@ -224,27 +218,21 @@ func (l *Link) Validate(ctx context.Context, getSegment GetSegmentFunc) error {
 
 func (l *Link) validateReferences(ctx context.Context, getSegment GetSegmentFunc) error {
 	for refIdx, ref := range l.Meta.Refs {
-		if ref.Segment != nil {
-			if err := ref.Segment.Link.Validate(ctx, getSegment); err != nil {
-				return errors.WithMessage(err, fmt.Sprintf("invalid link.meta.refs[%d].segment", refIdx))
-			}
-		} else {
-			if ref.Process == "" {
-				return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
-			}
-			linkHash, err := types.NewBytes32FromString(ref.LinkHash)
-			if err != nil {
-				return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
-			}
-			if l.Meta.Process == ref.Process && getSegment != nil {
-				if seg, err := getSegment(ctx, linkHash); err != nil {
-					return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
-				} else if seg == nil {
-					return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
-				}
-			}
-			// Segment from another process is not retrieved because it could be in another store
+		if ref.Process == "" {
+			return errors.Errorf("link.meta.refs[%d].process should be a non empty string", refIdx)
 		}
+		linkHash, err := types.NewBytes32FromString(ref.LinkHash)
+		if err != nil {
+			return errors.Errorf("link.meta.refs[%d].linkHash should be a bytes32 field", refIdx)
+		}
+		if l.Meta.Process == ref.Process && getSegment != nil {
+			if seg, err := getSegment(ctx, linkHash); err != nil {
+				return errors.Wrapf(err, "link.meta.refs[%d] segment should be retrieved", refIdx)
+			} else if seg == nil {
+				return errors.Errorf("link.meta.refs[%d] segment is nil", refIdx)
+			}
+		}
+		// Segment from another process is not retrieved because it could be in another store
 	}
 	return nil
 }

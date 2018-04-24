@@ -123,22 +123,6 @@ func TestLinkValidate_tagsEmpty(t *testing.T) {
 	testLinkValidateError(t, l, nil, "link.meta.tags should be an array of non empty string")
 }
 
-func TestLinkValidate_refGoodLink(t *testing.T) {
-	l := cstesting.RandomLink()
-	ref := cstesting.RandomLink()
-	appendRefSegment(l, ref)
-	err := l.Validate(context.Background(), nil)
-	assert.NoError(t, err, "l.Validate()")
-}
-
-func TestLinkValidate_refBadLink(t *testing.T) {
-	l := cstesting.RandomLink()
-	ref := cstesting.RandomLink()
-	ref.Meta.Process = ""
-	appendRefSegment(l, ref)
-	testLinkValidateErrorWrapper(t, l, nil, "invalid link.meta.refs[0].segment")
-}
-
 func TestLinkValidate_refMissingProcess(t *testing.T) {
 	l := cstesting.RandomLink()
 	appendRefLink(l, "", testutil.RandomHash().String())
