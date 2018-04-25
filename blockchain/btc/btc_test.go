@@ -43,16 +43,14 @@ func TestGetNetworkFromWIF(t *testing.T) {
 			expectedNetwork: btc.NetworkMain,
 		},
 		{
-			name:            "invalid WIF",
-			wif:             "fakeWIF",
-			err:             errors.Wrap(btcutil.ErrMalformedPrivateKey, btc.ErrBadWIF.Error()).Error(),
-			expectedNetwork: btc.NetworkTest3,
+			name: "invalid WIF",
+			wif:  "fakeWIF",
+			err:  errors.Wrap(btcutil.ErrMalformedPrivateKey, btc.ErrBadWIF.Error()).Error(),
 		},
 		{
-			name:            "unknown bitcoin network",
-			wif:             "5KrPNVvAhnRBNMYRJUq58YMfyUMyVMQrQhhfFtcbT9rK67poC3F",
-			err:             btc.ErrUnknownBitcoinNetwork.Error(),
-			expectedNetwork: btc.NetworkTest3,
+			name: "unknown bitcoin network",
+			wif:  "5KrPNVvAhnRBNMYRJUq58YMfyUMyVMQrQhhfFtcbT9rK67poC3F",
+			err:  btc.ErrUnknownBitcoinNetwork.Error(),
 		},
 	}
 
