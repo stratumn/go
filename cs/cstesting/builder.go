@@ -94,6 +94,16 @@ func (lb *LinkBuilder) WithType(linkType string) *LinkBuilder {
 	return lb
 }
 
+// WithMetadata adds an entry in the Meta.Data map.
+func (lb *LinkBuilder) WithMetadata(key string, value interface{}) *LinkBuilder {
+	if lb.Link.Meta.Data == nil {
+		lb.Link.Meta.Data = make(map[string]interface{})
+	}
+
+	lb.Link.Meta.Data[key] = value
+	return lb
+}
+
 // WithRef adds a reference to the link.
 func (lb *LinkBuilder) WithRef(link *cs.Link) *LinkBuilder {
 	refHash, _ := link.HashString()
