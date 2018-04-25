@@ -15,8 +15,12 @@
 // Package btc defines primitives to work with Bitcoin.
 package btc
 
-import "github.com/stratumn/go-indigocore/types"
-import "github.com/btcsuite/btcd/chaincfg"
+import (
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
+	"github.com/pkg/errors"
+	"github.com/stratumn/go-indigocore/types"
+)
 
 // Network represents a Bitcoin network.
 type Network string
@@ -28,6 +32,32 @@ const (
 	// NetworkMain is an identified for the main Bitcoin network.
 	NetworkMain Network = "bitcoin:main"
 )
+
+var (
+	// ErrUnknwonBitcoinNetwork is returned when the network ID associated to the WIF is unknown.
+	ErrUnknwonBitcoinNetwork = errors.New("WIF encoded private key uses unknown Bitcoin network")
+
+	// ErrBadWIF is returned when the WIF encoded private key could not be decoded
+	ErrBadWIF = errors.New("Failed to decode WIF encoded private key")
+)
+
+// GetNetworkFromWIF returns the network ID associated to a bitcoin wallet.
+func GetNetworkFromWIF(key string) (Network, error) {
+	WIF, err := btcutil.DecodeWIF(key)
+	if err != nil {
+		return "", errors.Wrapf(err, ErrBadWIF.Error())
+	}
+
+	var network Network
+	if WIF.IsForNet(&chaincfg.TestNet3Params) {
+		network = NetworkTest3
+	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
+		network = NetworkMain
+	} else {
+		return "", ErrUnknwonBitcoinNetwork
+	}
+	return network, nil
+}
 
 // String implements fmt.Stringer.
 func (n Network) String() string {

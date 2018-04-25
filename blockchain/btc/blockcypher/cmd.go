@@ -19,11 +19,8 @@ import (
 	"flag"
 	"time"
 
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
-	"github.com/stratumn/go-indigocore/blockchain/btc"
-
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-indigocore/blockchain/btc"
 )
 
 var (
@@ -46,18 +43,9 @@ func RunWithFlags(ctx context.Context, key string) *Client {
 		log.Fatal("A WIF encoded private key is required")
 	}
 
-	WIF, err := btcutil.DecodeWIF(key)
+	network, err := btc.GetNetworkFromWIF(key)
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to decode WIF encoded private key")
-	}
-
-	var network btc.Network
-	if WIF.IsForNet(&chaincfg.TestNet3Params) {
-		network = btc.NetworkTest3
-	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
-		network = btc.NetworkMain
-	} else {
-		log.Fatal("WIF encoded private key uses unknown Bitcoin network")
+		log.WithField("error", err).Fatal()
 	}
 
 	bcy := New(&Config{
