@@ -51,7 +51,7 @@ func TestGetNetworkFromWIF(t *testing.T) {
 		{
 			name:            "unknown bitcoin network",
 			wif:             "5KrPNVvAhnRBNMYRJUq58YMfyUMyVMQrQhhfFtcbT9rK67poC3F",
-			err:             btc.ErrUnknwonBitcoinNetwork.Error(),
+			err:             btc.ErrUnknownBitcoinNetwork.Error(),
 			expectedNetwork: btc.NetworkTest3,
 		},
 	}
@@ -60,6 +60,7 @@ func TestGetNetworkFromWIF(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			net, err := btc.GetNetworkFromWIF(tt.wif)
 			if tt.err == "" {
+				assert.NoError(t, err)
 				assert.Equal(t, net, tt.expectedNetwork)
 			} else {
 				assert.EqualError(t, err, tt.err)

@@ -34,8 +34,8 @@ const (
 )
 
 var (
-	// ErrUnknwonBitcoinNetwork is returned when the network ID associated to the WIF is unknown.
-	ErrUnknwonBitcoinNetwork = errors.New("WIF encoded private key uses unknown Bitcoin network")
+	// ErrUnknownBitcoinNetwork is returned when the network ID associated to the WIF is unknown.
+	ErrUnknownBitcoinNetwork = errors.New("WIF encoded private key uses unknown Bitcoin network")
 
 	// ErrBadWIF is returned when the WIF encoded private key could not be decoded
 	ErrBadWIF = errors.New("Failed to decode WIF encoded private key")
@@ -45,7 +45,7 @@ var (
 func GetNetworkFromWIF(key string) (Network, error) {
 	WIF, err := btcutil.DecodeWIF(key)
 	if err != nil {
-		return "", errors.Wrapf(err, ErrBadWIF.Error())
+		return "", errors.Wrap(err, ErrBadWIF.Error())
 	}
 
 	var network Network
@@ -54,7 +54,7 @@ func GetNetworkFromWIF(key string) (Network, error) {
 	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
 		network = NetworkMain
 	} else {
-		return "", ErrUnknwonBitcoinNetwork
+		return "", ErrUnknownBitcoinNetwork
 	}
 	return network, nil
 }
