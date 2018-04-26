@@ -55,7 +55,7 @@ type Info struct {
 // Fossilizer is the type that
 // implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.
 type Fossilizer struct {
-	*batchfossilizer.Fossilizer
+	batchfossilizer.Adapter
 	config            *Config
 	lastRoot          *types.Bytes32
 	lastTransactionID types.TransactionID
@@ -73,8 +73,8 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 	}
 
 	f := Fossilizer{
-		Fossilizer: b,
-		config:     config,
+		Adapter: b,
+		config:  config,
 	}
 
 	f.SetTransformer(f.transform)
@@ -84,7 +84,7 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 
 // GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
-	batchInfo, err := a.Fossilizer.GetInfo(ctx)
+	batchInfo, err := a.Adapter.GetInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
