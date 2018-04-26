@@ -144,8 +144,22 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
+// Adapter must be implemented by a fossilizer that uses batches.
+type Adapter interface {
+	fossilizer.Adapter
+
+	// Start starts filling batches with incoming fossils.
+	Start(ctx context.Context) error
+
+	// Started returns a channel that will receive an event once the fossilizer has started.
+	Started() <-chan struct{}
+
+	// SetTransformer sets a transformer.
+	SetTransformer(t Transformer)
+}
+
 // Fossilizer is the type that
-// implements github.com/stratumn/go-indigocore/fossilizer.Adapter.
+// implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.
 type Fossilizer struct {
 	config               *Config
 	startedChan          chan chan struct{}
@@ -219,7 +233,7 @@ func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) er
 	return <-a.resultChan
 }
 
-// Start starts the fossilizer.
+// Start implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.Start.
 func (a *Fossilizer) Start(ctx context.Context) error {
 	var (
 		interval = a.config.GetInterval()
@@ -254,14 +268,14 @@ func (a *Fossilizer) Start(ctx context.Context) error {
 	}
 }
 
-// Started return a channel that will receive once the fossilizer has started.
+// Started implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.Started.
 func (a *Fossilizer) Started() <-chan struct{} {
 	c := make(chan struct{}, 1)
 	a.startedChan <- c
 	return c
 }
 
-// SetTransformer sets a transformer.
+// SetTransformer implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.SetTransformer.
 func (a *Fossilizer) SetTransformer(t Transformer) {
 	if t != nil {
 		a.transformer = t

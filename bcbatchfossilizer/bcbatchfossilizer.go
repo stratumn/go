@@ -53,7 +53,7 @@ type Info struct {
 }
 
 // Fossilizer is the type that
-// implements github.com/stratumn/go-indigocore/fossilizer.Adapter.
+// implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.
 type Fossilizer struct {
 	*batchfossilizer.Fossilizer
 	config            *Config
