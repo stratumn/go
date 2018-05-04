@@ -41,7 +41,7 @@ type State struct {
 	deliveredLinksList []*cs.Link
 	checkedLinks       store.Batch
 
-	governance *validator.GovernanceManager
+	governance validator.GovernanceManager
 }
 
 // NewState creates a new State.
@@ -61,17 +61,18 @@ func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, err
 		checkedLinks:   checkedLinks,
 	}
 
-	state.governance, err = validator.NewGovernanceManager(ctx, a, config.Validation)
+	state.governance, err = validator.NewLocalGovernor(ctx, a, config.Validation)
 	if err != nil {
 		return nil, err
 	}
+	go state.governance.ListenAndUpdate(ctx)
 
 	return state, nil
 }
 
 // UpdateValidators updates validators if a new version is available
 func (s *State) UpdateValidators(ctx context.Context) {
-	s.governance.UpdateValidators(ctx, &s.validator)
+	s.validator = s.governance.Current()
 }
 
 // Check checks if creating this link is a valid operation
@@ -98,8 +99,8 @@ func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch
 		}
 	}
 
-	if s.validator != nil {
-		err = s.validator.Validate(ctx, batch, link)
+	if validator := s.governance.Current(); validator != nil {
+		err = validator.Validate(ctx, batch, link)
 		if err != nil {
 			return &ABCIError{
 				CodeTypeValidation,

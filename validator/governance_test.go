@@ -18,12 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
@@ -34,80 +34,251 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func waitForUpdate(gov *GovernanceManager, v *Validator) error {
-	return utils.Retry(func(attempt int) (retry bool, err error) {
-		if gov.UpdateValidators(context.Background(), v) {
-			return false, nil
-		}
-		time.Sleep(25 * time.Millisecond)
-		return true, errors.New("missing validator")
-	}, 20)
-}
+func TestGovernance(t *testing.T) {
 
-func TestGovernanceCreation(t *testing.T) {
-	t.Run("Governance without file", func(t *testing.T) {
-		var v Validator
-		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{})
-		assert.NoError(t, err, "Gouvernance is initialized by store")
-		assert.NotNil(t, gov, "Gouvernance is initialized by store")
+	pluginsPath = "testdata"
 
-		err = waitForUpdate(gov, &v)
-		assert.Nil(t, v, "No validator loaded")
-		assert.Error(t, err, "No validator loaded")
-	})
+	t.Run("New", func(t *testing.T) {
+		t.Run("Governance without file", func(t *testing.T) {
+			var v Validator
+			a := new(storetesting.MockAdapter)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{})
+			assert.NoError(t, err, "Gouvernance is initialized by store")
+			assert.NotNil(t, gov, "Gouvernance is initialized by store")
 
-	t.Run("Governance without file but store", func(t *testing.T) {
-		var v Validator
-		a := dummystore.New(nil)
-		populateStoreWithValidData(t, a)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{})
-		assert.NoError(t, err, "Gouvernance is initialized by store")
-		assert.NotNil(t, gov, "Gouvernance is initialized by store")
+			v = gov.Current()
 
-		err = waitForUpdate(gov, &v)
-		assert.NotNil(t, v, "Validator loaded from store")
-		assert.NoError(t, err, "Validator updated")
-	})
-
-	t.Run("Governance with valid file", func(t *testing.T) {
-		var v Validator
-		a := new(storetesting.MockAdapter)
-		testFile := utils.CreateTempFile(t, ValidJSONConfig)
-		defer os.Remove(testFile)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath:   testFile,
-			PluginsPath: pluginsPath,
+			assert.Nil(t, v, "No validator loaded")
 		})
-		assert.NoError(t, err, "Gouvernance is initialized by file and store")
-		assert.NotNil(t, gov, "Gouvernance is initialized by file and store")
 
-		err = waitForUpdate(gov, &v)
-		assert.NotNil(t, v, "Validator loaded from file")
-		assert.NoError(t, err, "Validator updated")
+		t.Run("Governance without file but store", func(t *testing.T) {
+			var v Validator
+			a := dummystore.New(nil)
+			populateStoreWithValidData(t, a)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{})
+			assert.NoError(t, err, "Gouvernance is initialized by store")
+			assert.NotNil(t, gov, "Gouvernance is initialized by store")
+
+			v = gov.Current()
+			assert.NotNil(t, v, "Validator loaded from store")
+		})
+
+		t.Run("Governance with valid file", func(t *testing.T) {
+			var v Validator
+			a := new(storetesting.MockAdapter)
+			testFile := utils.CreateTempFile(t, ValidJSONConfig)
+			defer os.Remove(testFile)
+
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{
+				RulesPath:   testFile,
+				PluginsPath: pluginsPath,
+			})
+			assert.NoError(t, err, "Gouvernance is initialized by file and store")
+			assert.NotNil(t, gov, "Gouvernance is initialized by file and store")
+
+			v = gov.Current()
+
+			assert.NotNil(t, v, "Validator loaded from file")
+		})
+
+		t.Run("Governance with invalid file", func(t *testing.T) {
+			var v Validator
+			a := new(storetesting.MockAdapter)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{
+				RulesPath: "governance_test.go",
+			})
+			assert.NoError(t, err, "Gouvernance is initialized by store")
+			assert.NotNil(t, gov, "Gouvernance is initialized by store")
+
+			v = gov.Current()
+
+			assert.Nil(t, v, "No validator loaded")
+		})
+
+		t.Run("Governance with unexisting file", func(t *testing.T) {
+			a := new(storetesting.MockAdapter)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{
+				RulesPath: "foo/bar",
+			})
+			assert.Error(t, err, "Cannot initialize gouvernance with bad file")
+			assert.Nil(t, gov, "Cannot initialize gouvernance with bad file")
+		})
+
+		t.Run("New validator uploaded at startup", func(t *testing.T) {
+			var v Validator
+			a := dummystore.New(nil)
+			populateStoreWithValidData(t, a)
+			checkLastValidatorPriority(t, a, "auction", 1.)
+			testFile := utils.CreateTempFile(t, ValidJSONConfig)
+			defer os.Remove(testFile)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{
+				RulesPath:   testFile,
+				PluginsPath: pluginsPath,
+			})
+			require.NotNil(t, gov, "Gouvernance is initialized by file and store")
+			assert.NoError(t, err, "Validator updated")
+
+			v = gov.Current()
+			assert.NotNil(t, v, "Validator loaded from file")
+			checkLastValidatorPriority(t, a, "auction", 2.)
+		})
 	})
 
-	t.Run("Governance with invalid file", func(t *testing.T) {
-		var v Validator
-		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath: "governance_test.go",
-		})
-		assert.NoError(t, err, "Gouvernance is initialized by store")
-		assert.NotNil(t, gov, "Gouvernance is initialized by store")
+	t.Run("ListenAndUpdate", func(t *testing.T) {
+		t.Run("New validation file read on modification", func(t *testing.T) {
+			var v Validator
+			ctx := context.Background()
+			validJSON := fmt.Sprintf(`{%s}`, ValidChatJSONConfig)
+			a := dummystore.New(nil)
+			testFile := utils.CreateTempFile(t, validJSON)
+			defer os.Remove(testFile)
+			gov, err := NewLocalGovernor(ctx, a, &Config{
+				RulesPath: testFile,
+			})
+			require.NotNil(t, gov, "Gouvernance is initialized by file and store")
+			go gov.ListenAndUpdate(ctx)
+			waitValidator := gov.AddListener()
+			v = <-waitValidator
+			assert.NotNil(t, v, "Validator loaded from file")
 
-		err = waitForUpdate(gov, &v)
-		assert.Nil(t, v, "No validator loaded")
-		assert.Error(t, err, "No validator loaded")
+			checkLastValidatorPriority(t, a, "chat", 0.)
+
+			chatJSON := createValidatorJSON("chat",
+				strings.Replace(ValidChatJSONPKIConfig, "Bob", "Dave", -1),
+				ValidChatJSONTypesConfig)
+			validJSON = fmt.Sprintf(`{%s}`, chatJSON)
+			f, err := os.OpenFile(testFile, os.O_WRONLY, 0)
+			require.NoErrorf(t, err, "cannot modify file %s", &Config{
+				RulesPath: testFile,
+			})
+			defer f.Close()
+			_, err = f.WriteString(validJSON)
+			require.NoError(t, err, "tmpfile.WriteString()")
+
+			v = <-waitValidator
+			assert.NotNil(t, v, "Validator reloaded from file")
+
+			checkLastValidatorPriority(t, a, "chat", 1.)
+		})
+
+		t.Run("closes subscribing channels on context cancel", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			testFile := utils.CreateTempFile(t, "")
+			defer os.Remove(testFile)
+			gov, err := NewLocalGovernor(ctx, dummystore.New(nil), &Config{
+				RulesPath: testFile,
+			})
+			require.NoError(t, err)
+			go func() {
+				require.EqualError(t, gov.ListenAndUpdate(ctx), context.Canceled.Error())
+			}()
+		})
+
+		t.Run("return an error when no file watcher is set", func(t *testing.T) {
+			ctx := context.Background()
+			testFile := utils.CreateTempFile(t, "")
+			defer os.Remove(testFile)
+			gov, err := NewLocalGovernor(ctx, dummystore.New(nil), &Config{})
+			require.NoError(t, err)
+			go func() {
+				require.EqualError(t, gov.ListenAndUpdate(ctx), ErrNoFileWatcher.Error())
+			}()
+		})
 	})
 
-	t.Run("Governance with unexisting file", func(t *testing.T) {
-		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath: "foo/bar",
+	t.Run("Current", func(t *testing.T) {
+		t.Run("returns the current validator set", func(t *testing.T) {
+			ctx := context.Background()
+			testFile := utils.CreateTempFile(t, "")
+			defer os.Remove(testFile)
+			gov, err := NewLocalGovernor(ctx, dummystore.New(nil), &Config{
+				RulesPath:   testFile,
+				PluginsPath: pluginsPath,
+			})
+			require.NoError(t, err)
+
+			go gov.ListenAndUpdate(ctx)
+			assert.Nil(t, gov.Current())
+
+			ioutil.WriteFile(testFile, []byte(ValidJSONConfig), os.ModeTemporary)
+			newValidator := <-gov.AddListener()
+			assert.Equal(t, newValidator, gov.Current())
 		})
-		assert.Error(t, err, "Cannot initialize gouvernance with bad file")
-		assert.Nil(t, gov, "Cannot initialize gouvernance with bad file")
+	})
+
+	t.Run("AddRemoveListener", func(t *testing.T) {
+		t.Run("Adds a listener provided with the current valitor set", func(t *testing.T) {
+			ctx := context.Background()
+			testFile := utils.CreateTempFile(t, ValidJSONConfig)
+			defer os.Remove(testFile)
+			gov, err := NewLocalGovernor(ctx, dummystore.New(nil), &Config{
+				RulesPath:   testFile,
+				PluginsPath: pluginsPath,
+			})
+			require.NoError(t, err)
+			select {
+			case <-gov.AddListener():
+				break
+			case <-time.After(10 * time.Millisecond):
+				t.Error("No validator in the channel")
+			}
+		})
+
+		t.Run("Removes an unknown channel", func(t *testing.T) {
+			ctx := context.Background()
+			gov, _ := NewLocalGovernor(ctx, dummystore.New(nil), &Config{})
+			gov.RemoveListener(make(chan Validator))
+			gov.AddListener()
+			gov.RemoveListener(make(chan Validator))
+		})
+
+		t.Run("Removes closes the channel", func(t *testing.T) {
+			ctx := context.Background()
+			gov, _ := NewLocalGovernor(ctx, dummystore.New(nil), &Config{})
+			listener := gov.AddListener()
+			gov.RemoveListener(listener)
+
+			_, ok := <-listener
+			assert.False(t, ok, "<-listener")
+		})
+	})
+
+	t.Run("TestGetAllProcesses", func(t *testing.T) {
+		t.Run("No process", func(t *testing.T) {
+			a := new(storetesting.MockAdapter)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{})
+			require.NoError(t, err, "Gouvernance is initialized by store")
+
+			processes := gov.(*LocalGovernor).getAllProcesses(context.Background())
+			assert.Empty(t, processes)
+		})
+
+		t.Run("2 processes", func(t *testing.T) {
+			a := dummystore.New(nil)
+			populateStoreWithValidData(t, a)
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{})
+			require.NoError(t, err, "Gouvernance is initialized by store")
+
+			processes := gov.(*LocalGovernor).getAllProcesses(context.Background())
+			assert.Len(t, processes, 2)
+		})
+
+		t.Run("Lot of processeses", func(t *testing.T) {
+			a := dummystore.New(nil)
+			for i := 0; i < store.MaxLimit+42; i++ {
+				link := cstesting.NewLinkBuilder().
+					WithProcess(governanceProcessName).
+					WithTags(fmt.Sprintf("p%d", i), validatorTag).
+					Build()
+				_, err := a.CreateLink(context.Background(), link)
+				assert.NoErrorf(t, err, "Cannot insert link %+v", link)
+			}
+			gov, err := NewLocalGovernor(context.Background(), a, &Config{})
+			require.NoError(t, err, "Gouvernance is initialized by store")
+			processes := gov.(*LocalGovernor).getAllProcesses(context.Background())
+			assert.Len(t, processes, store.MaxLimit+42)
+		})
 	})
 }
 
@@ -120,96 +291,6 @@ func checkLastValidatorPriority(t *testing.T, a store.Adapter, process string, e
 	assert.NoError(t, err, "FindSegment(governance) should sucess")
 	require.Len(t, segs, 1, "The last validator config should be retrieved")
 	assert.Equal(t, expected, segs[0].Link.Meta.Priority, "The last validator config should be retrieved")
-}
-
-func TestGovernanceUpdate(t *testing.T) {
-	t.Run("New validator uploaded at startup", func(t *testing.T) {
-		var v Validator
-		a := dummystore.New(nil)
-		populateStoreWithValidData(t, a)
-		checkLastValidatorPriority(t, a, "auction", 1.)
-		testFile := utils.CreateTempFile(t, ValidJSONConfig)
-		defer os.Remove(testFile)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath:   testFile,
-			PluginsPath: pluginsPath,
-		})
-		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
-
-		err = waitForUpdate(gov, &v)
-		assert.NotNil(t, v, "Validator loaded from file")
-		assert.NoError(t, err, "Validator updated")
-		checkLastValidatorPriority(t, a, "auction", 2.)
-	})
-
-	t.Run("New validation file read on modification", func(t *testing.T) {
-		var v Validator
-		validJSON := fmt.Sprintf(`{%s}`, ValidChatJSONConfig)
-		a := dummystore.New(nil)
-		testFile := utils.CreateTempFile(t, validJSON)
-		defer os.Remove(testFile)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{
-			RulesPath: testFile,
-		})
-		require.NotNil(t, gov, "Gouvernance is initialized by file and store")
-
-		err = waitForUpdate(gov, &v)
-		assert.NotNil(t, v, "Validator loaded from file")
-		assert.NoError(t, err, "Validator updated")
-		checkLastValidatorPriority(t, a, "chat", 0.)
-
-		chatJSON := createValidatorJSON("chat",
-			strings.Replace(ValidChatJSONPKIConfig, "Bob", "Dave", -1),
-			ValidChatJSONTypesConfig)
-		validJSON = fmt.Sprintf(`{%s}`, chatJSON)
-		f, err := os.OpenFile(testFile, os.O_WRONLY, 0)
-		require.NoErrorf(t, err, "cannot modify file %s", &Config{
-			RulesPath: testFile,
-		})
-		defer f.Close()
-		_, err = f.WriteString(validJSON)
-		require.NoError(t, err, "tmpfile.WriteString()")
-
-		err = waitForUpdate(gov, &v)
-		assert.NotNil(t, v, "Validator reloaded from file")
-		assert.NoError(t, err, "Validator reloaded from file")
-		checkLastValidatorPriority(t, a, "chat", 1.)
-	})
-}
-
-func TestGetAllProcesses(t *testing.T) {
-	t.Run("No process", func(t *testing.T) {
-		a := new(storetesting.MockAdapter)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{})
-		require.NoError(t, err, "Gouvernance is initialized by store")
-		processes := gov.getAllProcesses(context.Background())
-		assert.Empty(t, processes)
-	})
-
-	t.Run("2 processes", func(t *testing.T) {
-		a := dummystore.New(nil)
-		populateStoreWithValidData(t, a)
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{})
-		require.NoError(t, err, "Gouvernance is initialized by store")
-		processes := gov.getAllProcesses(context.Background())
-		assert.Len(t, processes, 2)
-	})
-
-	t.Run("Lot of processeses", func(t *testing.T) {
-		a := dummystore.New(nil)
-		for i := 0; i < store.MaxLimit+42; i++ {
-			link := cstesting.NewLinkBuilder().
-				WithProcess(governanceProcessName).
-				WithTags(fmt.Sprintf("p%d", i), validatorTag).
-				Build()
-			_, err := a.CreateLink(context.Background(), link)
-			assert.NoErrorf(t, err, "Cannot insert link %+v", link)
-		}
-		gov, err := NewGovernanceManager(context.Background(), a, &Config{})
-		require.NoError(t, err, "Gouvernance is initialized by store")
-		processes := gov.getAllProcesses(context.Background())
-		assert.Len(t, processes, store.MaxLimit+42)
-	})
 }
 
 func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
