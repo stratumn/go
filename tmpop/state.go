@@ -99,8 +99,8 @@ func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch
 		}
 	}
 
-	if validator := s.governance.Current(); validator != nil {
-		err = validator.Validate(ctx, batch, link)
+	if s.validator != nil {
+		err = s.validator.Validate(ctx, batch, link)
 		if err != nil {
 			return &ABCIError{
 				CodeTypeValidation,
