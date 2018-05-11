@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package testutils
 
 import (
 	"fmt"
@@ -118,10 +118,10 @@ const ValidChatJSONTypesConfig = `
 }
 `
 
-func createValidatorJSON(name, pki, types string) string {
+func CreateValidatorJSON(name, pki, types string) string {
 	return fmt.Sprintf(`"%s": {"pki": %s,"types": %s}`, name, pki, types)
 }
 
-var ValidAuctionJSONConfig = createValidatorJSON("auction", ValidAuctionJSONPKIConfig, ValidAuctionJSONTypesConfig)
-var ValidChatJSONConfig = createValidatorJSON("chat", ValidChatJSONPKIConfig, ValidChatJSONTypesConfig)
+var ValidAuctionJSONConfig = CreateValidatorJSON("auction", ValidAuctionJSONPKIConfig, ValidAuctionJSONTypesConfig)
+var ValidChatJSONConfig = CreateValidatorJSON("chat", ValidChatJSONPKIConfig, ValidChatJSONTypesConfig)
 var ValidJSONConfig = fmt.Sprintf(`{%s,%s}`, ValidAuctionJSONConfig, ValidChatJSONConfig)

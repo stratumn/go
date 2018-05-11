@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators
 
 import (
 	"context"
@@ -47,16 +47,21 @@ var (
 	ValidScriptTypes = []string{golang}
 )
 
+type ScriptConfig struct {
+	File string `json:"file"`
+	Type string `json:"type"`
+}
+
 // ScriptValidatorFunc is the function called when enforcing a custom validation rule
 type ScriptValidatorFunc = func(store.SegmentReader, *cs.Link) error
 
-type scriptValidator struct {
+type ScriptValidator struct {
 	script     ScriptValidatorFunc
 	ScriptHash types.Bytes32
-	Config     *validatorBaseConfig
+	Config     *ValidatorBaseConfig
 }
 
-func checkScriptType(cfg *scriptConfig) error {
+func checkScriptType(cfg *ScriptConfig) error {
 	switch cfg.Type {
 	case golang:
 		return nil
@@ -65,7 +70,7 @@ func checkScriptType(cfg *scriptConfig) error {
 	}
 }
 
-func newScriptValidator(baseConfig *validatorBaseConfig, scriptCfg *scriptConfig, pluginsPath string) (Validator, error) {
+func NewScriptValidator(baseConfig *ValidatorBaseConfig, scriptCfg *ScriptConfig, pluginsPath string) (Validator, error) {
 	if err := checkScriptType(scriptCfg); err != nil {
 		return nil, err
 	}
@@ -87,14 +92,14 @@ func newScriptValidator(baseConfig *validatorBaseConfig, scriptCfg *scriptConfig
 
 	// here we ignore the error since there is no way we cannot read the file if the plugin has been loaded successfully
 	b, _ := ioutil.ReadFile(pluginFile)
-	return &scriptValidator{
+	return &ScriptValidator{
 		Config:     baseConfig,
 		script:     customValidator,
 		ScriptHash: sha256.Sum256(b),
 	}, nil
 }
 
-func (sv scriptValidator) Hash() (*types.Bytes32, error) {
+func (sv ScriptValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(sv)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -103,10 +108,10 @@ func (sv scriptValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-func (sv scriptValidator) ShouldValidate(link *cs.Link) bool {
+func (sv ScriptValidator) ShouldValidate(link *cs.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
 
-func (sv scriptValidator) Validate(_ context.Context, storeReader store.SegmentReader, link *cs.Link) error {
+func (sv ScriptValidator) Validate(_ context.Context, storeReader store.SegmentReader, link *cs.Link) error {
 	return sv.script(storeReader, link)
 }

@@ -18,24 +18,29 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"sync"
 
-	"github.com/fsnotify/fsnotify"
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
-	"github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
+	uuid "github.com/satori/go.uuid"
 
+	"github.com/prometheus/common/log"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/validator/validators"
 )
 
 const (
 	// GovernanceProcessName is the process name used for governance information storage
-	governanceProcessName = "_governance"
+	GovernanceProcessName = "_governance"
 
 	// ValidatorTag is the tag used to find validators in storage
-	validatorTag = "validators"
+	ValidatorTag = "validators"
+
+	// DefaultFilename is the default filename for the file with the rules of validation
+	DefaultFilename = "/data/validation/rules.json"
+
+	// DefaultPluginsDirectory is the default directory where validation plugins are located
+	DefaultPluginsDirectory = "/data/validation/"
 )
 
 var (
@@ -44,9 +49,15 @@ var (
 
 	defaultPagination = store.Pagination{
 		Offset: 0,
-		Limit:  1, // store.DefaultLimit,
+		Limit:  1,
 	}
 )
+
+// Config contains the path of the rules JSON file and the directory where the validator scripts are located.
+type Config struct {
+	RulesPath   string
+	PluginsPath string
+}
 
 // GovernanceManager defines the methods to implement to manage validations in an indigo network.
 type GovernanceManager interface {
@@ -56,169 +67,51 @@ type GovernanceManager interface {
 	ListenAndUpdate(ctx context.Context) error
 
 	// AddListener adds a listener for validator changes.
-	AddListener() <-chan Validator
+	AddListener() <-chan validators.Validator
 
 	// RemoveListener removes a listener.
-	RemoveListener(<-chan Validator)
+	RemoveListener(<-chan validators.Validator)
 
 	// Current returns the current version of the validator set.
-	Current() Validator
+	Current() validators.Validator
 }
 
-// LocalGovernor manages governance for validation rules management in an indigo network.
-type LocalGovernor struct {
-	adapter store.Adapter
+// GovernanceStore stores validation rules in an indigo store.
+type GovernanceStore struct {
+	store store.Adapter
 
-	validationCfg    *Config
-	validatorWatcher *fsnotify.Watcher
-	validators       map[string][]Validator
-	current          Validator
-
-	listenersMutex sync.RWMutex
-	listeners      []chan Validator
+	validationCfg *Config
 }
 
-// NewLocalGovernor enhances validator management with some governance concepts.
-func NewLocalGovernor(ctx context.Context, a store.Adapter, validationCfg *Config) (GovernanceManager, error) {
-	var err error
-	var govMgr = LocalGovernor{
-		adapter:       a,
-		validators:    make(map[string][]Validator, 0),
+// NewGovernanceStore returns a new governance store.
+func NewGovernanceStore(adapter store.Adapter, validationCfg *Config) *GovernanceStore {
+	return &GovernanceStore{
+		store:         adapter,
 		validationCfg: validationCfg,
 	}
-
-	govMgr.loadValidatorsFromFile(ctx)
-	govMgr.loadValidatorsFromStore(ctx)
-	if len(govMgr.validators) > 0 {
-		govMgr.updateCurrent()
-	}
-	if validationCfg != nil && validationCfg.RulesPath != "" {
-		if govMgr.validatorWatcher, err = fsnotify.NewWatcher(); err != nil {
-			return nil, errors.Wrap(err, "cannot create a new filesystem watcher for validators")
-		}
-		if err := govMgr.validatorWatcher.Add(validationCfg.RulesPath); err != nil {
-			return nil, errors.Wrapf(err, "cannot watch validator configuration file %s", validationCfg.RulesPath)
-		}
-	}
-
-	return &govMgr, nil
 }
 
-// ListenAndUpdate will update the current validators whenever the provided rule file is updated.
-// This method must be run in a goroutine as it will wait for write events on the file.
-func (m *LocalGovernor) ListenAndUpdate(ctx context.Context) error {
-	if m.validatorWatcher == nil {
-		return ErrNoFileWatcher
-	}
-
-	for {
-		select {
-		case event := <-m.validatorWatcher.Events:
-			if event.Op&fsnotify.Write == fsnotify.Write && event.Name != "" {
-				if m.loadValidatorsFromFile(ctx) == nil {
-					m.updateCurrent()
-				}
-			}
-
-		case err := <-m.validatorWatcher.Errors:
-			log.Warnf("Validator file watcher error caught: %s", err)
-
-		case <-ctx.Done():
-			m.listenersMutex.Lock()
-			defer m.listenersMutex.Unlock()
-			for _, s := range m.listeners {
-				close(s)
-			}
-			return ctx.Err()
-		}
-	}
-}
-
-// Current returns the current validator set
-func (m *LocalGovernor) Current() Validator {
-	return m.current
-}
-
-// AddListener return a listener that will be notified when the validator changes.
-func (m *LocalGovernor) AddListener() <-chan Validator {
-	m.listenersMutex.Lock()
-	defer m.listenersMutex.Unlock()
-
-	subscribeChan := make(chan Validator)
-	m.listeners = append(m.listeners, subscribeChan)
-
-	// Insert the current validator in the channel if there is one.
-	if m.current != nil {
-		go func() {
-			subscribeChan <- m.current
-		}()
-	}
-	return subscribeChan
-}
-
-// RemoveListener removes a listener.
-func (m *LocalGovernor) RemoveListener(c <-chan Validator) {
-	m.listenersMutex.Lock()
-	defer m.listenersMutex.Unlock()
-
-	index := -1
-	for i, l := range m.listeners {
-		if l == c {
-			index = i
-			break
-		}
-	}
-
-	if index >= 0 {
-		close(m.listeners[index])
-		m.listeners[index] = m.listeners[len(m.listeners)-1]
-		m.listeners = m.listeners[:len(m.listeners)-1]
-	}
-}
-
-func (m *LocalGovernor) loadValidatorsFromFile(ctx context.Context) (err error) {
-	if m.validationCfg != nil && m.validationCfg.RulesPath != "" {
-		_, err = LoadConfig(m.validationCfg, func(process string, schema rulesSchema, validators []Validator) {
-			m.validators[process] = m.updateValidatorInStore(ctx, process, schema, validators)
-		})
+// GetValidators returns the list of validators for each process by fetching them from the store.
+func (s *GovernanceStore) GetValidators(ctx context.Context) ([]validators.Validators, error) {
+	validators := make([]validators.Validators, 0)
+	for _, process := range s.getAllProcesses(ctx) {
+		processValidators, err := s.getProcessValidators(ctx, process)
 		if err != nil {
-			log.Errorf("Cannot load validator rules file %s: %s", m.validationCfg.RulesPath, err)
+			return nil, err
 		}
+		validators = append(validators, processValidators)
 	}
-	return err
+
+	return validators, nil
 }
 
-func (m *LocalGovernor) loadValidatorsFromStore(ctx context.Context) {
-	for _, process := range m.getAllProcesses(ctx) {
-		if _, exist := m.validators[process]; !exist {
-			m.validators[process] = m.getValidators(ctx, process)
-		}
-	}
-}
-
-func (m *LocalGovernor) updateCurrent() {
-	m.listenersMutex.RLock()
-	defer m.listenersMutex.RUnlock()
-
-	v4ch := make([]Validator, 0)
-	for _, v := range m.validators {
-		v4ch = append(v4ch, v...)
-	}
-	m.current = NewMultiValidator(v4ch)
-	for _, listener := range m.listeners {
-		go func(listener chan Validator) {
-			listener <- m.current
-		}(listener)
-	}
-}
-
-func (m *LocalGovernor) getAllProcesses(ctx context.Context) []string {
+func (s *GovernanceStore) getAllProcesses(ctx context.Context) []string {
 	processSet := make(map[string]interface{}, 0)
 	for offset := 0; offset >= 0; {
-		segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
+		segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{Offset: offset, Limit: store.MaxLimit},
-			Process:    governanceProcessName,
-			Tags:       []string{validatorTag},
+			Process:    GovernanceProcessName,
+			Tags:       []string{ValidatorTag},
 		})
 		if err != nil {
 			log.Errorf("Cannot retrieve governance segments: %+v", errors.WithStack(err))
@@ -226,7 +119,7 @@ func (m *LocalGovernor) getAllProcesses(ctx context.Context) []string {
 		}
 		for _, segment := range segments {
 			for _, tag := range segment.Link.Meta.Tags {
-				if tag != validatorTag {
+				if tag != ValidatorTag {
 					processSet[tag] = nil
 				}
 			}
@@ -244,96 +137,64 @@ func (m *LocalGovernor) getAllProcesses(ctx context.Context) []string {
 	return ret
 }
 
-func (m *LocalGovernor) getValidators(ctx context.Context, process string) []Validator {
-	segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
+func (s *GovernanceStore) getProcessValidators(ctx context.Context, process string) (validators.Validators, error) {
+	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
-		Process:    governanceProcessName,
-		Tags:       []string{process, validatorTag},
+		Process:    GovernanceProcessName,
+		Tags:       []string{process, ValidatorTag},
 	})
 	if err != nil || len(segments) == 0 {
-		return nil
+		return nil, errors.New("could not find governance segments")
 	}
 	linkState := segments[0].Link.State
 	pki, ok := linkState["pki"]
 	types, ok2 := linkState["types"]
 	if !ok || !ok2 {
-		return nil
+		return nil, errors.New("governance segment is incomplete")
 	}
 	rawPKI, ok := pki.(json.RawMessage)
 	rawTypes, ok2 := types.(json.RawMessage)
 	if !ok || !ok2 {
-		return nil
+		return nil, errors.New("governance segment is badly formatted")
 	}
-	v, err := LoadProcessRules(processesRules{
-		"process": rulesSchema{
+	return LoadProcessRules(processesRules{
+		process: RulesSchema{
 			PKI:   rawPKI,
 			Types: rawTypes,
 		},
-	}, m.validationCfg.PluginsPath, nil)
-	if err != nil {
-		return v
-	}
-	return nil
+	}, s.validationCfg.PluginsPath, nil)
 }
 
-func (m *LocalGovernor) updateValidatorInStore(ctx context.Context, process string, schema rulesSchema, validators []Validator) []Validator {
-	segments, err := m.adapter.FindSegments(ctx, &store.SegmentFilter{
+func (s *GovernanceStore) updateValidatorInStore(ctx context.Context, process string, schema RulesSchema, validators []validators.Validator) error {
+	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
-		Process:    governanceProcessName,
-		Tags:       []string{process, validatorTag},
+		Process:    GovernanceProcessName,
+		Tags:       []string{process, ValidatorTag},
 	})
 	if err != nil {
-		log.Errorf("Cannot retrieve governance segments: %+v", errors.WithStack(err))
-		return validators
+		return errors.Wrap(errors.WithStack(err), "Cannot retrieve governance segments")
 	}
 	if len(segments) == 0 {
 		log.Warnf("No governance segments found for process %s", process)
-		if err = m.uploadValidator(ctx, process, schema, nil); err != nil {
-			log.Warnf("Cannot upload validator: %s", err)
+		if err = s.uploadValidator(ctx, process, schema, nil); err != nil {
+			return errors.Wrap(err, "Cannot upload validator")
 		}
-		return validators
+		return nil
 	}
 	link := segments[0].Link
-	if m.compareFromStore(link.State, "pki", schema.PKI) != nil ||
-		m.compareFromStore(link.State, "types", schema.Types) != nil {
+	if canonicalCompare(link.State["pki"], schema.PKI) != nil ||
+		canonicalCompare(link.State["types"], schema.Types) != nil {
 		log.Infof("Validator or process %s has to be updated in store", process)
-		if err = m.uploadValidator(ctx, process, schema, &link); err != nil {
+		if err = s.uploadValidator(ctx, process, schema, &link); err != nil {
 			log.Warnf("Cannot upload validator: %s", err)
+			return err
 		}
 	}
 
-	return validators
-}
-
-func getCanonicalJSONFromData(rawData json.RawMessage) (json.RawMessage, error) {
-	var typedData interface{}
-	err := json.Unmarshal(rawData, &typedData)
-	if err != nil {
-		return nil, err
-	}
-	return cj.Marshal(typedData)
-}
-
-func (m *LocalGovernor) compareFromStore(meta map[string]interface{}, key string, fileData json.RawMessage) error {
-	metaData, ok := meta[key]
-	if !ok {
-		return errors.Errorf("%s is missing on segment", key)
-	}
-	canonStoreData, err := cj.Marshal(metaData)
-	if err != nil {
-		return errors.Wrapf(err, "cannot canonical marshal %s store data", key)
-	}
-	canonFileData, err := getCanonicalJSONFromData(fileData)
-	if err != nil {
-		return errors.Wrapf(err, "cannot canonical marshal %s file data", key)
-	}
-	if !bytes.Equal(canonStoreData, canonFileData) {
-		return errors.New("data different from file and from store")
-	}
 	return nil
 }
 
-func (m *LocalGovernor) uploadValidator(ctx context.Context, process string, schema rulesSchema, prevLink *cs.Link) error {
+func (s *GovernanceStore) uploadValidator(ctx context.Context, process string, schema RulesSchema, prevLink *cs.Link) error {
 	priority := 0.
 	mapID := ""
 	prevLinkHash := ""
@@ -352,11 +213,11 @@ func (m *LocalGovernor) uploadValidator(ctx context.Context, process string, sch
 		"types": schema.Types,
 	}
 	linkMeta := cs.LinkMeta{
-		Process:      governanceProcessName,
+		Process:      GovernanceProcessName,
 		MapID:        mapID,
 		PrevLinkHash: prevLinkHash,
 		Priority:     priority,
-		Tags:         []string{process, validatorTag},
+		Tags:         []string{process, ValidatorTag},
 	}
 
 	link := &cs.Link{
@@ -365,10 +226,34 @@ func (m *LocalGovernor) uploadValidator(ctx context.Context, process string, sch
 		Signatures: cs.Signatures{},
 	}
 
-	hash, err := m.adapter.CreateLink(ctx, link)
+	hash, err := s.store.CreateLink(ctx, link)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create link for process governance %s", process)
 	}
 	log.Infof("New validator rules store for process %s: %q", process, hash)
+	return nil
+}
+
+func canonicalCompare(metaData interface{}, fileData json.RawMessage) error {
+	if metaData == nil {
+		return errors.Errorf("missing data to compare")
+	}
+	canonStoreData, err := cj.Marshal(metaData)
+	if err != nil {
+		return errors.Wrapf(err, "cannot canonical marshal store data")
+	}
+
+	var typedData interface{}
+	if err := json.Unmarshal(fileData, &typedData); err != nil {
+		return err
+	}
+	canonFileData, err := cj.Marshal(typedData)
+	if err != nil {
+		return errors.Wrapf(err, "cannot canonical marshal file data")
+	}
+
+	if !bytes.Equal(canonStoreData, canonFileData) {
+		return errors.New("data different from file and from store")
+	}
 	return nil
 }

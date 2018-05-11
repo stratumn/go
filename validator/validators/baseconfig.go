@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators
 
 import (
 	"github.com/pkg/errors"
@@ -27,12 +27,12 @@ var (
 	ErrMissingLinkType = errors.New("validator requires a link type")
 )
 
-type validatorBaseConfig struct {
+type ValidatorBaseConfig struct {
 	Process  string
 	LinkType string
 }
 
-func newValidatorBaseConfig(process, linkType string) (*validatorBaseConfig, error) {
+func NewValidatorBaseConfig(process, linkType string) (*ValidatorBaseConfig, error) {
 	if len(process) == 0 {
 		return nil, ErrMissingProcess
 	}
@@ -40,13 +40,13 @@ func newValidatorBaseConfig(process, linkType string) (*validatorBaseConfig, err
 	if len(linkType) == 0 {
 		return nil, ErrMissingLinkType
 	}
-	return &validatorBaseConfig{Process: process, LinkType: linkType}, nil
+	return &ValidatorBaseConfig{Process: process, LinkType: linkType}, nil
 }
 
 // ShouldValidate returns true if the link matches the validator's process
 // and type. Otherwise the link is considered valid because this validator
 // doesn't apply to it.
-func (bv *validatorBaseConfig) ShouldValidate(link *cs.Link) bool {
+func (bv *ValidatorBaseConfig) ShouldValidate(link *cs.Link) bool {
 	if link.Meta.Process != bv.Process {
 		return false
 	}

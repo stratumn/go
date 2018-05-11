@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/validator/validators"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stretchr/testify/assert"
@@ -78,8 +79,8 @@ func TestSchemaValidatorConfig(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			baseCfg, _ := newValidatorBaseConfig(process, tt.linkType)
-			sv, err := newSchemaValidator(baseCfg, tt.schema)
+			baseCfg, _ := validators.NewValidatorBaseConfig(process, tt.linkType)
+			sv, err := validators.NewSchemaValidator(baseCfg, tt.schema)
 
 			if tt.valid {
 				assert.NotNil(t, sv)
@@ -99,9 +100,9 @@ func TestSchemaValidatorConfig(t *testing.T) {
 func TestSchemaValidator(t *testing.T) {
 	t.Parallel()
 	schema := []byte(testSellSchema)
-	baseCfg, err := newValidatorBaseConfig("p1", "sell")
+	baseCfg, err := validators.NewValidatorBaseConfig("p1", "sell")
 	require.NoError(t, err)
-	sv, err := newSchemaValidator(baseCfg, schema)
+	sv, err := validators.NewSchemaValidator(baseCfg, schema)
 	require.NoError(t, err)
 
 	rightState := map[string]interface{}{
@@ -145,10 +146,10 @@ func TestSchemaValidator(t *testing.T) {
 
 func TestSchemaHash(t *testing.T) {
 	t.Parallel()
-	baseCfg, err := newValidatorBaseConfig("foo", "bar")
+	baseCfg, err := validators.NewValidatorBaseConfig("foo", "bar")
 	require.NoError(t, err)
-	v1, err1 := newSchemaValidator(baseCfg, []byte(testSellSchema))
-	v2, err2 := newSchemaValidator(baseCfg, []byte(`{"type": "object","properties": {"seller": {"type": "string"}}, "required": ["seller"]}`))
+	v1, err1 := validators.NewSchemaValidator(baseCfg, []byte(testSellSchema))
+	v2, err2 := validators.NewSchemaValidator(baseCfg, []byte(`{"type": "object","properties": {"seller": {"type": "string"}}, "required": ["seller"]}`))
 
 	hash1, err1 := v1.Hash()
 	hash2, err2 := v2.Hash()

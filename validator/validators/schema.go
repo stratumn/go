@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators
 
 import (
 	"context"
@@ -29,27 +29,27 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// schemaValidator validates the json schema of a link's state.
-type schemaValidator struct {
-	Config     *validatorBaseConfig
+// SchemaValidator validates the json schema of a link's state.
+type SchemaValidator struct {
+	Config     *ValidatorBaseConfig
 	schema     *gojsonschema.Schema
 	SchemaHash types.Bytes32
 }
 
-func newSchemaValidator(baseConfig *validatorBaseConfig, schemaData []byte) (Validator, error) {
+func NewSchemaValidator(baseConfig *ValidatorBaseConfig, schemaData []byte) (Validator, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	return &schemaValidator{
+	return &SchemaValidator{
 		Config:     baseConfig,
 		schema:     schema,
 		SchemaHash: types.Bytes32(sha256.Sum256(schemaData)),
 	}, nil
 }
 
-func (sv schemaValidator) Hash() (*types.Bytes32, error) {
+func (sv SchemaValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(sv)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -58,12 +58,12 @@ func (sv schemaValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-func (sv schemaValidator) ShouldValidate(link *cs.Link) bool {
+func (sv SchemaValidator) ShouldValidate(link *cs.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
 
 // Validate validates the schema of a link's state.
-func (sv schemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
+func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
 	stateBytes, err := json.Marshal(link.State)
 	if err != nil {
 		return errors.WithStack(err)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators_test
 
 import (
 	"context"
@@ -24,6 +24,7 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/validator/validators"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,14 +33,13 @@ import (
 func TestScriptValidator(t *testing.T) {
 
 	testLink := cstesting.NewLinkBuilder().WithProcess("test").WithType("init").Build()
-	pluginFile := "testdata/custom_validator.so"
 
 	t.Run("New", func(t *testing.T) {
 
 		type testCase struct {
 			name      string
-			baseCfg   *validatorBaseConfig
-			scriptCfg *scriptConfig
+			baseCfg   *validators.ValidatorBaseConfig
+			scriptCfg *validators.ScriptConfig
 			valid     bool
 			err       string
 		}
@@ -47,11 +47,11 @@ func TestScriptValidator(t *testing.T) {
 		testCases := []testCase{
 			{
 				name: "valid-config",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "init",
 				},
-				scriptCfg: &scriptConfig{
+				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
 					Type: "go",
 				},
@@ -59,37 +59,37 @@ func TestScriptValidator(t *testing.T) {
 			},
 			{
 				name: "bad-script-type",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "invalid",
 				},
-				scriptCfg: &scriptConfig{
+				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
 					Type: "bad",
 				},
 				valid: false,
-				err:   errors.Errorf(ErrBadScriptType, "bad", ValidScriptTypes).Error(),
+				err:   errors.Errorf(validators.ErrBadScriptType, "bad", validators.ValidScriptTypes).Error(),
 			},
 			{
 				name: "script-not-found",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "invalid",
 				},
-				scriptCfg: &scriptConfig{
+				scriptCfg: &validators.ScriptConfig{
 					File: "test",
 					Type: "go",
 				},
 				valid: false,
-				err:   errors.Wrapf(errors.New("plugin.Open(\"test\"): realpath failed"), ErrLoadingPlugin, "test", "invalid").Error(),
+				err:   errors.Wrapf(errors.New("plugin.Open(\"test\"): realpath failed"), validators.ErrLoadingPlugin, "test", "invalid").Error(),
 			},
 			{
 				name: "unknown-script-validator-for-linkType",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "unknown",
 				},
-				scriptCfg: &scriptConfig{
+				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
 					Type: "go",
 				},
@@ -97,22 +97,22 @@ func TestScriptValidator(t *testing.T) {
 			},
 			{
 				name: "bad-script-function-signature",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "badSignature",
 				},
-				scriptCfg: &scriptConfig{
+				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
 					Type: "go",
 				},
 				valid: false,
-				err:   errors.Wrapf(errors.New(ErrBadPlugin), ErrLoadingPlugin, "test", "badSignature").Error(),
+				err:   errors.Wrapf(errors.New(validators.ErrBadPlugin), validators.ErrLoadingPlugin, "test", "badSignature").Error(),
 			},
 		}
 
 		for _, tt := range testCases {
 			t.Run(tt.name, func(t *testing.T) {
-				_, err := newScriptValidator(tt.baseCfg, tt.scriptCfg, "")
+				_, err := validators.NewScriptValidator(tt.baseCfg, tt.scriptCfg, "")
 				if tt.valid {
 					assert.NoError(t, err)
 				} else {
@@ -128,25 +128,25 @@ func TestScriptValidator(t *testing.T) {
 
 	t.Run("Hash", func(t *testing.T) {
 		// in this test, we try to load the same symbol from different files to check that the hash are different
-		baseCfg, err := newValidatorBaseConfig("test", "init")
+		baseCfg, err := validators.NewValidatorBaseConfig("test", "init")
 		require.NoError(t, err)
 
 		byzantinePluginFile, err := testutil.CompileGoPlugin(pluginsPath, "byzantine_validator.go")
 		require.NoError(t, err)
 		defer os.Remove(byzantinePluginFile)
 
-		scriptCfg1 := &scriptConfig{
+		scriptCfg1 := &validators.ScriptConfig{
 			Type: "go",
 			File: pluginFile,
 		}
-		scriptCfg2 := &scriptConfig{
+		scriptCfg2 := &validators.ScriptConfig{
 			Type: "go",
 			File: byzantinePluginFile,
 		}
 
-		v1, err := newScriptValidator(baseCfg, scriptCfg1, "")
+		v1, err := validators.NewScriptValidator(baseCfg, scriptCfg1, "")
 		require.NoError(t, err)
-		v2, err := newScriptValidator(baseCfg, scriptCfg2, "")
+		v2, err := validators.NewScriptValidator(baseCfg, scriptCfg2, "")
 		require.NoError(t, err)
 
 		hash1, err1 := v1.Hash()
@@ -163,12 +163,12 @@ func TestScriptValidator(t *testing.T) {
 		type testCase struct {
 			name      string
 			ret       bool
-			baseCfg   *validatorBaseConfig
-			scriptCfg *scriptConfig
+			baseCfg   *validators.ValidatorBaseConfig
+			scriptCfg *validators.ScriptConfig
 			link      *cs.Link
 		}
 
-		scriptConfig := &scriptConfig{
+		scriptConfig := &validators.ScriptConfig{
 			File: pluginFile,
 			Type: "go",
 		}
@@ -177,7 +177,7 @@ func TestScriptValidator(t *testing.T) {
 			{
 				name: "has to validate",
 				ret:  true,
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "init",
 				},
@@ -186,7 +186,7 @@ func TestScriptValidator(t *testing.T) {
 			{
 				name: "bad process",
 				ret:  false,
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "bad",
 					LinkType: "init",
 				},
@@ -195,7 +195,7 @@ func TestScriptValidator(t *testing.T) {
 			{
 				name: "bad type",
 				ret:  false,
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "invalid",
 				},
@@ -205,7 +205,7 @@ func TestScriptValidator(t *testing.T) {
 
 		for _, tt := range testCases {
 			t.Run(tt.name, func(t *testing.T) {
-				v, err := newScriptValidator(tt.baseCfg, scriptConfig, "")
+				v, err := validators.NewScriptValidator(tt.baseCfg, scriptConfig, "")
 				require.NoError(t, err)
 				assert.Equal(t, tt.ret, v.ShouldValidate(tt.link))
 			})
@@ -217,19 +217,19 @@ func TestScriptValidator(t *testing.T) {
 		type testCase struct {
 			name     string
 			testLink *cs.Link
-			baseCfg  *validatorBaseConfig
+			baseCfg  *validators.ValidatorBaseConfig
 			valid    bool
 			err      string
 		}
 
-		scriptCfg := &scriptConfig{
+		scriptCfg := &validators.ScriptConfig{
 			File: pluginFile,
 			Type: "go",
 		}
 		testCases := []testCase{
 			{
 				name: "valid-link",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "init",
 				},
@@ -238,7 +238,7 @@ func TestScriptValidator(t *testing.T) {
 			},
 			{
 				name: "fetch-link",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "fetchLink",
 				},
@@ -247,7 +247,7 @@ func TestScriptValidator(t *testing.T) {
 			},
 			{
 				name: "validation-fails",
-				baseCfg: &validatorBaseConfig{
+				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
 					LinkType: "invalid",
 				},
@@ -258,7 +258,7 @@ func TestScriptValidator(t *testing.T) {
 		}
 		for _, tt := range testCases {
 			t.Run(tt.name, func(t *testing.T) {
-				sv, err := newScriptValidator(tt.baseCfg, scriptCfg, "")
+				sv, err := validators.NewScriptValidator(tt.baseCfg, scriptCfg, "")
 				require.NoError(t, err)
 				err = sv.Validate(context.Background(), dummystore.New(nil), tt.testLink)
 				if tt.valid {

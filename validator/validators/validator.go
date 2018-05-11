@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators
 
 import (
 	"context"
@@ -21,20 +21,6 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
-
-const (
-	// DefaultFilename is the default filename for the file with the rules of validation
-	DefaultFilename = "/data/validation/rules.json"
-
-	// DefaultPluginsDirectory is the default directory where validation plugins are located
-	DefaultPluginsDirectory = "/data/validation/"
-)
-
-// Config contains the path of the rules JSON file and the directory where the validator scripts are located.
-type Config struct {
-	RulesPath   string
-	PluginsPath string
-}
 
 // Validator defines a validator that has an internal state, identified by
 // its hash.
@@ -51,3 +37,6 @@ type Validator interface {
 	// to a block.
 	Hash() (*types.Bytes32, error)
 }
+
+//Validators is an array of Validator.
+type Validators []Validator

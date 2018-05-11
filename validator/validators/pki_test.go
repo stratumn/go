@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators_test
 
 import (
 	"context"
@@ -23,6 +23,7 @@ import (
 	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/validator/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ed25519"
@@ -44,12 +45,12 @@ func TestPKIValidator(t *testing.T) {
 		SignWithKey(priv2).
 		Build()
 
-	pki := &PKI{
-		"Alice Van den Budenmayer": &Identity{
+	pki := &validators.PKI{
+		"Alice Van den Budenmayer": &validators.Identity{
 			Keys:  []string{link1.Signatures[0].PublicKey},
 			Roles: []string{"employee"},
 		},
-		"Bob Wagner": &Identity{
+		"Bob Wagner": &validators.Identity{
 			Keys:  []string{link2.Signatures[0].PublicKey},
 			Roles: []string{"manager", "it"},
 		},
@@ -109,9 +110,9 @@ func TestPKIValidator(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		baseCfg, err := newValidatorBaseConfig(process, linkType)
+		baseCfg, err := validators.NewValidatorBaseConfig(process, linkType)
 		require.NoError(t, err)
-		sv := newPkiValidator(baseCfg, tt.requiredSignatures, pki)
+		sv := validators.NewPkiValidator(baseCfg, tt.requiredSignatures, pki)
 
 		t.Run(tt.name, func(t *testing.T) {
 			err := sv.Validate(context.Background(), nil, tt.link)
@@ -133,24 +134,24 @@ func TestPKIHash(t *testing.T) {
 	pub1 := base64.StdEncoding.EncodeToString(priv1.Public().(ed25519.PublicKey))
 	pub2 := base64.StdEncoding.EncodeToString(priv2.Public().(ed25519.PublicKey))
 
-	pki1 := &PKI{
-		"Alice": &Identity{
+	pki1 := &validators.PKI{
+		"Alice": &validators.Identity{
 			Keys:  []string{pub1},
 			Roles: []string{"employee"},
 		},
 	}
-	pki2 := &PKI{
-		"Bob": &Identity{
+	pki2 := &validators.PKI{
+		"Bob": &validators.Identity{
 			Keys:  []string{pub2},
 			Roles: []string{"manager", "it"},
 		},
 	}
 
-	baseCfg, err := newValidatorBaseConfig("foo", "bar")
+	baseCfg, err := validators.NewValidatorBaseConfig("foo", "bar")
 	require.NoError(t, err)
-	v1 := newPkiValidator(baseCfg, []string{"a", "b"}, pki1)
-	v2 := newPkiValidator(baseCfg, []string{"a", "b"}, pki2)
-	v3 := newPkiValidator(baseCfg, []string{"c", "d"}, pki1)
+	v1 := validators.NewPkiValidator(baseCfg, []string{"a", "b"}, pki1)
+	v2 := validators.NewPkiValidator(baseCfg, []string{"a", "b"}, pki2)
+	v3 := validators.NewPkiValidator(baseCfg, []string{"c", "d"}, pki1)
 
 	hash1, err1 := v1.Hash()
 	hash2, err2 := v2.Hash()

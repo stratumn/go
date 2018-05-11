@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators_test
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/validator/validators"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
@@ -109,7 +110,7 @@ func TestTransitionValidator(t *testing.T) {
 		valid       bool
 		err         string
 		link        *cs.Link
-		transitions allowedTransitions
+		transitions validators.AllowedTransitions
 	}
 
 	testCases := []testCase{
@@ -166,9 +167,9 @@ func TestTransitionValidator(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			baseCfg, err := newValidatorBaseConfig(process, tt.link.Meta.Type)
+			baseCfg, err := validators.NewValidatorBaseConfig(process, tt.link.Meta.Type)
 			require.NoError(t, err)
-			v := newTransitionValidator(baseCfg, tt.transitions)
+			v := validators.NewTransitionValidator(baseCfg, tt.transitions)
 
 			err = v.Validate(context.Background(), store, tt.link)
 			if tt.valid {
@@ -188,12 +189,12 @@ func TestTransitionShouldValidate(t *testing.T) {
 	type testCase struct {
 		name string
 		ret  bool
-		conf *validatorBaseConfig
+		conf *validators.ValidatorBaseConfig
 		link *cs.Link
 	}
 
-	newConf := func(process, linkType string) *validatorBaseConfig {
-		cfg, err := newValidatorBaseConfig(process, linkType)
+	NewConf := func(process, linkType string) *validators.ValidatorBaseConfig {
+		cfg, err := validators.NewValidatorBaseConfig(process, linkType)
 		require.NoError(t, err)
 		return cfg
 	}
@@ -202,26 +203,26 @@ func TestTransitionShouldValidate(t *testing.T) {
 		{
 			name: "has to validate",
 			ret:  true,
-			conf: newConf(links.createdProduct.Meta.Process, links.createdProduct.Meta.Type),
+			conf: NewConf(links.createdProduct.Meta.Process, links.createdProduct.Meta.Type),
 			link: links.createdProduct,
 		},
 		{
 			name: "bad process",
 			ret:  false,
-			conf: newConf("foo", links.createdProduct.Meta.Type),
+			conf: NewConf("foo", links.createdProduct.Meta.Type),
 			link: links.createdProduct,
 		},
 		{
 			name: "bad state",
 			ret:  false,
-			conf: newConf(links.createdProduct.Meta.Process, "bar"),
+			conf: NewConf(links.createdProduct.Meta.Process, "bar"),
 			link: links.createdProduct,
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			v := newTransitionValidator(tt.conf, nil)
+			v := validators.NewTransitionValidator(tt.conf, nil)
 			assert.Equal(t, tt.ret, v.ShouldValidate(tt.link))
 		})
 	}
@@ -232,10 +233,10 @@ func TestTransitionHash(t *testing.T) {
 	t.Parallel()
 	_, links := populateStore(t)
 
-	baseCfg, err := newValidatorBaseConfig(process, links.finalProduct.Meta.Type)
+	baseCfg, err := validators.NewValidatorBaseConfig(process, links.finalProduct.Meta.Type)
 	require.NoError(t, err)
-	v1 := newTransitionValidator(baseCfg, finalProductTransitions)
-	v2 := newTransitionValidator(baseCfg, createdProductTransitions)
+	v1 := validators.NewTransitionValidator(baseCfg, finalProductTransitions)
+	v2 := validators.NewTransitionValidator(baseCfg, createdProductTransitions)
 
 	hash1, err1 := v1.Hash()
 	hash2, err2 := v2.Hash()

@@ -35,12 +35,12 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-var validator *tmtypes.Validator
+var tmvalidator *tmtypes.Validator
 var validatorPrivKey crypto.PrivKeyEd25519
 
 func init() {
 	validatorPrivKey = crypto.GenPrivKeyEd25519()
-	validator = &tmtypes.Validator{
+	tmvalidator = &tmtypes.Validator{
 		Address:     validatorPrivKey.PubKey().Address(),
 		PubKey:      validatorPrivKey.PubKey(),
 		VotingPower: 42,
@@ -70,7 +70,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	//  * Block11 contains one valid link -> no evidence should be generated because we stop before block 13
 	//  * Block12 contains one valid link -> no evidence should be generated because we stop before block 13
 
-	validatorSet := &tmtypes.ValidatorSet{Validators: []*tmtypes.Validator{validator}}
+	validatorSet := &tmtypes.ValidatorSet{Validators: []*tmtypes.Validator{tmvalidator}}
 	validatorsHash := validatorSet.Hash()
 
 	appHashes := make([][]byte, 13)
@@ -359,11 +359,11 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 // It simulates nodes signing a header and is crucial for the proof.
 func vote(header *tmtypes.Header) []*evidences.TendermintVote {
 	v := &evidences.TendermintVote{
-		PubKey: &validator.PubKey,
+		PubKey: &tmvalidator.PubKey,
 		Vote: &tmtypes.Vote{
 			BlockID:          tmtypes.BlockID{Hash: header.Hash()},
 			Height:           header.Height,
-			ValidatorAddress: validator.PubKey.Address(),
+			ValidatorAddress: tmvalidator.PubKey.Address(),
 			ValidatorIndex:   0,
 		},
 	}

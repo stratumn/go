@@ -40,6 +40,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/alecthomas/template"
+  packages = [
+    ".",
+    "parse"
+  ]
+  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/alecthomas/units"
+  packages = ["."]
+  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
+  branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
@@ -442,6 +457,7 @@
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
+    "log",
     "model"
   ]
   revision = "38c53a9f4bfcd932d1b00bfc65e256a7fba6b37a"
@@ -752,7 +768,9 @@
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
+    "windows/registry",
+    "windows/svc/eventlog"
   ]
   revision = "3b87a42e500a6dc65dae1a55d0b641295971163e"
 
@@ -828,6 +846,12 @@
   version = "v1.7.5"
 
 [[projects]]
+  name = "gopkg.in/alecthomas/kingpin.v2"
+  packages = ["."]
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
+
+[[projects]]
   name = "gopkg.in/dancannon/gorethink.v4"
   packages = ["."]
   revision = "eec03bd47cfc11965a9de004ff86add2a88e65b0"
@@ -858,6 +882,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ac85a758489fad24a5ce299e055066c26ec2040df7b968bb523c58da45aae5d0"
+  inputs-digest = "7f4ce2f1a24c7cbe7c6ba7977262a0f8a241d14bf2ed1d59698bce8fe52f868c"
   solver-name = "gps-cdcl"
   solver-version = 1

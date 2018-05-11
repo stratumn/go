@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validator_test
 
 import (
 	"fmt"
@@ -22,31 +22,55 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validator/testutils"
+	"github.com/stratumn/go-indigocore/validator/validators"
 )
+
+var pluginFile string
+
+const (
+	pluginsPath      = "testutils/testdata"
+	pluginSourceFile = "custom_validator.go"
+)
+
+func TestMain(m *testing.M) {
+	var res int
+	defer os.Exit(res)
+
+	var err error
+	pluginFile, err = testutil.CompileGoPlugin(pluginsPath, pluginSourceFile)
+	if err != nil {
+		fmt.Println("could not launch validator tests: error while compiling validation plugin")
+		os.Exit(2)
+	}
+	defer os.Remove(pluginFile)
+
+	res = m.Run()
+}
 
 func TestLoadConfig_Success(t *testing.T) {
 
-	pluginsPath = "testdata"
-
 	t.Run("schema & signatures & transitions & plugins", func(T *testing.T) {
-		testFile := utils.CreateTempFile(t, ValidJSONConfig)
+		testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath:   testFile,
 			PluginsPath: pluginsPath,
 		}, nil)
 
 		assert.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validators)
+		assert.NotNil(t, validatorList)
 
 		var schemaValidatorCount, pkiValidatorCount, transitionValidatorCount int
-		for _, v := range validators {
-			if _, ok := v.(*pkiValidator); ok {
+		for _, v := range validatorList {
+			if _, ok := v.(*validators.PKIValidator); ok {
 				pkiValidatorCount++
-			} else if _, ok := v.(*schemaValidator); ok {
+			} else if _, ok := v.(*validators.SchemaValidator); ok {
 				schemaValidatorCount++
-			} else if _, ok := v.(*transitionValidator); ok {
+			} else if _, ok := v.(*validators.TransitionValidator); ok {
 				transitionValidatorCount++
 			}
 		}
@@ -56,14 +80,14 @@ func TestLoadConfig_Success(t *testing.T) {
 	})
 
 	t.Run("schema & signatures & transitions & plugins with listener", func(T *testing.T) {
-		testFile := utils.CreateTempFile(t, ValidJSONConfig)
+		testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 		defer os.Remove(testFile)
 		validatorProcessCount := 0
 		validatorCount := 0
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath:   testFile,
 			PluginsPath: pluginsPath,
-		}, func(process string, schema rulesSchema, validators []Validator) {
+		}, func(process string, schema validator.RulesSchema, validators validators.Validators) {
 			validatorProcessCount++
 			validatorCount = validatorCount + len(validators)
 		})
@@ -93,19 +117,19 @@ func TestLoadConfig_Success(t *testing.T) {
 					}
 			  	}
 			}
-		}`, AlicePublicKey)
+		}`, testutils.AlicePublicKey)
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validators)
+		assert.NotNil(t, validatorList)
 
-		require.Len(t, validators, 1)
-		assert.IsType(t, &schemaValidator{}, validators[0])
+		require.Len(t, validatorList, 1)
+		assert.IsType(t, &validators.SchemaValidator{}, validatorList[0])
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -127,19 +151,19 @@ func TestLoadConfig_Success(t *testing.T) {
 					}
 			    }
 			}
-		}`, AlicePublicKey)
+		}`, testutils.AlicePublicKey)
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validators)
+		assert.NotNil(t, validatorList)
 
-		require.Len(t, validators, 1)
-		assert.IsType(t, &schemaValidator{}, validators[0])
+		require.Len(t, validatorList, 1)
+		assert.IsType(t, &validators.SchemaValidator{}, validatorList[0])
 	})
 
 	t.Run("No PKI", func(T *testing.T) {
@@ -159,15 +183,15 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validators)
+		assert.NotNil(t, validatorList)
 
-		require.Len(t, validators, 1)
-		assert.IsType(t, &schemaValidator{}, validators[0])
+		require.Len(t, validatorList, 1)
+		assert.IsType(t, &validators.SchemaValidator{}, validatorList[0])
 	})
 
 	t.Run("Transitions only", func(T *testing.T) {
@@ -185,15 +209,15 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validators)
+		assert.NotNil(t, validatorList)
 
-		require.Len(t, validators, 1)
-		assert.IsType(t, &transitionValidator{}, validators[0])
+		require.Len(t, validatorList, 1)
+		assert.IsType(t, &validators.TransitionValidator{}, validatorList[0])
 	})
 
 }
@@ -213,12 +237,12 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		}`
 		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
-		assert.Nil(t, validators)
-		assert.EqualError(t, err, ErrMissingProcess.Error())
+		assert.Nil(t, validatorList)
+		assert.EqualError(t, err, validators.ErrMissingProcess.Error())
 	})
 
 	t.Run("Missing link type", func(T *testing.T) {
@@ -234,12 +258,12 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		}`
 		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
-		validators, err := LoadConfig(&Config{
+		validatorList, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
-		assert.Nil(t, validators)
-		assert.EqualError(t, err, ErrMissingLinkType.Error())
+		assert.Nil(t, validatorList)
+		assert.EqualError(t, err, validators.ErrMissingLinkType.Error())
 	})
 
 	t.Run("Missing schema", func(T *testing.T) {
@@ -253,12 +277,12 @@ func TestLoadValidators_Error(t *testing.T) {
 			}
 		}`
 		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		assert.Nil(t, validators)
-		assert.EqualError(t, err, ErrInvalidValidator.Error())
+		assert.EqualError(t, err, validator.ErrInvalidValidator.Error())
 	})
 
 	t.Run("Bad signature validator", func(T *testing.T) {
@@ -274,7 +298,7 @@ func TestLoadValidators_Error(t *testing.T) {
 		}`
 		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
@@ -295,7 +319,7 @@ func TestLoadValidators_Error(t *testing.T) {
 		}`
 		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
@@ -320,7 +344,7 @@ func TestLoadValidators_Error(t *testing.T) {
 		}`
 		testFile := utils.CreateTempFile(t, invalidValidatorConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
@@ -345,7 +369,7 @@ func TestLoadPKI_Error(t *testing.T) {
 		`
 		testFile := utils.CreateTempFile(t, noPKIConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 
@@ -375,7 +399,7 @@ func TestLoadPKI_Error(t *testing.T) {
 				      `
 		testFile := utils.CreateTempFile(t, invalidPKIConfig)
 		defer os.Remove(testFile)
-		validators, err := LoadConfig(&Config{
+		validators, err := validator.LoadConfig(&validator.Config{
 			RulesPath: testFile,
 		}, nil)
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators
 
 import (
 	"context"
@@ -26,22 +26,22 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
-type allowedTransitions = []string
+type AllowedTransitions = []string
 
-// transitionValidator defines the source state where a transition can be applied and its destination state.
-type transitionValidator struct {
-	Config      *validatorBaseConfig
-	Transitions allowedTransitions
+// TransitionValidator defines the source state where a transition can be applied and its destination state.
+type TransitionValidator struct {
+	Config      *ValidatorBaseConfig
+	Transitions AllowedTransitions
 }
 
-func newTransitionValidator(baseConfig *validatorBaseConfig, transitions allowedTransitions) Validator {
-	return &transitionValidator{
+func NewTransitionValidator(baseConfig *ValidatorBaseConfig, transitions AllowedTransitions) Validator {
+	return &TransitionValidator{
 		Config:      baseConfig,
 		Transitions: transitions,
 	}
 }
 
-func (tv transitionValidator) Hash() (*types.Bytes32, error) {
+func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(tv)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -50,14 +50,14 @@ func (tv transitionValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-func (tv transitionValidator) ShouldValidate(link *cs.Link) bool {
+func (tv TransitionValidator) ShouldValidate(link *cs.Link) bool {
 	return tv.Config.ShouldValidate(link)
 }
 
 // Validate checks that the link follows a valid transition.
 // If there is no previous link, an empty link has to be allowed,
 // Otherwise the meta.type of the prevLink must exist in authorized previous statement.
-func (tv transitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *cs.Link) error {
+func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *cs.Link) error {
 	error := func(src string) error {
 		return errors.Errorf("no transition found %s --> %s", src, tv.Config.LinkType)
 	}

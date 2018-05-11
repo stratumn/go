@@ -24,6 +24,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validator/validators"
 	"github.com/stratumn/merkle"
 )
 
@@ -34,7 +35,7 @@ type State struct {
 	// The same validator is used for a whole commit
 	// When beginning a new block, the validator can
 	// be updated.
-	validator validator.Validator
+	validator validators.Validator
 
 	adapter            store.Adapter
 	deliveredLinks     store.Batch

@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator_test
+package validators_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -30,6 +31,8 @@ import (
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/utils"
 	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validator/testutils"
+	"github.com/stratumn/go-indigocore/validator/validators"
 )
 
 type testCase struct {
@@ -41,7 +44,7 @@ type testCase struct {
 var pluginFile string
 
 const (
-	pluginsPath      = "testdata"
+	pluginsPath      = "../testutils/testdata"
 	pluginSourceFile = "custom_validator.go"
 )
 
@@ -52,7 +55,8 @@ func TestMain(m *testing.M) {
 	var err error
 	pluginFile, err = testutil.CompileGoPlugin(pluginsPath, pluginSourceFile)
 	if err != nil {
-		panic("could not launch validator tests: error while compiling validation plugin")
+		fmt.Println("could not launch validator tests: error while compiling validation plugin")
+		os.Exit(2)
 	}
 	defer os.Remove(pluginFile)
 
@@ -67,7 +71,7 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		"lot":          "painting",
 		"initialPrice": 12,
 	}
-	priv, _, err := keys.ParseSecretKey([]byte(validator.AlicePrivateKey))
+	priv, _, err := keys.ParseSecretKey([]byte(testutils.AlicePrivateKey))
 	initAuctionLink := cstesting.NewLinkBuilder().
 		WithProcess("auction").
 		WithType("init").
@@ -136,7 +140,7 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 }
 
 func TestValidator(t *testing.T) {
-	testFile := utils.CreateTempFile(t, validator.ValidJSONConfig)
+	testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 	defer os.Remove(testFile)
 
 	children, err := validator.LoadConfig(&validator.Config{
@@ -145,7 +149,7 @@ func TestValidator(t *testing.T) {
 	}, nil)
 	require.NoError(t, err, "LoadConfig()")
 
-	v := validator.NewMultiValidator(children)
+	v := validators.NewMultiValidator(children)
 
 	store, testCases := initTestCases(t)
 	for _, tt := range testCases {

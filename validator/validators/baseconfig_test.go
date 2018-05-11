@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators_test
 
 import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-indigocore/validator/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,13 +42,13 @@ func TestBaseConfig(t *testing.T) {
 		process:       "",
 		linkType:      linkType,
 		valid:         false,
-		expectedError: ErrMissingProcess,
+		expectedError: validators.ErrMissingProcess,
 	}, {
 		id:            "missing-link-type",
 		process:       process,
 		linkType:      "",
 		valid:         false,
-		expectedError: ErrMissingLinkType,
+		expectedError: validators.ErrMissingLinkType,
 	}, {
 		id:       "valid-config",
 		process:  process,
@@ -58,7 +59,7 @@ func TestBaseConfig(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.id, func(t *testing.T) {
-			cfg, err := newValidatorBaseConfig(
+			cfg, err := validators.NewValidatorBaseConfig(
 				tt.process,
 				tt.linkType,
 			)
@@ -80,7 +81,7 @@ func TestBaseConfig(t *testing.T) {
 func TestBaseConfig_ShouldValidate(t *testing.T) {
 	process := "p1"
 	linkType := "sell"
-	cfg, err := newValidatorBaseConfig(
+	cfg, err := validators.NewValidatorBaseConfig(
 		process,
 		linkType,
 	)

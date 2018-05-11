@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validators_test
 
 import (
 	"context"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/validator/validators"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,67 +36,67 @@ const validJSON = `
 `
 
 func TestMultiValidator_New(t *testing.T) {
-	mv := NewMultiValidator([]Validator{})
-	assert.Len(t, mv.(*multiValidator).validators, 0)
+	mv := validators.NewMultiValidator([]validators.Validator{})
+	assert.NotNil(t, mv)
 }
 
 func TestMultiValidator_Hash(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Produces different hashes based on internal validators", func(t *testing.T) {
-		baseConfig := &validatorBaseConfig{Process: "p"}
+		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
 		testHash1 := testutil.RandomHash()
 		testHash2 := testutil.RandomHash()
 
 		type testCase struct {
 			name string
-			v1   Validator
-			v2   Validator
-			v3   Validator
+			v1   validators.Validator
+			v2   validators.Validator
+			v3   validators.Validator
 		}
 
 		testCases := []testCase{
 			{
 				name: "With schema validator",
-				v1:   &schemaValidator{Config: baseConfig, SchemaHash: *testHash1},
-				v2:   &schemaValidator{Config: baseConfig, SchemaHash: *testHash1},
-				v3:   &schemaValidator{Config: baseConfig, SchemaHash: *testHash2},
+				v1:   &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testHash1},
+				v2:   &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testHash1},
+				v3:   &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testHash2},
 			},
 			{
 				name: "With pki validator",
-				v1:   &pkiValidator{Config: baseConfig, PKI: &PKI{"a": &Identity{}}},
-				v2:   &pkiValidator{Config: baseConfig, PKI: &PKI{"a": &Identity{}}},
-				v3:   &pkiValidator{Config: baseConfig, PKI: &PKI{"b": &Identity{}}},
+				v1:   &validators.PKIValidator{Config: baseConfig, PKI: &validators.PKI{"a": &validators.Identity{}}},
+				v2:   &validators.PKIValidator{Config: baseConfig, PKI: &validators.PKI{"a": &validators.Identity{}}},
+				v3:   &validators.PKIValidator{Config: baseConfig, PKI: &validators.PKI{"b": &validators.Identity{}}},
 			},
 			{
 				name: "With transition validator",
-				v1:   &transitionValidator{Config: baseConfig, Transitions: []string{"one"}},
-				v2:   &transitionValidator{Config: baseConfig, Transitions: []string{"one"}},
-				v3:   &transitionValidator{Config: baseConfig, Transitions: []string{"two"}},
+				v1:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"one"}},
+				v2:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"one"}},
+				v3:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"two"}},
 			},
 			{
 				name: "With script validator",
-				v1:   &scriptValidator{Config: baseConfig, ScriptHash: *testHash1},
-				v2:   &scriptValidator{Config: baseConfig, ScriptHash: *testHash1},
-				v3:   &scriptValidator{Config: baseConfig, ScriptHash: *testHash2},
+				v1:   &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testHash1},
+				v2:   &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testHash1},
+				v3:   &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testHash2},
 			},
 		}
 
 		for _, tt := range testCases {
 			t.Run(tt.name, func(t *testing.T) {
-				mv1 := NewMultiValidator([]Validator{tt.v1})
+				mv1 := validators.NewMultiValidator([]validators.Validator{tt.v1})
 
 				h1, err := mv1.Hash()
 				assert.NoError(t, err)
 				assert.NotNil(t, h1)
 
-				mv2 := NewMultiValidator([]Validator{tt.v2})
+				mv2 := validators.NewMultiValidator([]validators.Validator{tt.v2})
 
 				h2, err := mv2.Hash()
 				assert.NoError(t, err)
 				assert.True(t, h1.Equals(h2))
 
-				mv3 := NewMultiValidator([]Validator{tt.v3})
+				mv3 := validators.NewMultiValidator([]validators.Validator{tt.v3})
 
 				h3, err := mv3.Hash()
 				assert.NoError(t, err)
@@ -105,18 +106,18 @@ func TestMultiValidator_Hash(t *testing.T) {
 	})
 
 	t.Run("Uses child validators' Hash() function", func(t *testing.T) {
-		baseConfig := &validatorBaseConfig{Process: "p"}
-		schemaValidator := &schemaValidator{Config: baseConfig, SchemaHash: *testutil.RandomHash()}
-		transitionValidator := newTransitionValidator(baseConfig, []string{"king"})
-		pkiValidator := newPkiValidator(baseConfig, []string{"romeo"}, &PKI{})
-		scriptValidator := &scriptValidator{Config: baseConfig, ScriptHash: *testutil.RandomHash()}
+		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
+		schemaValidator := &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testutil.RandomHash()}
+		transitionValidator := validators.NewTransitionValidator(baseConfig, []string{"king"})
+		pkiValidator := validators.NewPkiValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
+		scriptValidator := &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testutil.RandomHash()}
 
-		mv := NewMultiValidator([]Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator})
+		mv := validators.NewMultiValidator([]validators.Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator})
 		mvHash, err := mv.Hash()
 		assert.NoError(t, err)
 
 		b := make([]byte, 0)
-		for _, validator := range []Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator} {
+		for _, validator := range []validators.Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator} {
 			validatorHash, err := validator.Hash()
 			assert.NoError(t, err)
 			b = append(b, validatorHash[:]...)
@@ -141,24 +142,22 @@ const testMessageSchema = `
 
 func TestMultiValidator_Validate(t *testing.T) {
 	t.Parallel()
-	baseConfig1, _ := newValidatorBaseConfig("p", "a1")
-	baseConfig2, _ := newValidatorBaseConfig("p", "a2")
-	baseConfig3, _ := newValidatorBaseConfig("p", "a1")
-	baseConfig4, _ := newValidatorBaseConfig("p", "a2")
+	baseConfig1, _ := validators.NewValidatorBaseConfig("p", "a1")
+	baseConfig2, _ := validators.NewValidatorBaseConfig("p", "a2")
+	baseConfig3, _ := validators.NewValidatorBaseConfig("p", "a1")
+	baseConfig4, _ := validators.NewValidatorBaseConfig("p", "a2")
 
-	svCfg1, _ := newSchemaValidator(baseConfig1, []byte(testMessageSchema))
-	svCfg2, _ := newSchemaValidator(baseConfig2, []byte(testMessageSchema))
+	svCfg1, _ := validators.NewSchemaValidator(baseConfig1, []byte(testMessageSchema))
+	svCfg2, _ := validators.NewSchemaValidator(baseConfig2, []byte(testMessageSchema))
 
-	sigVCfg1 := newPkiValidator(baseConfig3, []string{"alice"}, &PKI{
-		"alice": &Identity{
+	sigVCfg1 := validators.NewPkiValidator(baseConfig3, []string{"alice"}, &validators.PKI{
+		"alice": &validators.Identity{
 			Keys: []string{"TESTKEY1"},
 		},
 	})
-	sigVCfg2 := newPkiValidator(baseConfig4, []string{}, &PKI{})
+	sigVCfg2 := validators.NewPkiValidator(baseConfig4, []string{}, &validators.PKI{})
 
-	mv := multiValidator{
-		validators: []Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2},
-	}
+	mv := validators.NewMultiValidator([]validators.Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2})
 
 	testState := map[string]interface{}{"message": "test"}
 
