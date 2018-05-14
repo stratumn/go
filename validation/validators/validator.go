@@ -40,3 +40,5 @@ type Validator interface {
 
 //Validators is an array of Validator.
 type Validators []Validator
+
+type ProcessesValidators map[string]Validators

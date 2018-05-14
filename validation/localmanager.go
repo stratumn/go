@@ -142,11 +142,14 @@ func (m *LocalManager) RemoveListener(c <-chan validators.Validator) {
 
 // GetValidators returns the list of validators for each process by parsing a local file.
 // The validators are updated in the store according to local changes.
-func (m *LocalManager) GetValidators(ctx context.Context) (processesValidators []validators.Validators, err error) {
+func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
+	var err error
+	processesValidators := make(validators.ProcessesValidators, 0)
+
 	if m.validationCfg.RulesPath != "" {
 		_, err = LoadConfig(m.validationCfg, func(process string, schema RulesSchema, validators validators.Validators) {
 			m.store.UpdateValidator(ctx, process, schema)
-			processesValidators = append(processesValidators, validators)
+			processesValidators[process] = validators
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "Cannot load validator rules file %s", m.validationCfg.RulesPath)
@@ -156,15 +159,11 @@ func (m *LocalManager) GetValidators(ctx context.Context) (processesValidators [
 	return processesValidators, err
 }
 
-func (m *LocalManager) updateCurrent(validatorsList []validators.Validators) {
+func (m *LocalManager) updateCurrent(validatorsMap validators.ProcessesValidators) {
 	m.listenersMutex.RLock()
 	defer m.listenersMutex.RUnlock()
 
-	v4ch := make(validators.Validators, 0)
-	for _, v := range validatorsList {
-		v4ch = append(v4ch, v...)
-	}
-	m.current = validators.NewMultiValidator(v4ch)
+	m.current = validators.NewMultiValidator(validatorsMap)
 	for _, listener := range m.listeners {
 		go func(listener chan validators.Validator) {
 			listener <- m.current

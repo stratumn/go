@@ -130,7 +130,7 @@ func TestStore(t *testing.T) {
 			s := validation.NewStore(a, &validation.Config{})
 			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
 				Types: auctionTypes,
-				PKI:   *auctionPKI,
+				PKI:   auctionPKI,
 			})
 			assert.EqualError(t, err, "Cannot retrieve governance segments: error")
 		})
@@ -143,13 +143,13 @@ func TestStore(t *testing.T) {
 			})
 			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
 				Types: auctionTypes,
-				PKI:   *auctionPKI,
+				PKI:   auctionPKI,
 			})
 
 			validators, err := s.GetValidators(ctx)
 			assert.NoError(t, err)
 			require.Len(t, validators, 1)
-			assert.Len(t, validators[0], 6)
+			assert.Len(t, validators["auction"], 6)
 
 			segments, err := a.FindSegments(ctx, &store.SegmentFilter{
 				Pagination: store.Pagination{Limit: 1},
@@ -171,7 +171,7 @@ func TestStore(t *testing.T) {
 			s := validation.NewStore(a, &validation.Config{})
 			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
 				Types: auctionTypes,
-				PKI:   *auctionPKI,
+				PKI:   auctionPKI,
 			})
 			assert.EqualError(t, err, "cannot create link for process governance auction: error")
 		})
@@ -188,7 +188,7 @@ func TestStore(t *testing.T) {
 
 			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
 				Types: auctionTypes,
-				PKI:   *updatedAuctionPKI,
+				PKI:   updatedAuctionPKI,
 			})
 			require.NoError(t, err)
 
@@ -212,7 +212,7 @@ func TestStore(t *testing.T) {
 			s := validation.NewStore(a, &validation.Config{})
 			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
 				Types: auctionTypes,
-				PKI:   *auctionPKI,
+				PKI:   auctionPKI,
 			})
 			assert.EqualError(t, err, "cannot create link for process governance auction: error")
 		})

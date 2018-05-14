@@ -27,13 +27,13 @@ import (
 // MultiValidator uses its internal validators to validate a link.
 // It should be the only validator to be called directly, since it will call other validators internally.
 type MultiValidator struct {
-	validators []Validator
+	validators ProcessesValidators
 }
 
 // NewMultiValidator creates a validator that will simply be a collection
 // of single-purpose validators.
 // The slice of validators should be loaded from a JSON file via validation.LoadConfig().
-func NewMultiValidator(validators []Validator) Validator {
+func NewMultiValidator(validators ProcessesValidators) Validator {
 	return &MultiValidator{validators}
 }
 
@@ -46,19 +46,26 @@ func (v MultiValidator) ShouldValidate(link *cs.Link) bool {
 // It concatenates the hashes from its sub-validators and hashes the result.
 func (v MultiValidator) Hash() (*types.Bytes32, error) {
 	b := make([]byte, 0)
-	for _, validator := range v.validators {
-		validatorHash, err := validator.Hash()
-		if err != nil {
-			return nil, errors.WithStack(err)
+	for _, processValidators := range v.validators {
+		for _, validator := range processValidators {
+			validatorHash, err := validator.Hash()
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			b = append(b, validatorHash[:]...)
 		}
-		b = append(b, validatorHash[:]...)
 	}
 	validationsHash := types.Bytes32(sha256.Sum256(b))
 	return &validationsHash, nil
 }
 
 func (v MultiValidator) matchValidators(l *cs.Link) (linkValidators []Validator) {
-	for _, child := range v.validators {
+	processValidators, ok := v.validators[l.Meta.Process]
+	if !ok {
+		return nil
+	}
+
+	for _, child := range processValidators {
 		if child.ShouldValidate(l) {
 			linkValidators = append(linkValidators, child)
 		}

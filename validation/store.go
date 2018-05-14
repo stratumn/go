@@ -69,14 +69,15 @@ func NewStore(adapter store.Adapter, validationCfg *Config) *Store {
 }
 
 // GetValidators returns the list of validators for each process by fetching them from the store.
-func (s *Store) GetValidators(ctx context.Context) ([]validators.Validators, error) {
-	validators := make([]validators.Validators, 0)
+func (s *Store) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
+	var err error
+	validators := make(validators.ProcessesValidators, 0)
+
 	for _, process := range s.GetAllProcesses(ctx) {
-		processValidators, err := s.getProcessValidators(ctx, process)
+		validators[process], err = s.getProcessValidators(ctx, process)
 		if err != nil {
 			return nil, err
 		}
-		validators = append(validators, processValidators)
 	}
 
 	return validators, nil
@@ -135,12 +136,17 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 		return nil, ErrBadGovernanceSegment
 	}
 
-	return LoadProcessRules(processesRules{
+	processesValidators, err := LoadProcessRules(processesRules{
 		process: RulesSchema{
-			PKI:   pki,
+			PKI:   &pki,
 			Types: types,
 		},
 	}, s.validationCfg.PluginsPath, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return processesValidators[process], nil
 }
 
 // UpdateValidator replaces the current validation rules in the store by the provided ones.

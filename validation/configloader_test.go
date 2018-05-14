@@ -56,22 +56,24 @@ func TestLoadConfig_Success(t *testing.T) {
 	t.Run("schema & signatures & transitions & plugins", func(T *testing.T) {
 		testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 		defer os.Remove(testFile)
-		validatorList, err := validation.LoadConfig(&validation.Config{
+		validatorMap, err := validation.LoadConfig(&validation.Config{
 			RulesPath:   testFile,
 			PluginsPath: pluginsPath,
 		}, nil)
 
 		assert.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validatorList)
+		assert.NotNil(t, validatorMap)
 
 		var schemaValidatorCount, pkiValidatorCount, transitionValidatorCount int
-		for _, v := range validatorList {
-			if _, ok := v.(*validators.PKIValidator); ok {
-				pkiValidatorCount++
-			} else if _, ok := v.(*validators.SchemaValidator); ok {
-				schemaValidatorCount++
-			} else if _, ok := v.(*validators.TransitionValidator); ok {
-				transitionValidatorCount++
+		for _, validatorList := range validatorMap {
+			for _, v := range validatorList {
+				if _, ok := v.(*validators.PKIValidator); ok {
+					pkiValidatorCount++
+				} else if _, ok := v.(*validators.SchemaValidator); ok {
+					schemaValidatorCount++
+				} else if _, ok := v.(*validators.TransitionValidator); ok {
+					transitionValidatorCount++
+				}
 			}
 		}
 		assert.Equal(t, 3, schemaValidatorCount)
@@ -87,15 +89,17 @@ func TestLoadConfig_Success(t *testing.T) {
 		validators, err := validation.LoadConfig(&validation.Config{
 			RulesPath:   testFile,
 			PluginsPath: pluginsPath,
-		}, func(process string, schema validation.RulesSchema, validators validators.Validators) {
+		}, func(process string, schema validation.RulesSchema, processValidators validators.Validators) {
 			validatorProcessCount++
-			validatorCount = validatorCount + len(validators)
+			validatorCount = validatorCount + len(processValidators)
 		})
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 		assert.Equal(t, 2, validatorProcessCount)
 		assert.Equal(t, 10, validatorCount)
-		assert.Len(t, validators, validatorCount)
+		assert.Len(t, validators, validatorProcessCount)
+		assert.Len(t, validators["chat"], 4)
+		assert.Len(t, validators["auction"], 6)
 	})
 
 	t.Run("Null signatures", func(T *testing.T) {
@@ -121,15 +125,16 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validatorList, err := validation.LoadConfig(&validation.Config{
+		validatorMap, err := validation.LoadConfig(&validation.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validatorList)
+		assert.NotNil(t, validatorMap)
 
-		require.Len(t, validatorList, 1)
-		assert.IsType(t, &validators.SchemaValidator{}, validatorList[0])
+		require.Len(t, validatorMap, 1)
+		require.Len(t, validatorMap["testProcess"], 1)
+		assert.IsType(t, &validators.SchemaValidator{}, validatorMap["testProcess"][0])
 	})
 
 	t.Run("Empty signatures", func(T *testing.T) {
@@ -155,15 +160,16 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validatorList, err := validation.LoadConfig(&validation.Config{
+		validatorMap, err := validation.LoadConfig(&validation.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validatorList)
+		assert.NotNil(t, validatorMap)
 
-		require.Len(t, validatorList, 1)
-		assert.IsType(t, &validators.SchemaValidator{}, validatorList[0])
+		require.Len(t, validatorMap, 1)
+		require.Len(t, validatorMap["test"], 1)
+		assert.IsType(t, &validators.SchemaValidator{}, validatorMap["test"][0])
 	})
 
 	t.Run("No PKI", func(T *testing.T) {
@@ -183,15 +189,16 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validatorList, err := validation.LoadConfig(&validation.Config{
+		validatorMap, err := validation.LoadConfig(&validation.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validatorList)
+		assert.NotNil(t, validatorMap)
 
-		require.Len(t, validatorList, 1)
-		assert.IsType(t, &validators.SchemaValidator{}, validatorList[0])
+		require.Len(t, validatorMap, 1)
+		require.Len(t, validatorMap["test"], 1)
+		assert.IsType(t, &validators.SchemaValidator{}, validatorMap["test"][0])
 	})
 
 	t.Run("Transitions only", func(T *testing.T) {
@@ -209,15 +216,16 @@ func TestLoadConfig_Success(t *testing.T) {
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
-		validatorList, err := validation.LoadConfig(&validation.Config{
+		validatorMap, err := validation.LoadConfig(&validation.Config{
 			RulesPath: testFile,
 		}, nil)
 
 		require.NoError(t, err, "LoadConfig()")
-		assert.NotNil(t, validatorList)
+		assert.NotNil(t, validatorMap)
 
-		require.Len(t, validatorList, 1)
-		assert.IsType(t, &validators.TransitionValidator{}, validatorList[0])
+		require.Len(t, validatorMap, 1)
+		require.Len(t, validatorMap["test"], 1)
+		assert.IsType(t, &validators.TransitionValidator{}, validatorMap["test"][0])
 	})
 
 }

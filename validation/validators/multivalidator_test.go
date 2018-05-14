@@ -36,7 +36,7 @@ const validJSON = `
 `
 
 func TestMultiValidator_New(t *testing.T) {
-	mv := validators.NewMultiValidator(validators.Validators{})
+	mv := validators.NewMultiValidator(validators.ProcessesValidators{})
 	assert.NotNil(t, mv)
 }
 
@@ -84,19 +84,19 @@ func TestMultiValidator_Hash(t *testing.T) {
 
 		for _, tt := range testCases {
 			t.Run(tt.name, func(t *testing.T) {
-				mv1 := validators.NewMultiValidator(validators.Validators{tt.v1})
+				mv1 := validators.NewMultiValidator(validators.ProcessesValidators{"p": []validators.Validator{tt.v1}})
 
 				h1, err := mv1.Hash()
 				assert.NoError(t, err)
 				assert.NotNil(t, h1)
 
-				mv2 := validators.NewMultiValidator(validators.Validators{tt.v2})
+				mv2 := validators.NewMultiValidator(validators.ProcessesValidators{"p": []validators.Validator{tt.v2}})
 
 				h2, err := mv2.Hash()
 				assert.NoError(t, err)
 				assert.True(t, h1.Equals(h2))
 
-				mv3 := validators.NewMultiValidator(validators.Validators{tt.v3})
+				mv3 := validators.NewMultiValidator(validators.ProcessesValidators{"p": []validators.Validator{tt.v3}})
 
 				h3, err := mv3.Hash()
 				assert.NoError(t, err)
@@ -112,8 +112,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 		pkiValidator := validators.NewPKIValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
 		scriptValidator := &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testutil.RandomHash()}
 
-		validatorList := validators.Validators{schemaValidator, transitionValidator, pkiValidator, scriptValidator}
-		mv := validators.NewMultiValidator(validatorList)
+		validatorList := []validators.Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator}
+		mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
 		mvHash, err := mv.Hash()
 		assert.NoError(t, err)
 
@@ -158,7 +158,8 @@ func TestMultiValidator_Validate(t *testing.T) {
 	})
 	sigVCfg2 := validators.NewPKIValidator(baseConfig4, []string{}, &validators.PKI{})
 
-	mv := validators.NewMultiValidator(validators.Validators{svCfg1, svCfg2, sigVCfg1, sigVCfg2})
+	validatorList := []validators.Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2}
+	mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
 
 	testState := map[string]interface{}{"message": "test"}
 
