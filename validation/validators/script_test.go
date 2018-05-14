@@ -24,7 +24,7 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

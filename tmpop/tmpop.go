@@ -26,7 +26,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validation"
 	"github.com/stratumn/merkle"
 	abci "github.com/tendermint/abci/types"
 
@@ -63,7 +63,7 @@ type Config struct {
 	Commit string
 
 	// path to the rules definition and validator plugins
-	Validation *validator.Config
+	Validation *validation.Config
 
 	// Monitoring configuration
 	Monitoring *monitoring.Config

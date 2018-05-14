@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validation
 
 import (
 	"bytes"
@@ -26,26 +26,26 @@ import (
 	"github.com/prometheus/common/log"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
 const (
-	// GovernanceProcessName is the process name used for governance information storage
+	// GovernanceProcessName is the process name used for governance information storage.
 	GovernanceProcessName = "_governance"
 
-	// ValidatorTag is the tag used to find validators in storage
+	// ValidatorTag is the tag used to find validators in storage.
 	ValidatorTag = "validators"
-
-	// DefaultFilename is the default filename for the file with the rules of validation
-	DefaultFilename = "/data/validation/rules.json"
-
-	// DefaultPluginsDirectory is the default directory where validation plugins are located
-	DefaultPluginsDirectory = "/data/validation/"
 )
 
 var (
 	// ErrNoFileWatcher is the error returned when the provided rules file could not be watched.
 	ErrNoFileWatcher = errors.New("cannot listen for file updates: no file watcher")
+
+	// ErrValidatorNotFound is the error returned when no governance segment was found for a process.
+	ErrValidatorNotFound = errors.New("could not find governance segments")
+
+	// ErrBadGovernanceSegment is the error returned when the governance segment has a bad format
+	ErrBadGovernanceSegment = errors.New("governance segment is badly formatted")
 
 	defaultPagination = store.Pagination{
 		Offset: 0,
@@ -53,48 +53,25 @@ var (
 	}
 )
 
-// Config contains the path of the rules JSON file and the directory where the validator scripts are located.
-type Config struct {
-	RulesPath   string
-	PluginsPath string
-}
-
-// GovernanceManager defines the methods to implement to manage validations in an indigo network.
-type GovernanceManager interface {
-
-	// ListenAndUpdate will update the current validators whenever a change occurs in the governance rules.
-	// This method must be run in a goroutine as it will wait for events from the network or file updates.
-	ListenAndUpdate(ctx context.Context) error
-
-	// AddListener adds a listener for validator changes.
-	AddListener() <-chan validators.Validator
-
-	// RemoveListener removes a listener.
-	RemoveListener(<-chan validators.Validator)
-
-	// Current returns the current version of the validator set.
-	Current() validators.Validator
-}
-
-// GovernanceStore stores validation rules in an indigo store.
-type GovernanceStore struct {
+// Store stores validation rules in an indigo store.
+type Store struct {
 	store store.Adapter
 
 	validationCfg *Config
 }
 
-// NewGovernanceStore returns a new governance store.
-func NewGovernanceStore(adapter store.Adapter, validationCfg *Config) *GovernanceStore {
-	return &GovernanceStore{
+// NewStore returns a new governance store.
+func NewStore(adapter store.Adapter, validationCfg *Config) *Store {
+	return &Store{
 		store:         adapter,
 		validationCfg: validationCfg,
 	}
 }
 
 // GetValidators returns the list of validators for each process by fetching them from the store.
-func (s *GovernanceStore) GetValidators(ctx context.Context) ([]validators.Validators, error) {
+func (s *Store) GetValidators(ctx context.Context) ([]validators.Validators, error) {
 	validators := make([]validators.Validators, 0)
-	for _, process := range s.getAllProcesses(ctx) {
+	for _, process := range s.GetAllProcesses(ctx) {
 		processValidators, err := s.getProcessValidators(ctx, process)
 		if err != nil {
 			return nil, err
@@ -105,7 +82,8 @@ func (s *GovernanceStore) GetValidators(ctx context.Context) ([]validators.Valid
 	return validators, nil
 }
 
-func (s *GovernanceStore) getAllProcesses(ctx context.Context) []string {
+// GetAllProcesses returns the list of processes for which governance rules have been found.
+func (s *Store) GetAllProcesses(ctx context.Context) []string {
 	processSet := make(map[string]interface{}, 0)
 	for offset := 0; offset >= 0; {
 		segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
@@ -137,35 +115,37 @@ func (s *GovernanceStore) getAllProcesses(ctx context.Context) []string {
 	return ret
 }
 
-func (s *GovernanceStore) getProcessValidators(ctx context.Context, process string) (validators.Validators, error) {
+func (s *Store) getProcessValidators(ctx context.Context, process string) (validators.Validators, error) {
 	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    GovernanceProcessName,
 		Tags:       []string{process, ValidatorTag},
 	})
 	if err != nil || len(segments) == 0 {
-		return nil, errors.New("could not find governance segments")
+		return nil, ErrValidatorNotFound
 	}
 	linkState := segments[0].Link.State
-	pki, ok := linkState["pki"]
-	types, ok2 := linkState["types"]
-	if !ok || !ok2 {
-		return nil, errors.New("governance segment is incomplete")
+
+	var pki validators.PKI
+	if err := mapToStruct(linkState["pki"], &pki); err != nil {
+		return nil, ErrBadGovernanceSegment
 	}
-	rawPKI, ok := pki.(json.RawMessage)
-	rawTypes, ok2 := types.(json.RawMessage)
-	if !ok || !ok2 {
-		return nil, errors.New("governance segment is badly formatted")
+	var types map[string]TypeSchema
+	if err := mapToStruct(linkState["types"], &types); err != nil {
+		return nil, ErrBadGovernanceSegment
 	}
+
 	return LoadProcessRules(processesRules{
 		process: RulesSchema{
-			PKI:   rawPKI,
-			Types: rawTypes,
+			PKI:   pki,
+			Types: types,
 		},
 	}, s.validationCfg.PluginsPath, nil)
 }
 
-func (s *GovernanceStore) updateValidatorInStore(ctx context.Context, process string, schema RulesSchema, validators []validators.Validator) error {
+// UpdateValidator replaces the current validation rules in the store by the provided ones.
+// If none was found in the store, they will be created.
+func (s *Store) UpdateValidator(ctx context.Context, process string, schema RulesSchema) error {
 	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    GovernanceProcessName,
@@ -194,7 +174,7 @@ func (s *GovernanceStore) updateValidatorInStore(ctx context.Context, process st
 	return nil
 }
 
-func (s *GovernanceStore) uploadValidator(ctx context.Context, process string, schema RulesSchema, prevLink *cs.Link) error {
+func (s *Store) uploadValidator(ctx context.Context, process string, schema RulesSchema, prevLink *cs.Link) error {
 	priority := 0.
 	mapID := ""
 	prevLinkHash := ""
@@ -208,6 +188,7 @@ func (s *GovernanceStore) uploadValidator(ctx context.Context, process string, s
 	} else {
 		mapID = uuid.NewV4().String()
 	}
+
 	linkState := map[string]interface{}{
 		"pki":   schema.PKI,
 		"types": schema.Types,
@@ -234,7 +215,7 @@ func (s *GovernanceStore) uploadValidator(ctx context.Context, process string, s
 	return nil
 }
 
-func canonicalCompare(metaData interface{}, fileData json.RawMessage) error {
+func canonicalCompare(metaData interface{}, fileData interface{}) error {
 	if metaData == nil {
 		return errors.Errorf("missing data to compare")
 	}
@@ -242,12 +223,7 @@ func canonicalCompare(metaData interface{}, fileData json.RawMessage) error {
 	if err != nil {
 		return errors.Wrapf(err, "cannot canonical marshal store data")
 	}
-
-	var typedData interface{}
-	if err := json.Unmarshal(fileData, &typedData); err != nil {
-		return err
-	}
-	canonFileData, err := cj.Marshal(typedData)
+	canonFileData, err := cj.Marshal(fileData)
 	if err != nil {
 		return errors.Wrapf(err, "cannot canonical marshal file data")
 	}
@@ -256,4 +232,13 @@ func canonicalCompare(metaData interface{}, fileData json.RawMessage) error {
 		return errors.New("data different from file and from store")
 	}
 	return nil
+}
+
+func mapToStruct(src interface{}, dest interface{}) error {
+	bytes, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(bytes, dest)
 }

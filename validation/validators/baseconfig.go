@@ -27,11 +27,14 @@ var (
 	ErrMissingLinkType = errors.New("validator requires a link type")
 )
 
+// ValidatorBaseConfig is used to identify a validator by its process and link type.
+// Its ShouldValidate method is called by all validators.
 type ValidatorBaseConfig struct {
 	Process  string
 	LinkType string
 }
 
+// NewValidatorBaseConfig returns a new ValidatorBaseConfig.
 func NewValidatorBaseConfig(process, linkType string) (*ValidatorBaseConfig, error) {
 	if len(process) == 0 {
 		return nil, ErrMissingProcess

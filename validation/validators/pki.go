@@ -80,7 +80,8 @@ type PKIValidator struct {
 	PKI                *PKI
 }
 
-func NewPkiValidator(baseConfig *ValidatorBaseConfig, required []string, pki *PKI) Validator {
+// NewPKIValidator returns a new PKIValidator
+func NewPKIValidator(baseConfig *ValidatorBaseConfig, required []string, pki *PKI) Validator {
 	return &PKIValidator{
 		Config:             baseConfig,
 		RequiredSignatures: required,
@@ -88,6 +89,7 @@ func NewPkiValidator(baseConfig *ValidatorBaseConfig, required []string, pki *PK
 	}
 }
 
+// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
 func (pv PKIValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(pv)
 	if err != nil {
@@ -97,11 +99,13 @@ func (pv PKIValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
+// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
 func (pv PKIValidator) ShouldValidate(link *cs.Link) bool {
 	return pv.Config.ShouldValidate(link)
 }
 
-// Validate checks that the provided signatures match the required ones.
+// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// it checks that the provided signatures match the required ones.
 // a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
 func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
 	for _, required := range pv.RequiredSignatures {

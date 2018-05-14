@@ -36,6 +36,7 @@ type SchemaValidator struct {
 	SchemaHash types.Bytes32
 }
 
+// NewSchemaValidator returns a new SchemaValidator.
 func NewSchemaValidator(baseConfig *ValidatorBaseConfig, schemaData []byte) (Validator, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
@@ -49,6 +50,7 @@ func NewSchemaValidator(baseConfig *ValidatorBaseConfig, schemaData []byte) (Val
 	}, nil
 }
 
+// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
 func (sv SchemaValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(sv)
 	if err != nil {
@@ -58,11 +60,13 @@ func (sv SchemaValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
+// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
 func (sv SchemaValidator) ShouldValidate(link *cs.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
 
-// Validate validates the schema of a link's state.
+// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// It validates the schema of a link's state.
 func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
 	stateBytes, err := json.Marshal(link.State)
 	if err != nil {

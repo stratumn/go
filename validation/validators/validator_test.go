@@ -30,9 +30,9 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/utils"
-	"github.com/stratumn/go-indigocore/validator"
-	"github.com/stratumn/go-indigocore/validator/testutils"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-indigocore/validation/testutils"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
 type testCase struct {
@@ -44,7 +44,7 @@ type testCase struct {
 var pluginFile string
 
 const (
-	pluginsPath      = "../testutils/testdata"
+	pluginsPath      = "../testutils/plugins"
 	pluginSourceFile = "custom_validator.go"
 )
 
@@ -143,7 +143,7 @@ func TestValidator(t *testing.T) {
 	testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 	defer os.Remove(testFile)
 
-	children, err := validator.LoadConfig(&validator.Config{
+	children, err := validation.LoadConfig(&validation.Config{
 		RulesPath:   testFile,
 		PluginsPath: pluginsPath,
 	}, nil)

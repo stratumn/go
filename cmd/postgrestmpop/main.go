@@ -23,7 +23,7 @@ import (
 	"github.com/stratumn/go-indigocore/postgresstore"
 	"github.com/stratumn/go-indigocore/tendermint"
 	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validation"
 )
 
 var (
@@ -35,7 +35,7 @@ func init() {
 	tendermint.RegisterFlags()
 	postgresstore.RegisterFlags()
 	monitoring.RegisterFlags()
-	validator.RegisterFlags()
+	validation.RegisterFlags()
 }
 
 func main() {
@@ -45,7 +45,7 @@ func main() {
 	tmpopConfig := &tmpop.Config{
 		Commit:     commit,
 		Version:    version,
-		Validation: validator.ConfigurationFromFlags(),
+		Validation: validation.ConfigurationFromFlags(),
 		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(

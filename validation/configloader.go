@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validation
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-crypto/keys"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
 var (
@@ -37,9 +37,10 @@ var (
 
 type processesRules map[string]RulesSchema
 
+// RulesSchema represents the structure of validation rules.
 type RulesSchema struct {
-	PKI   json.RawMessage `json:"pki"`
-	Types json.RawMessage `json:"types"`
+	PKI   validators.PKI        `json:"pki"`
+	Types map[string]TypeSchema `json:"types"`
 }
 
 type rulesListener func(process string, schema RulesSchema, validators validators.Validators)
@@ -76,12 +77,11 @@ func LoadConfigContent(data []byte, pluginsPath string, listener rulesListener) 
 func LoadProcessRules(rules processesRules, pluginsPath string, listener rulesListener) ([]validators.Validator, error) {
 	var validators []validators.Validator
 	for process, schema := range rules {
-		pki, err := loadPKIConfig(schema.PKI)
-		if err != nil {
+		if err := checkPKIConfig(schema.PKI); err != nil {
 			return nil, errors.WithStack(err)
 		}
 
-		processValidators, err := loadValidatorsConfig(process, pluginsPath, schema.Types, pki)
+		processValidators, err := loadValidatorsConfig(process, pluginsPath, schema.Types, &schema.PKI)
 		if err != nil {
 			return nil, err
 		}
@@ -93,42 +93,31 @@ func LoadProcessRules(rules processesRules, pluginsPath string, listener rulesLi
 	return validators, nil
 }
 
-// loadPKIConfig deserializes json into a PKI struct.
-// It checks that public keys are base64 encoded.
-func loadPKIConfig(data json.RawMessage) (*validators.PKI, error) {
+// checkPKIConfig checks that public keys are base64 encoded.
+func checkPKIConfig(data validators.PKI) error {
 	if data == nil {
-		return nil, nil
-	}
-	var jsonData validators.PKI
-	err := json.Unmarshal(data, &jsonData)
-	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil
 	}
 
-	for _, id := range jsonData {
+	for _, id := range data {
 		for _, key := range id.Keys {
 			if _, err := keys.ParsePublicKey([]byte(key)); err != nil {
-				return nil, errors.Wrapf(err, "error while parsing public key [%s]", key)
+				return errors.Wrapf(err, "error while parsing public key [%s]", key)
 			}
 		}
 	}
-	return &jsonData, nil
+	return nil
 }
 
-type jsonValidatorData struct {
+// TypeSchema represent the structure of validation rules.
+type TypeSchema struct {
 	Signatures  []string                 `json:"signatures"`
-	Schema      *json.RawMessage         `json:"schema"`
+	Schema      map[string]interface{}   `json:"schema"`
 	Transitions []string                 `json:"transitions"`
 	Script      *validators.ScriptConfig `json:"script"`
 }
 
-func loadValidatorsConfig(process, pluginsPath string, data json.RawMessage, pki *validators.PKI) (validators.Validators, error) {
-	var jsonStruct map[string]jsonValidatorData
-	err := json.Unmarshal(data, &jsonStruct)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
+func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]TypeSchema, pki *validators.PKI) (validators.Validators, error) {
 	missingTransitionValidation := make([]string, 0)
 	var validatorList validators.Validators
 	for linkType, val := range jsonStruct {
@@ -148,11 +137,14 @@ func loadValidatorsConfig(process, pluginsPath string, data json.RawMessage, pki
 			if pki == nil {
 				return nil, ErrNoPKI
 			}
-			validatorList = append(validatorList, validators.NewPkiValidator(baseConfig, val.Signatures, pki))
+			validatorList = append(validatorList, validators.NewPKIValidator(baseConfig, val.Signatures, pki))
 		}
 
 		if val.Schema != nil {
-			schemaData, _ := val.Schema.MarshalJSON()
+			schemaData, err := json.Marshal(val.Schema)
+			if err != nil {
+				return nil, err
+			}
 			schemaValidator, err := validators.NewSchemaValidator(baseConfig, schemaData)
 			if err != nil {
 				return nil, err

@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs/cstesting"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stretchr/testify/assert"

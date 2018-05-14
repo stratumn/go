@@ -29,7 +29,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetestcases"
 	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validation"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/abci/types"
@@ -82,7 +82,7 @@ func updateValidatorRulesFile(t *testing.T, in, out string) {
 func TestTMStore(t *testing.T) {
 	rulesFilename := filepath.Join("testdata", "rules.test.json")
 	updateValidatorRulesFile(t, "/dev/null", rulesFilename)
-	testConfig := &tmpop.Config{Validation: &validator.Config{RulesPath: rulesFilename}}
+	testConfig := &tmpop.Config{Validation: &validation.Config{RulesPath: rulesFilename}}
 	node := StartNode(testConfig)
 	defer node.Wait()
 	defer node.Stop()

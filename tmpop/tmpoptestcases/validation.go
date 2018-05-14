@@ -21,7 +21,7 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/utils"
-	validation "github.com/stratumn/go-indigocore/validator"
+	validation "github.com/stratumn/go-indigocore/validation"
 	"github.com/stretchr/testify/assert"
 )
 

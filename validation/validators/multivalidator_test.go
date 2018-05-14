@@ -22,7 +22,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -109,7 +109,7 @@ func TestMultiValidator_Hash(t *testing.T) {
 		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
 		schemaValidator := &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testutil.RandomHash()}
 		transitionValidator := validators.NewTransitionValidator(baseConfig, []string{"king"})
-		pkiValidator := validators.NewPkiValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
+		pkiValidator := validators.NewPKIValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
 		scriptValidator := &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testutil.RandomHash()}
 
 		mv := validators.NewMultiValidator([]validators.Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator})
@@ -150,12 +150,12 @@ func TestMultiValidator_Validate(t *testing.T) {
 	svCfg1, _ := validators.NewSchemaValidator(baseConfig1, []byte(testMessageSchema))
 	svCfg2, _ := validators.NewSchemaValidator(baseConfig2, []byte(testMessageSchema))
 
-	sigVCfg1 := validators.NewPkiValidator(baseConfig3, []string{"alice"}, &validators.PKI{
+	sigVCfg1 := validators.NewPKIValidator(baseConfig3, []string{"alice"}, &validators.PKI{
 		"alice": &validators.Identity{
 			Keys: []string{"TESTKEY1"},
 		},
 	})
-	sigVCfg2 := validators.NewPkiValidator(baseConfig4, []string{}, &validators.PKI{})
+	sigVCfg2 := validators.NewPKIValidator(baseConfig4, []string{}, &validators.PKI{})
 
 	mv := validators.NewMultiValidator([]validators.Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2})
 

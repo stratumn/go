@@ -19,12 +19,13 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validator"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stratumn/merkle"
 )
 
@@ -42,7 +43,7 @@ type State struct {
 	deliveredLinksList []*cs.Link
 	checkedLinks       store.Batch
 
-	governance validator.GovernanceManager
+	governance validation.Manager
 }
 
 // NewState creates a new State.
@@ -62,18 +63,23 @@ func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, err
 		checkedLinks:   checkedLinks,
 	}
 
-	state.governance, err = validator.NewLocalGovernor(ctx, a, config.Validation)
+	state.governance, err = validation.NewLocalManager(ctx, a, config.Validation)
 	if err != nil {
-		return nil, err
+		log.Warnf("Failed to load validation rules, validation will be bypassed: %s", err)
 	}
-	go state.governance.ListenAndUpdate(ctx)
+
+	if state.governance != nil {
+		go state.governance.ListenAndUpdate(ctx)
+	}
 
 	return state, nil
 }
 
 // UpdateValidators updates validators if a new version is available
 func (s *State) UpdateValidators(ctx context.Context) {
-	s.validator = s.governance.Current()
+	if s.governance != nil {
+		s.validator = s.governance.Current()
+	}
 }
 
 // Check checks if creating this link is a valid operation

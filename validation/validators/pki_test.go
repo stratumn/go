@@ -23,7 +23,7 @@ import (
 	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ed25519"
@@ -112,7 +112,7 @@ func TestPKIValidator(t *testing.T) {
 	for _, tt := range testCases {
 		baseCfg, err := validators.NewValidatorBaseConfig(process, linkType)
 		require.NoError(t, err)
-		sv := validators.NewPkiValidator(baseCfg, tt.requiredSignatures, pki)
+		sv := validators.NewPKIValidator(baseCfg, tt.requiredSignatures, pki)
 
 		t.Run(tt.name, func(t *testing.T) {
 			err := sv.Validate(context.Background(), nil, tt.link)
@@ -149,9 +149,9 @@ func TestPKIHash(t *testing.T) {
 
 	baseCfg, err := validators.NewValidatorBaseConfig("foo", "bar")
 	require.NoError(t, err)
-	v1 := validators.NewPkiValidator(baseCfg, []string{"a", "b"}, pki1)
-	v2 := validators.NewPkiValidator(baseCfg, []string{"a", "b"}, pki2)
-	v3 := validators.NewPkiValidator(baseCfg, []string{"c", "d"}, pki1)
+	v1 := validators.NewPKIValidator(baseCfg, []string{"a", "b"}, pki1)
+	v2 := validators.NewPKIValidator(baseCfg, []string{"a", "b"}, pki2)
+	v3 := validators.NewPKIValidator(baseCfg, []string{"c", "d"}, pki1)
 
 	hash1, err1 := v1.Hash()
 	hash2, err2 := v2.Hash()

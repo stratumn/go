@@ -26,21 +26,21 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
-type AllowedTransitions = []string
-
 // TransitionValidator defines the source state where a transition can be applied and its destination state.
 type TransitionValidator struct {
 	Config      *ValidatorBaseConfig
-	Transitions AllowedTransitions
+	Transitions []string
 }
 
-func NewTransitionValidator(baseConfig *ValidatorBaseConfig, transitions AllowedTransitions) Validator {
+// NewTransitionValidator returns a new TransitionValidator.
+func NewTransitionValidator(baseConfig *ValidatorBaseConfig, transitions []string) Validator {
 	return &TransitionValidator{
 		Config:      baseConfig,
 		Transitions: transitions,
 	}
 }
 
+// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
 func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(tv)
 	if err != nil {
@@ -50,11 +50,13 @@ func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
+// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
 func (tv TransitionValidator) ShouldValidate(link *cs.Link) bool {
 	return tv.Config.ShouldValidate(link)
 }
 
-// Validate checks that the link follows a valid transition.
+// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// It checks that the link follows a valid transition.
 // If there is no previous link, an empty link has to be allowed,
 // Otherwise the meta.type of the prevLink must exist in authorized previous statement.
 func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *cs.Link) error {

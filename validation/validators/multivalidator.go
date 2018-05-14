@@ -24,21 +24,26 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
+// MultiValidator uses its internal validators to validate a link.
+// It should be the only validator to be called directly, since it will call other validators internally.
 type MultiValidator struct {
 	validators []Validator
 }
 
 // NewMultiValidator creates a validator that will simply be a collection
 // of single-purpose validators.
-// The slice of validators should be loaded from a JSON file via validator.LoadConfig().
+// The slice of validators should be loaded from a JSON file via validation.LoadConfig().
 func NewMultiValidator(validators []Validator) Validator {
 	return &MultiValidator{validators}
 }
 
+// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
 func (v MultiValidator) ShouldValidate(link *cs.Link) bool {
 	return true
 }
 
+// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
+// It concatenates the hashes from its sub-validators and hashes the result.
 func (v MultiValidator) Hash() (*types.Bytes32, error) {
 	b := make([]byte, 0)
 	for _, validator := range v.validators {
@@ -61,7 +66,8 @@ func (v MultiValidator) matchValidators(l *cs.Link) (linkValidators []Validator)
 	return
 }
 
-// Validate runs the validation on every child validator matching the provided link.
+// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// It runs the validation on every child validator matching the provided link.
 // It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
 func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *cs.Link) error {
 	linkValidators := v.matchValidators(l)

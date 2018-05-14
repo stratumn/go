@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/validator"
+	"github.com/stratumn/go-indigocore/validation"
 )
 
 // TestLastBlock tests if tmpop correctly stores information
@@ -50,7 +50,7 @@ func (f Factory) TestLastBlock(t *testing.T) {
 	})
 
 	t.Run("Restart with existing history", func(t *testing.T) {
-		h2, err := tmpop.New(context.Background(), f.adapter, f.kv, &tmpop.Config{Validation: &validator.Config{}})
+		h2, err := tmpop.New(context.Background(), f.adapter, f.kv, &tmpop.Config{Validation: &validation.Config{}})
 		if err != nil {
 			t.Fatalf("Couldn't start tmpop with existing store: %s", err)
 		}

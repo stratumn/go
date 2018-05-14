@@ -15,9 +15,14 @@
 package testutils
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
+// These are the test key pairs of Alice and Bob.
 const (
 	AlicePrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nBEC0TyVE2Y7+OgPHcSAAIAjUHCVA68swAp235LkQZBIrZnUfW/lss95djRXjIeX+\nezH5bdbVe7s4wbPJRBiej+it\n-----END ED25519 PRIVATE KEY-----\n"
 	AlicePublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAdR9b+Wyz3l2NFeMh5f57Mflt1tV7uzjBs8lEGJ6P6K0=\n-----END ED25519 PUBLIC KEY-----\n`
@@ -26,6 +31,7 @@ const (
 	BobPublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEA+trFTcDgv4oCw45zYepcPueYbcGrT7YHaU7lW9yNxJ4=\n-----END ED25519 PUBLIC KEY-----\n`
 )
 
+// ValidAuctionJSONPKIConfig is a valid PKI schema for the auction process.
 var ValidAuctionJSONPKIConfig = fmt.Sprintf(`
 {
 	"alice.vandenbudenmayer@stratumn.com": {
@@ -39,6 +45,7 @@ var ValidAuctionJSONPKIConfig = fmt.Sprintf(`
 }
 `, AlicePublicKey, BobPublicKey)
 
+// ValidAuctionJSONTypesConfig is a valid types schema for the auction process.
 const ValidAuctionJSONTypesConfig = `
 {
 	"init": {
@@ -84,6 +91,7 @@ const ValidAuctionJSONTypesConfig = `
 }
 `
 
+// ValidChatJSONPKIConfig is a valid PKI schema for the chat process.
 var ValidChatJSONPKIConfig = fmt.Sprintf(`
 {
 	"Bob Wagner": {
@@ -93,6 +101,7 @@ var ValidChatJSONPKIConfig = fmt.Sprintf(`
 }
 `, BobPublicKey)
 
+// ValidChatJSONTypesConfig is a valid types schema for the chat process.
 const ValidChatJSONTypesConfig = `
 {
 	"message": {
@@ -118,10 +127,32 @@ const ValidChatJSONTypesConfig = `
 }
 `
 
+// CreateValidatorJSON formats a PKI and a types schema into a valid JSON configuration.
 func CreateValidatorJSON(name, pki, types string) string {
 	return fmt.Sprintf(`"%s": {"pki": %s,"types": %s}`, name, pki, types)
 }
 
-var ValidAuctionJSONConfig = CreateValidatorJSON("auction", ValidAuctionJSONPKIConfig, ValidAuctionJSONTypesConfig)
-var ValidChatJSONConfig = CreateValidatorJSON("chat", ValidChatJSONPKIConfig, ValidChatJSONTypesConfig)
-var ValidJSONConfig = fmt.Sprintf(`{%s,%s}`, ValidAuctionJSONConfig, ValidChatJSONConfig)
+// LoadPKI unmarshalls a JSON-formatted PKI into a PKI struct.
+func LoadPKI(rawPKI []byte) (*validators.PKI, error) {
+	var pki validators.PKI
+	if err := json.Unmarshal(rawPKI, &pki); err != nil {
+		return nil, err
+	}
+	return &pki, nil
+}
+
+// LoadTypes unmarshalls a JSON-formatted types schema into a TypeSchema struct.
+func LoadTypes(rawTypes []byte) (map[string]validation.TypeSchema, error) {
+	var types map[string]validation.TypeSchema
+	if err := json.Unmarshal(rawTypes, &types); err != nil {
+		return nil, err
+	}
+	return types, nil
+}
+
+// These are the validation configuration exported by this package.
+var (
+	ValidAuctionJSONConfig = CreateValidatorJSON("auction", ValidAuctionJSONPKIConfig, ValidAuctionJSONTypesConfig)
+	ValidChatJSONConfig    = CreateValidatorJSON("chat", ValidChatJSONPKIConfig, ValidChatJSONTypesConfig)
+	ValidJSONConfig        = fmt.Sprintf(`{%s,%s}`, ValidAuctionJSONConfig, ValidChatJSONConfig)
+)

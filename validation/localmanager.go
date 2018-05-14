@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package validation
 
 import (
 	"context"
@@ -22,12 +22,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validator/validators"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
-// LocalGovernor manages governance for validation rules management in an indigo network.
-type LocalGovernor struct {
-	store *GovernanceStore
+// LocalManager manages governance for validation rules management in an indigo network.
+type LocalManager struct {
+	store *Store
 
 	validationCfg    *Config
 	validatorWatcher *fsnotify.Watcher
@@ -38,25 +38,18 @@ type LocalGovernor struct {
 	listeners      []chan validators.Validator
 }
 
-// NewLocalGovernor enhances validator management with some governance concepts.
-func NewLocalGovernor(ctx context.Context, a store.Adapter, validationCfg *Config) (GovernanceManager, error) {
+// NewLocalManager enhances validator management with some governance concepts.
+func NewLocalManager(ctx context.Context, a store.Adapter, validationCfg *Config) (Manager, error) {
 	if validationCfg == nil {
 		return nil, errors.New("missing configuration")
 	}
 
 	var err error
-	var govMgr = LocalGovernor{
-		store:         NewGovernanceStore(a, validationCfg),
+	var govMgr = LocalManager{
+		store:         NewStore(a, validationCfg),
 		validationCfg: validationCfg,
 	}
 
-	// Swallow errors on purpose.
-	fileValidators, _ := govMgr.GetValidators(ctx)
-	storedValidators, _ := govMgr.store.GetValidators(ctx)
-
-	if len(fileValidators) > 0 || len(storedValidators) > 0 {
-		govMgr.updateCurrent(append(fileValidators, storedValidators...))
-	}
 	if validationCfg.RulesPath != "" {
 		if govMgr.validatorWatcher, err = fsnotify.NewWatcher(); err != nil {
 			return nil, errors.Wrap(err, "cannot create a new filesystem watcher for validators")
@@ -66,12 +59,18 @@ func NewLocalGovernor(ctx context.Context, a store.Adapter, validationCfg *Confi
 		}
 	}
 
-	return &govMgr, nil
+	_, err = govMgr.GetValidators(ctx)
+
+	if validators, _ := govMgr.store.GetValidators(ctx); len(validators) > 0 {
+		govMgr.updateCurrent(validators)
+	}
+
+	return &govMgr, err
 }
 
 // ListenAndUpdate will update the current validators whenever the provided rule file is updated.
 // This method must be run in a goroutine as it will wait for write events on the file.
-func (m *LocalGovernor) ListenAndUpdate(ctx context.Context) error {
+func (m *LocalManager) ListenAndUpdate(ctx context.Context) error {
 	if m.validatorWatcher == nil {
 		return ErrNoFileWatcher
 	}
@@ -100,12 +99,12 @@ func (m *LocalGovernor) ListenAndUpdate(ctx context.Context) error {
 }
 
 // Current returns the current validator set
-func (m *LocalGovernor) Current() validators.Validator {
+func (m *LocalManager) Current() validators.Validator {
 	return m.current
 }
 
 // AddListener return a listener that will be notified when the validator changes.
-func (m *LocalGovernor) AddListener() <-chan validators.Validator {
+func (m *LocalManager) AddListener() <-chan validators.Validator {
 	m.listenersMutex.Lock()
 	defer m.listenersMutex.Unlock()
 
@@ -122,7 +121,7 @@ func (m *LocalGovernor) AddListener() <-chan validators.Validator {
 }
 
 // RemoveListener removes a listener.
-func (m *LocalGovernor) RemoveListener(c <-chan validators.Validator) {
+func (m *LocalManager) RemoveListener(c <-chan validators.Validator) {
 	m.listenersMutex.Lock()
 	defer m.listenersMutex.Unlock()
 
@@ -142,10 +141,11 @@ func (m *LocalGovernor) RemoveListener(c <-chan validators.Validator) {
 }
 
 // GetValidators returns the list of validators for each process by parsing a local file.
-func (m *LocalGovernor) GetValidators(ctx context.Context) (processesValidators []validators.Validators, err error) {
+// The validators are updated in the store according to local changes.
+func (m *LocalManager) GetValidators(ctx context.Context) (processesValidators []validators.Validators, err error) {
 	if m.validationCfg.RulesPath != "" {
 		_, err = LoadConfig(m.validationCfg, func(process string, schema RulesSchema, validators validators.Validators) {
-			m.store.updateValidatorInStore(ctx, process, schema, validators)
+			m.store.UpdateValidator(ctx, process, schema)
 			processesValidators = append(processesValidators, validators)
 		})
 		if err != nil {
@@ -156,7 +156,7 @@ func (m *LocalGovernor) GetValidators(ctx context.Context) (processesValidators 
 	return processesValidators, err
 }
 
-func (m *LocalGovernor) updateCurrent(validatorsList []validators.Validators) {
+func (m *LocalManager) updateCurrent(validatorsList []validators.Validators) {
 	m.listenersMutex.RLock()
 	defer m.listenersMutex.RUnlock()
 
