@@ -24,7 +24,6 @@ import (
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/validation"
 
 	abci "github.com/tendermint/abci/types"
 )
@@ -77,9 +76,7 @@ func (f *Factory) newTMPop(t *testing.T, config *tmpop.Config) (*tmpop.TMPop, ab
 	}
 
 	if config == nil {
-		config = &tmpop.Config{
-			Validation: &validation.Config{},
-		}
+		config = &tmpop.Config{}
 	}
 	h, err := tmpop.New(context.Background(), f.adapter, f.kv, config)
 	if err != nil {

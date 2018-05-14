@@ -31,7 +31,7 @@ type LocalManager struct {
 
 	validationCfg    *Config
 	validatorWatcher *fsnotify.Watcher
-	validators       map[string][]validators.Validator
+	validators       map[string]validators.Validators
 	current          validators.Validator
 
 	listenersMutex sync.RWMutex
@@ -160,7 +160,7 @@ func (m *LocalManager) updateCurrent(validatorsList []validators.Validators) {
 	m.listenersMutex.RLock()
 	defer m.listenersMutex.RUnlock()
 
-	v4ch := make([]validators.Validator, 0)
+	v4ch := make(validators.Validators, 0)
 	for _, v := range validatorsList {
 		v4ch = append(v4ch, v...)
 	}
