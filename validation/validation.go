@@ -36,16 +36,11 @@ type Config struct {
 
 // Manager defines the methods to implement to manage validations in an indigo network.
 type Manager interface {
+	UpdateSubscriber
 
 	// ListenAndUpdate will update the current validators whenever a change occurs in the governance rules.
 	// This method must be run in a goroutine as it will wait for events from the network or file updates.
 	ListenAndUpdate(ctx context.Context) error
-
-	// AddListener adds a listener for validator changes.
-	AddListener() <-chan validators.Validator
-
-	// RemoveListener removes a listener.
-	RemoveListener(<-chan validators.Validator)
 
 	// Current returns the current version of the validator set.
 	Current() validators.Validator

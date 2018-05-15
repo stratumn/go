@@ -101,7 +101,7 @@ func TestNetworkManager(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, gov)
 
-			waitValidator := gov.AddListener()
+			waitValidator := gov.Subscribe()
 			go func() {
 				assert.NoError(t, gov.ListenAndUpdate(ctx))
 			}()
@@ -127,7 +127,7 @@ func TestNetworkManager(t *testing.T) {
 			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{})
 			assert.NoError(t, err)
 
-			waitValidator := gov.AddListener()
+			waitValidator := gov.Subscribe()
 			go func() {
 				assert.NoError(t, gov.ListenAndUpdate(ctx))
 			}()
@@ -142,7 +142,7 @@ func TestNetworkManager(t *testing.T) {
 
 			select {
 			case <-waitValidator:
-				t.Error("should not update validation rules")
+				assert.Fail(t, "should not update validation rules")
 			case <-time.After(15 * time.Millisecond):
 				break
 			}
@@ -155,7 +155,7 @@ func TestNetworkManager(t *testing.T) {
 			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{})
 			assert.NoError(t, err)
 
-			waitValidator := gov.AddListener()
+			waitValidator := gov.Subscribe()
 			go func() {
 				assert.NoError(t, gov.ListenAndUpdate(ctx))
 			}()
@@ -171,7 +171,7 @@ func TestNetworkManager(t *testing.T) {
 
 			select {
 			case <-waitValidator:
-				t.Error("should not update validation rules")
+				assert.Fail(t, "should not update validation rules")
 			case <-time.After(15 * time.Millisecond):
 				break
 			}
@@ -184,7 +184,7 @@ func TestNetworkManager(t *testing.T) {
 			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{})
 			assert.NoError(t, err)
 
-			waitValidator := gov.AddListener()
+			waitValidator := gov.Subscribe()
 			go func() {
 				assert.NoError(t, gov.ListenAndUpdate(ctx))
 			}()
@@ -199,7 +199,7 @@ func TestNetworkManager(t *testing.T) {
 
 			select {
 			case <-waitValidator:
-				t.Error("should not update validation rules")
+				assert.Fail(t, "should not update validation rules")
 			case <-time.After(15 * time.Millisecond):
 				break
 			}
@@ -212,7 +212,7 @@ func TestNetworkManager(t *testing.T) {
 			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{})
 			assert.NoError(t, err)
 
-			waitValidator := gov.AddListener()
+			waitValidator := gov.Subscribe()
 			go func() {
 				assert.NoError(t, gov.ListenAndUpdate(ctx))
 			}()
@@ -229,7 +229,7 @@ func TestNetworkManager(t *testing.T) {
 
 			select {
 			case <-waitValidator:
-				t.Error("should not update validation rules")
+				assert.Fail(t, "should not update validation rules")
 			case <-time.After(15 * time.Millisecond):
 				break
 			}
@@ -275,7 +275,7 @@ func TestNetworkManager(t *testing.T) {
 			go gov.ListenAndUpdate(ctx)
 			assert.Nil(t, gov.Current())
 
-			newValidator := gov.AddListener()
+			newValidator := gov.Subscribe()
 			go func() {
 				linkChan <- createGovernanceLink("chat", auctionPKI, auctionTypes)
 			}()

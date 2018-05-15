@@ -85,7 +85,7 @@ func LoadConfigContent(data []byte, pluginsPath string, listener rulesListener) 
 // The configuration returned can then be used in NewMultiValidator().
 func LoadProcessRules(schema *RulesSchema, process, pluginsPath string, listener rulesListener) (validators.Validators, error) {
 	if err := checkPKIConfig(schema.PKI); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	processValidators, err := loadValidatorsConfig(process, pluginsPath, schema.Types, schema.PKI)

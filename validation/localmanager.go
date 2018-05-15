@@ -26,7 +26,7 @@ import (
 
 // LocalManager manages governance for validation rules management in an indigo network.
 type LocalManager struct {
-	*Broadcaster
+	*UpdateBroadcaster
 	store *Store
 
 	validationCfg    *Config
@@ -43,9 +43,9 @@ func NewLocalManager(ctx context.Context, a store.Adapter, validationCfg *Config
 
 	var err error
 	var govMgr = LocalManager{
-		Broadcaster:   &Broadcaster{},
-		store:         NewStore(a, validationCfg),
-		validationCfg: validationCfg,
+		UpdateBroadcaster: NewUpdateBroadcaster(),
+		store:             NewStore(a, validationCfg),
+		validationCfg:     validationCfg,
 	}
 
 	if validationCfg.RulesPath != "" {
@@ -86,7 +86,7 @@ func (m *LocalManager) ListenAndUpdate(ctx context.Context) error {
 			log.Warnf("Validator file watcher error caught: %s", err)
 
 		case <-ctx.Done():
-			m.closeListeners()
+			m.Close()
 			return ctx.Err()
 		}
 	}
@@ -118,5 +118,5 @@ func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesV
 
 func (m *LocalManager) updateCurrent(validatorsMap validators.ProcessesValidators) {
 	m.current = validators.NewMultiValidator(validatorsMap)
-	m.broadcast(m.current)
+	m.Broadcast(m.current)
 }

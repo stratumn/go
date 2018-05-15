@@ -35,7 +35,7 @@ var (
 
 // NetworkManager manages governance for validation rules management in an indigo network.
 type NetworkManager struct {
-	*Broadcaster
+	*UpdateBroadcaster
 	store *Store
 
 	validationCfg *Config
@@ -44,14 +44,14 @@ type NetworkManager struct {
 	networkListener <-chan *cs.Link
 }
 
-// NewNetworkManager returns a new NetworManager able to listen to the network and update governance rules.
+// NewNetworkManager returns a new NetworkManager able to listen to the network and update governance rules.
 func NewNetworkManager(ctx context.Context, a store.Adapter, networkListener <-chan *cs.Link, validationCfg *Config) (Manager, error) {
 	var err error
 	var govMgr = NetworkManager{
-		Broadcaster:     &Broadcaster{},
-		store:           NewStore(a, validationCfg),
-		validationCfg:   validationCfg,
-		networkListener: networkListener,
+		UpdateBroadcaster: NewUpdateBroadcaster(),
+		store:             NewStore(a, validationCfg),
+		validationCfg:     validationCfg,
+		networkListener:   networkListener,
 	}
 
 	currentValidators, err := govMgr.store.GetValidators(ctx)
@@ -65,7 +65,8 @@ func NewNetworkManager(ctx context.Context, a store.Adapter, networkListener <-c
 	return &govMgr, nil
 }
 
-// ListenAndUpdate will update the current validators whenever the provided rule file is updated.
+// ListenAndUpdate implements github.com/go-indigocore/validation.Manager.ListenAndUpdate.
+// It will update the current validators whenever the provided rule file is updated.
 // This method must be run in a goroutine as it will wait for write events on the file.
 func (m *NetworkManager) ListenAndUpdate(ctx context.Context) error {
 	if m.networkListener == nil {
@@ -84,7 +85,7 @@ func (m *NetworkManager) ListenAndUpdate(ctx context.Context) error {
 			}
 
 		case <-ctx.Done():
-			m.closeListeners()
+			m.Close()
 			return ctx.Err()
 		}
 	}
@@ -118,14 +119,15 @@ func (m *NetworkManager) GetValidators(ctx context.Context, link *cs.Link) (vali
 	return m.store.GetValidators(ctx)
 }
 
-// Current returns the current validator set
+// Current implements github.com/go-indigocore/validation.Manager.Current.
+// It returns the current validator set
 func (m *NetworkManager) Current() validators.Validator {
 	return m.current
 }
 
 func (m *NetworkManager) updateCurrent(validatorsMap validators.ProcessesValidators) {
 	m.current = validators.NewMultiValidator(validatorsMap)
-	m.broadcast(m.current)
+	m.Broadcast(m.current)
 }
 
 func isGovernanceLink(link *cs.Link) bool {

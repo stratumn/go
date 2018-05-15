@@ -26,35 +26,75 @@ func TestBroadcaster(t *testing.T) {
 
 	validator := validators.NewMultiValidator(nil)
 
-	t.Run("AddRemoveListener", func(t *testing.T) {
-		t.Run("Adds a listener provided with the current valitor set", func(t *testing.T) {
+	t.Run("Subscribe-Unsubscribe", func(t *testing.T) {
+		t.Run("Adds a listener provided with the current validator set", func(t *testing.T) {
 
-			b := Broadcaster{}
-			b.broadcast(validator)
+			b := NewUpdateBroadcaster()
+			b.Broadcast(validator)
 
 			select {
-			case <-b.AddListener():
+			case <-b.Subscribe():
 				break
 			case <-time.After(10 * time.Millisecond):
-				t.Error("No validator in the channel")
+				assert.Fail(t, "No validator in the channel")
 			}
 		})
 
 		t.Run("Removes an unknown channel", func(t *testing.T) {
-			b := Broadcaster{}
-			b.RemoveListener(make(chan validators.Validator))
-			b.AddListener()
-			b.RemoveListener(make(chan validators.Validator))
+			b := NewUpdateBroadcaster()
+			// try removing a non-existing channel. It should not panic.
+			b.Unsubscribe(make(chan validators.Validator))
+
+			// add a channel and retry removing a non-existing channel. It should not panic.
+			b.Subscribe()
+			b.Unsubscribe(make(chan validators.Validator))
 		})
 
 		t.Run("Removes closes the channel", func(t *testing.T) {
-			b := Broadcaster{}
-			listener := b.AddListener()
-			b.RemoveListener(listener)
+			b := NewUpdateBroadcaster()
+			listener := b.Subscribe()
+			b.Unsubscribe(listener)
 
 			_, ok := <-listener
 			assert.False(t, ok, "<-listener")
 		})
 	})
 
+	t.Run("Broadcast", func(t *testing.T) {
+		b := NewUpdateBroadcaster()
+		listener1 := b.Subscribe()
+		listener2 := b.Subscribe()
+
+		b.Broadcast(validator)
+
+		for i := 0; i < 2; i++ {
+			select {
+			case <-listener1:
+				continue
+			case <-listener2:
+				continue
+			case <-time.After(10 * time.Millisecond):
+				assert.Fail(t, "No validator in the channel")
+			}
+		}
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		b := NewUpdateBroadcaster()
+		listener1 := b.Subscribe()
+		listener2 := b.Subscribe()
+
+		b.Close()
+
+		for i := 0; i < 2; i++ {
+			select {
+			case _, ok := <-listener1:
+				assert.False(t, ok, "<-listener")
+			case _, ok := <-listener2:
+				assert.False(t, ok, "<-listener")
+			case <-time.After(10 * time.Millisecond):
+				assert.Fail(t, "No validator in the channel")
+			}
+		}
+	})
 }

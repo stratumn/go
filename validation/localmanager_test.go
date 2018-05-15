@@ -130,7 +130,7 @@ func TestLocalManager(t *testing.T) {
 			})
 			require.NotNil(t, gov, "Gouvernance is initialized by file and store")
 			go gov.ListenAndUpdate(ctx)
-			waitValidator := gov.AddListener()
+			waitValidator := gov.Subscribe()
 			v = <-waitValidator
 			assert.NotNil(t, v, "Validator loaded from file")
 
@@ -205,7 +205,7 @@ func TestLocalManager(t *testing.T) {
 			assert.Nil(t, gov.Current())
 
 			ioutil.WriteFile(testFile, []byte(testutils.ValidJSONConfig), os.ModeTemporary)
-			newValidator := <-gov.AddListener()
+			newValidator := <-gov.Subscribe()
 			assert.Equal(t, newValidator, gov.Current())
 		})
 	})

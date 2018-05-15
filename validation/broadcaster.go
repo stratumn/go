@@ -17,19 +17,39 @@ package validation
 import (
 	"sync"
 
+	"github.com/stratumn/alice/core/protocol/coin/validator"
 	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
-// Broadcaster provides subscription to a Manager to be notified of validation updates.
-type Broadcaster struct {
+// UpdateSubscriber provides a way to be notified of validation updates.
+type UpdateSubscriber interface {
+	Subscribe() <-chan validators.Validator
+	Unsubscribe(<-chan validators.Validator)
+}
+
+// UpdateNotifier allows broadcasting a validator to a bunch of subscribers.
+type UpdateNotifier interface {
+	Broadcast(validator.Validator)
+	Close()
+}
+
+// UpdateBroadcaster implements github.com/go-indigocore/validation.UpdateSubscriber and github.com/go-indigocore/validation.UpdateNotifier.
+// It provides subscription to a Manager to be notified of validation updates.
+type UpdateBroadcaster struct {
 	current validators.Validator
 
 	listenersMutex sync.RWMutex
 	listeners      []chan validators.Validator
 }
 
-// AddListener return a listener that will be notified when the validator changes.
-func (b *Broadcaster) AddListener() <-chan validators.Validator {
+// NewUpdateBroadcaster returns a new UpdateBroadcaster.
+func NewUpdateBroadcaster() *UpdateBroadcaster {
+	return &UpdateBroadcaster{}
+}
+
+// Subscribe implements github.com/go-indigocore/validation.UpdateSubscriber.Subscribe.
+// It return a listener that will be notified when the validator changes.
+func (b *UpdateBroadcaster) Subscribe() <-chan validators.Validator {
 	b.listenersMutex.Lock()
 	defer b.listenersMutex.Unlock()
 
@@ -44,8 +64,9 @@ func (b *Broadcaster) AddListener() <-chan validators.Validator {
 	return subscribeChan
 }
 
-// RemoveListener removes a listener.
-func (b *Broadcaster) RemoveListener(c <-chan validators.Validator) {
+// Unsubscribe implements github.com/go-indigocore/validation.UpdateSubscriber.Unsubscribe.
+// It removes a listener.
+func (b *UpdateBroadcaster) Unsubscribe(c <-chan validators.Validator) {
 	b.listenersMutex.Lock()
 	defer b.listenersMutex.Unlock()
 
@@ -64,7 +85,8 @@ func (b *Broadcaster) RemoveListener(c <-chan validators.Validator) {
 	}
 }
 
-func (b *Broadcaster) broadcast(validator validators.Validator) {
+// Broadcast implements github.com/go-indigocore/validation.UpdateNotifier.Broadcast.
+func (b *UpdateBroadcaster) Broadcast(validator validators.Validator) {
 	b.listenersMutex.RLock()
 	defer b.listenersMutex.RUnlock()
 
@@ -76,7 +98,8 @@ func (b *Broadcaster) broadcast(validator validators.Validator) {
 	}
 }
 
-func (b *Broadcaster) closeListeners() {
+// Close implements github.com/go-indigocore/validation.UpdateNotifier.Close.
+func (b *UpdateBroadcaster) Close() {
 	b.listenersMutex.Lock()
 	defer b.listenersMutex.Unlock()
 
