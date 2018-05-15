@@ -17,7 +17,6 @@ package validation
 import (
 	"sync"
 
-	"github.com/stratumn/alice/core/protocol/coin/validator"
 	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
@@ -29,7 +28,7 @@ type UpdateSubscriber interface {
 
 // UpdateNotifier allows broadcasting a validator to a bunch of subscribers.
 type UpdateNotifier interface {
-	Broadcast(validator.Validator)
+	Broadcast(validators.Validator)
 	Close()
 }
 
