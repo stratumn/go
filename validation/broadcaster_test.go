@@ -26,7 +26,7 @@ func TestBroadcaster(t *testing.T) {
 
 	validator := validators.NewMultiValidator(nil)
 
-	t.Run("Subscribe-Unsubscribe", func(t *testing.T) {
+	t.Run("Subscribe", func(t *testing.T) {
 		t.Run("Adds a listener provided with the current validator set", func(t *testing.T) {
 
 			b := NewUpdateBroadcaster()
@@ -39,6 +39,8 @@ func TestBroadcaster(t *testing.T) {
 				assert.Fail(t, "No validator in the channel")
 			}
 		})
+	})
+	t.Run("Unsubscribe", func(t *testing.T) {
 
 		t.Run("Removes an unknown channel", func(t *testing.T) {
 			b := NewUpdateBroadcaster()
@@ -50,7 +52,7 @@ func TestBroadcaster(t *testing.T) {
 			b.Unsubscribe(make(chan validators.Validator))
 		})
 
-		t.Run("Removes closes the channel", func(t *testing.T) {
+		t.Run("Closes the channel", func(t *testing.T) {
 			b := NewUpdateBroadcaster()
 			listener := b.Subscribe()
 			b.Unsubscribe(listener)
@@ -58,6 +60,7 @@ func TestBroadcaster(t *testing.T) {
 			_, ok := <-listener
 			assert.False(t, ok, "<-listener")
 		})
+
 	})
 
 	t.Run("Broadcast", func(t *testing.T) {
