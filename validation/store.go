@@ -33,6 +33,9 @@ const (
 	// GovernanceProcessName is the process name used for governance information storage.
 	GovernanceProcessName = "_governance"
 
+	// ProcessMetaKey is the key used to store the governed process name in the link's meta data.
+	ProcessMetaKey = "process"
+
 	// ValidatorTag is the tag used to find validators in storage.
 	ValidatorTag = "validators"
 )
@@ -136,22 +139,15 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 		return nil, ErrBadGovernanceSegment
 	}
 
-	processesValidators, err := LoadProcessRules(processesRules{
-		process: RulesSchema{
-			PKI:   &pki,
-			Types: types,
-		},
-	}, s.validationCfg.PluginsPath, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return processesValidators[process], nil
+	return LoadProcessRules(&RulesSchema{
+		PKI:   &pki,
+		Types: types,
+	}, process, s.validationCfg.PluginsPath, nil)
 }
 
 // UpdateValidator replaces the current validation rules in the store by the provided ones.
 // If none was found in the store, they will be created.
-func (s *Store) UpdateValidator(ctx context.Context, process string, schema RulesSchema) error {
+func (s *Store) UpdateValidator(ctx context.Context, process string, schema *RulesSchema) error {
 	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    GovernanceProcessName,
@@ -180,7 +176,7 @@ func (s *Store) UpdateValidator(ctx context.Context, process string, schema Rule
 	return nil
 }
 
-func (s *Store) uploadValidator(ctx context.Context, process string, schema RulesSchema, prevLink *cs.Link) error {
+func (s *Store) uploadValidator(ctx context.Context, process string, schema *RulesSchema, prevLink *cs.Link) error {
 	priority := 0.
 	mapID := ""
 	prevLinkHash := ""
@@ -205,6 +201,7 @@ func (s *Store) uploadValidator(ctx context.Context, process string, schema Rule
 		PrevLinkHash: prevLinkHash,
 		Priority:     priority,
 		Tags:         []string{process, ValidatorTag},
+		Data:         map[string]interface{}{ProcessMetaKey: process},
 	}
 
 	link := &cs.Link{

@@ -128,7 +128,7 @@ func TestStore(t *testing.T) {
 			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
+			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
@@ -141,7 +141,7 @@ func TestStore(t *testing.T) {
 			s := validation.NewStore(a, &validation.Config{
 				PluginsPath: pluginsPath,
 			})
-			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
+			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
@@ -169,7 +169,7 @@ func TestStore(t *testing.T) {
 			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
+			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
@@ -186,7 +186,7 @@ func TestStore(t *testing.T) {
 
 			updatedAuctionPKI, _ := testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "jérome", -1)))
 
-			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
+			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   updatedAuctionPKI,
 			})
@@ -210,7 +210,7 @@ func TestStore(t *testing.T) {
 			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, process, validation.RulesSchema{
+			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
@@ -300,6 +300,7 @@ func createGovernanceLink(process string, pki *validators.PKI, types map[string]
 		WithProcess(validation.GovernanceProcessName).
 		WithTags(process, validation.ValidatorTag).
 		WithState(state).
+		WithMetadata(validation.ProcessMetaKey, process).
 		Build()
 	link.Meta.Priority = 0.
 	return link

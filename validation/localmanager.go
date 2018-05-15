@@ -16,7 +16,6 @@ package validation
 
 import (
 	"context"
-	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
@@ -27,15 +26,13 @@ import (
 
 // LocalManager manages governance for validation rules management in an indigo network.
 type LocalManager struct {
+	*Broadcaster
 	store *Store
 
 	validationCfg    *Config
 	validatorWatcher *fsnotify.Watcher
-	validators       map[string]validators.Validators
-	current          validators.Validator
 
-	listenersMutex sync.RWMutex
-	listeners      []chan validators.Validator
+	current validators.Validator
 }
 
 // NewLocalManager enhances validator management with some governance concepts.
@@ -46,6 +43,7 @@ func NewLocalManager(ctx context.Context, a store.Adapter, validationCfg *Config
 
 	var err error
 	var govMgr = LocalManager{
+		Broadcaster:   &Broadcaster{},
 		store:         NewStore(a, validationCfg),
 		validationCfg: validationCfg,
 	}
@@ -88,11 +86,7 @@ func (m *LocalManager) ListenAndUpdate(ctx context.Context) error {
 			log.Warnf("Validator file watcher error caught: %s", err)
 
 		case <-ctx.Done():
-			m.listenersMutex.Lock()
-			defer m.listenersMutex.Unlock()
-			for _, s := range m.listeners {
-				close(s)
-			}
+			m.closeListeners()
 			return ctx.Err()
 		}
 	}
@@ -103,43 +97,6 @@ func (m *LocalManager) Current() validators.Validator {
 	return m.current
 }
 
-// AddListener return a listener that will be notified when the validator changes.
-func (m *LocalManager) AddListener() <-chan validators.Validator {
-	m.listenersMutex.Lock()
-	defer m.listenersMutex.Unlock()
-
-	subscribeChan := make(chan validators.Validator)
-	m.listeners = append(m.listeners, subscribeChan)
-
-	// Insert the current validator in the channel if there is one.
-	if m.current != nil {
-		go func() {
-			subscribeChan <- m.current
-		}()
-	}
-	return subscribeChan
-}
-
-// RemoveListener removes a listener.
-func (m *LocalManager) RemoveListener(c <-chan validators.Validator) {
-	m.listenersMutex.Lock()
-	defer m.listenersMutex.Unlock()
-
-	index := -1
-	for i, l := range m.listeners {
-		if l == c {
-			index = i
-			break
-		}
-	}
-
-	if index >= 0 {
-		close(m.listeners[index])
-		m.listeners[index] = m.listeners[len(m.listeners)-1]
-		m.listeners = m.listeners[:len(m.listeners)-1]
-	}
-}
-
 // GetValidators returns the list of validators for each process by parsing a local file.
 // The validators are updated in the store according to local changes.
 func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
@@ -147,7 +104,7 @@ func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesV
 	processesValidators := make(validators.ProcessesValidators, 0)
 
 	if m.validationCfg.RulesPath != "" {
-		_, err = LoadConfig(m.validationCfg, func(process string, schema RulesSchema, validators validators.Validators) {
+		_, err = LoadConfig(m.validationCfg, func(process string, schema *RulesSchema, validators validators.Validators) {
 			m.store.UpdateValidator(ctx, process, schema)
 			processesValidators[process] = validators
 		})
@@ -160,13 +117,6 @@ func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesV
 }
 
 func (m *LocalManager) updateCurrent(validatorsMap validators.ProcessesValidators) {
-	m.listenersMutex.RLock()
-	defer m.listenersMutex.RUnlock()
-
 	m.current = validators.NewMultiValidator(validatorsMap)
-	for _, listener := range m.listeners {
-		go func(listener chan validators.Validator) {
-			listener <- m.current
-		}(listener)
-	}
+	m.broadcast(m.current)
 }

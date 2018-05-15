@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/store/storetesting"
@@ -119,7 +118,7 @@ func TestLocalManager(t *testing.T) {
 	})
 
 	t.Run("ListenAndUpdate", func(t *testing.T) {
-		t.Run("New validation file read on modification", func(t *testing.T) {
+		t.Run("Update rules in store on file update", func(t *testing.T) {
 			var v validators.Validator
 			ctx := context.Background()
 			validJSON := fmt.Sprintf(`{%s}`, testutils.ValidChatJSONConfig)
@@ -157,7 +156,7 @@ func TestLocalManager(t *testing.T) {
 
 		t.Run("closes subscribing channels on context cancel", func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			defer cancel()
+
 			testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 			defer os.Remove(testFile)
 			gov, err := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{
@@ -165,9 +164,14 @@ func TestLocalManager(t *testing.T) {
 				PluginsPath: pluginsPath,
 			})
 			require.NoError(t, err)
+
+			done := make(chan struct{})
 			go func() {
 				require.EqualError(t, gov.ListenAndUpdate(ctx), context.Canceled.Error())
+				done <- struct{}{}
 			}()
+			cancel()
+			<-done
 		})
 
 		t.Run("return an error when no file watcher is set", func(t *testing.T) {
@@ -176,9 +180,13 @@ func TestLocalManager(t *testing.T) {
 			defer os.Remove(testFile)
 			gov, err := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{})
 			require.NoError(t, err)
+
+			done := make(chan struct{})
 			go func() {
 				require.EqualError(t, gov.ListenAndUpdate(ctx), validation.ErrNoFileWatcher.Error())
+				done <- struct{}{}
 			}()
+			<-done
 		})
 	})
 
@@ -199,43 +207,6 @@ func TestLocalManager(t *testing.T) {
 			ioutil.WriteFile(testFile, []byte(testutils.ValidJSONConfig), os.ModeTemporary)
 			newValidator := <-gov.AddListener()
 			assert.Equal(t, newValidator, gov.Current())
-		})
-	})
-
-	t.Run("AddRemoveListener", func(t *testing.T) {
-		t.Run("Adds a listener provided with the current valitor set", func(t *testing.T) {
-			ctx := context.Background()
-			testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
-			defer os.Remove(testFile)
-			gov, err := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{
-				RulesPath:   testFile,
-				PluginsPath: pluginsPath,
-			})
-			require.NoError(t, err)
-			select {
-			case <-gov.AddListener():
-				break
-			case <-time.After(10 * time.Millisecond):
-				t.Error("No validator in the channel")
-			}
-		})
-
-		t.Run("Removes an unknown channel", func(t *testing.T) {
-			ctx := context.Background()
-			gov, _ := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{})
-			gov.RemoveListener(make(chan validators.Validator))
-			gov.AddListener()
-			gov.RemoveListener(make(chan validators.Validator))
-		})
-
-		t.Run("Removes closes the channel", func(t *testing.T) {
-			ctx := context.Background()
-			gov, _ := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{})
-			listener := gov.AddListener()
-			gov.RemoveListener(listener)
-
-			_, ok := <-listener
-			assert.False(t, ok, "<-listener")
 		})
 	})
 }

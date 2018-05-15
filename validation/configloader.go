@@ -43,7 +43,7 @@ type RulesSchema struct {
 	Types map[string]TypeSchema `json:"types"`
 }
 
-type rulesListener func(process string, schema RulesSchema, validators validators.Validators)
+type rulesListener func(process string, schema *RulesSchema, validators validators.Validators)
 
 // LoadConfig loads the validators configuration from a json file.
 // The configuration returned can then be used in NewMultiValidator().
@@ -69,28 +69,33 @@ func LoadConfigContent(data []byte, pluginsPath string, listener rulesListener) 
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return LoadProcessRules(rules, pluginsPath, listener)
-}
 
-// LoadProcessRules loads the validators configuration from a slice of processRule.
-// The configuration returned can then be used in NewMultiValidator().
-func LoadProcessRules(rules processesRules, pluginsPath string, listener rulesListener) (validators.ProcessesValidators, error) {
 	validators := make(validators.ProcessesValidators, 0)
 	for process, schema := range rules {
-		if err := checkPKIConfig(schema.PKI); err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		processValidators, err := loadValidatorsConfig(process, pluginsPath, schema.Types, schema.PKI)
+		validators[process], err = LoadProcessRules(&schema, process, pluginsPath, listener)
 		if err != nil {
 			return nil, err
 		}
-		if listener != nil {
-			listener(process, schema, processValidators)
-		}
-		validators[process] = processValidators
 	}
+
 	return validators, nil
+}
+
+// LoadProcessRules loads the validators configuration for a single process.
+// The configuration returned can then be used in NewMultiValidator().
+func LoadProcessRules(schema *RulesSchema, process, pluginsPath string, listener rulesListener) (validators.Validators, error) {
+	if err := checkPKIConfig(schema.PKI); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	processValidators, err := loadValidatorsConfig(process, pluginsPath, schema.Types, schema.PKI)
+	if err != nil {
+		return nil, err
+	}
+	if listener != nil {
+		listener(process, schema, processValidators)
+	}
+	return processValidators, nil
 }
 
 // checkPKIConfig checks that public keys are base64 encoded.

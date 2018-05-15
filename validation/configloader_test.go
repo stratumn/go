@@ -89,7 +89,7 @@ func TestLoadConfig_Success(t *testing.T) {
 		validators, err := validation.LoadConfig(&validation.Config{
 			RulesPath:   testFile,
 			PluginsPath: pluginsPath,
-		}, func(process string, schema validation.RulesSchema, processValidators validators.Validators) {
+		}, func(process string, schema *validation.RulesSchema, processValidators validators.Validators) {
 			validatorProcessCount++
 			validatorCount = validatorCount + len(processValidators)
 		})
