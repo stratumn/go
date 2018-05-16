@@ -115,7 +115,7 @@ func TestNetworkManager(t *testing.T) {
 			go func() {
 				parent := getLastValidator(t, a, "chat")
 				parentHash, _ := parent.HashString()
-				new := cstesting.NewLinkBuilder().
+				newRules := cstesting.NewLinkBuilder().
 					WithMapID(parent.Meta.MapID).
 					WithPrevLinkHash(parentHash).
 					WithProcess(validation.GovernanceProcessName).
@@ -124,7 +124,7 @@ func TestNetworkManager(t *testing.T) {
 					WithPriority(1.).
 					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
 					Build()
-				linkChan <- new
+				linkChan <- newRules
 			}()
 
 			v = <-waitValidator
@@ -291,7 +291,7 @@ func TestNetworkManager(t *testing.T) {
 
 			newValidator := gov.Subscribe()
 			go func() {
-				new := cstesting.NewLinkBuilder().
+				newRules := cstesting.NewLinkBuilder().
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "chat").
 					WithPrevLinkHash("").
@@ -299,7 +299,7 @@ func TestNetworkManager(t *testing.T) {
 					WithPriority(0.).
 					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
 					Build()
-				linkChan <- new
+				linkChan <- newRules
 			}()
 			v := <-newValidator
 			assert.Equal(t, v, gov.Current())

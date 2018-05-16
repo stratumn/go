@@ -176,9 +176,6 @@ func (s *Store) UpdateValidator(ctx context.Context, link *cs.Link) error {
 
 	if len(segments) == 0 {
 		log.Infof("No governance segments found for process %s, creating validator", process)
-		if link.Meta.Priority != 0. {
-			return ErrBadPriority
-		}
 		if link.Meta.PrevLinkHash != "" {
 			return ErrBadPrevLinkHash
 		}

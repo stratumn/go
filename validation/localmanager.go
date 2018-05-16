@@ -102,10 +102,9 @@ func (m *LocalManager) Current() validators.Validator {
 func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
 	processesValidators := make(validators.ProcessesValidators, 0)
 
-	var loadConfigErr error
 	var updateStoreErr error
 	if m.validationCfg.RulesPath != "" {
-		_, loadConfigErr = LoadConfig(m.validationCfg, func(process string, schema *RulesSchema, validators validators.Validators) {
+		_, loadConfigErr := LoadConfig(m.validationCfg, func(process string, schema *RulesSchema, validators validators.Validators) {
 			newValidatorLink, err := m.store.LinkFromSchema(ctx, process, schema)
 			if err != nil {
 				log.Error("Could not create link from validation rules", err)
