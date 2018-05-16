@@ -101,7 +101,8 @@ func TestLocalManager(t *testing.T) {
 			var v validators.Validator
 			a := dummystore.New(nil)
 			populateStoreWithValidData(t, a)
-			checkLastValidatorPriority(t, a, "auction", 1.)
+			l := getLastValidator(t, a, "auction")
+			assert.Equal(t, 1., l.Meta.Priority)
 			testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
 			defer os.Remove(testFile)
 			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{
@@ -113,7 +114,8 @@ func TestLocalManager(t *testing.T) {
 
 			v = gov.Current()
 			assert.NotNil(t, v, "Validator loaded from file")
-			checkLastValidatorPriority(t, a, "auction", 2.)
+			l = getLastValidator(t, a, "auction")
+			assert.Equal(t, 2., l.Meta.Priority)
 		})
 	})
 
@@ -134,7 +136,8 @@ func TestLocalManager(t *testing.T) {
 			v = <-waitValidator
 			assert.NotNil(t, v, "Validator loaded from file")
 
-			checkLastValidatorPriority(t, a, "chat", 0.)
+			l := getLastValidator(t, a, "chat")
+			assert.Equal(t, 0., l.Meta.Priority)
 
 			chatJSON := testutils.CreateValidatorJSON("chat",
 				strings.Replace(testutils.ValidChatJSONPKIConfig, "Bob", "Dave", -1),
@@ -151,7 +154,8 @@ func TestLocalManager(t *testing.T) {
 			v = <-waitValidator
 			assert.NotNil(t, v, "Validator reloaded from file")
 
-			checkLastValidatorPriority(t, a, "chat", 1.)
+			l = getLastValidator(t, a, "chat")
+			assert.Equal(t, 1., l.Meta.Priority)
 		})
 
 		t.Run("closes subscribing channels on context cancel", func(t *testing.T) {

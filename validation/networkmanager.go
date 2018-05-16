@@ -107,13 +107,21 @@ func (m *NetworkManager) GetValidators(ctx context.Context, link *cs.Link) (vali
 		return nil, ErrMissingProcess
 	}
 
+	var updateStoreErr error
 	processesValidators := make(validators.ProcessesValidators, 0)
 	processRulesUpdate := func(process string, schema *RulesSchema, validators validators.Validators) {
-		m.store.UpdateValidator(ctx, process, schema)
+		updateStoreErr = m.store.UpdateValidator(ctx, link)
+		if updateStoreErr != nil {
+			log.Errorf("Could not update validation rules in store for process %s: %s", process, err)
+			return
+		}
 		processesValidators[process] = validators
 	}
 	if _, err = LoadProcessRules(&schema, process, m.validationCfg.PluginsPath, processRulesUpdate); err != nil {
 		return nil, err
+	}
+	if updateStoreErr != nil {
+		return nil, updateStoreErr
 	}
 
 	return m.store.GetValidators(ctx)

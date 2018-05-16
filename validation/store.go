@@ -50,6 +50,18 @@ var (
 	// ErrBadGovernanceSegment is the error returned when the governance segment has a bad format
 	ErrBadGovernanceSegment = errors.New("governance segment is badly formatted")
 
+	// ErrBadPriority is returned when the new governance link's priority is less than or equal to the previous governance link's priority.
+	ErrBadPriority = errors.New("priority has to be higher than previous governance link")
+
+	// ErrBadPrevLinkHash is returned when the new governance link's prevLInkHash is different from the previous governance link's hash.
+	ErrBadPrevLinkHash = errors.New("prevLinkHash does not match previous governance link")
+
+	// ErrBadMapID is returned when the governance link's mapID does not match the previous link's mapID.
+	ErrBadMapID = errors.New("governance rules for a single process must belong to the same map")
+
+	// ErrBadProcess is returned when the governance link's process does not match the previous link's process.
+	ErrBadProcess = errors.New("process does not match the previous governance link")
+
 	defaultPagination = store.Pagination{
 		Offset: 0,
 		Limit:  1,
@@ -146,8 +158,13 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 }
 
 // UpdateValidator replaces the current validation rules in the store by the provided ones.
-// If none was found in the store, they will be created.
-func (s *Store) UpdateValidator(ctx context.Context, process string, schema *RulesSchema) error {
+// It checks that the provided link correcly references the previous rules' link.
+func (s *Store) UpdateValidator(ctx context.Context, link *cs.Link) error {
+	process, ok := link.Meta.Data[ProcessMetaKey].(string)
+	if !ok {
+		return ErrMissingProcess
+	}
+
 	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    GovernanceProcessName,
@@ -156,36 +173,72 @@ func (s *Store) UpdateValidator(ctx context.Context, process string, schema *Rul
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "Cannot retrieve governance segments")
 	}
+
 	if len(segments) == 0 {
-		log.Warnf("No governance segments found for process %s", process)
-		if err = s.uploadValidator(ctx, process, schema, nil); err != nil {
-			return errors.Wrap(err, "Cannot upload validator")
+		log.Infof("No governance segments found for process %s, creating validator", process)
+		if link.Meta.Priority != 0. {
+			return ErrBadPriority
 		}
-		return nil
-	}
-	link := segments[0].Link
-	if canonicalCompare(link.State["pki"], schema.PKI) != nil ||
-		canonicalCompare(link.State["types"], schema.Types) != nil {
-		log.Infof("Validator or process %s has to be updated in store", process)
-		if err = s.uploadValidator(ctx, process, schema, &link); err != nil {
-			log.Warnf("Cannot upload validator: %s", err)
-			return err
+		if link.Meta.PrevLinkHash != "" {
+			return ErrBadPrevLinkHash
 		}
+		return s.uploadValidator(ctx, link)
 	}
 
+	lastGovernanceLink := segments[0].Link
+	if canonicalCompare(link.State, lastGovernanceLink.State) != nil {
+		log.Infof("Validator of process %s has to be updated in store", process)
+		if link.Meta.Priority <= lastGovernanceLink.Meta.Priority {
+			return ErrBadPriority
+		}
+		lastGovernanceLinkHash, _ := lastGovernanceLink.HashString()
+		if link.Meta.PrevLinkHash != lastGovernanceLinkHash {
+			return ErrBadPrevLinkHash
+		}
+		if link.Meta.MapID != lastGovernanceLink.Meta.MapID {
+			return ErrBadMapID
+		}
+		if process != lastGovernanceLink.Meta.Data[ProcessMetaKey] {
+			return ErrBadProcess
+		}
+		return s.uploadValidator(ctx, link)
+	}
 	return nil
 }
 
-func (s *Store) uploadValidator(ctx context.Context, process string, schema *RulesSchema, prevLink *cs.Link) error {
+func (s *Store) uploadValidator(ctx context.Context, link *cs.Link) error {
+	hash, err := s.store.CreateLink(ctx, link)
+	if err != nil {
+		return errors.Wrapf(err, "cannot create link for process governance %s", link.Meta.Data[ProcessMetaKey])
+	}
+	log.Infof("New validator rules store for process %s: %q", link.Meta.Data[ProcessMetaKey], hash)
+	return nil
+}
+
+// LinkFromSchema creates a chainscript link from a PKI and a set of rules.
+// It first tries to fetch the previous governance link for this process and builds the new one on top of it.
+// If no previous governance link exists, a link from a new map is created.
+func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *RulesSchema) (*cs.Link, error) {
+	var lastGovernanceLink cs.Link
+	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
+		Pagination: defaultPagination,
+		Process:    GovernanceProcessName,
+		Tags:       []string{process, ValidatorTag},
+	})
+	if err != nil {
+		return nil, errors.Wrap(errors.WithStack(err), "Cannot retrieve governance segments")
+	}
+
 	priority := 0.
 	mapID := ""
 	prevLinkHash := ""
-	if prevLink != nil {
-		priority = prevLink.Meta.Priority + 1.
-		mapID = prevLink.Meta.MapID
+	if len(segments) > 0 {
+		lastGovernanceLink = segments[0].Link
+		priority = lastGovernanceLink.Meta.Priority + 1.
+		mapID = lastGovernanceLink.Meta.MapID
 		var err error
-		if prevLinkHash, err = prevLink.HashString(); err != nil {
-			return errors.Wrapf(err, "cannot get previous hash for process governance %s", process)
+		if prevLinkHash, err = lastGovernanceLink.HashString(); err != nil {
+			return nil, errors.Wrapf(err, "cannot get previous hash for process governance %s", process)
 		}
 	} else {
 		mapID = uuid.NewV4().String()
@@ -204,18 +257,11 @@ func (s *Store) uploadValidator(ctx context.Context, process string, schema *Rul
 		Data:         map[string]interface{}{ProcessMetaKey: process},
 	}
 
-	link := &cs.Link{
+	return &cs.Link{
 		State:      linkState,
 		Meta:       linkMeta,
 		Signatures: cs.Signatures{},
-	}
-
-	hash, err := s.store.CreateLink(ctx, link)
-	if err != nil {
-		return errors.Wrapf(err, "cannot create link for process governance %s", process)
-	}
-	log.Infof("New validator rules store for process %s: %q", process, hash)
-	return nil
+	}, nil
 }
 
 func canonicalCompare(metaData interface{}, fileData interface{}) error {
