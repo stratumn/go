@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/dummystore"
@@ -118,21 +119,160 @@ func TestStore(t *testing.T) {
 		})
 	})
 
-	t.Run("TestUpdateValidator", func(t *testing.T) {
+	t.Run("TestLinkFromSchema", func(t *testing.T) {
 		process := "auction"
 		auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
 		auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
 
-		t.Run("Fail to fetch segments", func(t *testing.T) {
+		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
 			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
+			link, err := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
 			assert.EqualError(t, err, "Cannot retrieve governance segments: error")
+			assert.Nil(t, link)
+		})
+
+		t.Run("Creates a segment without parent", func(t *testing.T) {
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
+				return cs.SegmentSlice{}, nil
+			}
+
+			s := validation.NewStore(a, &validation.Config{})
+			link, err := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
+				Types: auctionTypes,
+				PKI:   auctionPKI,
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, "", link.Meta.PrevLinkHash)
+			assert.Equal(t, 0., link.Meta.Priority)
+			assert.Equal(t, process, link.Meta.Data[validation.ProcessMetaKey])
+			assert.Equal(t, validation.GovernanceProcessName, link.Meta.Process)
+			assert.NotNil(t, uuid.FromStringOrNil(link.Meta.MapID))
+			assert.Contains(t, link.Meta.Tags, process)
+			assert.Contains(t, link.Meta.Tags, validation.ValidatorTag)
+		})
+
+		t.Run("Creates a segment from a parent", func(t *testing.T) {
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				Build()
+
+			parentHash, _ := parent.HashString()
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
+				return cs.SegmentSlice{parent.Segmentify()}, nil
+			}
+
+			s := validation.NewStore(a, &validation.Config{})
+			link, err := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
+				Types: auctionTypes,
+				PKI:   auctionPKI,
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, parentHash, link.Meta.PrevLinkHash)
+			assert.Equal(t, parent.Meta.Priority+1, link.Meta.Priority)
+			assert.Equal(t, process, link.Meta.Data[validation.ProcessMetaKey])
+			assert.Equal(t, parent.Meta.MapID, link.Meta.MapID)
+			assert.Equal(t, validation.GovernanceProcessName, link.Meta.Process)
+			assert.Contains(t, link.Meta.Tags, process)
+			assert.Contains(t, link.Meta.Tags, validation.ValidatorTag)
+		})
+	})
+
+	t.Run("TestUpdateValidator", func(t *testing.T) {
+		process := "auction"
+		auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
+		auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
+		updatedAuctionPKI, _ := testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "jérome", -1)))
+
+		t.Run("Fails to fetch segments", func(t *testing.T) {
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return nil, errors.New("error") }
+
+			s := validation.NewStore(a, &validation.Config{})
+			err := s.UpdateValidator(ctx, createGovernanceLink(process, 0., auctionPKI, auctionTypes))
+			assert.EqualError(t, err, "Cannot retrieve governance segments: error")
+		})
+
+		t.Run("Fails when priority does not match", func(t *testing.T) {
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(validation.ProcessMetaKey, process).
+				Build()
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
+				return cs.SegmentSlice{parent.Segmentify()}, nil
+			}
+
+			s := validation.NewStore(a, &validation.Config{})
+			err := s.UpdateValidator(ctx, createGovernanceLink(process, 0., updatedAuctionPKI, auctionTypes))
+			assert.EqualError(t, err, validation.ErrBadPriority.Error())
+		})
+
+		t.Run("Fails when prevLinkHash does not match", func(t *testing.T) {
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(validation.ProcessMetaKey, process).
+				Build()
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
+				return cs.SegmentSlice{parent.Segmentify()}, nil
+			}
+
+			s := validation.NewStore(a, &validation.Config{})
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
+				PKI:   updatedAuctionPKI,
+				Types: auctionTypes,
+			})
+			link.Meta.PrevLinkHash = "bad"
+			err := s.UpdateValidator(ctx, link)
+			assert.EqualError(t, err, validation.ErrBadPrevLinkHash.Error())
+		})
+
+		t.Run("Fails when mapID does not match", func(t *testing.T) {
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(validation.ProcessMetaKey, process).
+				Build()
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
+				return cs.SegmentSlice{parent.Segmentify()}, nil
+			}
+
+			s := validation.NewStore(a, &validation.Config{})
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
+				PKI:   updatedAuctionPKI,
+				Types: auctionTypes,
+			})
+			link.Meta.MapID = "bad"
+			err := s.UpdateValidator(ctx, link)
+			assert.EqualError(t, err, validation.ErrBadMapID.Error())
+		})
+
+		t.Run("Fails when process does not match", func(t *testing.T) {
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(validation.ProcessMetaKey, process).
+				Build()
+			a := new(storetesting.MockAdapter)
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
+				return cs.SegmentSlice{parent.Segmentify()}, nil
+			}
+
+			s := validation.NewStore(a, &validation.Config{})
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
+				PKI:   updatedAuctionPKI,
+				Types: auctionTypes,
+			})
+			link.Meta.Data[validation.ProcessMetaKey] = "bad"
+			err := s.UpdateValidator(ctx, link)
+			assert.EqualError(t, err, validation.ErrBadProcess.Error())
 		})
 
 		t.Run("Creates new validator", func(t *testing.T) {
@@ -141,10 +281,11 @@ func TestStore(t *testing.T) {
 			s := validation.NewStore(a, &validation.Config{
 				PluginsPath: pluginsPath,
 			})
-			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
+			err := s.UpdateValidator(ctx, link)
 
 			validators, err := s.GetValidators(ctx)
 			assert.NoError(t, err)
@@ -161,18 +302,23 @@ func TestStore(t *testing.T) {
 		})
 
 		t.Run("Fails to create new validator", func(t *testing.T) {
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(validation.ProcessMetaKey, process).
+				Build()
 			a := new(storetesting.MockAdapter)
 			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
-				return cs.SegmentSlice{cstesting.RandomSegment()}, nil
+				return cs.SegmentSlice{parent.Segmentify()}, nil
 			}
 
 			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
-				PKI:   auctionPKI,
+				PKI:   updatedAuctionPKI,
 			})
+			err := s.UpdateValidator(ctx, link)
 			assert.EqualError(t, err, "cannot create link for process governance auction: error")
 		})
 
@@ -182,38 +328,40 @@ func TestStore(t *testing.T) {
 
 			// Insert an "auction" governance process in the store.
 			populateStoreWithValidData(t, a)
-			checkLastValidatorPriority(t, a, process, 1)
+			l := getLastValidator(t, a, process)
+			assert.Equal(t, 1., l.Meta.Priority)
 
-			updatedAuctionPKI, _ := testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "jérome", -1)))
-
-			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   updatedAuctionPKI,
 			})
+			err := s.UpdateValidator(ctx, link)
 			require.NoError(t, err)
 
 			// Make sure the priority has been increased.
-			checkLastValidatorPriority(t, a, process, 2)
+			l = getLastValidator(t, a, process)
+			assert.Equal(t, 2., l.Meta.Priority)
 		})
 
 		t.Run("Fails to update an existing validator", func(t *testing.T) {
 			chatPKI := json.RawMessage(testutils.ValidChatJSONPKIConfig)
+			parent := cstesting.NewLinkBuilder().
+				WithState(map[string]interface{}{"types": auctionTypes, "pki": chatPKI}).
+				WithMetadata(validation.ProcessMetaKey, process).
+				Build()
 
 			a := new(storetesting.MockAdapter)
 			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) {
-				return cs.SegmentSlice{
-					cstesting.NewLinkBuilder().
-						WithState(map[string]interface{}{"types": auctionTypes, "pki": chatPKI}).
-						Build().
-						Segmentify()}, nil
+				return cs.SegmentSlice{parent.Segmentify()}, nil
 			}
 			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, process, &validation.RulesSchema{
+			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
 			})
+			err := s.UpdateValidator(ctx, link)
 			assert.EqualError(t, err, "cannot create link for process governance auction: error")
 		})
 	})
@@ -254,7 +402,7 @@ func TestStore(t *testing.T) {
 	})
 }
 
-func checkLastValidatorPriority(t *testing.T, a store.Adapter, process string, expected float64) {
+func getLastValidator(t *testing.T, a store.Adapter, process string) *cs.Link {
 	segs, err := a.FindSegments(context.Background(), &store.SegmentFilter{
 		Pagination: store.Pagination{
 			Offset: 0,
@@ -265,19 +413,19 @@ func checkLastValidatorPriority(t *testing.T, a store.Adapter, process string, e
 	})
 	assert.NoError(t, err, "FindSegment(governance) should sucess")
 	require.Len(t, segs, 1, "The last validator config should be retrieved")
-	assert.Equal(t, expected, segs[0].Link.Meta.Priority, "The last validator config should be retrieved")
+	return &segs[0].Link
 }
 
 func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
 	auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
 	auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
-	link := createGovernanceLink("auction", auctionPKI, auctionTypes)
+	link := createGovernanceLink("auction", 0., auctionPKI, auctionTypes)
 	hash, err := a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 	assert.NotNil(t, hash, "LinkHash should not be nil")
 
 	auctionPKI, _ = testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "charlie", -1)))
-	link = createGovernanceLink("auction", auctionPKI, auctionTypes)
+	link = createGovernanceLink("auction", 0., auctionPKI, auctionTypes)
 	link.Meta.PrevLinkHash = hash.String()
 	link.Meta.Priority = 1.
 	_, err = a.CreateLink(context.Background(), link)
@@ -285,12 +433,12 @@ func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
 
 	chatPKI, _ := testutils.LoadPKI([]byte(testutils.ValidChatJSONPKIConfig))
 	chatTypes, _ := testutils.LoadTypes([]byte(testutils.ValidChatJSONTypesConfig))
-	link = createGovernanceLink("chat", chatPKI, chatTypes)
+	link = createGovernanceLink("chat", 0., chatPKI, chatTypes)
 	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 }
 
-func createGovernanceLink(process string, pki *validators.PKI, types map[string]validation.TypeSchema) *cs.Link {
+func createGovernanceLink(process string, priority float64, pki *validators.PKI, types map[string]validation.TypeSchema) *cs.Link {
 	state := make(map[string]interface{}, 0)
 
 	state["pki"] = pki
@@ -302,6 +450,6 @@ func createGovernanceLink(process string, pki *validators.PKI, types map[string]
 		WithState(state).
 		WithMetadata(validation.ProcessMetaKey, process).
 		Build()
-	link.Meta.Priority = 0.
+	link.Meta.Priority = priority
 	return link
 }

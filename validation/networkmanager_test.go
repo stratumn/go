@@ -109,16 +109,29 @@ func TestNetworkManager(t *testing.T) {
 			v = <-waitValidator
 			assert.NotNil(t, v, "Validator loaded from store")
 
-			checkLastValidatorPriority(t, a, "chat", 0.)
+			l := getLastValidator(t, a, "chat")
+			assert.Equal(t, 0., l.Meta.Priority)
 
 			go func() {
-				linkChan <- createGovernanceLink("chat", auctionPKI, auctionTypes)
+				parent := getLastValidator(t, a, "chat")
+				parentHash, _ := parent.HashString()
+				new := cstesting.NewLinkBuilder().
+					WithMapID(parent.Meta.MapID).
+					WithPrevLinkHash(parentHash).
+					WithProcess(validation.GovernanceProcessName).
+					WithTags(validation.ValidatorTag, "chat").
+					WithMetadata(validation.ProcessMetaKey, "chat").
+					WithPriority(1.).
+					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					Build()
+				linkChan <- new
 			}()
 
 			v = <-waitValidator
 			assert.NotNil(t, v, "Validator reloaded from file")
 
-			checkLastValidatorPriority(t, a, "chat", 1.)
+			l = getLastValidator(t, a, "chat")
+			assert.Equal(t, 1., l.Meta.Priority)
 		})
 
 		t.Run("does not update rules if governance process name is missing", func(t *testing.T) {
@@ -267,7 +280,8 @@ func TestNetworkManager(t *testing.T) {
 		linkChan := make(chan *cs.Link)
 		t.Run("returns the current validator set", func(t *testing.T) {
 			ctx := context.Background()
-			gov, err := validation.NewNetworkManager(ctx, dummystore.New(nil), linkChan, &validation.Config{
+			a := dummystore.New(nil)
+			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{
 				PluginsPath: pluginsPath,
 			})
 			require.NoError(t, err)
@@ -277,7 +291,15 @@ func TestNetworkManager(t *testing.T) {
 
 			newValidator := gov.Subscribe()
 			go func() {
-				linkChan <- createGovernanceLink("chat", auctionPKI, auctionTypes)
+				new := cstesting.NewLinkBuilder().
+					WithProcess(validation.GovernanceProcessName).
+					WithTags(validation.ValidatorTag, "chat").
+					WithPrevLinkHash("").
+					WithMetadata(validation.ProcessMetaKey, "chat").
+					WithPriority(0.).
+					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					Build()
+				linkChan <- new
 			}()
 			v := <-newValidator
 			assert.Equal(t, v, gov.Current())

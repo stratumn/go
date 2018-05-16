@@ -100,20 +100,32 @@ func (m *LocalManager) Current() validators.Validator {
 // GetValidators returns the list of validators for each process by parsing a local file.
 // The validators are updated in the store according to local changes.
 func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
-	var err error
 	processesValidators := make(validators.ProcessesValidators, 0)
 
+	var loadConfigErr error
+	var updateStoreErr error
 	if m.validationCfg.RulesPath != "" {
-		_, err = LoadConfig(m.validationCfg, func(process string, schema *RulesSchema, validators validators.Validators) {
-			m.store.UpdateValidator(ctx, process, schema)
+		_, loadConfigErr = LoadConfig(m.validationCfg, func(process string, schema *RulesSchema, validators validators.Validators) {
+			newValidatorLink, err := m.store.LinkFromSchema(ctx, process, schema)
+			if err != nil {
+				log.Error("Could not create link from validation rules", err)
+				return
+			}
+			updateStoreErr = m.store.UpdateValidator(ctx, newValidatorLink)
+			if updateStoreErr != nil {
+				log.Errorf("Could not update validation rules in store for process %s: %s", process, err)
+				return
+			}
 			processesValidators[process] = validators
 		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "Cannot load validator rules file %s", m.validationCfg.RulesPath)
-
+		if loadConfigErr != nil {
+			return nil, errors.Wrapf(loadConfigErr, "Cannot load validator rules file %s", m.validationCfg.RulesPath)
+		}
+		if updateStoreErr != nil {
+			return nil, updateStoreErr
 		}
 	}
-	return processesValidators, err
+	return processesValidators, nil
 }
 
 func (m *LocalManager) updateCurrent(validatorsMap validators.ProcessesValidators) {

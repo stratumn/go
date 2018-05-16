@@ -88,6 +88,12 @@ func (lb *LinkBuilder) WithProcess(process string) *LinkBuilder {
 	return lb
 }
 
+// WithPriority fills the link's priority.
+func (lb *LinkBuilder) WithPriority(priority float64) *LinkBuilder {
+	lb.Link.Meta.Priority = priority
+	return lb
+}
+
 // WithType fills the link's type.
 func (lb *LinkBuilder) WithType(linkType string) *LinkBuilder {
 	lb.Link.Meta.Type = linkType
