@@ -22,8 +22,8 @@
 //	POST /fossils
 //		Requests data to be fossilized.
 //		Form.data should be a hex encoded buffer.
-//		Form.callbackUrl should be a URL to be called when the evidence
-//		is ready.
+//		Form.process should be the name of the process that generated
+// 		the data
 package fossilizerhttp
 
 import (
