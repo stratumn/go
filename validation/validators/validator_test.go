@@ -77,7 +77,7 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		WithType("init").
 		WithPrevLinkHash("").
 		WithState(state).
-		SignWithKey(priv).
+		SignWithKey(priv, "[state, meta]").
 		Build()
 	require.NoError(t, err)
 	initAuctionLinkHash, err := store.CreateLink(context.Background(), initAuctionLink)

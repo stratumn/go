@@ -38,11 +38,11 @@ func TestPKIValidator(t *testing.T) {
 	_, priv2, _ := keys.NewEd25519KeyPair()
 	link1 := cstesting.NewLinkBuilder().
 		WithProcess(process).WithType(linkType).
-		SignWithKey(priv1).
+		SignWithKey(priv1, "[state, meta]").
 		Build()
 	link2 := cstesting.NewLinkBuilder().
 		WithProcess(process).WithType(linkType).
-		SignWithKey(priv2).
+		SignWithKey(priv2, "[state, meta]").
 		Build()
 
 	pki := &validators.PKI{
@@ -68,7 +68,7 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:  "valid-link",
 			valid: true,
-			link:  cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
+			link:  cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign("[state, meta]").Build(),
 		},
 		{
 			name:               "required-signature-pubkey",
@@ -91,20 +91,20 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:               "required-signature-extra",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().From(link1).Sign().Build(),
+			link:               cstesting.NewLinkBuilder().From(link1).Sign("[state, meta]").Build(),
 			requiredSignatures: []string{"employee"},
 		},
 		{
 			name:               "required-signature-multi",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().From(link1).SignWithKey(priv2).Build(),
+			link:               cstesting.NewLinkBuilder().From(link1).SignWithKey(priv2, "[state, meta]").Build(),
 			requiredSignatures: []string{"employee", "it", "Bob Wagner"},
 		},
 		{
 			name:               "required-signature-fails",
 			valid:              false,
 			err:                "Missing signatory for validator test of process p1: signature from Alice Van den Budenmayer is required",
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign("[state, meta]").Build(),
 			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 	}

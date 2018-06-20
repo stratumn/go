@@ -108,7 +108,7 @@ func TestTMStore(t *testing.T) {
 				WithPrevLinkHash("").
 				WithType("init").
 				WithState(state).
-				SignWithKey(ITPrivateKey).
+				SignWithKey(ITPrivateKey, "[state, meta]").
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -138,7 +138,7 @@ func TestTMStore(t *testing.T) {
 				WithProcess("testProcess").
 				WithType("init").
 				WithPrevLinkHash("").
-				Sign().
+				Sign("[state, meta]").
 				WithState(state).
 				Build()
 
@@ -164,7 +164,7 @@ func TestTMStore(t *testing.T) {
 				Branch(prevLink).
 				WithType("processing").
 				WithState(state).
-				SignWithKey(ITPrivateKey).
+				SignWithKey(ITPrivateKey, "[state, meta]").
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -176,7 +176,7 @@ func TestTMStore(t *testing.T) {
 				WithProcess("testProcess").
 				WithType("processing").
 				WithState(state).
-				SignWithKey(ITPrivateKey).
+				SignWithKey(ITPrivateKey, "[state, meta]").
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)

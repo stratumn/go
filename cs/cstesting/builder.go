@@ -130,14 +130,14 @@ func (lb *LinkBuilder) Branch(parent *cs.Link) *LinkBuilder {
 }
 
 // Sign signs the link with a random signature.
-func (lb *LinkBuilder) Sign() *LinkBuilder {
-	lb.Link.Signatures = append(lb.Link.Signatures, RandomSignature(lb.Link))
+func (lb *LinkBuilder) Sign(payloadPath string) *LinkBuilder {
+	lb.Link.Signatures = append(lb.Link.Signatures, RandomSignature(lb.Link, payloadPath))
 	return lb
 }
 
 // SignWithKey signs the link with the provided private key.
-func (lb *LinkBuilder) SignWithKey(priv crypto.PrivateKey) *LinkBuilder {
-	lb.Link.Signatures = append(lb.Link.Signatures, SignatureWithKey(lb.Link, priv))
+func (lb *LinkBuilder) SignWithKey(priv crypto.PrivateKey, payloadPath string) *LinkBuilder {
+	lb.Link.Signatures = append(lb.Link.Signatures, SignatureWithKey(lb.Link, payloadPath, priv))
 	return lb
 }
 

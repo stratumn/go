@@ -96,14 +96,14 @@ func TestSignatureValidator(t *testing.T) {
 		{
 			name:      "valid-link",
 			valid:     true,
-			signature: func() *cs.Signature { return cstesting.RandomSignature(payload) },
+			signature: func() *cs.Signature { return cstesting.RandomSignature(payload, "[meta, state]") },
 		},
 		{
 			name:  "unsupported-signature-type",
 			valid: false,
 			err:   x509.ErrUnsupportedAlgorithm.Error(),
 			signature: func() *cs.Signature {
-				s := cstesting.RandomSignature(payload)
+				s := cstesting.RandomSignature(payload, "[meta, state]")
 				s.Type = "test"
 				return s
 			},
@@ -113,7 +113,7 @@ func TestSignatureValidator(t *testing.T) {
 			valid: false,
 			err:   cs.ErrBadJMESPATHQuery + ": SyntaxError: Incomplete expression",
 			signature: func() *cs.Signature {
-				s := cstesting.RandomSignature(payload)
+				s := cstesting.RandomSignature(payload, "[meta, state]")
 				s.Payload = ""
 				return s
 			},
@@ -123,7 +123,7 @@ func TestSignatureValidator(t *testing.T) {
 			valid: false,
 			err:   cs.ErrEmptyJMESPATHResult,
 			signature: func() *cs.Signature {
-				s := cstesting.RandomSignature(payload)
+				s := cstesting.RandomSignature(payload, "[meta, state]")
 				s.Payload = "notfound"
 				return s
 			},
@@ -133,7 +133,7 @@ func TestSignatureValidator(t *testing.T) {
 			valid: false,
 			err:   "invalid ed25519 signature: signature verification failed",
 			signature: func() *cs.Signature {
-				s := cstesting.RandomSignature(payload)
+				s := cstesting.RandomSignature(payload, "[meta, state]")
 				wrongSigPEM, _ := encoding.EncodePEM([]byte("test"), signatures.SignaturePEMLabel)
 				s.Signature = string(wrongSigPEM)
 				return s
