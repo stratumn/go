@@ -68,7 +68,7 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:  "valid-link",
 			valid: true,
-			link:  cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign("[state, meta]").Build(),
+			link:  cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
 		},
 		{
 			name:               "required-signature-pubkey",
@@ -91,7 +91,7 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:               "required-signature-extra",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().From(link1).Sign("[state, meta]").Build(),
+			link:               cstesting.NewLinkBuilder().From(link1).Sign().Build(),
 			requiredSignatures: []string{"employee"},
 		},
 		{
@@ -104,7 +104,7 @@ func TestPKIValidator(t *testing.T) {
 			name:               "required-signature-fails",
 			valid:              false,
 			err:                "Missing signatory for validator test of process p1: signature from Alice Van den Budenmayer is required",
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign("[state, meta]").Build(),
+			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
 			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 	}

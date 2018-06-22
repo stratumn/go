@@ -71,7 +71,7 @@ func (f Factory) TestValidation(t *testing.T) {
 			WithType("init").
 			WithPrevLinkHash("").
 			WithState(state).
-			Sign("[meta, state]").
+			Sign().
 			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
@@ -111,7 +111,7 @@ func (f Factory) TestValidation(t *testing.T) {
 		l := cstesting.NewLinkBuilder().
 			WithProcess("testProcess").
 			WithType("init").WithPrevLinkHash("").
-			WithState(state).Sign("[meta, state]").
+			WithState(state).Sign().
 			Build()
 		l.Signatures[0].Signature = `-----BEGIN MESSAGE-----
 BEDZR29+Zk8M72ZlgWstb3o96MdKNXeT0Q7LfzDFQKjv9dLjeHpRL4BSjkjPWbuA

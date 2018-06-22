@@ -168,7 +168,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 			WithProcess("p").
 			WithType("a1").
 			WithState(testState).
-			Sign("[state, meta]").
+			Sign().
 			Build()
 		l.Signatures[0].PublicKey = "TESTKEY1"
 
@@ -201,7 +201,7 @@ func TestMultiValidator_Validate(t *testing.T) {
 			WithProcess("p").
 			WithType("a1").
 			WithState(testState).
-			Sign("[state, meta]").
+			Sign().
 			Build()
 
 		err := mv.Validate(context.Background(), nil, l)

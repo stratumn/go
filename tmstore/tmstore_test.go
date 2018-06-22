@@ -138,7 +138,7 @@ func TestTMStore(t *testing.T) {
 				WithProcess("testProcess").
 				WithType("init").
 				WithPrevLinkHash("").
-				Sign("[state, meta]").
+				Sign().
 				WithState(state).
 				Build()
 

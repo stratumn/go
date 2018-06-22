@@ -117,7 +117,13 @@ func RandomInterfaces() []interface{} {
 }
 
 // RandomSignature returns an arbitrary signature from a generated key pair
-func RandomSignature(l *cs.Link, payloadPath string) *cs.Signature {
+func RandomSignature(l *cs.Link) *cs.Signature {
+	return RandomSignatureWithPath(l, "[state, meta]")
+}
+
+// RandomSignatureWithPath returns a signature from a generated key pair
+// of the parts of the link pathing the jmespath query.
+func RandomSignatureWithPath(l *cs.Link, payloadPath string) *cs.Signature {
 	_, priv, _ := keys.GenerateKey(keys.ED25519)
 	payload, _ := jmespath.Search(payloadPath, l)
 	payloadBytes, _ := cj.Marshal(payload)
@@ -131,7 +137,13 @@ func RandomSignature(l *cs.Link, payloadPath string) *cs.Signature {
 }
 
 // SignatureWithKey returns a signature of a link using the provided private key
-func SignatureWithKey(l *cs.Link, payloadPath string, priv crypto.PrivateKey) *cs.Signature {
+func SignatureWithKey(l *cs.Link, priv crypto.PrivateKey) *cs.Signature {
+	return SignatureWithKeyAndPath(l, "[link, meta]", priv)
+}
+
+// SignatureWithKeyAndPath returns a signature of a link using the provided private key
+// of the parts of the link pathing the jmespath query.
+func SignatureWithKeyAndPath(l *cs.Link, payloadPath string, priv crypto.PrivateKey) *cs.Signature {
 	privPEM, _ := keys.EncodeSecretkey(priv)
 	payload, _ := jmespath.Search(payloadPath, l)
 	payloadBytes, _ := cj.Marshal(payload)
