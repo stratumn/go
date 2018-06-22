@@ -97,27 +97,27 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 		{
 			name:           "valid-link",
 			shouldValidate: true,
-			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign("[state, meta]").Build(),
+			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
 		},
 		{
 			name:           "no-process",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess("").WithType(linkType).Sign("[state, meta]").Build(),
+			link:           cstesting.NewLinkBuilder().WithProcess("").WithType(linkType).Sign().Build(),
 		},
 		{
 			name:           "process-no-match",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess("test").WithType(linkType).Sign("[state, meta]").Build(),
+			link:           cstesting.NewLinkBuilder().WithProcess("test").WithType(linkType).Sign().Build(),
 		},
 		{
 			name:           "no-type",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("").Sign("[state, meta]").Build(),
+			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("").Sign().Build(),
 		},
 		{
 			name:           "type-no-match",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("test").Sign("[state, meta]").Build(),
+			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("test").Sign().Build(),
 		},
 	}
 
