@@ -62,19 +62,19 @@ make docker_images
 If you want to release a new version of IndigoCore, here is what you need to do.
 You need to install:
 
-* [Docker](https://www.docker.com/)
-* [Keybase](https://keybase.io/)
-* [github-release](https://github.com/aktau/github-release/releases/)
+- [Docker](https://www.docker.com/)
+- [Keybase](https://keybase.io/)
+- [github-release](https://github.com/aktau/github-release/releases/)
 
-You'll need to add your PGP public key to strat/cmd/pubkey.go
+You'll need to add your PGP public key to the [Indigo CLI](https://github.com/stratumn/indigo-cli) in the pubkey.go file.
 
 Then at the root of the repo:
 
-* Update the CHANGELOG file
-* Create a branch named vA.B.x (for example: 0.1.x) from master
-* On this new branch, create a VERSION file that contains the version (for example: 0.1.0)
-* Set the pre-release flag in PRERELEASE if needed
-* Run _make release_ (this will create the tag, build the binaries and the docker images, push the docker images and publish a release on Github)
+- Update the CHANGELOG file
+- Create a branch named vA.B.x (for example: 0.1.x) from master
+- On this new branch, create a VERSION file that contains the version (for example: 0.1.0)
+- Set the pre-release flag in PRERELEASE if needed
+- Run _make release_ (this will create the tag, build the binaries and the docker images, push the docker images and publish a release on Github)
 
 ## License
 
