@@ -4,7 +4,6 @@ WIN_OS_ARCHS?=windows-amd64
 DIST_DIR=dist
 COMMAND_DIR=cmd
 VERSION=$(shell ./version.sh)
-GENERATOR_VERSION=$(shell ./version.sh -g)
 PRERELEASE=$(shell cat PRERELEASE)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 GIT_PATH=$(shell git rev-parse --show-toplevel)
