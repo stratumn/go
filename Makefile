@@ -21,7 +21,7 @@ CLEAN_PATHS=$(DIST_DIR) $(COVERAGE_FILE) $(COVERHTML_FILE)
 TMP_DIR:=$(shell mktemp -d)
 
 GO_CMD=go
-GO_LINT_CMD=golint
+GO_LINT_CMD=golangci-lint
 KEYBASE_CMD=keybase
 GITHUB_RELEASE_COMMAND=github-release
 DOCKER_CMD=docker
@@ -33,7 +33,7 @@ GO_LIST=$(GO_CMD) list
 GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-extldflags "-static" -X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT)'
 GO_TEST=$(GO_CMD) test
 GO_BENCHMARK=$(GO_TEST) -bench .
-GO_LINT=$(GO_LINT_CMD) -set_exit_status
+GO_LINT=$(GO_LINT_CMD) run --build-tags="lint" --deadline=4m --tests=false
 KEYBASE_SIGN=$(KEYBASE_CMD) pgp sign
 GITHUB_RELEASE_RELEASE=$(GITHUB_RELEASE_COMMAND) release $(GITHUB_RELEASE_RELEASE_FLAGS)
 GITHUB_RELEASE_UPLOAD=$(GITHUB_RELEASE_COMMAND) upload $(GITHUB_RELEASE_FLAGS)
@@ -59,14 +59,13 @@ LICENSED_FILES=$(shell find * -name '*.go' -not -path "vendor/*" | grep -v mock 
 
 TEST_LIST=$(foreach package, $(TEST_PACKAGES), test_$(package))
 BENCHMARK_LIST=$(foreach package, $(TEST_PACKAGES), benchmark_$(package))
-LINT_LIST=$(foreach package, $(PACKAGES), lint_$(package))
 GITHUB_UPLOAD_LIST=$(foreach file, $(ZIP_FILES), github_upload_$(firstword $(subst ., ,$(file))))
 DOCKER_IMAGE_LIST=$(foreach command, $(COMMANDS), docker_image_$(command))
 DOCKER_PUSH_LIST=$(foreach command, $(COMMANDS), docker_push_$(command))
 CLEAN_LIST=$(foreach path, $(CLEAN_PATHS), clean_$(path))
 
 # == .PHONY ===================================================================
-.PHONY: test coverage benchmark lint build git_tag github_draft github_upload github_publish docker_images docker_push clean test_headers $(TEST_LIST) $(BENCHMARK_LIST) $(LINT_LIST) $(GITHUB_UPLOAD_LIST) $(DOCKER_IMAGE_LIST) $(DOCKER_PUSH_LIST) $(CLEAN_LIST)
+.PHONY: test coverage benchmark lint build git_tag github_draft github_upload github_publish docker_images docker_push clean test_headers $(TEST_LIST) $(BENCHMARK_LIST) $(GITHUB_UPLOAD_LIST) $(DOCKER_IMAGE_LIST) $(DOCKER_PUSH_LIST) $(CLEAN_LIST)
 
 # == all ======================================================================
 all: build
@@ -117,10 +116,8 @@ $(BENCHMARK_LIST): benchmark_%:
 	@$(GO_BENCHMARK) -benchmem $*
 
 # == list =====================================================================
-lint: $(LINT_LIST)
-
-$(LINT_LIST): lint_%:
-	@$(GO_LINT) $*
+lint:
+	@$(GO_LINT) ./...
 
 # == build ====================================================================
 build: $(EXECS)
