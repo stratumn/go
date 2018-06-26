@@ -178,7 +178,7 @@ func (c *CouchStore) saveDocument(dbName string, key string, doc Document) error
 	if err != nil {
 		return err
 	}
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		return couchResponseStatus.error()
 	}
 
@@ -213,7 +213,7 @@ func (c *CouchStore) getDocument(dbName string, key string) (*Document, error) {
 		return nil, nil
 	}
 
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		return nil, couchResponseStatus.error()
 	}
 
@@ -240,7 +240,7 @@ func (c *CouchStore) deleteDocument(dbName string, key string) (*Document, error
 		return nil, err
 	}
 
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		return nil, errors.New(couchResponseStatus.Reason)
 	}
 

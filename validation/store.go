@@ -86,7 +86,7 @@ func NewStore(adapter store.Adapter, validationCfg *Config) *Store {
 // GetValidators returns the list of validators for each process by fetching them from the store.
 func (s *Store) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
 	var err error
-	validators := make(validators.ProcessesValidators, 0)
+	validators := make(validators.ProcessesValidators)
 
 	for _, process := range s.GetAllProcesses(ctx) {
 		validators[process], err = s.getProcessValidators(ctx, process)

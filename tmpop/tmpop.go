@@ -380,8 +380,8 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 func (t *TMPop) doTx(ctx context.Context, createLink func(context.Context, *cs.Link) *ABCIError, txBytes []byte) *ABCIError {
 	if len(txBytes) == 0 {
 		return &ABCIError{
-			CodeTypeValidation,
-			"Tx length cannot be zero",
+			Code: CodeTypeValidation,
+			Log:  "Tx length cannot be zero",
 		}
 	}
 

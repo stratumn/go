@@ -82,7 +82,7 @@ func New(config *Config) (*CouchStore, error) {
 		return nil, &CouchNotReadyError{originalError: err}
 	}
 
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		return nil, couchResponseStatus.error()
 	}
 
@@ -183,7 +183,7 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 		return nil, err
 	}
 
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		return nil, couchResponseStatus.error()
 	}
 
@@ -213,7 +213,7 @@ func (c *CouchStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]
 		return nil, err
 	}
 
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		return nil, couchResponseStatus.error()
 	}
 

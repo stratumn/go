@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
@@ -52,7 +53,10 @@ func ReadLastBlock(ctx context.Context, kv store.KeyValueReader) (*LastBlock, er
 
 // saveLastBlock saves the last block committed by TMPop
 func saveLastBlock(ctx context.Context, a store.KeyValueWriter, l LastBlock) {
-	a.SetValue(ctx, tmpopLastBlockKey, wire.BinaryBytes(l))
+	err := a.SetValue(ctx, tmpopLastBlockKey, wire.BinaryBytes(l))
+	if err != nil {
+		log.Warn(err)
+	}
 }
 
 func getValidatorHashKey(height int64) []byte {
