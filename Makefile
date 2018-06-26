@@ -33,7 +33,7 @@ GO_LIST=$(GO_CMD) list
 GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-extldflags "-static" -X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT)'
 GO_TEST=$(GO_CMD) test
 GO_BENCHMARK=$(GO_TEST) -bench .
-GO_LINT=$(GO_LINT_CMD) run --build-tags="lint" --deadline=4m --tests=false
+GO_LINT=$(GO_LINT_CMD) run --build-tags="lint" --disable="gas" --deadline=4m --tests=false
 KEYBASE_SIGN=$(KEYBASE_CMD) pgp sign
 GITHUB_RELEASE_RELEASE=$(GITHUB_RELEASE_COMMAND) release $(GITHUB_RELEASE_RELEASE_FLAGS)
 GITHUB_RELEASE_UPLOAD=$(GITHUB_RELEASE_COMMAND) upload $(GITHUB_RELEASE_FLAGS)
