@@ -87,22 +87,22 @@ func New(config *Config) (*CouchStore, error) {
 	}
 
 	// required couchdb system database
-	if err := couchstore.createDatabase("_users"); err != nil {
+	if err := couchstore.CreateDatabase("_users"); err != nil {
 		return nil, err
 	}
 
 	// required couchdb system database
-	if err := couchstore.createDatabase("_replicator"); err != nil {
+	if err := couchstore.CreateDatabase("_replicator"); err != nil {
 		return nil, err
 	}
 
-	if err := couchstore.createDatabase(dbLink); err != nil {
+	if err := couchstore.CreateDatabase(dbLink); err != nil {
 		return nil, err
 	}
-	if err := couchstore.createDatabase(dbEvidences); err != nil {
+	if err := couchstore.CreateDatabase(dbEvidences); err != nil {
 		return nil, err
 	}
-	if err := couchstore.createDatabase(dbValue); err != nil {
+	if err := couchstore.CreateDatabase(dbValue); err != nil {
 		return nil, err
 	}
 

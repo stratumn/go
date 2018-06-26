@@ -33,6 +33,7 @@ const (
 	statusError           = 400
 	statusDBExists        = 412
 	statusDocumentMissing = 404
+	statusDBMissing       = 404
 
 	dbLink      = "pop_link"
 	dbEvidences = "pop_evidences"
@@ -79,7 +80,22 @@ type BulkDocuments struct {
 	Atomic    bool        `json:"all_or_nothing,omitempty"`
 }
 
-func (c *CouchStore) createDatabase(dbName string) error {
+// GetDatabases lists available databases.
+func (c *CouchStore) GetDatabases() ([]string, error) {
+	body, _, err := c.get("/_all_dbs")
+	if err != nil {
+		return nil, err
+	}
+
+	databases := &[]string{}
+	if err := json.Unmarshal(body, databases); err != nil {
+		return nil, err
+	}
+	return *databases, nil
+}
+
+// CreateDatabase creates a database.
+func (c *CouchStore) CreateDatabase(dbName string) error {
 	_, couchResponseStatus, err := c.put("/"+dbName, nil)
 	if err != nil {
 		return err
@@ -102,6 +118,22 @@ func (c *CouchStore) createDatabase(dbName string) error {
 		}
 		return false, err
 	}, 10)
+}
+
+// DeleteDatabase deletes a database.
+func (c *CouchStore) DeleteDatabase(name string) error {
+	_, couchResponseStatus, err := c.delete("/" + name)
+	if err != nil {
+		return err
+	}
+
+	if !couchResponseStatus.Ok {
+		if couchResponseStatus.StatusCode != statusDBMissing {
+			return couchResponseStatus.error()
+		}
+	}
+
+	return nil
 }
 
 func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {

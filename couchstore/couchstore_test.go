@@ -129,10 +129,10 @@ func newTestCouchStoreTMPop() (store.Adapter, store.KeyValueStore, error) {
 }
 
 func freeTestCouchStore(a *CouchStore) {
-	if err := a.deleteDatabase(dbLink); err != nil {
+	if err := a.DeleteDatabase(dbLink); err != nil {
 		test.Fatal(err)
 	}
-	if err := a.deleteDatabase(dbEvidences); err != nil {
+	if err := a.DeleteDatabase(dbEvidences); err != nil {
 		test.Fatal(err)
 	}
 }

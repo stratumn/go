@@ -337,7 +337,7 @@ func (a *FileStore) getLinkPath(linkHash *types.Bytes32) string {
 	return path.Join(a.config.Path, linkHash.String()+".json")
 }
 
-var linkFileRegex = regexp.MustCompile(`(.*)\\.json$`)
+var linkFileRegex = regexp.MustCompile(`(.*)\.json$`)
 
 func (a *FileStore) forEach(ctx context.Context, fn func(*cs.Segment) error) error {
 	a.mutex.RLock()
