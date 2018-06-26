@@ -75,13 +75,13 @@ type valueMap map[string][]byte
 // New creates an instance of a DummyStore.
 func New(config *Config) *DummyStore {
 	return &DummyStore{
-		config,
-		nil,
-		linkMap{},
-		evidenceMap{},
-		valueMap{},
-		hashSetMap{},
-		sync.RWMutex{},
+		config:     config,
+		eventChans: nil,
+		links:      linkMap{},
+		evidences:  evidenceMap{},
+		values:     valueMap{},
+		maps:       hashSetMap{},
+		mutex:      sync.RWMutex{},
 	}
 }
 

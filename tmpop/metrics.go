@@ -103,5 +103,8 @@ func exposeMetrics(config *monitoring.Config) {
 
 	log.Infof("Exposing metrics on %s", metricsAddr)
 	http.Handle("/metrics", metricsExporter)
-	http.ListenAndServe(metricsAddr, nil)
+	err := http.ListenAndServe(metricsAddr, nil)
+	if err != nil {
+		panic(err)
+	}
 }

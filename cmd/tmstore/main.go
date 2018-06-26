@@ -51,7 +51,12 @@ func main() {
 		},
 		tmClient)
 
-	go a.RetryStartWebsocket(context.Background(), *tmWsRetryInterval)
+	go func() {
+		err := a.RetryStartWebsocket(context.Background(), *tmWsRetryInterval)
+		if err != nil {
+			log.Warn(err)
+		}
+	}()
 
 	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "tmstore"))
 }

@@ -168,6 +168,10 @@ func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, act
 func (a *agentClient) CreateMap(process string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments", process)
 	postParams, err := a.makeActionPostParams(refs, args...)
+	if err != nil {
+		return nil, err
+	}
+
 	resp, err := a.post(queryURL, postParams)
 	if err != nil {
 		return nil, err

@@ -34,7 +34,7 @@ type MultiValidator struct {
 // of single-purpose validators.
 // The slice of validators should be loaded from a JSON file via validation.LoadConfig().
 func NewMultiValidator(validators ProcessesValidators) Validator {
-	return &MultiValidator{validators}
+	return &MultiValidator{validators: validators}
 }
 
 // ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.

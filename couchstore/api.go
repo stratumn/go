@@ -39,9 +39,8 @@ const (
 	dbEvidences = "pop_evidences"
 	dbValue     = "kv"
 
-	objectTypeLink      = "link"
-	objectTypeEvidences = "evidences"
-	objectTypeMap       = "map"
+	objectTypeLink = "link"
+	objectTypeMap  = "map"
 )
 
 // CouchResponseStatus contains couch specific response when querying the API.

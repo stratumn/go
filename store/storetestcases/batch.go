@@ -42,7 +42,8 @@ func (f Factory) TestBatch(t *testing.T) {
 	// Initialize the adapter with a few links with specific map ids
 	for i := 0; i < 6; i++ {
 		link := cstesting.NewLinkBuilder().WithMapID(fmt.Sprintf("map%d", i%3)).Build()
-		a.CreateLink(ctx, link)
+		_, err := a.CreateLink(ctx, link)
+		require.NoError(t, err, "a.CreateLink()")
 	}
 
 	t.Run("CreateLink should not write to underlying store", func(t *testing.T) {
@@ -85,8 +86,10 @@ func (f Factory) TestBatch(t *testing.T) {
 		assert.NoError(t, err, "b.FindSegments()")
 		adapterLinksCount := len(segs)
 
-		b.CreateLink(ctx, cstesting.RandomLink())
-		b.CreateLink(ctx, cstesting.RandomLink())
+		_, err = b.CreateLink(ctx, cstesting.RandomLink())
+		require.NoError(t, err, "b.CreateLink()")
+		_, err = b.CreateLink(ctx, cstesting.RandomLink())
+		require.NoError(t, err, "b.CreateLink()")
 
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
@@ -103,7 +106,8 @@ func (f Factory) TestBatch(t *testing.T) {
 
 		for _, mapID := range []string{"map42", "map43"} {
 			link := cstesting.NewLinkBuilder().WithMapID(mapID).Build()
-			b.CreateLink(ctx, link)
+			_, err = b.CreateLink(ctx, link)
+			require.NoError(t, err, "b.CreateLink()")
 		}
 
 		mapIDs, err = b.GetMapIDs(ctx, &store.MapFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})

@@ -69,7 +69,12 @@ func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, err
 	}
 
 	if state.governance != nil {
-		go state.governance.ListenAndUpdate(ctx)
+		go func() {
+			err := state.governance.ListenAndUpdate(ctx)
+			if err != nil {
+				log.Warn(err)
+			}
+		}()
 	}
 
 	return state, nil
@@ -101,8 +106,8 @@ func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch
 	err := link.Validate(ctx, batch.GetSegment)
 	if err != nil {
 		return &ABCIError{
-			CodeTypeValidation,
-			fmt.Sprintf("Link validation failed %v: %v", link, err),
+			Code: CodeTypeValidation,
+			Log:  fmt.Sprintf("Link validation failed %v: %v", link, err),
 		}
 	}
 
@@ -110,16 +115,16 @@ func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch
 		err = s.validator.Validate(ctx, batch, link)
 		if err != nil {
 			return &ABCIError{
-				CodeTypeValidation,
-				fmt.Sprintf("Link validation rules failed: %v", err),
+				Code: CodeTypeValidation,
+				Log:  fmt.Sprintf("Link validation rules failed: %v", err),
 			}
 		}
 	}
 
 	if _, err := batch.CreateLink(ctx, link); err != nil {
 		return &ABCIError{
-			CodeTypeInternalError,
-			err.Error(),
+			Code: CodeTypeInternalError,
+			Log:  err.Error(),
 		}
 	}
 

@@ -530,7 +530,10 @@ func (f Factory) BenchmarkFindSegmentsParallel(b *testing.B, numLinks int, creat
 	defer f.freeAdapter(a)
 
 	for i := 0; i < numLinks; i++ {
-		a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
+		_, err := a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	filters := make([]*store.SegmentFilter, b.N)

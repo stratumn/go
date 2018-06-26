@@ -44,7 +44,7 @@ func NewBatch(ctx context.Context, a store.Adapter) *Batch {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
-	ctx, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
+	_, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	b.Links = append(b.Links, link)

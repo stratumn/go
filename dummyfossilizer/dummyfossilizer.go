@@ -57,7 +57,7 @@ type DummyFossilizer struct {
 
 // New creates an instance of a DummyFossilizer.
 func New(config *Config) *DummyFossilizer {
-	return &DummyFossilizer{config, nil}
+	return &DummyFossilizer{config: config, fossilizerEventChans: nil}
 }
 
 // GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.

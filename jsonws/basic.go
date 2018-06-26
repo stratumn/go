@@ -120,7 +120,7 @@ func NewBasic(config *BasicConfig, bufConnConfig *BufferedConnConfig) *Basic {
 			if err != nil {
 				return nil, err
 			}
-			return GorrilaConn{conn}, nil
+			return GorrilaConn{Conn: conn}, nil
 		}
 	}
 

@@ -20,6 +20,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestFindSegmentsOK tests the client's ability to handle a FindSegment request.
@@ -27,7 +28,8 @@ func (f Factory) TestFindSegmentsOK(t *testing.T) {
 	process := "test"
 	expected := 20
 	for i := 0; i < expected; i++ {
-		f.Client.CreateMap(process, nil, "test")
+		_, err := f.Client.CreateMap(process, nil, "test")
+		require.NoError(t, err, "f.Client.CreateMap()")
 	}
 
 	filter := store.SegmentFilter{
@@ -46,7 +48,8 @@ func (f Factory) TestFindSegmentsOK(t *testing.T) {
 // when tags are set in the filter.
 func (f Factory) TestFindSegmentsTags(t *testing.T) {
 	process, tag := "test", "tag"
-	f.Client.CreateMap(process, nil, tag)
+	_, err := f.Client.CreateMap(process, nil, tag)
+	require.NoError(t, err, "f.Client.CreateMap()")
 
 	filter := store.SegmentFilter{
 		Process: process,
@@ -110,7 +113,8 @@ func (f Factory) TestFindSegmentsLimit(t *testing.T) {
 	process := "test"
 	created := 30
 	for i := 0; i < created; i++ {
-		f.Client.CreateMap(process, nil, "test")
+		_, err := f.Client.CreateMap(process, nil, "test")
+		require.NoError(t, err, "f.Client.CreateMap()")
 	}
 
 	t.Run("With a limit", func(t *testing.T) {

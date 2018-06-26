@@ -141,7 +141,6 @@ type Value struct {
 	Value []byte `json:"value,omitempty"`
 }
 
-type csLink cs.Link
 type linkDoc struct {
 	cs.Link
 	StateTokens []string `json:"stateTokens"`

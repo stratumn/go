@@ -346,7 +346,10 @@ func (a *Fossilizer) batch(b *batch) {
 		if err != nil {
 			span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
 			if !a.stopping {
-				a.stop(err)
+				err = a.stop(err)
+				if err != nil {
+					log.Warn(err)
+				}
 			}
 			return
 		}

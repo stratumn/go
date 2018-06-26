@@ -28,7 +28,11 @@ import (
 // RunNodeForever runs a tendermint node with an in-proc ABCI app and waits for an exit signal
 func RunNodeForever(config *cfg.Config, app abci.Application) {
 	node := NewNode(config, app)
-	node.Start()
+	err := node.Start()
+	if err != nil {
+		panic(err)
+	}
+
 	node.RunForever()
 }
 

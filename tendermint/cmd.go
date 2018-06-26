@@ -25,7 +25,6 @@ var (
 	config = cfg.DefaultConfig()
 
 	rootDir           string
-	chainID           string
 	privValidatorFile string
 	moniker           string
 	genesisFile       string

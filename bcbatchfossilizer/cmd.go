@@ -26,17 +26,12 @@ import (
 )
 
 var (
-	interval        time.Duration
-	maxLeaves       int
-	path            string
-	archive         bool
-	exitBatch       bool
-	fsync           bool
-	key             string
-	fee             int64
-	bcyAPIKey       string
-	limiterInterval time.Duration
-	limiterSize     int
+	interval  time.Duration
+	maxLeaves int
+	path      string
+	archive   bool
+	exitBatch bool
+	fsync     bool
 )
 
 // RegisterFlags registers the flags used by RunWithFlags.

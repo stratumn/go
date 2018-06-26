@@ -46,7 +46,7 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 
 // Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
-	ctx, span := trace.StartSpan(ctx, "postgresstore/batch/Write")
+	_, span := trace.StartSpan(ctx, "postgresstore/batch/Write")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	b.done = true

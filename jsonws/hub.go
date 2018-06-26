@@ -50,14 +50,14 @@ type msgTag struct {
 // NewHub creates a new hub.
 func NewHub() *Hub {
 	return &Hub{
-		map[Writer]map[interface{}]struct{}{},
-		map[interface{}]map[Writer]struct{}{},
-		make(chan struct{}),
-		make(chan Writer),
-		make(chan Writer),
-		make(chan connTag),
-		make(chan connTag),
-		make(chan msgTag),
+		conns:         map[Writer]map[interface{}]struct{}{},
+		tags:          map[interface{}]map[Writer]struct{}{},
+		stopChan:      make(chan struct{}),
+		regChan:       make(chan Writer),
+		unregChan:     make(chan Writer),
+		tagChan:       make(chan connTag),
+		untagChan:     make(chan connTag),
+		broadcastChan: make(chan msgTag),
 	}
 }
 
@@ -117,19 +117,19 @@ func (h *Hub) Unregister(conn Writer) {
 
 // Tag adds a tag to a connection.
 func (h *Hub) Tag(conn Writer, tag interface{}) {
-	h.tagChan <- connTag{conn, tag}
+	h.tagChan <- connTag{conn: conn, tag: tag}
 }
 
 // Untag remotes a tag from a connection.
 func (h *Hub) Untag(conn Writer, tag interface{}) {
-	h.untagChan <- connTag{conn, tag}
+	h.untagChan <- connTag{conn: conn, tag: tag}
 }
 
 // Broadcast broadcasts the JSON representation of a message. If tag is nil,
 // it broadcasts the message to every connection. Otherwise it broadcasts the
 // message only to connections that have that tag.
 func (h *Hub) Broadcast(msg interface{}, tag interface{}) {
-	h.broadcastChan <- msgTag{msg, tag}
+	h.broadcastChan <- msgTag{msg: msg, tag: tag}
 }
 
 // Writes a message to a connection and logs errors.

@@ -42,10 +42,10 @@ type BufferedConnConfig struct {
 // NewBufferedConn creates a new buffered connection from a pingable connection.
 func NewBufferedConn(conn PingableConn, config *BufferedConnConfig) *BufferedConn {
 	return &BufferedConn{
-		conn,
-		config,
-		make(chan struct{}),
-		make(chan interface{}, config.Size),
+		conn:      conn,
+		config:    config,
+		closeChan: make(chan struct{}),
+		writeChan: make(chan interface{}, config.Size),
 	}
 }
 
@@ -80,12 +80,16 @@ func (c *BufferedConn) Start() error {
 		case <-c.closeChan:
 			return nil
 		case v := <-c.writeChan:
-			c.conn.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout))
+			if err := c.conn.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout)); err != nil {
+				return err
+			}
 			if err := c.conn.WriteJSON(v); err != nil {
 				return err
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout))
+			if err := c.conn.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout)); err != nil {
+				return err
+			}
 			if err := c.conn.Ping(); err != nil {
 				return err
 			}

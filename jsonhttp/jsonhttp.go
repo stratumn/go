@@ -82,7 +82,7 @@ func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (inte
 // New creates an instance of Server.
 func New(config *Config) *Server {
 	router := httprouter.New()
-	router.NotFound = notFoundHandler{config, NotFound}.ServeHTTP
+	router.NotFound = notFoundHandler{config: config, serve: NotFound}.ServeHTTP
 	server := &http.Server{
 		Addr:           config.Address,
 		Handler:        &ochttp.Handler{Handler: router, IsPublicEndpoint: true},
@@ -90,7 +90,7 @@ func New(config *Config) *Server {
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
 	}
-	return &Server{server, router, config}
+	return &Server{server: server, router: router, config: config}
 }
 
 // ServeHTTP implements net/http.Handler.ServeHTTP.
@@ -100,37 +100,37 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Get adds a GET route.
 func (s *Server) Get(path string, handle Handle) {
-	s.router.GET(path, handler{s.config, handle}.ServeHTTP)
+	s.router.GET(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Post adds a POST route.
 func (s *Server) Post(path string, handle Handle) {
-	s.router.POST(path, handler{s.config, handle}.ServeHTTP)
+	s.router.POST(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Put adds a PUT route.
 func (s *Server) Put(path string, handle Handle) {
-	s.router.PUT(path, handler{s.config, handle}.ServeHTTP)
+	s.router.PUT(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Delete adds a DELETE route.
 func (s *Server) Delete(path string, handle Handle) {
-	s.router.DELETE(path, handler{s.config, handle}.ServeHTTP)
+	s.router.DELETE(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Patch adds a PATCH route.
 func (s *Server) Patch(path string, handle Handle) {
-	s.router.PATCH(path, handler{s.config, handle}.ServeHTTP)
+	s.router.PATCH(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Options adds an OPTIONS route.
 func (s *Server) Options(path string, handle Handle) {
-	s.router.OPTIONS(path, handler{s.config, handle}.ServeHTTP)
+	s.router.OPTIONS(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // GetRaw adds a GET non-JSON route.
 func (s *Server) GetRaw(path string, handle RawHandle) {
-	s.router.GET(path, rawHandler{s.config, handle}.ServeHTTP)
+	s.router.GET(path, rawHandler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // ListenAndServe starts the server.
@@ -168,7 +168,10 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	_, err = w.Write(js)
+	if err != nil {
+		log.Warn(err)
+	}
 }
 
 type rawHandler struct {

@@ -49,6 +49,11 @@ func Run(a store.Adapter, kv store.KeyValueStore, config *Config) {
 	tendermintNode := tendermint.NewNode(tendermint.GetConfig(), tmpop)
 	tendermintClient := NewTendermintClient(client.NewLocal(tendermintNode))
 	tmpop.ConnectTendermint(tendermintClient)
-	tendermintNode.Start()
+
+	err = tendermintNode.Start()
+	if err != nil {
+		panic(err)
+	}
+
 	tendermintNode.RunForever()
 }

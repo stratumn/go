@@ -28,7 +28,7 @@ type ErrHTTP struct {
 
 // NewErrHTTP creates a, error with a message and HTTP status code.
 func NewErrHTTP(msg string, status int) ErrHTTP {
-	return ErrHTTP{msg, status}
+	return ErrHTTP{msg: msg, status: status}
 }
 
 // NewErrInternalServer creates an error with an internal server error HTTP

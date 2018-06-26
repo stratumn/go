@@ -90,10 +90,10 @@ func New(config *Config) (*FileStore, error) {
 	}
 
 	return &FileStore{
-		config,
-		nil,
-		sync.RWMutex{},
-		monitoring.NewKeyValueStoreAdapter(db, "leveldbstore"),
+		config:     config,
+		eventChans: nil,
+		mutex:      sync.RWMutex{},
+		kvDB:       monitoring.NewKeyValueStoreAdapter(db, "leveldbstore"),
 	}, nil
 }
 
@@ -239,12 +239,17 @@ func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilte
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
 func (a *FileStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	set := map[string]struct{}{}
-	a.forEach(ctx, func(segment *cs.Segment) error {
+	err := a.forEach(ctx, func(segment *cs.Segment) error {
 		if filter.Match(segment) {
 			set[segment.Link.Meta.MapID] = struct{}{}
 		}
+
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	var mapIDs []string
 	for mapID := range set {

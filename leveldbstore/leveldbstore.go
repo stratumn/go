@@ -41,7 +41,7 @@ func New(config *Config) (*LevelDBStore, error) {
 		return nil, err
 	}
 
-	return &LevelDBStore{config, db}, nil
+	return &LevelDBStore{config: config, kvDB: db}, nil
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.

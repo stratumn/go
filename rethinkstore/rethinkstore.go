@@ -19,11 +19,11 @@ package rethinkstore
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
@@ -142,9 +142,14 @@ func New(config *Config) (*Store, error) {
 	}
 
 	db := rethink.DB(config.DB)
-	db.Wait(rethink.WaitOpts{
+	_, err = db.Wait(rethink.WaitOpts{
 		Timeout: connectTimeout,
 	}).Run(session)
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
 	return &Store{
 		config:    config,
 		session:   session,
@@ -337,7 +342,10 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		return nil, err
 	}
 	for _, s := range segments {
-		s.SetLinkHash()
+		err = s.SetLinkHash()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return segments, nil
@@ -516,7 +524,7 @@ func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	if bbBatch == nil {
 		return nil, errors.New("cannot create underlying batch")
 	}
-	return &rethinkBufferedBatch{bbBatch}, nil
+	return &rethinkBufferedBatch{Batch: bbBatch}, nil
 }
 
 // Create creates the database tables and indexes.
