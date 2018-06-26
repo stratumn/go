@@ -108,7 +108,7 @@ func (m *NetworkManager) GetValidators(ctx context.Context, link *cs.Link) (vali
 	}
 
 	var updateStoreErr error
-	processesValidators := make(validators.ProcessesValidators, 0)
+	processesValidators := make(validators.ProcessesValidators)
 	processRulesUpdate := func(process string, schema *RulesSchema, validators validators.Validators) {
 		updateStoreErr = m.store.UpdateValidator(ctx, link)
 		if updateStoreErr != nil {

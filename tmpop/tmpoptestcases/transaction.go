@@ -129,7 +129,7 @@ func (f Factory) TestCommitTx(t *testing.T) {
 		verifyLinkStored(t, h, link1)
 		verifyLinkStored(t, h, link2)
 
-		if bytes.Compare(previousAppHash, res.Data) == 0 {
+		if bytes.Equal(previousAppHash, res.Data) {
 			t.Errorf("Committed app hash is the same as the previous app hash")
 		}
 	})

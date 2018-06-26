@@ -100,7 +100,7 @@ func (s *Store) GetValidators(ctx context.Context) (validators.ProcessesValidato
 
 // GetAllProcesses returns the list of processes for which governance rules have been found.
 func (s *Store) GetAllProcesses(ctx context.Context) []string {
-	processSet := make(map[string]interface{}, 0)
+	processSet := make(map[string]interface{})
 	for offset := 0; offset >= 0; {
 		segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{Offset: offset, Limit: store.MaxLimit},

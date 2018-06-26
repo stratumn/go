@@ -76,12 +76,6 @@ func (l errorLogger) Printf(format string, vars ...interface{}) {
 	log.Errorf(format, vars...)
 }
 
-type infoLogger struct{}
-
-func (l infoLogger) Printf(format string, vars ...interface{}) {
-	log.Infof(format, vars...)
-}
-
 type debugLogger struct{}
 
 func (l debugLogger) Printf(format string, vars ...interface{}) {

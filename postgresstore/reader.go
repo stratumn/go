@@ -152,7 +152,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 			return err
 		}
 
-		if bytes.Compare(currentHash, linkHash) != 0 {
+		if !bytes.Equal(currentHash, linkHash) {
 			if err := json.Unmarshal([]byte(linkData), &link); err != nil {
 				return err
 			}

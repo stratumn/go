@@ -40,7 +40,10 @@ func unmarshallTx(txBytes []byte) (*Tx, *ABCIError) {
 	tx := &Tx{}
 
 	if err := json.Unmarshal(txBytes, tx); err != nil {
-		return nil, &ABCIError{CodeTypeValidation, err.Error()}
+		return nil, &ABCIError{
+			Code: CodeTypeValidation,
+			Log:  err.Error(),
+		}
 	}
 
 	return tx, nil

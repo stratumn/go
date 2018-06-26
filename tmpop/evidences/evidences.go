@@ -78,7 +78,7 @@ func (p *TendermintProof) FullProof() []byte {
 // Verify returns true if the proof of a given linkHash is correct
 func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	lh, ok := linkHash.(*types.Bytes32)
-	if ok != true {
+	if !ok {
 		return false
 	}
 
@@ -102,7 +102,7 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	}
 
 	expectedAppHash := hash.Sum(nil)
-	if bytes.Compare(expectedAppHash, p.NextHeader.AppHash) != 0 {
+	if !bytes.Equal(expectedAppHash, p.NextHeader.AppHash) {
 		return false
 	}
 
@@ -183,7 +183,7 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 
 		// If the vote isn't for the the given header,
 		// no need to verify the signatures.
-		if bytes.Compare(v.Vote.BlockID.Hash.Bytes(), header.Hash().Bytes()) != 0 {
+		if !bytes.Equal(v.Vote.BlockID.Hash.Bytes(), header.Hash().Bytes()) {
 			return false
 		}
 
@@ -200,11 +200,7 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 	}
 
 	// We need more than 2/3 of the votes for the proof to be accepted.
-	if 3*votesPower <= 2*validatorSet.TotalVotingPower() {
-		return false
-	}
-
-	return true
+	return 3*votesPower > 2*validatorSet.TotalVotingPower()
 }
 
 func init() {

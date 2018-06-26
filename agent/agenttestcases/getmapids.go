@@ -19,6 +19,7 @@ import (
 
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetMapIdsOK tests the client's ability to handle a GetMapIds request.
@@ -26,7 +27,8 @@ func (f Factory) TestGetMapIdsOK(t *testing.T) {
 	process := "test"
 	expected := 20
 	for i := 0; i != expected; i++ {
-		f.Client.CreateMap(process, nil, "test")
+		_, err := f.Client.CreateMap(process, nil, "test")
+		require.NoError(t, err)
 	}
 
 	filter := store.MapFilter{
@@ -47,7 +49,8 @@ func (f Factory) TestGetMapIdsLimit(t *testing.T) {
 	process := "test"
 	created := 30
 	for i := 0; i != created; i++ {
-		f.Client.CreateMap(process, nil, "test")
+		_, err := f.Client.CreateMap(process, nil, "test")
+		require.NoError(t, err)
 	}
 
 	t.Run("With a limit", func(t *testing.T) {

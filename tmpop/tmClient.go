@@ -63,7 +63,7 @@ func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 
 // Block queries for a block at a specific height.
 func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Block, error) {
-	ctx, span := trace.StartSpan(ctx, "tmclient/Block")
+	_, span := trace.StartSpan(ctx, "tmclient/Block")
 	defer span.End()
 
 	tmBlock, err := c.tmClient.Block(&height)
@@ -121,7 +121,7 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 
 func getVote(v *tmtypes.Vote, validators *ctypes.ResultValidators) (*evidences.TendermintVote, error) {
 	for _, val := range validators.Validators {
-		if bytes.Compare(v.ValidatorAddress.Bytes(), val.Address.Bytes()) == 0 {
+		if bytes.Equal(v.ValidatorAddress.Bytes(), val.Address.Bytes()) {
 			return &evidences.TendermintVote{PubKey: &val.PubKey, Vote: v}, nil
 		}
 	}

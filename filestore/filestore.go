@@ -224,12 +224,16 @@ func (a *FileStore) getSegment(ctx context.Context, linkHash *types.Bytes32) (_ 
 func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	var segments cs.SegmentSlice
 
-	a.forEach(ctx, func(segment *cs.Segment) error {
+	err := a.forEach(ctx, func(segment *cs.Segment) error {
 		if filter.Match(segment) {
 			segments = append(segments, segment)
 		}
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	sort.Sort(segments)
 
@@ -269,7 +273,7 @@ func (a *FileStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (
 	}
 
 	evidences := cs.Evidences{}
-	if evidencesData != nil && len(evidencesData) > 0 {
+	if len(evidencesData) > 0 {
 		if err := json.Unmarshal(evidencesData, &evidences); err != nil {
 			return nil, err
 		}
@@ -333,7 +337,7 @@ func (a *FileStore) getLinkPath(linkHash *types.Bytes32) string {
 	return path.Join(a.config.Path, linkHash.String()+".json")
 }
 
-var linkFileRegex = regexp.MustCompile("(.*)\\.json$")
+var linkFileRegex = regexp.MustCompile(`(.*)\\.json$`)
 
 func (a *FileStore) forEach(ctx context.Context, fn func(*cs.Segment) error) error {
 	a.mutex.RLock()

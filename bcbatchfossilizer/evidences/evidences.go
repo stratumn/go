@@ -51,10 +51,7 @@ func (p *BcBatchProof) FullProof() []byte {
 // Verify returns true if the proof of a given linkHash is correct
 func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 	err := p.Batch.Path.Validate()
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func init() {

@@ -322,6 +322,10 @@ func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter)
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
 func (t *TMStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (ids []string, err error) {
 	response, err := t.sendQuery(ctx, tmpop.GetMapIDs, filter)
+	if err != nil {
+		return
+	}
+
 	err = json.Unmarshal(response.Value, &ids)
 	if err != nil {
 		return
@@ -336,7 +340,7 @@ func (t *TMStore) NewBatch(ctx context.Context) (store.Batch, error) {
 }
 
 func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
-	ctx, span := trace.StartSpan(ctx, "tmstore/broadcastTx")
+	_, span := trace.StartSpan(ctx, "tmstore/broadcastTx")
 	defer span.End()
 
 	txBytes, err := json.Marshal(tx)
@@ -372,7 +376,7 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 }
 
 func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) (res *abci.ResponseQuery, err error) {
-	ctx, span := trace.StartSpan(ctx, "tmstore/sendQuery")
+	_, span := trace.StartSpan(ctx, "tmstore/sendQuery")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	query, err := tmpop.BuildQueryBinary(args)

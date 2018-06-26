@@ -29,7 +29,6 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 	}
 
 	const prevLinkHashKey = "prevLinkHash"
-	const linkHashesKey = "linkHashes[]"
 
 	var (
 		q               = r.URL.Query()

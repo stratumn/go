@@ -33,7 +33,6 @@ const (
 	statusError           = 400
 	statusDBExists        = 412
 	statusDocumentMissing = 404
-	statusDBMissing       = 404
 
 	dbLink      = "pop_link"
 	dbEvidences = "pop_evidences"
@@ -80,26 +79,13 @@ type BulkDocuments struct {
 	Atomic    bool        `json:"all_or_nothing,omitempty"`
 }
 
-func (c *CouchStore) getDatabases() ([]string, error) {
-	body, _, err := c.get("/_all_dbs")
-	if err != nil {
-		return nil, err
-	}
-
-	databases := &[]string{}
-	if err := json.Unmarshal(body, databases); err != nil {
-		return nil, err
-	}
-	return *databases, nil
-}
-
 func (c *CouchStore) createDatabase(dbName string) error {
 	_, couchResponseStatus, err := c.put("/"+dbName, nil)
 	if err != nil {
 		return err
 	}
 
-	if couchResponseStatus.Ok == false {
+	if !couchResponseStatus.Ok {
 		if couchResponseStatus.StatusCode == statusDBExists {
 			return nil
 		}
@@ -110,27 +96,12 @@ func (c *CouchStore) createDatabase(dbName string) error {
 	return utils.Retry(func(attempt int) (bool, error) {
 		path := fmt.Sprintf("/%s", dbName)
 		_, couchResponseStatus, err := c.doHTTPRequest(http.MethodGet, path, nil)
-		if err != nil || couchResponseStatus.Ok == false {
+		if err != nil || !couchResponseStatus.Ok {
 			time.Sleep(200 * time.Millisecond)
 			return true, err
 		}
 		return false, err
 	}, 10)
-}
-
-func (c *CouchStore) deleteDatabase(name string) error {
-	_, couchResponseStatus, err := c.delete("/" + name)
-	if err != nil {
-		return err
-	}
-
-	if couchResponseStatus.Ok == false {
-		if couchResponseStatus.StatusCode != statusDBMissing {
-			return couchResponseStatus.error()
-		}
-	}
-
-	return nil
 }
 
 func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {

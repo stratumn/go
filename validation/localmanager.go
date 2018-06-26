@@ -100,7 +100,7 @@ func (m *LocalManager) Current() validators.Validator {
 // GetValidators returns the list of validators for each process by parsing a local file.
 // The validators are updated in the store according to local changes.
 func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesValidators, error) {
-	processesValidators := make(validators.ProcessesValidators, 0)
+	processesValidators := make(validators.ProcessesValidators)
 
 	var updateStoreErr error
 	if m.validationCfg.RulesPath != "" {

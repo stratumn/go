@@ -395,8 +395,8 @@ func (t *TMPop) doTx(ctx context.Context, createLink func(context.Context, *cs.L
 		return createLink(ctx, tx.Link)
 	default:
 		return &ABCIError{
-			CodeTypeNotImplemented,
-			fmt.Sprintf("Unexpected Tx type byte %X", tx.TxType),
+			Code: CodeTypeNotImplemented,
+			Log:  fmt.Sprintf("Unexpected Tx type byte %X", tx.TxType),
 		}
 	}
 }
@@ -473,9 +473,9 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	}
 
 	evidenceBlockAppHash := types.NewBytes32FromBytes(evidenceBlock.Header.AppHash)
-	leaves := make([][]byte, len(linkHashes), len(linkHashes))
+	leaves := make([][]byte, len(linkHashes))
 	for i, lh := range linkHashes {
-		leaves[i] = make([]byte, len(lh), len(lh))
+		leaves[i] = make([]byte, len(lh))
 		copy(leaves[i], lh[:])
 	}
 	merkle, err := merkle.NewStaticTree(leaves)

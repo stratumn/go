@@ -229,12 +229,12 @@ func (b *Bytes32) EqualsBytes(b2 []byte) bool {
 		return false
 	}
 
-	return bytes.Compare(b[:], b2) == 0
+	return bytes.Equal(b[:], b2)
 }
 
 // Zero checks if a Bytes32 is the default value or nil
 func (b *Bytes32) Zero() bool {
-	return b == nil || bytes.Compare(b[:], Bytes32Zero[:]) == 0
+	return b == nil || bytes.Equal(b[:], Bytes32Zero[:])
 }
 
 // Reverse reverses the bytes order.

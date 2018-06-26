@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetMapIDs tests what happens when you get map IDs.
@@ -41,7 +42,8 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 				WithProcess(processNames[i%2]).
 				WithMapID(fmt.Sprintf("map%d", i)).
 				Build()
-			a.CreateLink(context.Background(), l)
+			_, err := a.CreateLink(context.Background(), l)
+			require.NoError(t, err)
 		}
 	}
 

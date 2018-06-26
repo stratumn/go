@@ -37,7 +37,11 @@ func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Lin
 	if prepareLink != nil {
 		prepareLink(link)
 	}
-	adapter.CreateLink(context.Background(), link)
+	_, err := adapter.CreateLink(context.Background(), link)
+	if err != nil {
+		panic(err)
+	}
+
 	return link
 }
 
@@ -381,7 +385,10 @@ func (f Factory) BenchmarkFindSegments(b *testing.B, numLinks int, createLinkFun
 	defer f.freeAdapter(a)
 
 	for i := 0; i < numLinks; i++ {
-		a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
+		_, err := a.CreateLink(context.Background(), createLinkFunc(b, numLinks, i))
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	filters := make([]*store.SegmentFilter, b.N)

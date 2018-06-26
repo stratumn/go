@@ -70,7 +70,7 @@ func LoadConfigContent(data []byte, pluginsPath string, listener rulesListener) 
 		return nil, errors.WithStack(err)
 	}
 
-	validators := make(validators.ProcessesValidators, 0)
+	validators := make(validators.ProcessesValidators)
 	for process, schema := range rules {
 		validators[process], err = LoadProcessRules(&schema, process, pluginsPath, listener)
 		if err != nil {

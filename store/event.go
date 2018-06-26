@@ -30,7 +30,7 @@ const (
 	// SavedLinks means that segment links were saved.
 	SavedLinks EventType = "SavedLinks"
 	// SavedEvidences means that segment evidences were saved.
-	SavedEvidences = "SavedEvidences"
+	SavedEvidences EventType = "SavedEvidences"
 )
 
 // Event is the object stores send to notify of important events.

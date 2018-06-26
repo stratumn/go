@@ -23,7 +23,7 @@ import (
 )
 
 // DeserializeMethods maps a proof backend (like "TMPop") to a deserializer function returning a specific proof
-var DeserializeMethods = make(map[string]func(json.RawMessage) (Proof, error), 0)
+var DeserializeMethods = make(map[string]func(json.RawMessage) (Proof, error))
 
 // Evidences encapsulates a list of evidences contained in Segment.Meta
 type Evidences []*Evidence

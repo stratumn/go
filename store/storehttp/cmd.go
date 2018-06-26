@@ -67,7 +67,7 @@ func Run(
 	h.exposeMetrics(monitoringConfig)
 
 	go func() {
-		sigc := make(chan os.Signal)
+		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		sig := <-sigc
 		log.WithField("signal", sig).Info("Got exit signal")

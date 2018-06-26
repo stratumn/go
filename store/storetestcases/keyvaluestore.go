@@ -130,7 +130,11 @@ func (f Factory) BenchmarkGetValueParallel(b *testing.B) {
 	values := make([][]byte, b.N)
 	for i := 0; i < b.N; i++ {
 		v := testutil.RandomKey()
-		a.SetValue(context.Background(), v, v)
+		err := a.SetValue(context.Background(), v, v)
+		if err != nil {
+			b.Fatal(err)
+		}
+
 		values[i] = v
 	}
 
@@ -215,7 +219,11 @@ func (f Factory) BenchmarkDeleteValue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		k, strkey := searchNewKey(values)
 		v := testutil.RandomValue()
-		a.SetValue(context.Background(), k, v)
+		err := a.SetValue(context.Background(), k, v)
+		if err != nil {
+			b.Fatal(err)
+		}
+
 		values[strkey] = k
 	}
 
@@ -241,7 +249,11 @@ func (f Factory) BenchmarkDeleteValueParallel(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		k, strkey := searchNewKey(mapvalues)
 		v := testutil.RandomValue()
-		a.SetValue(context.Background(), k, v)
+		err := a.SetValue(context.Background(), k, v)
+		if err != nil {
+			b.Fatal(err)
+		}
+
 		mapvalues[strkey] = k
 	}
 	values := make([][]byte, 0, b.N)
