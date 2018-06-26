@@ -548,6 +548,7 @@
   branch = "master"
   name = "go.opencensus.io"
   packages = [
+    ".",
     "exporter/jaeger",
     "exporter/jaeger/internal/gen-go/jaeger",
     "exporter/prometheus",
@@ -563,7 +564,7 @@
     "trace/internal",
     "trace/propagation"
   ]
-  revision = "6299ce387ec9355ea656d22ac49bfcfe3fbf9481"
+  revision = "140879bf49cb17276aaf28b5f6a04e251ff98473"
 
 [[projects]]
   branch = "master"
