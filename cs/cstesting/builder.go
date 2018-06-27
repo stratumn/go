@@ -40,8 +40,8 @@ func (lb *LinkBuilder) Invalid() *LinkBuilder {
 }
 
 // WithState fills the link's state.
-func (lb *LinkBuilder) WithState(state map[string]interface{}) *LinkBuilder {
-	lb.Link.State = state
+func (lb *LinkBuilder) WithState(state interface{}) *LinkBuilder {
+	lb.Link.State.Data = state
 	return lb
 }
 

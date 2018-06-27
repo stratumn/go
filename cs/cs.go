@@ -18,6 +18,7 @@ package cs
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"reflect"
 
 	cj "github.com/gibson042/canonicaljson-go"
@@ -142,11 +143,43 @@ type LinkMeta struct {
 	Data         map[string]interface{} `json:"data"`
 }
 
+// LinkState contains aribitrary data.
+// It implements json.Marshaler and json.Unmarshaler.
+type LinkState struct {
+	Data interface{}
+}
+
+// Structurize transforms the state into the provided type.
+// This is useful to turn a map[string]interface{} into a custom type.
+func (ls *LinkState) Structurize(structuredState interface{}) error {
+	stateBytes, err := json.Marshal(ls.Data)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(stateBytes, structuredState); err != nil {
+		return err
+	}
+	ls.Data = structuredState
+	return nil
+}
+
+// MarshalJSON is the method needed to implement json.Marshaler.
+// It allows not adding the "data" key to our struct.
+func (ls LinkState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ls.Data)
+}
+
+// UnmarshalJSON is the method needed to implement json.Unmarshaler.
+// It allows parsing data without the "data" key.
+func (ls *LinkState) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &ls.Data)
+}
+
 // Link contains a state and meta data about the state.
 type Link struct {
-	State      map[string]interface{} `json:"state"`
-	Meta       LinkMeta               `json:"meta"`
-	Signatures []*Signature           `json:"signatures"`
+	State      LinkState    `json:"state"`
+	Meta       LinkMeta     `json:"meta"`
+	Signatures []*Signature `json:"signatures"`
 }
 
 // Hash hashes the link

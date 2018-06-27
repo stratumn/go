@@ -259,7 +259,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				"num": 23
 			}
 		}`)
-		l.State = map[string]interface{}{}
+		l.State.Data = map[string]interface{}{}
 		json.Unmarshal(state, &l.State)
 
 		expectedTokens := []string{"hello", "abc", "james", "def", "world"}

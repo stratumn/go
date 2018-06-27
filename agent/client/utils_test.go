@@ -138,8 +138,10 @@ func (m *mockHTTPServer) mockCreateSegment(w http.ResponseWriter, r *http.Reques
 
 	s := cs.Segment{
 		Link: cs.Link{
-			State: map[string]interface{}{
-				"title": arg,
+			State: cs.LinkState{
+				Data: map[string]interface{}{
+					"title": arg,
+				},
 			},
 			Meta: cs.LinkMeta{
 				MapID: "mapId",
@@ -194,8 +196,10 @@ func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 	}
 	s := cs.Segment{
 		Link: cs.Link{
-			State: map[string]interface{}{
-				"title": arg,
+			State: cs.LinkState{
+				Data: map[string]interface{}{
+					"title": arg,
+				},
 			},
 			Meta: cs.LinkMeta{
 				MapID: "mapId",

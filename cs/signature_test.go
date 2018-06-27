@@ -75,9 +75,9 @@ func TestNewSignature(t *testing.T) {
 
 	t.Run("Canonicaljson failed", func(t *testing.T) {
 		payloadPath := "[state,meta]"
-		link.State["lol"] = func() {}
+		link.State.Data = func() {}
 		_, err := cs.NewSignature(payloadPath, privPEM, link)
-		assert.EqualError(t, err, "canonicaljson: unsupported type: func()")
+		assert.EqualError(t, err, "canonicaljson: error calling MarshalJSON for type cs.LinkState: json: unsupported type: func()")
 	})
 
 }

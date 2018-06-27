@@ -17,7 +17,6 @@ package validation
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
@@ -140,21 +139,13 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 	if err != nil || len(segments) == 0 {
 		return nil, ErrValidatorNotFound
 	}
-	linkState := segments[0].Link.State
 
-	var pki validators.PKI
-	if err := mapToStruct(linkState["pki"], &pki); err != nil {
-		return nil, ErrBadGovernanceSegment
-	}
-	var types map[string]TypeSchema
-	if err := mapToStruct(linkState["types"], &types); err != nil {
+	lastSchemaLink := segments[0].Link
+	if err := lastSchemaLink.State.Structurize(&RulesSchema{}); err != nil {
 		return nil, ErrBadGovernanceSegment
 	}
 
-	return LoadProcessRules(&RulesSchema{
-		PKI:   &pki,
-		Types: types,
-	}, process, s.validationCfg.PluginsPath, nil)
+	return LoadProcessRules(lastSchemaLink.State.Data.(*RulesSchema), process, s.validationCfg.PluginsPath, nil)
 }
 
 // UpdateValidator replaces the current validation rules in the store by the provided ones.
@@ -241,10 +232,6 @@ func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *Rule
 		mapID = uuid.NewV4().String()
 	}
 
-	linkState := map[string]interface{}{
-		"pki":   schema.PKI,
-		"types": schema.Types,
-	}
 	linkMeta := cs.LinkMeta{
 		Process:      GovernanceProcessName,
 		MapID:        mapID,
@@ -255,7 +242,7 @@ func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *Rule
 	}
 
 	return &cs.Link{
-		State:      linkState,
+		State:      cs.LinkState{Data: schema},
 		Meta:       linkMeta,
 		Signatures: cs.Signatures{},
 	}, nil
@@ -278,13 +265,4 @@ func canonicalCompare(metaData interface{}, fileData interface{}) error {
 		return errors.New("data different from file and from store")
 	}
 	return nil
-}
-
-func mapToStruct(src interface{}, dest interface{}) error {
-	bytes, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(bytes, dest)
 }

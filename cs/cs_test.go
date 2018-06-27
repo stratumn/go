@@ -16,6 +16,7 @@ package cs_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"math/rand"
 	"sort"
@@ -89,6 +90,56 @@ func TestSegmentValidate_invalidLinkHash(t *testing.T) {
 	}
 	err := s.Validate(context.Background(), nil)
 	assert.Error(t, err)
+}
+
+func TestLinkState(t *testing.T) {
+
+	type testStruct struct {
+		Test string `json:"test"`
+	}
+
+	t.Run("JSON encoding", func(t *testing.T) {
+		state := cs.LinkState{
+			Data: map[string]interface{}{
+				"test": "jean-pierre",
+			},
+		}
+		stateBytes, err := json.Marshal(state)
+		assert.NoError(t, err)
+		assert.Equal(t, []byte(`{"test":"jean-pierre"}`), stateBytes)
+
+		err = json.Unmarshal(stateBytes, &state)
+		assert.NoError(t, err)
+		assert.EqualValues(t, map[string]interface{}{"test": "jean-pierre"}, state.Data)
+
+		state.Data = func() {}
+		_, err = json.Marshal(state)
+		assert.Error(t, err)
+	})
+
+	t.Run("Structuralize", func(t *testing.T) {
+		t.Run("transforms into custom type", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: map[string]interface{}{
+					"test": "jean-pierre",
+				},
+			}
+			err := state.Structurize(&testStruct{})
+			assert.NoError(t, err)
+			assert.IsType(t, &testStruct{}, state.Data)
+			assert.Equal(t, "jean-pierre", state.Data.(*testStruct).Test)
+		})
+
+		t.Run("fails when type does not match", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: map[string]interface{}{
+					"test": true,
+				},
+			}
+			err := state.Structurize(&testStruct{})
+			assert.Error(t, err)
+		})
+	})
 }
 
 func TestLinkValidate_processEmpty(t *testing.T) {

@@ -47,8 +47,10 @@ func createLink(process, linkType, mapID, prevLinkHash string, tags []string, pr
 	}
 
 	link := &cs.Link{
-		State: map[string]interface{}{
-			"random": testutil.RandomString(12),
+		State: cs.LinkState{
+			Data: map[string]interface{}{
+				"random": testutil.RandomString(12),
+			},
 		},
 		Meta:       linkMeta,
 		Signatures: cs.Signatures{},
@@ -79,7 +81,7 @@ func RandomEvidence() *cs.Evidence {
 // ChangeState clones a link and randomly changes its state.
 func ChangeState(l *cs.Link) *cs.Link {
 	clone := Clone(l)
-	clone.State["random"] = testutil.RandomString(12)
+	clone.State.Data = map[string]interface{}{"random": testutil.RandomString(12)}
 	return clone
 }
 
