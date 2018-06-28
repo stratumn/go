@@ -117,7 +117,7 @@ func TestLinkState(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	t.Run("Structuralize", func(t *testing.T) {
+	t.Run("Structurize", func(t *testing.T) {
 		t.Run("transforms into custom type", func(t *testing.T) {
 			state := cs.LinkState{
 				Data: map[string]interface{}{

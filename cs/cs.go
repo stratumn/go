@@ -143,23 +143,24 @@ type LinkMeta struct {
 	Data         map[string]interface{} `json:"data"`
 }
 
-// LinkState contains aribitrary data.
+// LinkState contains arbitrary data.
 // It implements json.Marshaler and json.Unmarshaler.
 type LinkState struct {
 	Data interface{}
 }
 
-// Structurize transforms the state into the provided type.
-// This is useful to turn a map[string]interface{} into a custom type.
-func (ls *LinkState) Structurize(structuredState interface{}) error {
+// Structurize transforms the state into a custom type.
+// The provided argument should be a pointer to struct (passing a literal type will fail).
+// On success, 'stateType' overriden with the state's data matching its JSON structure.
+func (ls *LinkState) Structurize(stateType interface{}) error {
 	stateBytes, err := json.Marshal(ls.Data)
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(stateBytes, structuredState); err != nil {
+	if err := json.Unmarshal(stateBytes, stateType); err != nil {
 		return err
 	}
-	ls.Data = structuredState
+	ls.Data = stateType
 	return nil
 }
 
