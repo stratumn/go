@@ -140,6 +140,60 @@ func TestLinkState(t *testing.T) {
 			assert.Error(t, err)
 		})
 	})
+
+	t.Run("Get", func(t *testing.T) {
+		t.Run("retrieves a value from the state", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: map[string]interface{}{
+					"test": "jean-pierre",
+				},
+			}
+			val, err := state.Get("test")
+			assert.NoError(t, err)
+			assert.Equal(t, "jean-pierre", val)
+		})
+
+		t.Run("returns nil when the key does not exist", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: map[string]interface{}{
+					"test": "jean-pierre",
+				},
+			}
+			val, err := state.Get("none")
+			assert.NoError(t, err)
+			assert.Nil(t, val)
+		})
+
+		t.Run("fails when the state is not a map", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: "test",
+			}
+			_, err := state.Get("test")
+			assert.EqualError(t, err, cs.ErrBadStateType.Error())
+		})
+	})
+
+	t.Run("Set", func(t *testing.T) {
+		t.Run("sets the value in the state ", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: map[string]interface{}{},
+			}
+			err := state.Set("key", "value")
+			assert.NoError(t, err)
+
+			val, err := state.Get("key")
+			assert.NoError(t, err)
+			assert.Equal(t, "value", val)
+		})
+
+		t.Run("fails when the state is not a map", func(t *testing.T) {
+			state := cs.LinkState{
+				Data: "test",
+			}
+			err := state.Set("key", "value")
+			assert.EqualError(t, err, cs.ErrBadStateType.Error())
+		})
+	})
 }
 
 func TestLinkValidate_processEmpty(t *testing.T) {

@@ -79,9 +79,11 @@ func RandomEvidence() *cs.Evidence {
 }
 
 // ChangeState clones a link and randomly changes its state.
+// It assumes the state is a map[string]inteface{}.
 func ChangeState(l *cs.Link) *cs.Link {
 	clone := Clone(l)
-	clone.State.Data = map[string]interface{}{"random": testutil.RandomString(12)}
+	// We assume that the link's state is already a map, so we ignore the error.
+	_ = clone.State.Set("random", testutil.RandomString(12))
 	return clone
 }
 

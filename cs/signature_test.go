@@ -75,7 +75,7 @@ func TestNewSignature(t *testing.T) {
 
 	t.Run("Canonicaljson failed", func(t *testing.T) {
 		payloadPath := "[state,meta]"
-		link.State.Data = func() {}
+		link.State.Set("test", func() {})
 		_, err := cs.NewSignature(payloadPath, privPEM, link)
 		assert.Error(t, err)
 	})

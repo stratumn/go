@@ -30,6 +30,12 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
+var (
+	// ErrBadStateType is returned when trying to (de)serialize
+	// the link state from/to an incompatible type.
+	ErrBadStateType = errors.New("bad state type")
+)
+
 // Segment contains a link and meta data about the link.
 type Segment struct {
 	Link Link        `json:"link"`
@@ -151,16 +157,39 @@ type LinkState struct {
 
 // Structurize transforms the state into a custom type.
 // The provided argument should be a pointer to struct (passing a literal type will fail).
-// On success, 'stateType' overriden with the state's data matching its JSON structure.
+// On success, 'stateType' will be overriden with the state's data matching its JSON structure.
 func (ls *LinkState) Structurize(stateType interface{}) error {
 	stateBytes, err := json.Marshal(ls.Data)
 	if err != nil {
-		return err
+		return errors.Wrap(err, ErrBadStateType.Error())
 	}
 	if err := json.Unmarshal(stateBytes, stateType); err != nil {
-		return err
+		return errors.Wrap(err, ErrBadStateType.Error())
 	}
 	ls.Data = stateType
+	return nil
+}
+
+// Get tries to cast the state to a map[string]interface{}
+// and returns the value matching the key.
+// If the key does not exist, the returned value is nil.
+func (ls *LinkState) Get(key string) (interface{}, error) {
+	stateMap, ok := ls.Data.(map[string]interface{})
+	if !ok {
+		return nil, ErrBadStateType
+	}
+	value := stateMap[key]
+	return value, nil
+}
+
+// Set tries to cast the state to a map[string]interface{}
+// and assigns the value to the key.
+func (ls *LinkState) Set(key string, value interface{}) error {
+	stateMap, ok := ls.Data.(map[string]interface{})
+	if !ok {
+		return ErrBadStateType
+	}
+	stateMap[key] = value
 	return nil
 }
 
