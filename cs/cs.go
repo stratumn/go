@@ -274,7 +274,7 @@ func (l Link) Segmentify() *Segment {
 // Clone returns a copy of the link.
 // Since it uses the json Marshaler, the state is automatically
 // converted to a map[string]interface if it is a custom struct.
-func (l *Link) Clone() (*Link, error) {
+func (l Link) Clone() (*Link, error) {
 	var clone Link
 	js, err := json.Marshal(l)
 	if err != nil {
@@ -287,8 +287,8 @@ func (l *Link) Clone() (*Link, error) {
 	return &clone, nil
 }
 
-// Search executes a JMESPATH query on the link and return the matching payload.
-func (l *Link) Search(jsonQuery string) (interface{}, error) {
+// Search executes a JMESPATH query on the link and returns the matching payload.
+func (l Link) Search(jsonQuery string) (interface{}, error) {
 	// Cloning the link allows the state to be serialized to
 	// JSON which is needed for the jmespath query.
 	cloned, err := l.Clone()
