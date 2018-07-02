@@ -58,9 +58,9 @@ func TestGetSignatures_NotFound(t *testing.T) {
 func TestNewSignature(t *testing.T) {
 	_, privPEM, err := keys.GenerateKey(keys.ED25519)
 	require.NoError(t, err)
-	link := cstesting.RandomLink()
 
 	t.Run("Valid signature", func(t *testing.T) {
+		link := cstesting.RandomLink()
 		payloadPath := "[state,meta]"
 		sig, err := cs.NewSignature(payloadPath, privPEM, link)
 		require.NoError(t, err)
@@ -68,16 +68,36 @@ func TestNewSignature(t *testing.T) {
 	})
 
 	t.Run("Bad payload", func(t *testing.T) {
+		link := cstesting.RandomLink()
 		payloadPath := ""
 		_, err := cs.NewSignature(payloadPath, privPEM, link)
 		assert.EqualError(t, err, cs.ErrBadJMESPATHQuery+": SyntaxError: Incomplete expression")
 	})
 
 	t.Run("Canonicaljson failed", func(t *testing.T) {
+		link := cstesting.NewLinkBuilder().
+			WithState(map[string]interface{}{
+				"test": func() {},
+			}).
+			Build()
 		payloadPath := "[state,meta]"
-		link.State["lol"] = func() {}
 		_, err := cs.NewSignature(payloadPath, privPEM, link)
-		assert.EqualError(t, err, "canonicaljson: unsupported type: func()")
+		assert.Error(t, err)
+	})
+
+	t.Run("State is deserialized before signing", func(t *testing.T) {
+		type testStruct struct {
+			Test interface{} `json:"test"`
+		}
+		link := cstesting.NewLinkBuilder().
+			WithState(map[string]interface{}{
+				"one": testStruct{Test: 1},
+			}).
+			Build()
+		payloadPath := "state.one.test"
+
+		_, err := cs.NewSignature(payloadPath, privPEM, link)
+		require.NoError(t, err)
 	})
 
 }

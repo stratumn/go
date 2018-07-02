@@ -18,6 +18,7 @@ package cs
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"reflect"
 
 	cj "github.com/gibson042/canonicaljson-go"
@@ -268,6 +269,33 @@ func (l Link) Segmentify() *Segment {
 			LinkHash: linkHash,
 		},
 	}
+}
+
+// Clone returns a copy of the link.
+// Since it uses the json Marshaler, the state is automatically
+// converted to a map[string]interface if it is a custom struct.
+func (l *Link) Clone() (*Link, error) {
+	var clone Link
+	js, err := json.Marshal(l)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(js, &clone); err != nil {
+		return nil, err
+	}
+
+	return &clone, nil
+}
+
+// Search executes a JMESPATH query on the link and return the matching payload.
+func (l *Link) Search(jsonQuery string) (interface{}, error) {
+	// Cloning the link allows the state to be serialized to
+	// JSON which is needed for the jmespath query.
+	cloned, err := l.Clone()
+	if err != nil {
+		return nil, err
+	}
+	return jmespath.Search(jsonQuery, cloned)
 }
 
 // SegmentSlice is a slice of segment pointers.

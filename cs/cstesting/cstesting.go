@@ -17,11 +17,9 @@ package cstesting
 
 import (
 	"crypto"
-	"encoding/json"
 	"math/rand"
 
 	cj "github.com/gibson042/canonicaljson-go"
-	jmespath "github.com/jmespath/go-jmespath"
 
 	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-crypto/signatures"
@@ -78,14 +76,14 @@ func RandomEvidence() *cs.Evidence {
 
 // ChangeState clones a link and randomly changes its state.
 func ChangeState(l *cs.Link) *cs.Link {
-	clone := Clone(l)
+	clone, _ := l.Clone()
 	clone.State["random"] = testutil.RandomString(12)
 	return clone
 }
 
 // ChangeMapID clones a link and randomly changes its map ID.
 func ChangeMapID(l *cs.Link) *cs.Link {
-	clone := Clone(l)
+	clone, _ := l.Clone()
 	clone.Meta.MapID = testutil.RandomString(24)
 	return clone
 }
@@ -125,15 +123,8 @@ func RandomSignature(l *cs.Link) *cs.Signature {
 // of the parts of the link pathing the jmespath query.
 func RandomSignatureWithPath(l *cs.Link, payloadPath string) *cs.Signature {
 	_, priv, _ := keys.GenerateKey(keys.ED25519)
-	payload, _ := jmespath.Search(payloadPath, l)
-	payloadBytes, _ := cj.Marshal(payload)
-	sig, _ := signatures.Sign(priv, payloadBytes)
-	return &cs.Signature{
-		Type:      sig.AI,
-		PublicKey: string(sig.PublicKey),
-		Signature: string(sig.Signature),
-		Payload:   payloadPath,
-	}
+	sig, _ := cs.NewSignature(payloadPath, priv, l)
+	return sig
 }
 
 // SignatureWithKey returns a signature of a link using the provided private key
@@ -145,7 +136,7 @@ func SignatureWithKey(l *cs.Link, priv crypto.PrivateKey) *cs.Signature {
 // of the parts of the link pathing the jmespath query.
 func SignatureWithKeyAndPath(l *cs.Link, payloadPath string, priv crypto.PrivateKey) *cs.Signature {
 	privPEM, _ := keys.EncodeSecretkey(priv)
-	payload, _ := jmespath.Search(payloadPath, l)
+	payload, _ := l.Search(payloadPath)
 	payloadBytes, _ := cj.Marshal(payload)
 	sig, _ := signatures.Sign(privPEM, payloadBytes)
 	return &cs.Signature{
@@ -154,20 +145,4 @@ func SignatureWithKeyAndPath(l *cs.Link, payloadPath string, priv crypto.Private
 		Signature: string(sig.Signature),
 		Payload:   payloadPath,
 	}
-}
-
-// Clone clones a link.
-func Clone(l *cs.Link) *cs.Link {
-	var clone cs.Link
-
-	js, err := json.Marshal(l)
-	if err != nil {
-		panic(err)
-	}
-
-	if err := json.Unmarshal(js, &clone); err != nil {
-		panic(err)
-	}
-
-	return &clone
 }

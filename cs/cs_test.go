@@ -382,3 +382,43 @@ func TestEmptySegment(t *testing.T) {
 	s = &cs.Segment{}
 	assert.True(t, s.IsEmpty(), "Segment should be empty")
 }
+
+func TestSearch(t *testing.T) {
+	type testStruct struct {
+		Value interface{} `json:"value"`
+	}
+	testValue := "bar"
+	testProcess := "foo"
+
+	t.Run("returns the matching payload", func(t *testing.T) {
+		link := cstesting.NewLinkBuilder().
+			WithState(map[string]interface{}{
+				"entry": testStruct{Value: testValue},
+			}).
+			WithProcess(testProcess).
+			Build()
+		payloadStruct, err := link.Search("[state.entry.value, meta.process]")
+		assert.NoError(t, err)
+		assert.EqualValues(t, []interface{}{testValue, testProcess}, payloadStruct)
+
+		// using a struct or a JSON produces the same result.
+		link.State = map[string]interface{}{
+			"entry": map[string]interface{}{
+				"value": testValue,
+			},
+		}
+		payloadMap, err := link.Search("[state.entry.value, meta.process]")
+		assert.NoError(t, err)
+		assert.EqualValues(t, payloadStruct, payloadMap)
+	})
+
+	t.Run("fails if the link contains non-JSON value", func(t *testing.T) {
+		link := cstesting.NewLinkBuilder().
+			WithState(map[string]interface{}{
+				"value": func() {},
+			}).
+			Build()
+		_, err := link.Search("state.value")
+		assert.Error(t, err)
+	})
+}

@@ -17,7 +17,6 @@ package cs
 
 import (
 	cj "github.com/gibson042/canonicaljson-go"
-	jmespath "github.com/jmespath/go-jmespath"
 	"github.com/pkg/errors"
 
 	"github.com/stratumn/go-crypto/signatures"
@@ -49,7 +48,7 @@ type Signature struct {
 // NewSignature creates a new signature for a link.
 // Only the data matching the JMESPATH query will be signed
 func NewSignature(payloadPath string, privateKey []byte, l *Link) (*Signature, error) {
-	payload, err := jmespath.Search(payloadPath, l)
+	payload, err := l.Search(payloadPath)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrBadJMESPATHQuery)
 	}
@@ -78,7 +77,7 @@ func NewSignature(payloadPath string, privateKey []byte, l *Link) (*Signature, e
 // Verify takes a link as input, computes the signed part using the signature payload
 // and runs the signature verification depending on its type.
 func (s Signature) Verify(l *Link) error {
-	payload, err := jmespath.Search(s.Payload, l)
+	payload, err := l.Search(s.Payload)
 	if err != nil {
 		return errors.Wrap(err, ErrBadJMESPATHQuery)
 	}

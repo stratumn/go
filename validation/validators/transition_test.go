@@ -157,7 +157,7 @@ func TestTransitionValidator(t *testing.T) {
 			valid: false,
 			err:   "previous segment not found.*",
 			link: func() *cs.Link {
-				l := cstesting.Clone(links.finalProduct)
+				l, _ := links.finalProduct.Clone()
 				l.Meta.PrevLinkHash = testutil.RandomHash().String()
 				return l
 			}(),

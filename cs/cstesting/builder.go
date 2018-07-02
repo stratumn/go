@@ -155,7 +155,7 @@ func (lb *LinkBuilder) SignWithKeyAndPath(priv crypto.PrivateKey, payloadPath st
 
 // From assigns a clone of the provided link to its internal link
 func (lb *LinkBuilder) From(l *cs.Link) *LinkBuilder {
-	lb.Link = Clone(l)
+	lb.Link, _ = l.Clone()
 	return lb
 }
 
