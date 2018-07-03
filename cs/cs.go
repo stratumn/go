@@ -291,6 +291,7 @@ func (l Link) Clone() (*Link, error) {
 func (l Link) Search(jsonQuery string) (interface{}, error) {
 	// Cloning the link allows the state to be serialized to
 	// JSON which is needed for the jmespath query.
+	// TODO: https://github.com/stratumn/go-indigocore/issues/425
 	cloned, err := l.Clone()
 	if err != nil {
 		return nil, err
