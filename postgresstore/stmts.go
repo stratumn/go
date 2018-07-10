@@ -324,12 +324,11 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 	if len(filter.Tags) > 0 {
 		filters = append(filters, fmt.Sprintf("tags @>  $%d", cnt))
 		values = append(values, pq.Array(filter.Tags))
-		cnt++
 	}
 
 	sqlBody := ""
 	if len(filters) > 0 {
-		sqlBody = "\nWHERE " + strings.Join(filters, "\n AND ")
+		sqlBody = fmt.Sprintf("\nWHERE %s", strings.Join(filters, "\n AND "))
 	}
 
 	query := sqlHead + sqlBody + sqlTail
