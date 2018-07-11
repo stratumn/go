@@ -124,7 +124,7 @@ var sqlCreate = []string{
 	`,
 	`
 		CREATE INDEX links_map_id_idx
-		ON links (map_id)
+		ON links (map_id text_pattern_ops)
 	`,
 	`
 		CREATE INDEX links_map_id_priority_created_at_idx
@@ -285,6 +285,18 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 	if len(filter.MapIDs) > 0 {
 		filters = append(filters, fmt.Sprintf("map_id = ANY($%d::text[])", cnt))
 		values = append(values, pq.Array(filter.MapIDs))
+		cnt++
+	}
+
+	if filter.MapIDPrefix != "" {
+		filters = append(filters, fmt.Sprintf("map_id LIKE $%d", cnt))
+		values = append(values, fmt.Sprintf("%s%%", filter.MapIDPrefix))
+		cnt++
+	}
+
+	if filter.MapIDSuffix != "" {
+		filters = append(filters, fmt.Sprintf("map_id LIKE $%d", cnt))
+		values = append(values, fmt.Sprintf("%%%s", filter.MapIDSuffix))
 		cnt++
 	}
 

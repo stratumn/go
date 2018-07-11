@@ -91,15 +91,17 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	createRandomLink(a, func(l *cs.Link) {
 		l.Meta.Tags = []string{"tag2"}
+		l.Meta.MapID = "plap1"
 	})
 
 	link4 := createRandomLink(a, nil)
 	linkHash4, _ := link4.Hash()
 
-	createLinkBranch(a, link4, func(l *cs.Link) {
+	link5 := createLinkBranch(a, link4, func(l *cs.Link) {
 		l.Meta.Tags = []string{"tag1", testutil.RandomString(5)}
 		l.Meta.MapID = "map1"
 	})
+	linkHash5, _ := link5.Hash()
 
 	link6 := createRandomLink(a, func(l *cs.Link) {
 		l.Meta.Tags = []string{"tag2", "tag42"}
@@ -397,6 +399,87 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			MapIDs: []string{"Foo') or 'bar' = 'bar'--", "plap"},
 		})
 		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports filtering on map ID prefix", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDPrefix: "map",
+		})
+		verifyResultsCount(t, err, slice, 4)
+	})
+
+	t.Run("Returns no result if map ID prefix not found", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDPrefix: "yolo",
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports filtering on map ID suffix", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDSuffix: "ap1",
+		})
+		verifyResultsCount(t, err, slice, 3)
+	})
+
+	t.Run("Returns no result if map ID suffix not found", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			MapIDSuffix: "yolo",
+		})
+		verifyResultsCount(t, err, slice, 0)
+	})
+
+	t.Run("Supports filtering on LinkHashes and MapIDPrefix", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			LinkHashes:  []string{linkHash5.String()},
+			MapIDPrefix: "map",
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Supports filtering on Process and MapIDSuffix", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Process:     "Foo",
+			MapIDSuffix: "ap1",
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Supports filtering on PrevLinkHash and MapIDSuffix", func(t *testing.T) {
+		ctx := context.Background()
+		prevLinkHash := linkHash4.String()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			PrevLinkHash: &prevLinkHash,
+			MapIDSuffix:  "ap1",
+		})
+		verifyResultsCount(t, err, slice, 1)
 	})
 
 }

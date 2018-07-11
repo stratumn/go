@@ -16,18 +16,19 @@ package couchstore
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/stratumn/go-indigocore/store"
 )
 
 // LinkSelector used in LinkQuery
 type LinkSelector struct {
-	ObjectType   string        `json:"docType"`
-	PrevLinkHash *PrevLinkHash `json:"link.meta.prevLinkHash,omitempty"`
-	Process      string        `json:"link.meta.process,omitempty"`
-	MapIds       *MapIdsIn     `json:"link.meta.mapId,omitempty"`
-	Tags         *TagsAll      `json:"link.meta.tags,omitempty"`
-	LinkHash     *LinkHashIn   `json:"_id,omitempty"`
+	ObjectType   string         `json:"docType"`
+	PrevLinkHash *PrevLinkHash  `json:"link.meta.prevLinkHash,omitempty"`
+	Process      string         `json:"link.meta.process,omitempty"`
+	MapIds       *MapIdsFilters `json:"link.meta.mapId,omitempty"`
+	Tags         *TagsAll       `json:"link.meta.tags,omitempty"`
+	LinkHash     *LinkHashIn    `json:"_id,omitempty"`
 }
 
 // LinkHashIn specifies the list of link hashes to search for
@@ -35,9 +36,17 @@ type LinkHashIn struct {
 	LinkHashes []string `json:"$in,omitempty"`
 }
 
-// MapIdsIn specifies that segment mapId should be in specified list
-type MapIdsIn struct {
-	MapIds []string `json:"$in,omitempty"`
+// MapIdsFilters contain the filters on the segment map ID.
+// MapIdsFilters.And is a list of MapIdsIn and MapIdsMatch.
+type MapIdsFilters struct {
+	Filters []MapIdsFilter `json:"$and,omitempty"`
+}
+
+// MapIdsFilter specifies that segment mapId should be in specified list
+// and should match a given regex.
+type MapIdsFilter struct {
+	MapIdsIn    []string `json:"$in,omitempty"`
+	MapIdsMatch string   `json:"$regex,omitempty"`
 }
 
 // TagsAll specifies all tags in specified list should be in segment tags
@@ -68,6 +77,29 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	linkSelector := LinkSelector{}
 	linkSelector.ObjectType = objectTypeLink
 
+	mapIdsFilters := &MapIdsFilters{Filters: []MapIdsFilter{}}
+	if len(filter.MapIDs) > 0 {
+		mapIdsFilters.Filters = append(
+			mapIdsFilters.Filters,
+			MapIdsFilter{MapIdsIn: filter.MapIDs},
+		)
+	}
+	if filter.MapIDPrefix != "" {
+		mapIdsFilters.Filters = append(
+			mapIdsFilters.Filters,
+			MapIdsFilter{MapIdsMatch: fmt.Sprintf("^%s", filter.MapIDPrefix)},
+		)
+	}
+	if filter.MapIDSuffix != "" {
+		mapIdsFilters.Filters = append(
+			mapIdsFilters.Filters,
+			MapIdsFilter{MapIdsMatch: fmt.Sprintf("%s$", filter.MapIDSuffix)},
+		)
+	}
+	if len(mapIdsFilters.Filters) > 0 {
+		linkSelector.MapIds = mapIdsFilters
+	}
+
 	if filter.PrevLinkHash != nil {
 		linkSelector.PrevLinkHash = &PrevLinkHash{
 			Equals: *filter.PrevLinkHash,
@@ -75,11 +107,6 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	}
 	if filter.Process != "" {
 		linkSelector.Process = filter.Process
-	}
-	if len(filter.MapIDs) > 0 {
-		linkSelector.MapIds = &MapIdsIn{MapIds: filter.MapIDs}
-	} else {
-		linkSelector.MapIds = nil
 	}
 	if len(filter.Tags) > 0 {
 		linkSelector.Tags = &TagsAll{Tags: filter.Tags}

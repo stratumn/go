@@ -136,6 +136,42 @@ func (c *CouchStore) DeleteDatabase(name string) error {
 	return nil
 }
 
+// CreateIndex creates an index.
+func (c *CouchStore) CreateIndex(dbName string, indexName string, fields []string) error {
+	path := fmt.Sprintf("/%s/_index", dbName)
+
+	type createIndexDesc struct {
+		Fields []string `json:"fields"`
+	}
+	type createIndexRequest struct {
+		Name  string          `json:"name"`
+		Index createIndexDesc `json:"index"`
+	}
+
+	payload := createIndexRequest{
+		Name:  indexName,
+		Index: createIndexDesc{Fields: fields},
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	_, couchResponseStatus, err := c.post(path, payloadBytes)
+	if err != nil {
+		return err
+	}
+
+	if !couchResponseStatus.Ok {
+		if couchResponseStatus.StatusCode != statusDBMissing {
+			return couchResponseStatus.error()
+		}
+	}
+
+	return nil
+}
+
 func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHash, err := link.Hash()
 	if err != nil {

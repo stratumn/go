@@ -290,6 +290,8 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		q = q.GetAll(ids...)
 	}
 
+	mapFilter := false
+
 	if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
 		ids := make([]interface{}, len(mapIDs))
 		for i, v := range mapIDs {
@@ -298,14 +300,32 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		q = q.Filter(func(row rethink.Term) interface{} {
 			return rethink.Expr(ids).Contains(row.Field("mapId"))
 		})
-	} else if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil {
-		q = q.OrderBy(rethink.OrderByOpts{Index: "prevLinkHashOrder"})
-	} else if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
-		q = q.OrderBy(rethink.Asc("id"))
-	} else if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
-		q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("mapIdOrder")})
-	} else {
-		q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("order")})
+		mapFilter = true
+	}
+	if filter.MapIDPrefix != "" {
+		q = q.Filter(func(row rethink.Term) interface{} {
+			return row.Field("mapId").Match(fmt.Sprintf("%s.*", filter.MapIDPrefix))
+		})
+		mapFilter = true
+	}
+	if filter.MapIDSuffix != "" {
+		q = q.Filter(func(row rethink.Term) interface{} {
+			return row.Field("mapId").Match(fmt.Sprintf(".*%s", filter.MapIDSuffix))
+		})
+		mapFilter = true
+	}
+
+	if !mapFilter {
+		if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil {
+			// } else if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil {
+			q = q.OrderBy(rethink.OrderByOpts{Index: "prevLinkHashOrder"})
+		} else if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
+			q = q.OrderBy(rethink.Asc("id"))
+		} else if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
+			q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("mapIdOrder")})
+		} else {
+			q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("order")})
+		}
 	}
 
 	if process := filter.Process; len(process) > 0 {

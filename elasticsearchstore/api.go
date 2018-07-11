@@ -465,6 +465,15 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 		shouldQuery := elastic.NewBoolQuery().Should(termQueries...)
 		filterQueries = append(filterQueries, shouldQuery)
 	}
+	if filter.MapIDPrefix != "" {
+		q := elastic.NewPrefixQuery("meta.mapId.keyword", filter.MapIDPrefix)
+		filterQueries = append(filterQueries, q)
+	}
+	if filter.MapIDSuffix != "" {
+		// There is no efficient way to do suffix filter in ES better than regex filter.
+		q := elastic.NewRegexpQuery("meta.mapId", fmt.Sprintf(".*%s", filter.MapIDSuffix))
+		filterQueries = append(filterQueries, q)
+	}
 
 	// tags filter.
 	if len(filter.Tags) > 0 {

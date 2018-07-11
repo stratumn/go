@@ -75,6 +75,8 @@ func TestSegmentFilter_Match(t *testing.T) {
 	type fields struct {
 		Pagination   store.Pagination
 		MapIDs       []string
+		MapIDPrefix  string
+		MapIDSuffix  string
 		Process      string
 		PrevLinkHash *string
 		LinkHashes   []string
@@ -120,6 +122,30 @@ func TestSegmentFilter_Match(t *testing.T) {
 			fields: fields{MapIDs: []string{"TheMapId", "SecondMapId"}},
 			args:   args{defaultTestingSegment()},
 			want:   true,
+		},
+		{
+			name:   "Good mapId prefix",
+			fields: fields{MapIDPrefix: "TheMap"},
+			args:   args{defaultTestingSegment()},
+			want:   true,
+		},
+		{
+			name:   "Bad mapId prefix",
+			fields: fields{MapIDPrefix: "TheMob"},
+			args:   args{defaultTestingSegment()},
+			want:   false,
+		},
+		{
+			name:   "Good mapId suffix",
+			fields: fields{MapIDSuffix: "MapId"},
+			args:   args{defaultTestingSegment()},
+			want:   true,
+		},
+		{
+			name:   "Bad mapId suffix",
+			fields: fields{MapIDSuffix: "MobId"},
+			args:   args{defaultTestingSegment()},
+			want:   false,
 		},
 		{
 			name:   "Good process",
@@ -199,6 +225,8 @@ func TestSegmentFilter_Match(t *testing.T) {
 			filter := store.SegmentFilter{
 				Pagination:   tt.fields.Pagination,
 				MapIDs:       tt.fields.MapIDs,
+				MapIDPrefix:  tt.fields.MapIDPrefix,
+				MapIDSuffix:  tt.fields.MapIDSuffix,
 				Process:      tt.fields.Process,
 				LinkHashes:   tt.fields.LinkHashes,
 				PrevLinkHash: tt.fields.PrevLinkHash,

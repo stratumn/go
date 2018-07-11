@@ -17,6 +17,7 @@ package store
 
 import (
 	"context"
+	"strings"
 
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/types"
@@ -135,6 +136,12 @@ type SegmentFilter struct {
 	// Map IDs the segments must have.
 	MapIDs []string `json:"mapIds" url:"mapIds,brackets"`
 
+	// Filter to get maps with IDs starting with a given prefix.
+	MapIDPrefix string `json:"mapIDPrefix" url:"mapIDPrefix"`
+
+	// Filter to get maps with IDs ending with a given suffix.
+	MapIDSuffix string `json:"mapIDSuffix" url:"mapIDSuffix"`
+
 	// Process name is optionnal.
 	Process string `json:"process" url:"-"`
 
@@ -243,6 +250,18 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 			match = match || filterMapIDs == mapID
 		}
 		if !match {
+			return false
+		}
+	}
+
+	if filter.MapIDPrefix != "" {
+		if !strings.HasPrefix(link.Meta.MapID, filter.MapIDPrefix) {
+			return false
+		}
+	}
+
+	if filter.MapIDSuffix != "" {
+		if !strings.HasSuffix(link.Meta.MapID, filter.MapIDSuffix) {
 			return false
 		}
 	}

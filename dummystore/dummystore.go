@@ -210,7 +210,7 @@ func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 
 	var linkHashes = hashSet{}
 
-	if len(filter.MapIDs) == 0 || filter.PrevLinkHash != nil {
+	if len(filter.MapIDs) == 0 {
 		for linkHash := range a.links {
 			linkHashes[linkHash] = struct{}{}
 		}

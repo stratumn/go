@@ -106,6 +106,10 @@ func New(config *Config) (*CouchStore, error) {
 		return nil, err
 	}
 
+	if err := couchstore.CreateIndex(dbLink, "mapID", []string{"link.meta.mapId"}); err != nil {
+		return nil, err
+	}
+
 	return couchstore, nil
 }
 
