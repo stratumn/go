@@ -18,6 +18,7 @@ package cs
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"reflect"
 
@@ -188,6 +189,28 @@ func (m *LinkMeta) GetTagMap() map[string]struct{} {
 		tags[v] = struct{}{}
 	}
 	return tags
+}
+
+// Signed checks if list of parts of the link have been signed.
+// Each part is represented by a jmespath query,
+func (l *Link) Signed(ctx context.Context, jmespathQueries []string) bool {
+	signedAttributes := make(map[string]interface{}, len(l.Signatures))
+	for _, sig := range l.Signatures {
+		payload, _ := l.Search(sig.Payload)
+		payloadBytes, _ := cj.Marshal(payload)
+		hashedPayload := sha256.Sum256(payloadBytes)
+		signedAttributes[hex.EncodeToString(hashedPayload[:])] = interface{}(nil)
+	}
+
+	for _, q := range jmespathQueries {
+		payload, _ := l.Search(q)
+		payloadBytes, _ := cj.Marshal(payload)
+		hashedPayload := sha256.Sum256(payloadBytes)
+		if _, ok := signedAttributes[hex.EncodeToString(hashedPayload[:])]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // Validate checks for errors in a link.

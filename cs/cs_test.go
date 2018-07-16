@@ -21,6 +21,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/testutil"
@@ -420,5 +421,47 @@ func TestSearch(t *testing.T) {
 			Build()
 		_, err := link.Search("state.value")
 		assert.Error(t, err)
+	})
+}
+
+func TestSigned(t *testing.T) {
+	type testStruct struct {
+		Value interface{} `json:"value"`
+	}
+
+	_, priv, _ := keys.GenerateKey(keys.ED25519)
+	rawPriv, _, _ := keys.ParseED25519Key(priv)
+
+	link := cstesting.NewLinkBuilder().
+		WithState(map[string]interface{}{
+			"entry": testStruct{Value: "bar"},
+			"pizza": testStruct{Value: "yolo"},
+		}).
+		WithProcess("foo").
+		WithMapID("plap").
+		SignWithKeyAndPath(rawPriv, "state.pizza").
+		SignWithKeyAndPath(rawPriv, "meta").
+		SignWithKeyAndPath(rawPriv, "[meta.mapID, state.entry]").
+		SignWithKeyAndPath(rawPriv, "[state.entry, state.pizza]").
+		Build()
+
+	t.Run("works with a simple query", func(t *testing.T) {
+		res := link.Signed(context.Background(), []string{"meta"})
+		assert.True(t, res)
+	})
+
+	t.Run("works with multiple queries", func(t *testing.T) {
+		res := link.Signed(context.Background(), []string{"meta", "state.pizza"})
+		assert.True(t, res)
+	})
+
+	t.Run("works with different acceptable selector", func(t *testing.T) {
+		res := link.Signed(context.Background(), []string{"state.*"})
+		assert.True(t, res)
+	})
+
+	t.Run("does not work with absent selector", func(t *testing.T) {
+		res := link.Signed(context.Background(), []string{"state.pizza", "state.entry"})
+		assert.False(t, res)
 	})
 }
