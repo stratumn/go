@@ -305,13 +305,13 @@ func (t *TMStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segm
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (segmentSlice cs.SegmentSlice, err error) {
+func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (segments cs.SegmentPagination, err error) {
 	response, err := t.sendQuery(ctx, tmpop.FindSegments, filter)
 	if err != nil {
 		return
 	}
 
-	err = json.Unmarshal(response.Value, &segmentSlice)
+	err = json.Unmarshal(response.Value, &segments)
 	if err != nil {
 		return
 	}

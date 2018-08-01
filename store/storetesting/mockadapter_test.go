@@ -138,7 +138,9 @@ func TestMockAdapter_FindSegments(t *testing.T) {
 	}
 
 	s := cstesting.RandomSegment()
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentSlice, error) { return cs.SegmentSlice{s}, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
+		return cs.SegmentPagination{Segments: cs.SegmentSlice{s}}, nil
+	}
 	prevLinkHash := testutil.RandomHash().String()
 	f := store.SegmentFilter{PrevLinkHash: &prevLinkHash}
 	s1, err := a.FindSegments(context.Background(), &f)
@@ -146,7 +148,7 @@ func TestMockAdapter_FindSegments(t *testing.T) {
 		t.Fatalf("a.FindSegments(): err: %s", err)
 	}
 
-	if got, want := s1, (cs.SegmentSlice{s}); !reflect.DeepEqual(got, want) {
+	if got, want := s1, (cs.SegmentPagination{Segments: cs.SegmentSlice{s}}); !reflect.DeepEqual(got, want) {
 		gotJS, _ := json.MarshalIndent(got, "", "  ")
 		wantJS, _ := json.MarshalIndent(want, "", "  ")
 		t.Errorf("s1 = %s\n want %s", gotJS, wantJS)

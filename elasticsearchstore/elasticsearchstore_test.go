@@ -115,9 +115,10 @@ func TestElasticSearchTMPop(t *testing.T) {
 	}.RunTests(t)
 }
 
-func verifyResultsCount(t *testing.T, err error, slice cs.SegmentSlice, expectedCount int) {
+func verifyResultsCount(t *testing.T, err error, segments cs.SegmentPagination, expectedCount int) {
 	assert.NoError(t, err)
-	require.Len(t, slice, expectedCount, "Invalid number of results")
+	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
+	assert.Condition(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results")
 }
 
 func TestElasticSearchStoreSearch(t *testing.T) {
@@ -166,7 +167,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "sala*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash1, slice[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash1, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should find segment based on mapId", func(t *testing.T) {
@@ -179,7 +180,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "emirates",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash2, slice[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash2, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on Process", func(t *testing.T) {
@@ -193,7 +194,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash2, slice[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash2, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on one MapId", func(t *testing.T) {
@@ -207,7 +208,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash1, slice[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash1, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on multiple MapIds", func(t *testing.T) {
@@ -221,7 +222,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			h1, h2 := slice[0].GetLinkHashString(), slice[1].GetLinkHashString()
+			h1, h2 := slice.Segments[0].GetLinkHashString(), slice.Segments[1].GetLinkHashString()
 			assert.Contains(t, []string{hash1, hash2}, h1, "Wrong link was found")
 			assert.Contains(t, []string{hash1, hash2}, h2, "Wrong link was found")
 			assert.NotEqual(t, h1, h2, "The two results are the same")
@@ -239,7 +240,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "salazar daniel",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			h1, h2 := slice[0].GetLinkHashString(), slice[1].GetLinkHashString()
+			h1, h2 := slice.Segments[0].GetLinkHashString(), slice.Segments[1].GetLinkHashString()
 			assert.Contains(t, []string{hash1, hash2}, h1, "Wrong link was found")
 			assert.Contains(t, []string{hash1, hash2}, h2, "Wrong link was found")
 			assert.NotEqual(t, h1, h2, "The two results are the same")

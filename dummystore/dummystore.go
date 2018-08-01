@@ -204,7 +204,7 @@ func (a *DummyStore) getSegment(linkHash string) (*cs.Segment, error) {
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentPagination, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -311,21 +311,22 @@ func (a *DummyStore) NewBatch(ctx context.Context) (store.Batch, error) {
 
 /********** Utilities **********/
 
-func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
-	var segments cs.SegmentSlice
+func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.SegmentFilter) (cs.SegmentPagination, error) {
+	var segments cs.SegmentPagination
 
 	for linkHash := range linkHashes {
 		segment, err := a.getSegment(linkHash)
 		if err != nil {
-			return nil, err
+			return segments, err
 		}
 
 		if filter.Match(segment) {
-			segments = append(segments, segment)
+			segments.Segments = append(segments.Segments, segment)
 		}
 	}
+	segments.TotalCount = len(segments.Segments)
 
-	sort.Sort(segments)
+	sort.Sort(segments.Segments)
 
 	return filter.Pagination.PaginateSegments(segments), nil
 }

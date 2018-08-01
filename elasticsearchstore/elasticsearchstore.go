@@ -192,7 +192,7 @@ func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentPagination, error) {
 	return es.findSegments(filter)
 }
 
@@ -231,12 +231,12 @@ func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) 
 
 // SimpleSearchQuery searches through the store for segments matching query criteria
 // using ES simple query string feature
-func (es *ESStore) SimpleSearchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
+func (es *ESStore) SimpleSearchQuery(query *SearchQuery) (cs.SegmentPagination, error) {
 	return es.simpleSearchQuery(query)
 }
 
 // MultiMatchQuery searches through the store for segments matching query criteria
 // using ES multi match query
-func (es *ESStore) MultiMatchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
+func (es *ESStore) MultiMatchQuery(query *SearchQuery) (cs.SegmentPagination, error) {
 	return es.multiMatchQuery(query)
 }

@@ -93,12 +93,12 @@ func (f Factory) TestQuery(t *testing.T) {
 			PrevLinkHash: &wantedPrevLinkHashStr,
 			Tags:         link2.Meta.Tags,
 		}
-		gots := cs.SegmentSlice{}
+		gots := cs.SegmentPagination{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
-		require.Len(t, gots, 1, "Unexpected number of segments")
+		require.Len(t, gots.Segments, 1, "Unexpected number of segments")
 
-		got := gots[0]
+		got := gots.Segments[0]
 		assert.EqualValues(t, link2, &got.Link)
 	})
 
@@ -109,12 +109,12 @@ func (f Factory) TestQuery(t *testing.T) {
 			},
 			Process: link1.Meta.Process,
 		}
-		gots := cs.SegmentSlice{}
+		gots := cs.SegmentPagination{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
-		assert.Len(t, gots, 2, "Unexpected number of segments")
+		assert.Len(t, gots.Segments, 2, "Unexpected number of segments")
 
-		for _, segment := range gots {
+		for _, segment := range gots.Segments {
 			assert.NotEqual(t, *invalidLinkHash, *segment.GetLinkHash(),
 				"Invalid segment found in FindSegments")
 		}

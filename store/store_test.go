@@ -16,7 +16,6 @@ package store_test
 
 import (
 	"encoding/json"
-	"reflect"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -36,18 +35,18 @@ var (
 	badLinkHashTestingValue       string
 	emptyPrevLinkHashTestingValue = ""
 
-	segmentSlice cs.SegmentSlice
-	stringSlice  []string
+	segmentPagination cs.SegmentPagination
+	stringSlice       []string
 )
 
 func init() {
 	prevLinkHashTestingValue = testutil.RandomHash().String()
 	badLinkHashTestingValue = testutil.RandomHash().String()
 
-	segmentSlice = make(cs.SegmentSlice, sliceSize)
+	segmentPagination.Segments = make(cs.SegmentSlice, sliceSize)
 	stringSlice = make([]string, sliceSize)
 	for i := 0; i < sliceSize; i++ {
-		segmentSlice[i] = cstesting.RandomSegment()
+		segmentPagination.Segments[i] = cstesting.RandomSegment()
 		stringSlice[i] = testutil.RandomString(10)
 	}
 }
@@ -204,9 +203,8 @@ func TestSegmentFilter_Match(t *testing.T) {
 				PrevLinkHash: tt.fields.PrevLinkHash,
 				Tags:         tt.fields.Tags,
 			}
-			if got := filter.Match(tt.args.segment); got != tt.want {
-				t.Errorf("SegmentFilter.Match() = %v, want %v", got, tt.want)
-			}
+			got := filter.Match(tt.args.segment)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -284,9 +282,8 @@ func TestMapFilter_Match(t *testing.T) {
 				Prefix:     tt.fields.Prefix,
 				Suffix:     tt.fields.Suffix,
 			}
-			if got := filter.Match(tt.args.segment); got != tt.want {
-				t.Errorf("MapFilter.Match() = %v, want %v", got, tt.want)
-			}
+			got := filter.Match(tt.args.segment)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -303,13 +300,13 @@ func TestPagination_PaginateSegments(t *testing.T) {
 		Limit  int
 	}
 	type args struct {
-		a cs.SegmentSlice
+		a cs.SegmentPagination
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   cs.SegmentSlice
+		want   cs.SegmentPagination
 	}{
 		{
 			name: "Nothing to paginate",
@@ -317,8 +314,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 0,
 				Limit:  2 * sliceSize,
 			},
-			args: args{segmentSlice},
-			want: segmentSlice,
+			args: args{segmentPagination},
+			want: segmentPagination,
 		},
 		{
 			name: "Paginate from beginning",
@@ -326,8 +323,11 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 0,
 				Limit:  sliceSize / 2,
 			},
-			args: args{segmentSlice},
-			want: segmentSlice[:sliceSize/2],
+			args: args{segmentPagination},
+			want: cs.SegmentPagination{
+				Segments:   segmentPagination.Segments[:sliceSize/2],
+				TotalCount: segmentPagination.TotalCount,
+			},
 		},
 		{
 			name: "Paginate from offset",
@@ -335,8 +335,11 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 5,
 				Limit:  sliceSize / 2,
 			},
-			args: args{segmentSlice},
-			want: segmentSlice[5 : 5+sliceSize/2],
+			args: args{segmentPagination},
+			want: cs.SegmentPagination{
+				Segments:   segmentPagination.Segments[5 : 5+sliceSize/2],
+				TotalCount: segmentPagination.TotalCount,
+			},
 		},
 		{
 			name: "Paginate zero limit",
@@ -344,8 +347,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 0,
 				Limit:  0,
 			},
-			args: args{segmentSlice},
-			want: cs.SegmentSlice{},
+			args: args{segmentPagination},
+			want: cs.SegmentPagination{},
 		},
 		{
 			name: "Paginate outer offset",
@@ -353,8 +356,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 2 * sliceSize,
 				Limit:  sliceSize,
 			},
-			args: args{segmentSlice},
-			want: cs.SegmentSlice{},
+			args: args{segmentPagination},
+			want: cs.SegmentPagination{},
 		},
 	}
 	for _, tt := range tests {
@@ -363,9 +366,9 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: tt.fields.Offset,
 				Limit:  tt.fields.Limit,
 			}
-			if got := p.PaginateSegments(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Pagination.PaginateSegments() = %v, want %v", got, tt.want)
-			}
+			got := p.PaginateSegments(segmentPagination)
+			assert.Equal(t, tt.want.Segments, got.Segments, "Segment slice must be paginate")
+			assert.Equal(t, tt.want.TotalCount, got.TotalCount, "TotalCount must be unchanged")
 		})
 	}
 }
@@ -436,9 +439,8 @@ func TestPagination_PaginateStrings(t *testing.T) {
 				Offset: tt.fields.Offset,
 				Limit:  tt.fields.Limit,
 			}
-			if got := p.PaginateStrings(tt.args.a); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Pagination.PaginateStrings() = %v, want %v", got, tt.want)
-			}
+			got := p.PaginateStrings(tt.args.a)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

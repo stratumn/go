@@ -302,12 +302,17 @@ func (s *readStmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, er
 
 // FindSegments formats a read query and retrieves segments according to the filter.
 func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows, error) {
-	sqlHead := `SELECT l.link_hash, l.data, e.data FROM links l
+	sqlHead := `SELECT l.link_hash,
+	l.data,
+	e.data,
+	DENSE_RANK() OVER (ORDER BY l.link_hash ASC) +
+	DENSE_RANK() OVER (ORDER BY l.link_hash DESC) - 1 AS total_count
+	FROM links l
 	LEFT JOIN evidences e ON l.link_hash = e.link_hash
 	`
 
 	sqlTail := fmt.Sprintf(`
-		ORDER BY priority DESC, l.created_at DESC
+		ORDER BY l.priority DESC, l.created_at DESC
 		OFFSET %d LIMIT %d
 		`,
 		filter.Pagination.Offset,

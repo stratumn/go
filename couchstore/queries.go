@@ -79,13 +79,9 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	}
 	if len(filter.MapIDs) > 0 {
 		linkSelector.MapIds = &MapIdsIn{MapIds: filter.MapIDs}
-	} else {
-		linkSelector.MapIds = nil
 	}
 	if len(filter.Tags) > 0 {
 		linkSelector.Tags = &TagsAll{Tags: filter.Tags}
-	} else {
-		linkSelector.Tags = nil
 	}
 	if len(filter.LinkHashes) > 0 {
 		linkSelector.LinkHash = &LinkHashIn{

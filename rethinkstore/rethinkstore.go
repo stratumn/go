@@ -255,7 +255,7 @@ func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Se
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentPagination, error) {
 	var prevLinkHash []byte
 	q := a.links
 
@@ -280,7 +280,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 
 		linkHashes, err := cs.NewLinkHashesFromStrings(filter.LinkHashes)
 		if err != nil {
-			return nil, err
+			return cs.SegmentPagination{}, err
 		}
 
 		ids := make([]interface{}, len(linkHashes))
@@ -333,18 +333,20 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 
 	cur, err := q.Skip(filter.Offset).Limit(filter.Limit).Run(a.session)
 	if err != nil {
-		return nil, err
+		return cs.SegmentPagination{}, err
 	}
 	defer cur.Close()
 
-	segments := make(cs.SegmentSlice, 0, filter.Limit)
-	if err := cur.All(&segments); err != nil {
-		return nil, err
+	segments := cs.SegmentPagination{
+		Segments: make(cs.SegmentSlice, 0, filter.Limit),
 	}
-	for _, s := range segments {
+	if err := cur.All(&segments.Segments); err != nil {
+		return cs.SegmentPagination{}, err
+	}
+	for _, s := range segments.Segments {
 		err = s.SetLinkHash()
 		if err != nil {
-			return nil, err
+			return cs.SegmentPagination{}, err
 		}
 	}
 

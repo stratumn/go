@@ -498,12 +498,12 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 	return filterQueries
 }
 
-func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (cs.SegmentSlice, error) {
+func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (cs.SegmentPagination, error) {
 	// Flush to make sure the documents got written.
 	ctx := context.TODO()
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
-		return nil, err
+		return cs.SegmentPagination{}, err
 	}
 
 	// prepare search service.
@@ -520,11 +520,14 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)
 	if err != nil {
-		return nil, err
+		return cs.SegmentPagination{}, err
 	}
 
 	// populate SegmentSlice.
-	res := cs.SegmentSlice{}
+	res := cs.SegmentPagination{
+		Segments:   cs.SegmentSlice{},
+		TotalCount: int(sr.TotalHits()),
+	}
 	if sr == nil || sr.TotalHits() == 0 {
 		return res, nil
 	}
@@ -532,17 +535,17 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 	for _, hit := range sr.Hits.Hits {
 		var link cs.Link
 		if err := json.Unmarshal(*hit.Source, &link); err != nil {
-			return nil, err
+			return cs.SegmentPagination{}, err
 		}
-		res = append(res, es.segmentify(ctx, &link))
+		res.Segments = append(res.Segments, es.segmentify(ctx, &link))
 	}
 
-	sort.Sort(res)
+	sort.Sort(res.Segments)
 
 	return res, nil
 }
 
-func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentPagination, error) {
 	// prepare query.
 	q := elastic.NewBoolQuery().Filter(makeFilterQueries(filter)...)
 
@@ -550,7 +553,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, e
 	return es.genericSearch(filter, q)
 }
 
-func (es *ESStore) simpleSearchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
+func (es *ESStore) simpleSearchQuery(query *SearchQuery) (cs.SegmentPagination, error) {
 	// prepare Query.
 	q := elastic.NewBoolQuery().
 		// add filter queries.
@@ -562,7 +565,7 @@ func (es *ESStore) simpleSearchQuery(query *SearchQuery) (cs.SegmentSlice, error
 	return es.genericSearch(&query.SegmentFilter, q)
 }
 
-func (es *ESStore) multiMatchQuery(query *SearchQuery) (cs.SegmentSlice, error) {
+func (es *ESStore) multiMatchQuery(query *SearchQuery) (cs.SegmentPagination, error) {
 	// fields to search through: all meta + stateTokens.
 	fields := []string{
 		"meta.mapId",

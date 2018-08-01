@@ -80,11 +80,12 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		var segs cs.SegmentSlice
+		var segs cs.SegmentPagination
 		var err error
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
-		adapterLinksCount := len(segs)
+		assert.Len(t, segs.Segments, segs.TotalCount)
+		adapterLinksCount := len(segs.Segments)
 
 		_, err = b.CreateLink(ctx, cstesting.RandomLink())
 		require.NoError(t, err, "b.CreateLink()")
@@ -93,7 +94,7 @@ func (f Factory) TestBatch(t *testing.T) {
 
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
-		assert.Equal(t, adapterLinksCount+2, len(segs), "Invalid number of segments found")
+		assert.Len(t, segs.Segments, adapterLinksCount+2, "Invalid number of segments found")
 	})
 
 	t.Run("Finding maps should find in both batch and underlying store", func(t *testing.T) {

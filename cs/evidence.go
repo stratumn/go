@@ -79,7 +79,7 @@ func (e *Evidence) UnmarshalJSON(data []byte) error {
 
 	deserializer, exists := DeserializeMethods[serialized.Backend]
 	if !exists {
-		return errors.New("Evidence type does not exist")
+		return errors.Errorf("Evidence type %s does not exist", serialized.Backend)
 	}
 
 	proof, err := deserializer(serialized.Proof)

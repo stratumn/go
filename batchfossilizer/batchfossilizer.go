@@ -227,8 +227,10 @@ func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer
 
 // Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
-	f := fossil{Meta: meta}
-	f.Data = data
+	f := fossil{
+		Meta: meta,
+		Data: data,
+	}
 	a.fossilChan <- &f
 	return <-a.resultChan
 }

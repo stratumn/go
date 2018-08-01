@@ -75,18 +75,19 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segmen
 }
 
 // FindSegments returns the union of segments in the store and not committed yet.
-func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentSlice, err error) {
+func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ cs.SegmentPagination, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/FindSegments")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	segments, err := b.originalStore.FindSegments(ctx, filter)
 	if err != nil {
-		return segments, err
+		return cs.SegmentPagination{}, err
 	}
 
 	for _, link := range b.Links {
 		if filter.MatchLink(link) {
-			segments = append(segments, link.Segmentify())
+			segments.Segments = append(segments.Segments, link.Segmentify())
+			segments.TotalCount++
 		}
 	}
 

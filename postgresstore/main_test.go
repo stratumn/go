@@ -29,8 +29,9 @@ import (
 
 func TestMain(m *testing.M) {
 	const (
-		domain = "0.0.0.0"
-		port   = "5432"
+		domain      = "0.0.0.0"
+		port        = "5432"
+		exposedPort = "5433"
 	)
 
 	seed := int64(time.Now().Nanosecond())
@@ -47,7 +48,7 @@ func TestMain(m *testing.M) {
 		p: []nat.PortBinding{
 			{
 				HostIP:   domain,
-				HostPort: port,
+				HostPort: exposedPort,
 			},
 		},
 	}
@@ -80,7 +81,7 @@ func TestMain(m *testing.M) {
 }
 
 func createDatabase(attempt int) (bool, error) {
-	db, err := sql.Open("postgres", "postgres://postgres@localhost?sslmode=disable")
+	db, err := sql.Open("postgres", "postgres://postgres@localhost:5433?sslmode=disable")
 	if err != nil {
 		time.Sleep(1 * time.Second)
 		return true, err
