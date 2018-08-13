@@ -93,7 +93,7 @@ func (f Factory) TestQuery(t *testing.T) {
 			PrevLinkHash: &wantedPrevLinkHashStr,
 			Tags:         link2.Meta.Tags,
 		}
-		gots := cs.SegmentPagination{}
+		gots := cs.PaginatedSegments{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
 		require.Len(t, gots.Segments, 1, "Unexpected number of segments")
@@ -109,7 +109,7 @@ func (f Factory) TestQuery(t *testing.T) {
 			},
 			Process: link1.Meta.Process,
 		}
-		gots := cs.SegmentPagination{}
+		gots := cs.PaginatedSegments{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
 		assert.Len(t, gots.Segments, 2, "Unexpected number of segments")

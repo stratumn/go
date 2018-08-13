@@ -302,8 +302,8 @@ func (l Link) Search(jsonQuery string) (interface{}, error) {
 // SegmentSlice is a slice of segment pointers.
 type SegmentSlice []*Segment
 
-// SegmentPagination is a slice of segments and the count of segments without pagination
-type SegmentPagination struct {
+// PaginatedSegments is a slice of segments and the count of segments without pagination
+type PaginatedSegments struct {
 	Segments   SegmentSlice
 	TotalCount int
 }

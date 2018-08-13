@@ -52,7 +52,7 @@ func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l
 	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
 }
 
-func verifyPriorityOrdering(t *testing.T, segments cs.SegmentPagination) {
+func verifyPriorityOrdering(t *testing.T, segments cs.PaginatedSegments) {
 	wantLTE := 100.0
 	for _, s := range segments.Segments {
 		got := s.Link.Meta.Priority
@@ -61,14 +61,14 @@ func verifyPriorityOrdering(t *testing.T, segments cs.SegmentPagination) {
 	}
 }
 
-func verifyResultsCountWithTotalCount(t *testing.T, err error, segments cs.SegmentPagination, expectedCount, expectedTotalCount int) {
+func verifyResultsCountWithTotalCount(t *testing.T, err error, segments cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
 	assert.NoError(t, err)
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Equal(t, expectedTotalCount, segments.TotalCount, "Invalid number of results before pagination")
 	assert.Conditionf(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results. got: %d / expected less than %d", len(segments.Segments), segments.TotalCount)
 }
 
-func verifyResultsCount(t *testing.T, err error, segments cs.SegmentPagination, expectedCount int) {
+func verifyResultsCount(t *testing.T, err error, segments cs.PaginatedSegments, expectedCount int) {
 	verifyResultsCountWithTotalCount(t, err, segments, expectedCount, expectedCount)
 }
 

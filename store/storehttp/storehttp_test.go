@@ -297,13 +297,13 @@ func TestGetSegment_err(t *testing.T) {
 
 func TestFindSegments(t *testing.T) {
 	s, a := createServer()
-	var s1 cs.SegmentPagination
+	var s1 cs.PaginatedSegments
 	for i := 0; i < 10; i++ {
 		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) { return s1, nil }
 
-	var s2 cs.SegmentPagination
+	var s2 cs.PaginatedSegments
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags%5B%5D=one&tags%5B%5D=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -345,13 +345,13 @@ func TestFindSegments(t *testing.T) {
 
 func TestFindSegments_multipleMapIDs(t *testing.T) {
 	s, a := createServer()
-	var s1 cs.SegmentPagination
+	var s1 cs.PaginatedSegments
 	for i := 0; i < 10; i++ {
 		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) { return s1, nil }
 
-	var s2 cs.SegmentPagination
+	var s2 cs.PaginatedSegments
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds[]=123&mapIds[]=456&prevLinkHash="+zeros+"&tags[]=one&tags%5B%5D=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -395,13 +395,13 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 
 func TestFindSegments_multipleLinkHashes(t *testing.T) {
 	s, a := createServer()
-	var s1 cs.SegmentPagination
+	var s1 cs.PaginatedSegments
 	for i := 0; i < 10; i++ {
 		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) { return s1, nil }
 
-	var s2 cs.SegmentPagination
+	var s2 cs.PaginatedSegments
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&linkHashes[]="+zeros+"&linkHashes%5B%5D="+zeros, nil, &s2)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -418,13 +418,13 @@ func TestFindSegments_multipleLinkHashes(t *testing.T) {
 
 func TestFindSegments_defaultLimit(t *testing.T) {
 	s, a := createServer()
-	var s1 cs.SegmentPagination
+	var s1 cs.PaginatedSegments
 	for i := 0; i < 10; i++ {
 		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) { return s1, nil }
 
-	var s2 cs.SegmentPagination
+	var s2 cs.PaginatedSegments
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags[]=one&tags[]=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -466,8 +466,8 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 
 func TestFindSegments_err(t *testing.T) {
 	s, a := createServer()
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-		return cs.SegmentPagination{Segments: nil}, errors.New("test")
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+		return cs.PaginatedSegments{Segments: nil}, errors.New("test")
 	}
 
 	var body map[string]interface{}

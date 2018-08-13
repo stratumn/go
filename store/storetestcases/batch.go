@@ -80,7 +80,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		var segs cs.SegmentPagination
+		var segs cs.PaginatedSegments
 		var err error
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")

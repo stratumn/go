@@ -35,7 +35,7 @@ var (
 	badLinkHashTestingValue       string
 	emptyPrevLinkHashTestingValue = ""
 
-	segmentPagination cs.SegmentPagination
+	segmentPagination cs.PaginatedSegments
 	stringSlice       []string
 )
 
@@ -300,13 +300,13 @@ func TestPagination_PaginateSegments(t *testing.T) {
 		Limit  int
 	}
 	type args struct {
-		a cs.SegmentPagination
+		a cs.PaginatedSegments
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   cs.SegmentPagination
+		want   cs.PaginatedSegments
 	}{
 		{
 			name: "Nothing to paginate",
@@ -324,7 +324,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  sliceSize / 2,
 			},
 			args: args{segmentPagination},
-			want: cs.SegmentPagination{
+			want: cs.PaginatedSegments{
 				Segments:   segmentPagination.Segments[:sliceSize/2],
 				TotalCount: segmentPagination.TotalCount,
 			},
@@ -336,7 +336,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  sliceSize / 2,
 			},
 			args: args{segmentPagination},
-			want: cs.SegmentPagination{
+			want: cs.PaginatedSegments{
 				Segments:   segmentPagination.Segments[5 : 5+sliceSize/2],
 				TotalCount: segmentPagination.TotalCount,
 			},
@@ -348,7 +348,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  0,
 			},
 			args: args{segmentPagination},
-			want: cs.SegmentPagination{},
+			want: cs.PaginatedSegments{},
 		},
 		{
 			name: "Paginate outer offset",
@@ -357,7 +357,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  sliceSize,
 			},
 			args: args{segmentPagination},
-			want: cs.SegmentPagination{},
+			want: cs.PaginatedSegments{},
 		},
 	}
 	for _, tt := range tests {

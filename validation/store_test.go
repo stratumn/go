@@ -42,7 +42,7 @@ func TestStore(t *testing.T) {
 	t.Run("TestGetValidators", func(t *testing.T) {
 		t.Run("No processes", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) { return cs.SegmentPagination{}, nil }
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) { return cs.PaginatedSegments{}, nil }
 
 			s := validation.NewStore(a, &validation.Config{})
 			validators, err := s.GetValidators(ctx)
@@ -52,15 +52,15 @@ func TestStore(t *testing.T) {
 
 		t.Run("No validators found for process", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentPagination, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
-					return cs.SegmentPagination{}, nil
+					return cs.PaginatedSegments{}, nil
 				}
 				link := cstesting.NewLinkBuilder().
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "process").
 					Build()
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -71,14 +71,14 @@ func TestStore(t *testing.T) {
 
 		t.Run("Incomplete governance segment", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentPagination, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
 					link := cstesting.NewLinkBuilder().WithState(map[string]interface{}{
 						"pki": "test",
 					}).Build()
-					return cs.SegmentPagination{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
+					return cs.PaginatedSegments{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
 				}
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{cstesting.NewLinkBuilder().WithTags("1", "2").Build().Segmentify()}}, nil
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{cstesting.NewLinkBuilder().WithTags("1", "2").Build().Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -89,15 +89,15 @@ func TestStore(t *testing.T) {
 
 		t.Run("Bad governance segment format", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentPagination, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
 					link := cstesting.NewLinkBuilder().WithState(map[string]interface{}{
 						"pki":   "test",
 						"types": 1,
 					}).Build()
-					return cs.SegmentPagination{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
+					return cs.PaginatedSegments{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
 				}
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{cstesting.NewLinkBuilder().WithTags("1", "2").Build().Segmentify()}}, nil
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{cstesting.NewLinkBuilder().WithTags("1", "2").Build().Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -126,8 +126,8 @@ func TestStore(t *testing.T) {
 
 		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{}, errors.New("error")
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{}, errors.New("error")
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -141,8 +141,8 @@ func TestStore(t *testing.T) {
 
 		t.Run("Creates a segment without parent", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -167,8 +167,8 @@ func TestStore(t *testing.T) {
 
 			parentHash, _ := parent.HashString()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -195,8 +195,8 @@ func TestStore(t *testing.T) {
 
 		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{}, errors.New("error")
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{}, errors.New("error")
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -210,8 +210,8 @@ func TestStore(t *testing.T) {
 				WithMetadata(validation.ProcessMetaKey, process).
 				Build()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -225,8 +225,8 @@ func TestStore(t *testing.T) {
 				WithMetadata(validation.ProcessMetaKey, process).
 				Build()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -245,8 +245,8 @@ func TestStore(t *testing.T) {
 				WithMetadata(validation.ProcessMetaKey, process).
 				Build()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -265,8 +265,8 @@ func TestStore(t *testing.T) {
 				WithMetadata(validation.ProcessMetaKey, process).
 				Build()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -311,8 +311,8 @@ func TestStore(t *testing.T) {
 				WithMetadata(validation.ProcessMetaKey, process).
 				Build()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 
 			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
@@ -355,8 +355,8 @@ func TestStore(t *testing.T) {
 				Build()
 
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.SegmentPagination, error) {
-				return cs.SegmentPagination{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (cs.PaginatedSegments, error) {
+				return cs.PaginatedSegments{Segments: cs.SegmentSlice{parent.Segmentify()}}, nil
 			}
 			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
 

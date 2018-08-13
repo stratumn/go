@@ -107,21 +107,21 @@ func TestBatch_FindSegments(t *testing.T) {
 	batch.CreateLink(ctx, l2)
 
 	notFoundErr := errors.New("Unit test error")
-	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentPagination, error) {
+	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.PaginatedSegments, error) {
 		if filter.Process == "Foo" {
-			return cs.SegmentPagination{
+			return cs.PaginatedSegments{
 				Segments:   cs.SegmentSlice{storedLink.Segmentify()},
 				TotalCount: 1,
 			}, nil
 		}
 		if filter.Process == "Bar" {
-			return cs.SegmentPagination{}, nil
+			return cs.PaginatedSegments{}, nil
 		}
 
-		return cs.SegmentPagination{}, notFoundErr
+		return cs.PaginatedSegments{}, notFoundErr
 	}
 
-	var segments cs.SegmentPagination
+	var segments cs.PaginatedSegments
 	var err error
 
 	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})

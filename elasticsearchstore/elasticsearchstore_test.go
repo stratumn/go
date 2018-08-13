@@ -115,7 +115,7 @@ func TestElasticSearchTMPop(t *testing.T) {
 	}.RunTests(t)
 }
 
-func verifyResultsCount(t *testing.T, err error, segments cs.SegmentPagination, expectedCount int) {
+func verifyResultsCount(t *testing.T, err error, segments cs.PaginatedSegments, expectedCount int) {
 	assert.NoError(t, err)
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Condition(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results")
