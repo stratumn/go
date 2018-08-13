@@ -16,7 +16,6 @@ package storetestcases
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"sync/atomic"
@@ -376,9 +375,6 @@ func (f Factory) TestFindSegments(t *testing.T) {
 				linkHash4.String(),
 			},
 		})
-		for i, s := range got.Segments {
-			fmt.Printf("seg%d: %+v\n", i, s)
-		}
 		verifyResultsCount(t, err, got, 1)
 		assert.True(t, len(got.Segments[0].Meta.Evidences) >= 4)
 	})

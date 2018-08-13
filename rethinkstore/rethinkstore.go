@@ -344,6 +344,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		return cs.SegmentPagination{}, err
 	}
 
+	// Non optimal way to count all segments
 	totalCountCur, err := q.Run(a.session)
 	if err != nil {
 		return cs.SegmentPagination{}, err

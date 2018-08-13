@@ -118,13 +118,12 @@ func (s *Store) GetAllProcesses(ctx context.Context) []string {
 				}
 			}
 		}
-		if len(segments.Segments)+offset*store.MaxLimit < segments.TotalCount {
-			offset += store.MaxLimit
-		} else {
+		if len(segments.Segments)+offset*store.MaxLimit >= segments.TotalCount {
 			break
 		}
+		offset += store.MaxLimit
 	}
-	ret := make([]string, 0)
+	ret := make([]string, 0, len(processSet))
 	for p := range processSet {
 		ret = append(ret, p)
 	}
