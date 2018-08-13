@@ -53,14 +53,14 @@ func (f Factory) RunKeyValueStoreTests(t *testing.T) {
 
 // RunStoreTests runs all the tests for the store adapter interface.
 func (f Factory) RunStoreTests(t *testing.T) {
-	// t.Run("Test store events", f.TestStoreEvents)
-	// t.Run("Test store info", f.TestGetInfo)
+	t.Run("Test store events", f.TestStoreEvents)
+	t.Run("Test store info", f.TestGetInfo)
 	t.Run("Test finding segments", f.TestFindSegments)
-	// t.Run("Test getting map IDs", f.TestGetMapIDs)
-	// t.Run("Test getting segments", f.TestGetSegment)
-	// t.Run("Test creating links", f.TestCreateLink)
-	// t.Run("Test batch implementation", f.TestBatch)
-	// t.Run("Test evidence store", f.TestEvidenceStore)
+	t.Run("Test getting map IDs", f.TestGetMapIDs)
+	t.Run("Test getting segments", f.TestGetSegment)
+	t.Run("Test creating links", f.TestCreateLink)
+	t.Run("Test batch implementation", f.TestBatch)
+	t.Run("Test evidence store", f.TestEvidenceStore)
 }
 
 // RunStoreBenchmarks runs all the benchmarks for the store adapter interface.
