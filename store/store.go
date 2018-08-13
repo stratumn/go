@@ -39,7 +39,7 @@ type SegmentReader interface {
 
 	// Find segments. Returns an empty slice if there are no results.
 	// Will return links and evidences (if there are some).
-	FindSegments(ctx context.Context, filter *SegmentFilter) (cs.PaginatedSegments, error)
+	FindSegments(ctx context.Context, filter *SegmentFilter) (*cs.PaginatedSegments, error)
 
 	// Get all the existing map IDs.
 	GetMapIDs(ctx context.Context, filter *MapFilter) ([]string, error)
@@ -178,17 +178,17 @@ func (p *Pagination) PaginateStrings(a []string) []string {
 }
 
 // PaginateSegments paginate a list of segments
-func (p *Pagination) PaginateSegments(a cs.PaginatedSegments) cs.PaginatedSegments {
+func (p *Pagination) PaginateSegments(a *cs.PaginatedSegments) *cs.PaginatedSegments {
 	l := len(a.Segments)
 	if p.Offset >= l {
-		return cs.PaginatedSegments{}
+		return &cs.PaginatedSegments{
+			Segments:   cs.SegmentSlice{},
+			TotalCount: a.TotalCount,
+		}
 	}
 
 	end := min(l, p.Offset+p.Limit)
-	if p.Offset == end {
-		return cs.PaginatedSegments{}
-	}
-	return cs.PaginatedSegments{
+	return &cs.PaginatedSegments{
 		Segments:   a.Segments[p.Offset:end],
 		TotalCount: a.TotalCount,
 	}

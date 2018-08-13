@@ -28,6 +28,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var emptyPrevLinkHash = ""
@@ -52,7 +53,7 @@ func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l
 	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
 }
 
-func verifyPriorityOrdering(t *testing.T, segments cs.PaginatedSegments) {
+func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
 	wantLTE := 100.0
 	for _, s := range segments.Segments {
 		got := s.Link.Meta.Priority
@@ -61,14 +62,15 @@ func verifyPriorityOrdering(t *testing.T, segments cs.PaginatedSegments) {
 	}
 }
 
-func verifyResultsCountWithTotalCount(t *testing.T, err error, segments cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
+func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
 	assert.NoError(t, err)
+	require.NotNil(t, segments)
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Equal(t, expectedTotalCount, segments.TotalCount, "Invalid number of results before pagination")
 	assert.Conditionf(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results. got: %d / expected less than %d", len(segments.Segments), segments.TotalCount)
 }
 
-func verifyResultsCount(t *testing.T, err error, segments cs.PaginatedSegments, expectedCount int) {
+func verifyResultsCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount int) {
 	verifyResultsCountWithTotalCount(t, err, segments, expectedCount, expectedCount)
 }
 
@@ -120,25 +122,25 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Should order by priority", func(t *testing.T) {
 		ctx := context.Background()
-		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+		segments, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: testPageSize,
 			},
 		})
-		verifyResultsCountWithTotalCount(t, err, slice, testPageSize, segmentsTotalCount)
-		verifyPriorityOrdering(t, slice)
+		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
+		verifyPriorityOrdering(t, segments)
 	})
 
 	t.Run("Should support pagination", func(t *testing.T) {
 		ctx := context.Background()
-		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+		segments, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Offset: testPageSize,
 				Limit:  testPageSize,
 			},
 		})
-		verifyResultsCountWithTotalCount(t, err, slice, testPageSize, segmentsTotalCount)
-		verifyPriorityOrdering(t, slice)
+		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
+		verifyPriorityOrdering(t, segments)
 	})
 
 	t.Run("Should return no results for invalid tag filter", func(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -35,7 +36,7 @@ var (
 	badLinkHashTestingValue       string
 	emptyPrevLinkHashTestingValue = ""
 
-	segmentPagination cs.PaginatedSegments
+	paginatedSegments *cs.PaginatedSegments
 	stringSlice       []string
 )
 
@@ -43,10 +44,11 @@ func init() {
 	prevLinkHashTestingValue = testutil.RandomHash().String()
 	badLinkHashTestingValue = testutil.RandomHash().String()
 
-	segmentPagination.Segments = make(cs.SegmentSlice, sliceSize)
+	paginatedSegments = &cs.PaginatedSegments{}
+	paginatedSegments.Segments = make(cs.SegmentSlice, sliceSize)
 	stringSlice = make([]string, sliceSize)
 	for i := 0; i < sliceSize; i++ {
-		segmentPagination.Segments[i] = cstesting.RandomSegment()
+		paginatedSegments.Segments[i] = cstesting.RandomSegment()
 		stringSlice[i] = testutil.RandomString(10)
 	}
 }
@@ -300,13 +302,13 @@ func TestPagination_PaginateSegments(t *testing.T) {
 		Limit  int
 	}
 	type args struct {
-		a cs.PaginatedSegments
+		a *cs.PaginatedSegments
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   cs.PaginatedSegments
+		want   *cs.PaginatedSegments
 	}{
 		{
 			name: "Nothing to paginate",
@@ -314,8 +316,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 0,
 				Limit:  2 * sliceSize,
 			},
-			args: args{segmentPagination},
-			want: segmentPagination,
+			args: args{paginatedSegments},
+			want: paginatedSegments,
 		},
 		{
 			name: "Paginate from beginning",
@@ -323,10 +325,10 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 0,
 				Limit:  sliceSize / 2,
 			},
-			args: args{segmentPagination},
-			want: cs.PaginatedSegments{
-				Segments:   segmentPagination.Segments[:sliceSize/2],
-				TotalCount: segmentPagination.TotalCount,
+			args: args{paginatedSegments},
+			want: &cs.PaginatedSegments{
+				Segments:   paginatedSegments.Segments[:sliceSize/2],
+				TotalCount: paginatedSegments.TotalCount,
 			},
 		},
 		{
@@ -335,10 +337,10 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 5,
 				Limit:  sliceSize / 2,
 			},
-			args: args{segmentPagination},
-			want: cs.PaginatedSegments{
-				Segments:   segmentPagination.Segments[5 : 5+sliceSize/2],
-				TotalCount: segmentPagination.TotalCount,
+			args: args{paginatedSegments},
+			want: &cs.PaginatedSegments{
+				Segments:   paginatedSegments.Segments[5 : 5+sliceSize/2],
+				TotalCount: paginatedSegments.TotalCount,
 			},
 		},
 		{
@@ -347,8 +349,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 0,
 				Limit:  0,
 			},
-			args: args{segmentPagination},
-			want: cs.PaginatedSegments{},
+			args: args{paginatedSegments},
+			want: &cs.PaginatedSegments{Segments: cs.SegmentSlice{}},
 		},
 		{
 			name: "Paginate outer offset",
@@ -356,8 +358,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: 2 * sliceSize,
 				Limit:  sliceSize,
 			},
-			args: args{segmentPagination},
-			want: cs.PaginatedSegments{},
+			args: args{paginatedSegments},
+			want: &cs.PaginatedSegments{Segments: cs.SegmentSlice{}},
 		},
 	}
 	for _, tt := range tests {
@@ -366,7 +368,8 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Offset: tt.fields.Offset,
 				Limit:  tt.fields.Limit,
 			}
-			got := p.PaginateSegments(segmentPagination)
+			got := p.PaginateSegments(paginatedSegments)
+			require.NotNil(t, got)
 			assert.Equal(t, tt.want.Segments, got.Segments, "Segment slice must be paginate")
 			assert.Equal(t, tt.want.TotalCount, got.TotalCount, "TotalCount must be unchanged")
 		})

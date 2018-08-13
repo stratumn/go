@@ -162,7 +162,7 @@ type MockFindSegments struct {
 	LastCalledWith *store.SegmentFilter
 
 	// An optional implementation of the function.
-	Fn func(*store.SegmentFilter) (cs.PaginatedSegments, error)
+	Fn func(*store.SegmentFilter) (*cs.PaginatedSegments, error)
 }
 
 // MockGetMapIDs mocks the GetMapIDs function.
@@ -310,7 +310,7 @@ func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash *types.Bytes32)
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.PaginatedSegments, error) {
+func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
 	a.MockFindSegments.CalledCount++
 	a.MockFindSegments.CalledWith = append(a.MockFindSegments.CalledWith, filter)
 	a.MockFindSegments.LastCalledWith = filter
@@ -319,7 +319,7 @@ func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFil
 		return a.MockFindSegments.Fn(filter)
 	}
 
-	return cs.PaginatedSegments{}, nil
+	return &cs.PaginatedSegments{}, nil
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.

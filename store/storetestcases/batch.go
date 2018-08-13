@@ -80,10 +80,11 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		var segs cs.PaginatedSegments
+		var segs *cs.PaginatedSegments
 		var err error
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
+		require.NotNil(t, segs)
 		assert.Len(t, segs.Segments, segs.TotalCount)
 		adapterLinksCount := len(segs.Segments)
 
@@ -94,6 +95,7 @@ func (f Factory) TestBatch(t *testing.T) {
 
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
+		require.NotNil(t, segs)
 		assert.Len(t, segs.Segments, adapterLinksCount+2, "Invalid number of segments found")
 	})
 

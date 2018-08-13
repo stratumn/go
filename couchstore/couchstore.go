@@ -204,10 +204,10 @@ func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.Segmen
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.PaginatedSegments, error) {
+func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
 	segments, err := c.findSegmentsSlice(ctx, filter)
 	if err != nil {
-		return cs.PaginatedSegments{}, err
+		return nil, err
 	}
 	sort.Sort(segments)
 
@@ -218,7 +218,7 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 	for {
 		allSegments, err := c.findSegmentsSlice(ctx, filter)
 		if err != nil {
-			return cs.PaginatedSegments{}, err
+			return nil, err
 		}
 		segmentsLen := len(allSegments)
 		totalCount += segmentsLen
@@ -228,7 +228,7 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 		filter.Offset += filter.Limit
 	}
 
-	return cs.PaginatedSegments{
+	return &cs.PaginatedSegments{
 		Segments:   segments,
 		TotalCount: totalCount,
 	}, nil
