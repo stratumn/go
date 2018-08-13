@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/store/storetestcases"
+	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
 )
 
 func TestExists(t *testing.T) {
@@ -46,24 +48,24 @@ func TestExists(t *testing.T) {
 	}
 }
 
-// func TestStore(t *testing.T) {
-// 	factory := storetestcases.Factory{
-// 		New:               createAdapter,
-// 		NewKeyValueStore:  createKeyValueStore,
-// 		Free:              freeAdapter,
-// 		FreeKeyValueStore: freeKeyValueStore,
-// 	}
+func TestStore(t *testing.T) {
+	factory := storetestcases.Factory{
+		New:               createAdapter,
+		NewKeyValueStore:  createKeyValueStore,
+		Free:              freeAdapter,
+		FreeKeyValueStore: freeKeyValueStore,
+	}
 
-// 	factory.RunStoreTests(t)
-// 	factory.RunKeyValueStoreTests(t)
-// }
+	factory.RunStoreTests(t)
+	factory.RunKeyValueStoreTests(t)
+}
 
-// func TestRethinkTMPop(t *testing.T) {
-// 	tmpoptestcases.Factory{
-// 		New:  createAdapterTMPop,
-// 		Free: freeAdapterTMPop,
-// 	}.RunTests(t)
-// }
+func TestRethinkTMPop(t *testing.T) {
+	tmpoptestcases.Factory{
+		New:  createAdapterTMPop,
+		Free: freeAdapterTMPop,
+	}.RunTests(t)
+}
 
 func createStore() (*Store, error) {
 	a, err := New(&Config{URL: fmt.Sprintf("%s:%s", domain, port), DB: dbName})

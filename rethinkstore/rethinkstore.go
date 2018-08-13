@@ -343,6 +343,17 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	if err := cur.All(&segments.Segments); err != nil {
 		return cs.SegmentPagination{}, err
 	}
+
+	totalCountCur, err := q.Run(a.session)
+	if err != nil {
+		return cs.SegmentPagination{}, err
+	}
+	defer totalCountCur.Close()
+	segIt := cs.Segment{}
+	for totalCountCur.Next(&segIt) {
+		segments.TotalCount++
+	}
+
 	for _, s := range segments.Segments {
 		err = s.SetLinkHash()
 		if err != nil {
