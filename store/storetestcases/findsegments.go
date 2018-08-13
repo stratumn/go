@@ -53,19 +53,25 @@ func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l
 	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
 }
 
-func verifyPriorityOrdering(t *testing.T, slice cs.SegmentSlice) {
+func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
 	wantLTE := 100.0
-	for _, s := range slice {
+	for _, s := range segments.Segments {
 		got := s.Link.Meta.Priority
 		assert.True(t, got <= wantLTE, "Invalid priority")
 		wantLTE = got
 	}
 }
 
-func verifyResultsCount(t *testing.T, err error, slice cs.SegmentSlice, expectedCount int) {
+func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
 	assert.NoError(t, err)
-	assert.NotNil(t, slice)
-	assert.Equal(t, expectedCount, len(slice), "Invalid number of results")
+	require.NotNil(t, segments)
+	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
+	assert.Equal(t, expectedTotalCount, segments.TotalCount, "Invalid number of results before pagination")
+	assert.Conditionf(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results. got: %d / expected less than %d", len(segments.Segments), segments.TotalCount)
+}
+
+func verifyResultsCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount int) {
+	verifyResultsCountWithTotalCount(t, err, segments, expectedCount, expectedCount)
 }
 
 // TestFindSegments tests what happens when you search for segments with various filters.
@@ -116,25 +122,25 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Should order by priority", func(t *testing.T) {
 		ctx := context.Background()
-		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+		segments, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: testPageSize,
 			},
 		})
-		verifyResultsCount(t, err, slice, testPageSize)
-		verifyPriorityOrdering(t, slice)
+		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
+		verifyPriorityOrdering(t, segments)
 	})
 
 	t.Run("Should support pagination", func(t *testing.T) {
 		ctx := context.Background()
-		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+		segments, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Offset: testPageSize,
 				Limit:  testPageSize,
 			},
 		})
-		verifyResultsCount(t, err, slice, testPageSize)
-		verifyPriorityOrdering(t, slice)
+		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
+		verifyPriorityOrdering(t, segments)
 	})
 
 	t.Run("Should return no results for invalid tag filter", func(t *testing.T) {
@@ -371,10 +377,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 				linkHash4.String(),
 			},
 		})
-		assert.NoError(t, err, "a.FindSegments()")
-		assert.NotNil(t, got)
-		require.Len(t, got, 1)
-		assert.True(t, len(got[0].Meta.Evidences) >= 4)
+		verifyResultsCount(t, err, got, 1)
+		assert.True(t, len(got.Segments[0].Meta.Evidences) >= 4)
 	})
 
 	t.Run("Resists to SQL injections in process filter", func(t *testing.T) {
@@ -424,7 +428,7 @@ func (f Factory) BenchmarkFindSegments(b *testing.B, numLinks int, createLinkFun
 	for i := 0; i < b.N; i++ {
 		if s, err := a.FindSegments(context.Background(), filters[i]); err != nil {
 			b.Fatal(err)
-		} else if s == nil {
+		} else if s.Segments == nil {
 			b.Error("s = nil want cs.SegmentSlice")
 		}
 	}
@@ -580,7 +584,7 @@ func (f Factory) BenchmarkFindSegmentsParallel(b *testing.B, numLinks int, creat
 			i := int(atomic.AddUint64(&counter, 1) - 1)
 			if s, err := a.FindSegments(context.Background(), filters[i]); err != nil {
 				b.Error(err)
-			} else if s == nil {
+			} else if s.Segments == nil {
 				b.Error("s = nil want cs.SegmentSlice")
 			}
 		}

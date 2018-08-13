@@ -39,7 +39,7 @@ func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.S
 	}
 
 	defer rows.Close()
-	if err = scanLinkAndEvidences(rows, &segments); err != nil {
+	if err = scanLinkAndEvidences(rows, &segments, nil); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.S
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
 
 	rows, err := a.stmts.FindSegmentsWithFilters(filter)
 	if err != nil {
@@ -58,13 +58,13 @@ func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) 
 	}
 
 	defer rows.Close()
-	segments := make(cs.SegmentSlice, 0, filter.Limit)
-	err = scanLinkAndEvidences(rows, &segments)
+	segments := &cs.PaginatedSegments{Segments: make(cs.SegmentSlice, 0, filter.Limit)}
+	err = scanLinkAndEvidences(rows, &segments.Segments, &segments.TotalCount)
 
 	return segments, err
 }
 
-func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
+func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCount *int) error {
 	var currentSegment *cs.Segment
 	var currentHash []byte
 
@@ -77,8 +77,14 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 			evidence     cs.Evidence
 		)
 
-		if err := rows.Scan(&linkHash, &linkData, &evidenceData); err != nil {
-			return err
+		if totalCount == nil {
+			if err := rows.Scan(&linkHash, &linkData, &evidenceData); err != nil {
+				return err
+			}
+		} else {
+			if err := rows.Scan(&linkHash, &linkData, &evidenceData, totalCount); err != nil {
+				return err
+			}
 		}
 
 		if !bytes.Equal(currentHash, linkHash) {
@@ -107,7 +113,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice) error {
 			}
 		}
 	}
-	return nil
+	return rows.Err()
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.

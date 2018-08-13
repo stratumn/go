@@ -175,8 +175,8 @@ func (c *CouchStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*
 	return c.segmentify(ctx, linkDoc.Link), nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+// findSegmentsSlice implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
+func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
 	queryBytes, err := NewSegmentQuery(filter)
 	if err != nil {
 		return nil, err
@@ -200,9 +200,38 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 	for _, doc := range couchFindResponse.Docs {
 		segments = append(segments, c.segmentify(ctx, doc.Link))
 	}
+	return segments, nil
+}
+
+// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
+func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+	segments, err := c.findSegmentsSlice(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
 	sort.Sort(segments)
 
-	return segments, nil
+	// TODO Dig into map/reduce to count documents
+	totalCount := 0
+	filter.Limit = store.DefaultLimit * 10
+	filter.Offset = 0
+	for {
+		allSegments, err := c.findSegmentsSlice(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+		segmentsLen := len(allSegments)
+		totalCount += segmentsLen
+		if segmentsLen < filter.Limit {
+			break
+		}
+		filter.Offset += filter.Limit
+	}
+
+	return &cs.PaginatedSegments{
+		Segments:   segments,
+		TotalCount: totalCount,
+	}, nil
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.

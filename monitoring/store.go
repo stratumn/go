@@ -97,7 +97,7 @@ func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash *types.Bytes32) 
 }
 
 // FindSegments instruments the call and delegates to the underlying store.
-func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss cs.SegmentSlice, err error) {
+func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss *cs.PaginatedSegments, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name))
 	defer SetSpanStatusAndEnd(span, err)
 

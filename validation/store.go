@@ -111,20 +111,19 @@ func (s *Store) GetAllProcesses(ctx context.Context) []string {
 			log.Errorf("Cannot retrieve governance segments: %+v", errors.WithStack(err))
 			return []string{}
 		}
-		for _, segment := range segments {
+		for _, segment := range segments.Segments {
 			for _, tag := range segment.Link.Meta.Tags {
 				if tag != ValidatorTag {
 					processSet[tag] = nil
 				}
 			}
 		}
-		if len(segments) == store.MaxLimit {
-			offset += store.MaxLimit
-		} else {
+		if len(segments.Segments)+offset*store.MaxLimit >= segments.TotalCount {
 			break
 		}
+		offset += store.MaxLimit
 	}
-	ret := make([]string, 0)
+	ret := make([]string, 0, len(processSet))
 	for p := range processSet {
 		ret = append(ret, p)
 	}
@@ -137,10 +136,10 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 		Process:    GovernanceProcessName,
 		Tags:       []string{process, ValidatorTag},
 	})
-	if err != nil || len(segments) == 0 {
+	if err != nil || len(segments.Segments) == 0 {
 		return nil, ErrValidatorNotFound
 	}
-	linkState := segments[0].Link.State
+	linkState := segments.Segments[0].Link.State
 
 	var pki validators.PKI
 	if err := mapToStruct(linkState["pki"], &pki); err != nil {
@@ -174,7 +173,7 @@ func (s *Store) UpdateValidator(ctx context.Context, link *cs.Link) error {
 		return errors.Wrap(errors.WithStack(err), "Cannot retrieve governance segments")
 	}
 
-	if len(segments) == 0 {
+	if len(segments.Segments) == 0 {
 		log.Infof("No governance segments found for process %s, creating validator", process)
 		if link.Meta.PrevLinkHash != "" {
 			return ErrBadPrevLinkHash
@@ -182,7 +181,7 @@ func (s *Store) UpdateValidator(ctx context.Context, link *cs.Link) error {
 		return s.uploadValidator(ctx, link)
 	}
 
-	lastGovernanceLink := segments[0].Link
+	lastGovernanceLink := segments.Segments[0].Link
 	if canonicalCompare(link.State, lastGovernanceLink.State) != nil {
 		log.Infof("Validator of process %s has to be updated in store", process)
 		if link.Meta.Priority <= lastGovernanceLink.Meta.Priority {
@@ -229,8 +228,8 @@ func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *Rule
 	priority := 0.
 	mapID := ""
 	prevLinkHash := ""
-	if len(segments) > 0 {
-		lastGovernanceLink = segments[0].Link
+	if len(segments.Segments) > 0 {
+		lastGovernanceLink = segments.Segments[0].Link
 		priority = lastGovernanceLink.Meta.Priority + 1.
 		mapID = lastGovernanceLink.Meta.MapID
 		var err error

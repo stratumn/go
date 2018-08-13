@@ -255,7 +255,7 @@ func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Se
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
 	var prevLinkHash []byte
 	q := a.links
 
@@ -337,11 +337,25 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	}
 	defer cur.Close()
 
-	segments := make(cs.SegmentSlice, 0, filter.Limit)
-	if err := cur.All(&segments); err != nil {
+	segments := &cs.PaginatedSegments{
+		Segments: make(cs.SegmentSlice, 0, filter.Limit),
+	}
+	if err := cur.All(&segments.Segments); err != nil {
 		return nil, err
 	}
-	for _, s := range segments {
+
+	// Non optimal way to count all segments
+	totalCountCur, err := q.Run(a.session)
+	if err != nil {
+		return nil, err
+	}
+	defer totalCountCur.Close()
+	segIt := cs.Segment{}
+	for totalCountCur.Next(&segIt) {
+		segments.TotalCount++
+	}
+
+	for _, s := range segments.Segments {
 		err = s.SetLinkHash()
 		if err != nil {
 			return nil, err

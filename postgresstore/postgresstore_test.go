@@ -42,7 +42,7 @@ func TestPostgresTMPop(t *testing.T) {
 }
 
 func createStore() (*Store, error) {
-	a, err := New(&Config{URL: "postgres://postgres@localhost/sdk_test?sslmode=disable"})
+	a, err := New(&Config{URL: "postgres://postgres@localhost:5433/sdk_test?sslmode=disable"})
 	if err := a.Create(); err != nil {
 		return nil, err
 	}

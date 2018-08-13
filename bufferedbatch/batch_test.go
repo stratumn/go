@@ -107,27 +107,32 @@ func TestBatch_FindSegments(t *testing.T) {
 	batch.CreateLink(ctx, l2)
 
 	notFoundErr := errors.New("Unit test error")
-	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
 		if filter.Process == "Foo" {
-			return cs.SegmentSlice{storedLink.Segmentify()}, nil
+			return &cs.PaginatedSegments{
+				Segments:   cs.SegmentSlice{storedLink.Segmentify()},
+				TotalCount: 1,
+			}, nil
 		}
 		if filter.Process == "Bar" {
-			return cs.SegmentSlice{}, nil
+			return &cs.PaginatedSegments{}, nil
 		}
 
 		return nil, notFoundErr
 	}
 
-	var segments cs.SegmentSlice
+	var segments *cs.PaginatedSegments
 	var err error
 
 	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})
 	assert.NoError(t, err, "batch.FindSegments()")
-	assert.Equal(t, 2, len(segments))
+	assert.Len(t, segments.Segments, 2)
+	assert.Equal(t, 2, segments.TotalCount)
 
 	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Bar"})
 	assert.NoError(t, err, "batch.FindSegments()")
-	assert.Equal(t, 1, len(segments))
+	assert.Len(t, segments.Segments, 1)
+	assert.Equal(t, 1, segments.TotalCount)
 
 	_, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "NotFound"})
 	assert.EqualError(t, err, notFoundErr.Error())
