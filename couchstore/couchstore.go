@@ -212,16 +212,25 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 	sort.Sort(segments)
 
 	// TODO Dig into map/reduce to count documents
+	totalCount := 0
 	filter.Limit = store.DefaultLimit * 10
 	filter.Offset = 0
-	allSegments, err := c.findSegmentsSlice(ctx, filter)
-	if err != nil {
-		return cs.PaginatedSegments{}, err
+	for {
+		allSegments, err := c.findSegmentsSlice(ctx, filter)
+		if err != nil {
+			return cs.PaginatedSegments{}, err
+		}
+		segmentsLen := len(allSegments)
+		totalCount += segmentsLen
+		if segmentsLen < filter.Limit {
+			break
+		}
+		filter.Offset += filter.Limit
 	}
 
 	return cs.PaginatedSegments{
 		Segments:   segments,
-		TotalCount: len(allSegments),
+		TotalCount: totalCount,
 	}, nil
 }
 
