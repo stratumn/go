@@ -67,15 +67,15 @@ func TestNetworkManager(t *testing.T) {
 
 		t.Run("Manager fails to load rules from store", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (cs.SegmentPagination, error) {
 				if len(filter.Tags) > 1 {
-					return cs.SegmentSlice{}, nil
+					return cs.SegmentPagination{}, nil
 				}
 				link := cstesting.NewLinkBuilder().
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "process").
 					Build()
-				return cs.SegmentSlice{link.Segmentify()}, nil
+				return cs.SegmentPagination{Segments: cs.SegmentSlice{link.Segmentify()}}, nil
 			}
 
 			gov, err := validation.NewNetworkManager(context.Background(), a, linkChan, &validation.Config{})
