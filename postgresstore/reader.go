@@ -59,12 +59,12 @@ func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) 
 
 	defer rows.Close()
 	segments := cs.SegmentPagination{Segments: make(cs.SegmentSlice, 0, filter.Limit)}
-	err = scanLinkAndEvidences(rows, &segments.Segments, func(c int) { segments.TotalCount = c })
+	err = scanLinkAndEvidences(rows, &segments.Segments, &segments.TotalCount)
 
 	return segments, err
 }
 
-func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCountCB func(int)) error {
+func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCount *int) error {
 	var currentSegment *cs.Segment
 	var currentHash []byte
 
@@ -77,16 +77,14 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCountC
 			evidence     cs.Evidence
 		)
 
-		if totalCountCB == nil {
+		if totalCount == nil {
 			if err := rows.Scan(&linkHash, &linkData, &evidenceData); err != nil {
 				return err
 			}
 		} else {
-			var totalCount int
-			if err := rows.Scan(&linkHash, &linkData, &evidenceData, &totalCount); err != nil {
+			if err := rows.Scan(&linkHash, &linkData, &evidenceData, totalCount); err != nil {
 				return err
 			}
-			totalCountCB(totalCount)
 		}
 
 		if !bytes.Equal(currentHash, linkHash) {
