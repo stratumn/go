@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"github.com/olivere/elastic"
 	"github.com/stratumn/go-indigocore/cs"
@@ -541,7 +540,7 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 		res.Segments = append(res.Segments, es.segmentify(ctx, &link))
 	}
 
-	sort.Sort(res.Segments)
+	res.Segments.Sort(filter.Reverse)
 
 	return res, nil
 }

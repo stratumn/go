@@ -53,13 +53,28 @@ func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l
 	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
 }
 
-func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
-	wantLTE := 100.0
-	for _, s := range segments.Segments {
-		got := s.Link.Meta.Priority
-		assert.True(t, got <= wantLTE, "Invalid priority")
-		wantLTE = got
+func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments, ascending bool) {
+	want := 100.0
+	f := func(got, want float64) func() bool { return func() bool { return got <= want } }
+	op := "<="
+	if !ascending {
+		want = -100.0
+		f = func(got, want float64) func() bool { return func() bool { return got >= want } }
+		op = ">="
 	}
+	for i, s := range segments.Segments {
+		got := s.Link.Meta.Priority
+		assert.Conditionf(t, f(got, want), "slice#%d: priority = %v want %s %v", i, got, op, want)
+		want = got
+	}
+}
+
+func verifyAscendingPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
+	verifyPriorityOrdering(t, segments, true)
+}
+
+func verifyDescendingPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
+	verifyPriorityOrdering(t, segments, false)
 }
 
 func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
@@ -128,7 +143,19 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			},
 		})
 		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
-		verifyPriorityOrdering(t, segments)
+		verifyAscendingPriorityOrdering(t, segments)
+	})
+
+	t.Run("Should reverse order by priority", func(t *testing.T) {
+		ctx := context.Background()
+		segments, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: testPageSize,
+			},
+			Reverse: true,
+		})
+		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
+		verifyDescendingPriorityOrdering(t, segments)
 	})
 
 	t.Run("Should support pagination", func(t *testing.T) {
@@ -140,7 +167,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			},
 		})
 		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
-		verifyPriorityOrdering(t, segments)
+		verifyAscendingPriorityOrdering(t, segments)
 	})
 
 	t.Run("Should return no results for invalid tag filter", func(t *testing.T) {

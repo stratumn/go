@@ -237,7 +237,7 @@ func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilte
 
 	segments.TotalCount = len(segments.Segments)
 
-	sort.Sort(segments.Segments)
+	segments.Segments.Sort(filter.Reverse)
 
 	return filter.Pagination.PaginateSegments(segments), nil
 }

@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
@@ -209,7 +208,7 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 	if err != nil {
 		return nil, err
 	}
-	sort.Sort(segments)
+	segments.Sort(filter.Reverse)
 
 	// TODO Dig into map/reduce to count documents
 	totalCount := 0
