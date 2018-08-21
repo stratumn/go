@@ -18,6 +18,7 @@ import (
 	"context"
 	"io/ioutil"
 	"log"
+	"sort"
 	"sync/atomic"
 	"testing"
 
@@ -32,6 +33,7 @@ import (
 )
 
 var emptyPrevLinkHash = ""
+var priorities = sort.Float64Slice{}
 
 func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
 	if prepareLink != nil {
@@ -41,6 +43,7 @@ func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Lin
 	if err != nil {
 		panic(err)
 	}
+	priorities = append(priorities, link.Meta.Priority)
 
 	return link
 }
@@ -53,28 +56,29 @@ func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l
 	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
 }
 
-func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments, ascending bool) {
-	want := 100.0
+func verifyPriorities(t *testing.T, segments *cs.PaginatedSegments, offset int, reverse bool) {
+	sort.Sort(sort.Reverse(priorities))
+	want, op := 100.0, "<="
 	f := func(got, want float64) func() bool { return func() bool { return got <= want } }
-	op := "<="
-	if !ascending {
-		want = -100.0
+	if reverse {
+		sort.Sort(priorities)
+		want, op = -100.0, ">="
 		f = func(got, want float64) func() bool { return func() bool { return got >= want } }
-		op = ">="
 	}
 	for i, s := range segments.Segments {
+		assert.Equal(t, priorities[i+offset], s.Link.Meta.Priority)
 		got := s.Link.Meta.Priority
 		assert.Conditionf(t, f(got, want), "slice#%d: priority = %v want %s %v", i, got, op, want)
 		want = got
 	}
 }
 
-func verifyAscendingPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
-	verifyPriorityOrdering(t, segments, true)
+func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments, offset int) {
+	verifyPriorities(t, segments, offset, false)
 }
 
-func verifyDescendingPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments) {
-	verifyPriorityOrdering(t, segments, false)
+func verifyReversePriorityOrdering(t *testing.T, segments *cs.PaginatedSegments, offset int) {
+	verifyPriorities(t, segments, offset, true)
 }
 
 func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
@@ -143,7 +147,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			},
 		})
 		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
-		verifyAscendingPriorityOrdering(t, segments)
+		verifyPriorityOrdering(t, segments, 0)
 	})
 
 	t.Run("Should reverse order by priority", func(t *testing.T) {
@@ -155,7 +159,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			Reverse: true,
 		})
 		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
-		verifyDescendingPriorityOrdering(t, segments)
+		verifyReversePriorityOrdering(t, segments, 0)
 	})
 
 	t.Run("Should support pagination", func(t *testing.T) {
@@ -167,7 +171,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			},
 		})
 		verifyResultsCountWithTotalCount(t, err, segments, testPageSize, segmentsTotalCount)
-		verifyAscendingPriorityOrdering(t, segments)
+		verifyPriorityOrdering(t, segments, testPageSize)
 	})
 
 	t.Run("Should return no results for invalid tag filter", func(t *testing.T) {

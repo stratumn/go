@@ -507,12 +507,12 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 
 	// prepare search service.
 	svc := es.client.
-		Search().
-		Index(linksIndex).
+		Search(linksIndex).
 		Type(docType)
 
 	// add pagination.
 	svc = svc.
+		Sort("meta.priority", filter.Reverse).
 		From(filter.Pagination.Offset).
 		Size(filter.Pagination.Limit)
 

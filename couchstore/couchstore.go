@@ -109,6 +109,10 @@ func New(config *Config) (*CouchStore, error) {
 		return nil, err
 	}
 
+	if err := couchstore.CreateIndex(dbLink, "priority", []string{"link.meta.priority"}); err != nil {
+		return nil, err
+	}
+
 	return couchstore, nil
 }
 
