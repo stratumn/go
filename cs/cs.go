@@ -304,8 +304,8 @@ type SegmentSlice []*Segment
 
 // PaginatedSegments is a slice of segments and the count of segments without pagination
 type PaginatedSegments struct {
-	Segments   SegmentSlice
-	TotalCount int
+	Segments   SegmentSlice `json:"segments"`
+	TotalCount int          `json:"totalCount"`
 }
 
 // Len implements sort.Interface.Len.
