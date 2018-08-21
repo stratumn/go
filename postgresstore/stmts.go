@@ -300,6 +300,13 @@ func (s *readStmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, er
 	return s.query(query, values...)
 }
 
+func getOrderingWay(reverse bool) string {
+	if reverse {
+		return "ASC"
+	}
+	return "DESC"
+}
+
 // FindSegments formats a read query and retrieves segments according to the filter.
 func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows, error) {
 	// Method to count distinct over: https://www.sqlservercentral.com/Forums/FindPost1824788.aspx
@@ -318,9 +325,10 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 	)
 
 	sqlTail := fmt.Sprintf(`
-		ORDER BY l.priority DESC, l.created_at DESC
-		OFFSET %d LIMIT %d
+		ORDER BY l.priority %[1]s, l.created_at %[1]s
+		OFFSET %[2]d LIMIT %[3]d
 		`,
+		getOrderingWay(filter.Reverse),
 		filter.Pagination.Offset,
 		filter.Pagination.Limit,
 	)

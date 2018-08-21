@@ -290,6 +290,11 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		q = q.GetAll(ids...)
 	}
 
+	orderingFunction := rethink.Desc
+	if filter.Reverse {
+		orderingFunction = rethink.Asc
+	}
+
 	if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
 		ids := make([]interface{}, len(mapIDs))
 		for i, v := range mapIDs {
@@ -303,9 +308,9 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	} else if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
 		q = q.OrderBy(rethink.Asc("id"))
 	} else if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
-		q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("mapIdOrder")})
+		q = q.OrderBy(rethink.OrderByOpts{Index: orderingFunction("mapIdOrder")})
 	} else {
-		q = q.OrderBy(rethink.OrderByOpts{Index: rethink.Desc("order")})
+		q = q.OrderBy(rethink.OrderByOpts{Index: orderingFunction("order")})
 	}
 
 	if process := filter.Process; len(process) > 0 {

@@ -326,7 +326,7 @@ func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.Segmen
 	}
 	segments.TotalCount = len(segments.Segments)
 
-	sort.Sort(segments.Segments)
+	segments.Segments.Sort(filter.Reverse)
 
 	return filter.Pagination.PaginateSegments(segments), nil
 }

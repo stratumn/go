@@ -20,6 +20,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"reflect"
+	"sort"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	jmespath "github.com/jmespath/go-jmespath"
@@ -336,6 +337,15 @@ func (s SegmentSlice) Less(i, j int) bool {
 	}
 
 	return s1.GetLinkHashString() < s2.GetLinkHashString()
+}
+
+// Sort returns the sorted segment slice.
+func (s *SegmentSlice) Sort(reverse bool) {
+	if reverse {
+		sort.Sort(sort.Reverse(s))
+	} else {
+		sort.Sort(s)
+	}
 }
 
 // LinkHashes is a slice of Bytes32-formatted link hashes

@@ -54,14 +54,27 @@ type PrevLinkHash struct {
 
 // LinkQuery used in CouchDB rich queries
 type LinkQuery struct {
-	Selector LinkSelector `json:"selector,omitempty"`
-	Limit    int          `json:"limit,omitempty"`
-	Skip     int          `json:"skip,omitempty"`
+	Selector LinkSelector        `json:"selector,omitempty"`
+	Limit    int                 `json:"limit,omitempty"`
+	Skip     int                 `json:"skip,omitempty"`
+	Sort     []map[string]string `json:"sort,omitempty"`
 }
 
 // CouchFindResponse is couchdb response type when posting to /db/_find
 type CouchFindResponse struct {
 	Docs []*Document `json:"docs"`
+}
+
+func buildSortArgs(reverse bool) []map[string]string {
+	order := "desc"
+	if reverse {
+		order = "asc"
+	}
+	return []map[string]string{
+		map[string]string{
+			"link.meta.priority": order,
+		},
+	}
 }
 
 // NewSegmentQuery generates json data used to filter queries using couchdb _find api.
@@ -93,6 +106,7 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 		Selector: linkSelector,
 		Limit:    filter.Pagination.Limit,
 		Skip:     filter.Pagination.Offset,
+		Sort:     buildSortArgs(filter.Reverse),
 	}
 
 	return json.Marshal(linkQuery)

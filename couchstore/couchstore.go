@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/cs"
@@ -107,6 +106,10 @@ func New(config *Config) (*CouchStore, error) {
 	}
 
 	if err := couchstore.CreateIndex(dbLink, "mapID", []string{"link.meta.mapId"}); err != nil {
+		return nil, err
+	}
+
+	if err := couchstore.CreateIndex(dbLink, "priority", []string{"link.meta.priority"}); err != nil {
 		return nil, err
 	}
 
@@ -209,7 +212,7 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 	if err != nil {
 		return nil, err
 	}
-	sort.Sort(segments)
+	segments.Sort(filter.Reverse)
 
 	// TODO Dig into map/reduce to count documents
 	totalCount := 0

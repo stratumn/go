@@ -150,6 +150,9 @@ type SegmentFilter struct {
 
 	// A slice of tags the segments must all contain.
 	Tags []string `json:"tags" url:"tags,brackets"`
+
+	// Flag to reverse segment ordering.
+	Reverse bool `json:"reverse" url:"reverse"`
 }
 
 // MapFilter contains filtering options for segments.

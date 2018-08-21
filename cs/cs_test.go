@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"sort"
 	"testing"
 
 	"github.com/stratumn/go-indigocore/cs"
@@ -226,19 +225,25 @@ func TestLinkValidate_wrongPaylodExpression(t *testing.T) {
 func TestSegmentSliceSort_priority(t *testing.T) {
 	slice := cs.SegmentSlice{
 		&cs.Segment{Link: cs.Link{Meta: cs.LinkMeta{Priority: 2.3}}},
-		&cs.Segment{Link: cs.Link{Meta: cs.LinkMeta{Priority: -1.1}}},
+		&cs.Segment{Link: cs.Link{Meta: cs.LinkMeta{Priority: 1.1}}},
 		&cs.Segment{Link: cs.Link{Meta: cs.LinkMeta{Priority: 3.33}}},
 		&cs.Segment{Link: cs.Link{Meta: cs.LinkMeta{Data: map[string]interface{}{}}}},
 	}
 
-	sort.Sort(slice)
+	slice.Sort(false)
 	wantLTE := 100.0
 	for i, s := range slice {
 		got := s.Link.Meta.Priority
-		if got > wantLTE {
-			t.Errorf("slice#%d: priority = %f want <= %f", i, got, wantLTE)
-		}
+		assert.Conditionf(t, func() bool { return got <= wantLTE }, "slice#%d: priority = %f want <= %f", i, got, wantLTE)
 		wantLTE = got
+	}
+
+	slice.Sort(true)
+	wantGTE := -1.0
+	for i, s := range slice {
+		got := s.Link.Meta.Priority
+		assert.Conditionf(t, func() bool { return got > wantGTE }, "slice#%d: priority = %f want > %f", i, got, wantGTE)
+		wantGTE = got
 	}
 }
 
@@ -248,15 +253,20 @@ func TestSegmentSliceSort_linkHash(t *testing.T) {
 		&cs.Segment{Link: cs.Link{Meta: cs.LinkMeta{Priority: 2.0}}, Meta: cs.SegmentMeta{LinkHash: "b"}},
 	}
 
-	sort.Sort(slice)
+	slice.Sort(false)
 	wantGTE := "a"
 	for i, s := range slice {
 		got := s.Meta.LinkHash
-		if got < wantGTE {
-			t.Errorf("slice#%d: linkHash = %q want >= %q", i, got, wantGTE)
-		}
-
+		assert.Conditionf(t, func() bool { return got >= wantGTE }, "slice#%d: linkHash = %q want >= %q", i, got, wantGTE)
 		wantGTE = got
+	}
+
+	slice.Sort(true)
+	wantLTE := "d"
+	for i, s := range slice {
+		got := s.Meta.LinkHash
+		assert.Conditionf(t, func() bool { return got < wantLTE }, "slice#%d: linkHash = %q want < %q", i, got, wantLTE)
+		wantLTE = got
 	}
 }
 
