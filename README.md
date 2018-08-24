@@ -46,7 +46,7 @@ make coverhtml
 Run the linter:
 
 ```bash
-go get -u github.com/golang/lint/golint
+go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 make lint
 ```
 
