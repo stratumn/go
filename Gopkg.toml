@@ -31,7 +31,12 @@
   # This is required because Tendermint needs ~1.0.0
   # but Docker claims it needs ^0.4.
   name = "github.com/gogo/protobuf"
-  version = "~1.0.0"
+  version = "^1.0.0"
+
+[[override]] 
+  # This is required because Tendermint needs ~1.0.0
+  name = "github.com/golang/protobuf"
+  version = "^1.0.0"
 
 [[constraint]]
   name = "github.com/stratumn/go-crypto"

@@ -32,9 +32,6 @@ const (
 
 // Signature contains a user-provided signature of a certain part of the link.
 type Signature struct {
-	// Type of the signature (eg: "EdDSA")
-	Type string `json:"type"`
-
 	// PublicKey is the base64 encoded public key that signed the payload
 	PublicKey string `json:"publicKey"`
 
@@ -67,7 +64,6 @@ func NewSignature(payloadPath string, privateKey []byte, l *Link) (*Signature, e
 	}
 
 	return &Signature{
-		Type:      signature.AI,
 		PublicKey: string(signature.PublicKey),
 		Signature: string(signature.Signature),
 		Payload:   payloadPath,
@@ -91,7 +87,6 @@ func (s Signature) Verify(l *Link) error {
 	}
 
 	if err := signatures.Verify(&signatures.Signature{
-		AI:        s.Type,
 		PublicKey: []byte(s.PublicKey),
 		Message:   payloadBytes,
 		Signature: []byte(s.Signature),

@@ -178,18 +178,9 @@ func TestLinkValidate_validSignature(t *testing.T) {
 	assert.NoError(t, err, "l.Validate()")
 }
 
-func TestLinkValidate_emptySignatureType(t *testing.T) {
-	l := cstesting.RandomLink()
-	l.Signatures = append(l.Signatures, &cs.Signature{
-		Type: "",
-	})
-	testLinkValidateError(t, l, nil, "signature.Type cannot be empty")
-}
-
 func TestLinkValidate_wrongPublicKeyFormat(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
-		Type:      "ok",
 		PublicKey: "test",
 	})
 	testLinkValidateError(t, l, nil, "failed to parse public key [test]: failed to decode PEM block")
@@ -198,7 +189,6 @@ func TestLinkValidate_wrongPublicKeyFormat(t *testing.T) {
 func TestLinkValidate_wrongSignatureFormat(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
-		Type:      "ok",
 		PublicKey: testPublicKey,
 		Signature: "test",
 	})
@@ -214,7 +204,6 @@ func TestLinkValidate_badSignature(t *testing.T) {
 func TestLinkValidate_wrongPaylodExpression(t *testing.T) {
 	l := cstesting.RandomLink()
 	l.Signatures = append(l.Signatures, &cs.Signature{
-		Type:      "ok",
 		PublicKey: testPublicKey,
 		Signature: testSignature,
 		Payload:   "",
