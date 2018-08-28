@@ -15,7 +15,6 @@
 package cs_test
 
 import (
-	"crypto/x509"
 	"testing"
 
 	"github.com/stratumn/go-crypto/signatures"
@@ -117,16 +116,6 @@ func TestSignatureValidator(t *testing.T) {
 			name:      "valid-link",
 			valid:     true,
 			signature: func() *cs.Signature { return cstesting.RandomSignature(payload) },
-		},
-		{
-			name:  "unsupported-signature-type",
-			valid: false,
-			err:   x509.ErrUnsupportedAlgorithm.Error(),
-			signature: func() *cs.Signature {
-				s := cstesting.RandomSignature(payload)
-				s.Type = "test"
-				return s
-			},
 		},
 		{
 			name:  "wrong-jmespath-query",

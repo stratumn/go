@@ -72,6 +72,8 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		"initialPrice": 12,
 	}
 	priv, _, err := keys.ParseSecretKey([]byte(testutils.AlicePrivateKey))
+	require.NoError(t, err)
+
 	initAuctionLink := cstesting.NewLinkBuilder().
 		WithProcess("auction").
 		WithType("init").
@@ -79,7 +81,6 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		WithState(state).
 		SignWithKey(priv).
 		Build()
-	require.NoError(t, err)
 	initAuctionLinkHash, err := store.CreateLink(context.Background(), initAuctionLink)
 	require.NoError(t, err)
 

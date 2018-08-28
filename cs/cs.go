@@ -242,9 +242,7 @@ func (l *Link) validateReferences(ctx context.Context, getSegment GetSegmentFunc
 func (l *Link) validateSignatures() error {
 	if l.Signatures != nil {
 		for _, sig := range l.Signatures {
-			if sig.Type == "" {
-				return errors.New("signature.Type cannot be empty")
-			} else if _, err := keys.ParsePublicKey([]byte(sig.PublicKey)); err != nil {
+			if _, _, err := keys.ParsePublicKey([]byte(sig.PublicKey)); err != nil {
 				return errors.Wrapf(err, "failed to parse public key [%s]", sig.PublicKey)
 			} else if _, err := sigencoding.DecodePEM([]byte(sig.Signature), signatures.SignaturePEMLabel); err != nil {
 				return errors.Wrapf(err, "failed to parse signature [%s]", sig.Signature)

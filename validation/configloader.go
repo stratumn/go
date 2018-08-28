@@ -106,7 +106,7 @@ func checkPKIConfig(data *validators.PKI) error {
 
 	for _, id := range *data {
 		for _, key := range id.Keys {
-			if _, err := keys.ParsePublicKey([]byte(key)); err != nil {
+			if _, _, err := keys.ParsePublicKey([]byte(key)); err != nil {
 				return errors.Wrapf(err, "error while parsing public key [%s]", key)
 			}
 		}

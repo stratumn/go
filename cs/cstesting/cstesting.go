@@ -140,7 +140,6 @@ func SignatureWithKeyAndPath(l *cs.Link, payloadPath string, priv crypto.Private
 	payloadBytes, _ := cj.Marshal(payload)
 	sig, _ := signatures.Sign(privPEM, payloadBytes)
 	return &cs.Signature{
-		Type:      sig.AI,
 		PublicKey: string(sig.PublicKey),
 		Signature: string(sig.Signature),
 		Payload:   payloadPath,

@@ -334,7 +334,7 @@ func TestFindSegments(t *testing.T) {
 		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
 	}
 	if got := f.PrevLinkHash; got == nil {
-		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q is nil", got)
+		t.Error("a.MockFindSegments.LastCalledWith.PrevLinkHash is nil")
 	} else if got, want := *f.PrevLinkHash, zeros; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
 	}
@@ -384,7 +384,7 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
 	}
 	if got := f.PrevLinkHash; got == nil {
-		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q is nil", got)
+		t.Error("a.MockFindSegments.LastCalledWith.PrevLinkHash is nil")
 	} else if got, want := *f.PrevLinkHash, zeros; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
 	}
@@ -455,7 +455,7 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
 	}
 	if got := f.PrevLinkHash; got == nil {
-		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q is nil", got)
+		t.Error("a.MockFindSegments.LastCalledWith.PrevLinkHash is nil")
 	} else if got, want := *f.PrevLinkHash, zeros; got != want {
 		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
 	}

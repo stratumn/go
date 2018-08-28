@@ -36,8 +36,8 @@ import (
 )
 
 const itPrivKey = `-----BEGIN ED25519 PRIVATE KEY-----
-BEB2RfLeMdUq/tPbnCdByOLXvlP1NvEG34p0svCTpOaCdy/LCHJWt/f722QPhM6Z
-eCrxVaLwefeJHgQz2j1Rr5q7
+MFACAQAwBwYDK2VwBQAEQgRAdkXy3jHVKv7T25wnQcji175T9TbxBt+KdLLwk6Tm
+gncvywhyVrf3+9tkD4TOmXgq8VWi8Hn3iR4EM9o9Ua+auw==
 -----END ED25519 PRIVATE KEY-----`
 
 var (
