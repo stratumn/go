@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	cs "github.com/stratumn/go-indigocore/cs"
+	types "github.com/stratumn/go-indigocore/types"
 )
 
 // MockAgent is a mock of Agent interface
@@ -62,9 +62,9 @@ func (mr *MockAgentMockRecorder) UploadProcess(processName, actionsPath, storeUR
 }
 
 // FindSegments mocks base method
-func (m *MockAgent) FindSegments(process string, opts map[string]string) (cs.SegmentSlice, error) {
+func (m *MockAgent) FindSegments(process string, opts map[string]string) (types.SegmentSlice, error) {
 	ret := m.ctrl.Call(m, "FindSegments", process, opts)
-	ret0, _ := ret[0].(cs.SegmentSlice)
+	ret0, _ := ret[0].(types.SegmentSlice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -88,9 +88,9 @@ func (mr *MockAgentMockRecorder) GetInfo() *gomock.Call {
 }
 
 // GetMapIds mocks base method
-func (m *MockAgent) GetMapIds(process string, opts map[string]string) (cs.SegmentSlice, error) {
+func (m *MockAgent) GetMapIds(process string, opts map[string]string) (types.SegmentSlice, error) {
 	ret := m.ctrl.Call(m, "GetMapIds", process, opts)
-	ret0, _ := ret[0].(cs.SegmentSlice)
+	ret0, _ := ret[0].(types.SegmentSlice)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

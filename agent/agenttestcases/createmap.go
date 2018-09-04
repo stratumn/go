@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	cj "github.com/gibson042/canonicaljson-go"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,7 +35,7 @@ func (f Factory) TestCreateMapOK(t *testing.T) {
 // when one or multiple references are passed.
 func (f Factory) TestCreateMapWithRefs(t *testing.T) {
 	process := "test"
-	refs := []cs.SegmentReference{{Process: "other", LinkHash: testutil.RandomHash().String()}}
+	refs := []chainscript.LinkReference{{Process: "other", LinkHash: chainscripttest.RandomHash()}}
 
 	segment, err := f.Client.CreateMap(process, refs, "test")
 	assert.NoError(t, err)
@@ -50,7 +50,7 @@ func (f Factory) TestCreateMapWithRefs(t *testing.T) {
 // when the provided reference is ill formatted.
 func (f Factory) TestCreateMapWithBadRefs(t *testing.T) {
 	process, arg := "test", "wrongref"
-	refs := []cs.SegmentReference{{Process: "wrong"}}
+	refs := []chainscript.LinkReference{{Process: "wrong"}}
 
 	segment, err := f.Client.CreateMap(process, refs, arg)
 	assert.Error(t, err, "missing segment or (process and linkHash)")

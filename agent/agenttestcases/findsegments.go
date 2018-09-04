@@ -75,7 +75,7 @@ func (f Factory) TestFindSegmentsLinkHashes(t *testing.T) {
 
 	filter := store.SegmentFilter{
 		Process:    process,
-		LinkHashes: []string{parent.Meta.GetLinkHashString()},
+		LinkHashes: []string{parent.LinkHashString()},
 		Pagination: store.Pagination{
 			Limit: 20,
 		},
@@ -95,7 +95,7 @@ func (f Factory) TestFindSegmentsMapIDs(t *testing.T) {
 
 	filter := store.SegmentFilter{
 		Process: process,
-		MapIDs:  []string{parent.Link.Meta.MapID},
+		MapIDs:  []string{parent.Link.Meta.MapId},
 		Pagination: store.Pagination{
 			Limit: 20,
 		},

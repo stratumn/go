@@ -25,8 +25,8 @@ import (
 	"net/url"
 
 	"github.com/google/go-querystring/query"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/agent"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
@@ -42,14 +42,14 @@ type ErrorData struct {
 // It can be used to access an agent's http endpoints.
 type AgentClient interface {
 	UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*agent.Process, error)
-	CreateMap(process string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error)
-	CreateSegment(process string, linkHash *types.Bytes32, action string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error)
-	FindSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error)
+	CreateMap(process string, refs []chainscript.LinkReference, args ...string) (*chainscript.Segment, error)
+	CreateSegment(process string, linkHash []byte, action string, refs []chainscript.LinkReference, args ...string) (*chainscript.Segment, error)
+	FindSegments(filter *store.SegmentFilter) (types.SegmentSlice, error)
 	GetInfo() (*agent.Info, error)
 	GetMapIds(filter *store.MapFilter) ([]string, error)
 	GetProcess(name string) (*agent.Process, error)
 	GetProcesses() (agent.Processes, error)
-	GetSegment(process string, linkHash *types.Bytes32) (*cs.Segment, error)
+	GetSegment(process string, linkHash []byte) (*chainscript.Segment, error)
 	URL() string
 }
 
@@ -145,7 +145,7 @@ func (a *agentClient) UploadProcess(processName string, actionsPath string, stor
 
 // CreateSegment sends a CreateSegment request to the agent and returns
 // the newly created segment.
-func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, action string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateSegment(process string, linkHash []byte, action string, refs []chainscript.LinkReference, args ...string) (*chainscript.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments/%s/%s", process, linkHash, action)
 	postParams, err := a.makeActionPostParams(refs, args...)
 	if err != nil {
@@ -156,7 +156,7 @@ func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, act
 		return nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
-	seg := cs.Segment{}
+	seg := chainscript.Segment{}
 	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
@@ -165,7 +165,7 @@ func (a *agentClient) CreateSegment(process string, linkHash *types.Bytes32, act
 
 // CreateMap sends a CreateMap request to the agent and returns
 // the first segment of the newly created map.
-func (a *agentClient) CreateMap(process string, refs []cs.SegmentReference, args ...string) (*cs.Segment, error) {
+func (a *agentClient) CreateMap(process string, refs []chainscript.LinkReference, args ...string) (*chainscript.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments", process)
 	postParams, err := a.makeActionPostParams(refs, args...)
 	if err != nil {
@@ -177,7 +177,7 @@ func (a *agentClient) CreateMap(process string, refs []cs.SegmentReference, args
 		return nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
-	seg := cs.Segment{}
+	seg := chainscript.Segment{}
 	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
@@ -186,7 +186,7 @@ func (a *agentClient) CreateMap(process string, refs []cs.SegmentReference, args
 
 // FindSegments sends a FindSegments request to the agent and returns
 // the list of found segments.
-func (a *agentClient) FindSegments(filter *store.SegmentFilter) (sgmts cs.SegmentSlice, err error) {
+func (a *agentClient) FindSegments(filter *store.SegmentFilter) (sgmts types.SegmentSlice, err error) {
 	if filter.Limit == -1 {
 		filter.Limit = store.DefaultLimit
 		batch, err := a.findSegments(filter)
@@ -203,14 +203,14 @@ func (a *agentClient) FindSegments(filter *store.SegmentFilter) (sgmts cs.Segmen
 	return a.findSegments(filter)
 }
 
-func (a *agentClient) findSegments(filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (a *agentClient) findSegments(filter *store.SegmentFilter) (types.SegmentSlice, error) {
 	queryURL := fmt.Sprintf("/%s/segments", filter.Process)
 	resp, err := a.get(queryURL, filter)
 	if err != nil {
 		return nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
-	sgmts := cs.SegmentSlice{}
+	sgmts := types.SegmentSlice{}
 	if err := decoder.Decode(&sgmts); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
@@ -297,14 +297,14 @@ func (a *agentClient) GetProcesses() (agent.Processes, error) {
 
 // GetSegment sends a GetSegment request to the agent and returns a segment
 // given its link hash.
-func (a *agentClient) GetSegment(process string, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *agentClient) GetSegment(process string, linkHash []byte) (*chainscript.Segment, error) {
 	queryURL := fmt.Sprintf("/%s/segments/%s", process, linkHash)
 	resp, err := a.get(queryURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
-	seg := cs.Segment{}
+	seg := chainscript.Segment{}
 	if err := decoder.Decode(&seg); err != nil {
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
@@ -326,7 +326,7 @@ func (a *agentClient) decodeError(resp *http.Response) error {
 	return errors.New(errorData.Message)
 }
 
-func (a *agentClient) makeActionPostParams(refs []cs.SegmentReference, args ...string) ([]byte, error) {
+func (a *agentClient) makeActionPostParams(refs []chainscript.LinkReference, args ...string) ([]byte, error) {
 	var rawParams []interface{}
 	rawParams = append(rawParams, refs)
 	for _, a := range args {

@@ -15,9 +15,9 @@
 package agenttestcases
 
 import (
+	"encoding/hex"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func (f Factory) TestGetSegmentOK(t *testing.T) {
 	process := "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
 
-	segment, err := f.Client.GetSegment(process, parent.GetLinkHash())
+	segment, err := f.Client.GetSegment(process, parent.LinkHash())
 	assert.NoError(t, err)
 	assert.NotNil(t, segment)
 }
@@ -35,7 +35,7 @@ func (f Factory) TestGetSegmentOK(t *testing.T) {
 // when the queried linkHash does not exist.
 func (f Factory) TestGetSegmentNotFound(t *testing.T) {
 	process := "test"
-	fakeLinkHash, _ := types.NewBytes32FromString("0000000000000000000000000000000000000000000000000000000000000000")
+	fakeLinkHash, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
 	segment, err := f.Client.GetSegment(process, fakeLinkHash)
 	assert.EqualError(t, err, "Not Found")
 	assert.Nil(t, segment)

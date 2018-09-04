@@ -15,14 +15,14 @@
 package agenttestcases
 
 import (
+	"encoding/hex"
 	"testing"
 
 	cj "github.com/gibson042/canonicaljson-go"
-
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCreateSegmentOK tests the client's ability to handle a CreateSegment request.
@@ -30,10 +30,15 @@ func (f Factory) TestCreateSegmentOK(t *testing.T) {
 	process, action := "test", "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
 
-	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, nil, "test")
+	segment, err := f.Client.CreateSegment(process, parent.LinkHash(), action, nil, "test")
 	assert.NoError(t, err)
 	assert.NotNil(t, segment)
-	assert.Equal(t, "test", segment.Link.State["title"])
+
+	var data map[string]string
+	err = segment.Link.StructurizeData(&data)
+	require.NoError(t, err)
+
+	assert.Equal(t, "test", data["title"])
 }
 
 // TestCreateSegmentWithRefs tests the client's ability to handle a CreateSegment request
@@ -41,9 +46,9 @@ func (f Factory) TestCreateSegmentOK(t *testing.T) {
 func (f Factory) TestCreateSegmentWithRefs(t *testing.T) {
 	process, action := "test", "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
-	refs := []cs.SegmentReference{{Process: "other", LinkHash: testutil.RandomHash().String()}}
+	refs := []chainscript.LinkReference{{Process: "other", LinkHash: chainscripttest.RandomHash()}}
 
-	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, "one")
+	segment, err := f.Client.CreateSegment(process, parent.LinkHash(), action, refs, "one")
 	assert.NoError(t, err)
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Link.Meta.Refs)
@@ -57,9 +62,9 @@ func (f Factory) TestCreateSegmentWithRefs(t *testing.T) {
 func (f Factory) TestCreateSegmentWithBadRefs(t *testing.T) {
 	process, action, arg := "test", "test", "wrongref"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
-	refs := []cs.SegmentReference{{Process: "wrong"}}
+	refs := []chainscript.LinkReference{{Process: "wrong"}}
 
-	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, refs, arg)
+	segment, err := f.Client.CreateSegment(process, parent.LinkHash(), action, refs, arg)
 	assert.Error(t, err, "missing segment or (process and linkHash)")
 	assert.Contains(t, err.Error(), "linkHash should be a non empty string")
 	assert.Nil(t, segment)
@@ -68,7 +73,7 @@ func (f Factory) TestCreateSegmentWithBadRefs(t *testing.T) {
 // TestCreateSegmentHandlesWrongProcess tests the client's ability to handle a CreateSegment request
 // when the provided process does not exist.
 func (f Factory) TestCreateSegmentHandlesWrongProcess(t *testing.T) {
-	process, linkHash, action := "wrong", testutil.RandomHash(), "test"
+	process, linkHash, action := "wrong", chainscripttest.RandomHash(), "test"
 	segment, err := f.Client.CreateSegment(process, linkHash, action, nil, "test")
 	assert.EqualError(t, err, "process 'wrong' does not exist")
 	assert.Nil(t, segment)
@@ -77,7 +82,7 @@ func (f Factory) TestCreateSegmentHandlesWrongProcess(t *testing.T) {
 // TestCreateSegmentHandlesWrongLinkHash tests the client's ability to handle a CreateSegment request
 // when the provided parent's linkHash does not exist.
 func (f Factory) TestCreateSegmentHandlesWrongLinkHash(t *testing.T) {
-	linkHash, _ := types.NewBytes32FromString("0000000000000000000000000000000000000000000000000000000000000000")
+	linkHash, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
 	process, action := "test", "test"
 	segment, err := f.Client.CreateSegment(process, linkHash, action, nil, "test")
 	assert.EqualError(t, err, "Not Found")
@@ -90,7 +95,7 @@ func (f Factory) TestCreateSegmentHandlesWrongAction(t *testing.T) {
 	process, action := "test", "wrong"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
 
-	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, nil, "test")
+	segment, err := f.Client.CreateSegment(process, parent.LinkHash(), action, nil, "test")
 	assert.EqualError(t, err, "not found")
 	assert.Nil(t, segment)
 }
@@ -101,7 +106,7 @@ func (f Factory) TestCreateSegmentHandlesWrongActionArgs(t *testing.T) {
 	process, action := "test", "test"
 	parent, _ := f.Client.CreateMap(process, nil, "test")
 
-	segment, err := f.Client.CreateSegment(process, parent.GetLinkHash(), action, nil)
+	segment, err := f.Client.CreateSegment(process, parent.LinkHash(), action, nil)
 	assert.EqualError(t, err, "a title is required")
 	assert.Nil(t, segment)
 }

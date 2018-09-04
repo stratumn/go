@@ -29,10 +29,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/agent"
 	"github.com/stratumn/go-indigocore/agent/agenttestcases"
 	"github.com/stratumn/go-indigocore/agent/client"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
 )
 
@@ -47,15 +48,15 @@ func (m *mockHTTPServer) decodePostParams(r *http.Request) ([]interface{}, error
 	return params, nil
 }
 
-func (m *mockHTTPServer) decodeRefs(input interface{}) ([]cs.SegmentReference, error) {
+func (m *mockHTTPServer) decodeRefs(input interface{}) ([]*chainscript.LinkReference, error) {
 	if input == nil {
-		return []cs.SegmentReference{}, nil
+		return []*chainscript.LinkReference{}, nil
 	}
 	inputSlice, ok := input.([]interface{})
 	if !ok {
 		return nil, errors.New("refs should be a slice")
 	}
-	var refs []cs.SegmentReference
+	var refs []*chainscript.LinkReference
 	for refIdx, in := range inputSlice {
 		ref, ok := in.(map[string]interface{})
 		if !ok {
@@ -66,11 +67,12 @@ func (m *mockHTTPServer) decodeRefs(input interface{}) ([]cs.SegmentReference, e
 		if !ok || process == "" {
 			return nil, errors.Errorf("refs[%d].process should be a non empty string", refIdx)
 		}
-		linkHashStr, ok := ref["linkHash"].(string)
-		if !ok || linkHashStr == "" {
-			return nil, errors.Errorf("refs[%d].linkHash should be a non empty string", refIdx)
+		linkHash, ok := ref["linkHash"].([]byte)
+		if !ok || len(linkHash) == 0 {
+			return nil, errors.Errorf("refs[%d].linkHash should be a non empty byte slice", refIdx)
 		}
-		refs = append(refs, cs.SegmentReference{Process: process, LinkHash: linkHashStr})
+
+		refs = append(refs, &chainscript.LinkReference{Process: process, LinkHash: linkHash})
 	}
 	return refs, nil
 }
@@ -136,17 +138,20 @@ func (m *mockHTTPServer) mockCreateSegment(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s := cs.Segment{
-		Link: cs.Link{
-			State: map[string]interface{}{
-				"title": arg,
-			},
-			Meta: cs.LinkMeta{
-				MapID: "mapId",
-				Refs:  refs,
-			},
+	l := &chainscript.Link{
+		Meta: &chainscript.LinkMeta{
+			MapId: "mapId",
+			Refs:  refs,
 		},
 	}
+
+	err = l.SetData(map[string]interface{}{"title": arg})
+	if err != nil {
+		m.sendError(w, http.StatusBadRequest, errors.Wrap(err, "cannot set link data").Error())
+		return
+	}
+
+	s := chainscript.Segment{Link: l}
 	m.sendResponse(w, http.StatusOK, &s)
 }
 
@@ -192,17 +197,21 @@ func (m *mockHTTPServer) mockCreateMap(w http.ResponseWriter, r *http.Request) {
 		m.sendError(w, http.StatusBadRequest, "missing segment or (process and linkHash)")
 		return
 	}
-	s := cs.Segment{
-		Link: cs.Link{
-			State: map[string]interface{}{
-				"title": arg,
-			},
-			Meta: cs.LinkMeta{
-				MapID: "mapId",
-				Refs:  refs,
-			},
+
+	l := &chainscript.Link{
+		Meta: &chainscript.LinkMeta{
+			MapId: "mapId",
+			Refs:  refs,
 		},
 	}
+
+	err = l.SetData(map[string]interface{}{"title": arg})
+	if err != nil {
+		m.sendError(w, http.StatusBadRequest, errors.Wrap(err, "cannot set link data").Error())
+		return
+	}
+
+	s := chainscript.Segment{Link: l}
 	m.sendResponse(w, http.StatusOK, s)
 }
 
@@ -215,27 +224,28 @@ func (m *mockHTTPServer) mockFindSegments(w http.ResponseWriter, r *http.Request
 		mapIDs        = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
 		tags          = append(q["tags[]"], q["tags%5B%5D"]...)
 	)
-	s := cs.SegmentSlice{}
+	s := types.SegmentSlice{}
 	vars := mux.Vars(r)
 	if vars["process"] == "wrong" {
 		m.sendError(w, http.StatusBadRequest, "process 'wrong' does not exist")
 		return
 	}
 	if len(linkHashesStr) > 0 || len(mapIDs) > 0 {
-		s = append(s, &cs.Segment{})
+		s = append(s, &chainscript.Segment{})
 	} else if offset > limit {
 		m.sendResponse(w, http.StatusOK, s)
 		return
 	} else if len(tags) > 0 {
-
-		s = append(s, &cs.Segment{Link: cs.Link{
-			Meta: cs.LinkMeta{
-				Tags: tags,
+		s = append(s, &chainscript.Segment{
+			Link: &chainscript.Link{
+				Meta: &chainscript.LinkMeta{
+					Tags: tags,
+				},
 			},
-		}})
+		})
 	} else {
 		for i := 0; i < limit; i++ {
-			s = append(s, &cs.Segment{})
+			s = append(s, &chainscript.Segment{})
 		}
 	}
 	m.sendResponse(w, http.StatusOK, s)
@@ -293,7 +303,7 @@ func (m *mockHTTPServer) mockGetProcesses(w http.ResponseWriter, r *http.Request
 }
 
 func (m *mockHTTPServer) mockGetSegment(w http.ResponseWriter, r *http.Request) {
-	s := cs.Segment{}
+	s := chainscript.Segment{}
 	vars := mux.Vars(r)
 	if vars["linkHash"] == "0000000000000000000000000000000000000000000000000000000000000000" {
 		m.sendError(w, http.StatusNotFound, "Not Found")

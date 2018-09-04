@@ -17,7 +17,6 @@ package agent
 import (
 	"net/http"
 
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -49,7 +48,7 @@ type ProcessOptions struct {
 type Agent interface {
 	AddProcess(process string, actions Actions, storeClient interface{}, fossilizerClients []interface{}, opts *ProcessOptions) (Process, error)
 	UploadProcess(processName string, actionsPath string, storeURL string, fossilizerURLs []string, pluginIDs []string) (*Process, error)
-	FindSegments(filter store.SegmentFilter) (cs.SegmentSlice, error)
+	FindSegments(filter store.SegmentFilter) (types.SegmentSlice, error)
 	GetInfo() (*Info, error)
 	GetMapIds(filter store.MapFilter) ([]string, error)
 	GetProcesses() (Processes, error)
