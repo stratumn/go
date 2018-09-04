@@ -490,6 +490,13 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:620cd34fb06dbb54d9d52c50ee308bda5f53f6dc8ffdbad4f1dd4e0d0063e516"
+  name = "github.com/stratumn/go-chainscript"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ede89e900fb15d8389ba1b8a760ba5e9c088f0ca"
+
+[[projects]]
   digest = "1:3536bd8a6bec567bdd0d79679c180f80bddaa8a0adf23d3dafd8e6661f9676cb"
   name = "github.com/stratumn/go-crypto"
   packages = [
@@ -499,6 +506,7 @@
   ]
   pruneopts = ""
   revision = "51a04ed715ee95f4c6a9f639e6da8bd4cc4fd470"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -887,6 +895,7 @@
     "github.com/prometheus/common/log",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
+    "github.com/stratumn/go-chainscript",
     "github.com/stratumn/go-crypto/encoding",
     "github.com/stratumn/go-crypto/keys",
     "github.com/stratumn/go-crypto/signatures",
