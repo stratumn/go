@@ -23,10 +23,6 @@
   name = "github.com/google/go-querystring"
   branch="master"
 
-[[constraint]]
-  name = "github.com/jmespath/go-jmespath"
-  branch="master"
-
 [[override]] 
   # This is required because Tendermint needs ~1.0.0
   # but Docker claims it needs ^0.4.

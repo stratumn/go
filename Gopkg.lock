@@ -490,11 +490,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:620cd34fb06dbb54d9d52c50ee308bda5f53f6dc8ffdbad4f1dd4e0d0063e516"
+  digest = "1:fc34cfb2a143c98e589eb14446f2794eefc4ce0a3718a0a9339559761cb7824f"
   name = "github.com/stratumn/go-chainscript"
-  packages = ["."]
+  packages = [
+    ".",
+    "chainscripttest",
+  ]
   pruneopts = ""
-  revision = "ede89e900fb15d8389ba1b8a760ba5e9c088f0ca"
+  revision = "7fafb3d957a903196e29d4c722f4a5b4be3a7ce2"
 
 [[projects]]
   digest = "1:3536bd8a6bec567bdd0d79679c180f80bddaa8a0adf23d3dafd8e6661f9676cb"
@@ -520,15 +523,15 @@
   revision = "b637554c3514b4b1a4a6de1eeb4ce0c1f2b91c37"
 
 [[projects]]
-  digest = "1:a30066593578732a356dc7e5d7f78d69184ca65aeeff5939241a3ab10559bb06"
+  digest = "1:c587772fb8ad29ad4db67575dad25ba17a51f072ff18a22b4f0257a4d9c24f75"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "require",
   ]
   pruneopts = ""
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
@@ -887,7 +890,6 @@
     "github.com/google/go-querystring/query",
     "github.com/gorilla/mux",
     "github.com/gorilla/websocket",
-    "github.com/jmespath/go-jmespath",
     "github.com/julienschmidt/httprouter",
     "github.com/lib/pq",
     "github.com/olivere/elastic",
@@ -896,9 +898,8 @@
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
     "github.com/stratumn/go-chainscript",
-    "github.com/stratumn/go-crypto/encoding",
+    "github.com/stratumn/go-chainscript/chainscripttest",
     "github.com/stratumn/go-crypto/keys",
-    "github.com/stratumn/go-crypto/signatures",
     "github.com/stratumn/merkle",
     "github.com/stratumn/merkle/types",
     "github.com/stretchr/testify/assert",
