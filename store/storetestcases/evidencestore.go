@@ -23,6 +23,7 @@ import (
 	// Needed to serialize fossilizers evidence types.
 	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +32,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	l := RandomLink(t)
+	l := testutil.RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), l)
 
 	s := store.EvidenceStore(a)
@@ -52,7 +53,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
-		assert.Equal(t, 5, len(*storedEvidences), "Invalid number of evidences")
+		assert.Equal(t, 5, len(storedEvidences), "Invalid number of evidences")
 
 		for _, evidence := range evidences {
 			foundEvidence := storedEvidences.FindEvidences(evidence.Backend)
@@ -72,7 +73,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
-		assert.Equal(t, 6, len(*storedEvidences), "Invalid number of evidences")
-		assert.EqualValues(t, e1.Backend, storedEvidences.GetEvidence("42").Backend, "Invalid evidence backend")
+		assert.Equal(t, 6, len(storedEvidences), "Invalid number of evidences")
+		assert.EqualValues(t, e1.Backend, storedEvidences.GetEvidence("TMPop", "42").Backend, "Invalid evidence backend")
 	})
 }

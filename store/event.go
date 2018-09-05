@@ -16,7 +16,6 @@
 package store
 
 import (
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/stratumn/go-chainscript"
@@ -68,9 +67,9 @@ func NewSavedEvidences() *Event {
 
 // AddSavedEvidence adds an evidence to the event.
 // It assumes the event is a correctly initialized SavedEvidences event.
-func (event *Event) AddSavedEvidence(linkHash []byte, e *chainscript.Evidence) {
+func (event *Event) AddSavedEvidence(linkHash chainscript.LinkHash, e *chainscript.Evidence) {
 	evidencesData := event.Data.(map[string]*chainscript.Evidence)
-	evidencesData[hex.EncodeToString(linkHash)] = e
+	evidencesData[linkHash.String()] = e
 	event.Data = evidencesData
 }
 

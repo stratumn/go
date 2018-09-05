@@ -18,10 +18,6 @@
 [[constraint]]
   name = "github.com/golang/mock"
   branch="master"
-  
-[[constraint]]
-  name = "github.com/google/go-querystring"
-  branch="master"
 
 [[override]] 
   # This is required because Tendermint needs ~1.0.0

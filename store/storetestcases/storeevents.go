@@ -19,7 +19,9 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +33,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 	c := make(chan *store.Event, 10)
 	a.AddStoreEventChannel(c)
 
-	link := RandomLink(t)
+	link := chainscripttest.RandomLink(t)
 	linkHash, err := a.CreateLink(context.Background(), link)
 	assert.NoError(t, err, "a.CreateLink()")
 
@@ -45,7 +47,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 
 	t.Run("Evidence saved event should be sent to channel", func(t *testing.T) {
 		ctx := context.Background()
-		evidence := chainscript.NewEvidence("1.0.0", "btc", "testnet", []byte{42})
+		evidence := testutil.RandomEvidence(t)
 		err = a.AddEvidence(ctx, linkHash, evidence)
 		assert.NoError(t, err, "a.AddEvidence()")
 

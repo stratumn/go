@@ -26,13 +26,20 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
-// RandomLink creates a link with ramdom data.
-func RandomLink(t *testing.T) *chainscript.Link {
-	return chainscripttest.NewLinkBuilder(t).WithRandomData().Build()
-}
-
 // CreateLinkFunc is a type for a function that creates a link for benchmarks.
 type CreateLinkFunc func(b *testing.B, numLinks, i int) *chainscript.Link
+
+// RandomLink creates a link with random data.
+func RandomLink(b *testing.B, numLinks, i int) *chainscript.Link {
+	l, err := chainscript.NewLinkBuilder("p", "m").
+		WithData(chainscripttest.RandomString(24)).
+		Build()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	return l
+}
 
 // RandomLinkMapID is a CreateLinkFunc that creates a random link with map ID.
 // The map ID will be one of ten possible values.

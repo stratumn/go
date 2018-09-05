@@ -23,6 +23,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,15 +34,15 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := RandomLink(t)
+		l := testutil.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink with no priority should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := RandomLink(t)
-		delete(l.Meta.Data, "priority")
+		l := testutil.RandomLink(t)
+		l.Meta.Priority = 0.0
 
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
@@ -49,29 +50,31 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink and update state should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := RandomLink(t)
+		l := testutil.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
-		l = l.SetData(chainscripttest.RandomString(32))
+		err = l.SetData(chainscripttest.RandomString(32))
+		assert.NoError(t, err)
+
 		_, err = a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink and update map ID should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l1 := RandomLink(t)
+		l1 := testutil.RandomLink(t)
 		_, err := a.CreateLink(ctx, l1)
 		assert.NoError(t, err, "a.CreateLink()")
 
-		l2.Meta.MapId = chainscripttest.RandomString(12)
-		_, err = a.CreateLink(ctx, l2)
+		l1.Meta.MapId = chainscripttest.RandomString(12)
+		_, err = a.CreateLink(ctx, l1)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink with previous link hash should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := RandomLink(t)
+		l := testutil.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
@@ -88,7 +91,7 @@ func (f Factory) BenchmarkCreateLink(b *testing.B) {
 
 	slice := make([]*chainscript.Link, b.N)
 	for i := 0; i < b.N; i++ {
-		slice[i] = RandomLink(t)
+		slice[i] = RandomLink(b, b.N, i)
 	}
 
 	b.ResetTimer()
@@ -108,7 +111,7 @@ func (f Factory) BenchmarkCreateLinkParallel(b *testing.B) {
 
 	slice := make([]*chainscript.Link, b.N)
 	for i := 0; i < b.N; i++ {
-		slice[i] = RandomLink(t)
+		slice[i] = RandomLink(b, b.N, i)
 	}
 
 	var counter uint64

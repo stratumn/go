@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/jsonws"
 	"github.com/stratumn/go-indigocore/jsonws/jsonwstesting"
@@ -83,10 +83,10 @@ func TestRoot_err(t *testing.T) {
 
 func TestCreateLink(t *testing.T) {
 	s, a := createServer()
-	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return l.Hash() }
+	a.MockCreateLink.Fn = func(l *chainscript.Link) (*types.Bytes32, error) { return l.Hash() }
 
-	l1 := cstesting.RandomLink()
-	var s1 cs.Segment
+	l1 := chainscripttest.RandomLink(t)
+	var s1 chainscript.Segment
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &s1)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -112,10 +112,10 @@ func TestCreateLink(t *testing.T) {
 
 func TestCreateLink_err(t *testing.T) {
 	s, a := createServer()
-	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("test") }
+	a.MockCreateLink.Fn = func(l *chainscript.Link) (*types.Bytes32, error) { return nil, errors.New("test") }
 
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", cstesting.RandomLink(), &body)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", chainscripttest.RandomLink(t), &body)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
 	}
@@ -134,7 +134,7 @@ func TestCreateLink_err(t *testing.T) {
 func TestCreateLink_invalidLink(t *testing.T) {
 	s, a := createServer()
 
-	l1 := cstesting.RandomLink()
+	l1 := chainscripttest.RandomLink(t)
 	l1.Meta.Process = ""
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &body)
@@ -165,7 +165,7 @@ func TestCreateLink_invalidJSON(t *testing.T) {
 	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
 		t.Errorf("w.Code = %d want %d", got, want)
 	}
-	if got, want := body["error"].(string), "json: cannot unmarshal string into Go value of type cs.Link"; got != want {
+	if got, want := body["error"].(string), "json: cannot unmarshal string into Go value of type chainscript.Link"; got != want {
 		t.Errorf(`body["error"] = %q want %q`, got, want)
 	}
 	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
@@ -175,11 +175,11 @@ func TestCreateLink_invalidJSON(t *testing.T) {
 
 func TestAddEvidence(t *testing.T) {
 	s, a := createServer()
-	a.MockAddEvidence.Fn = func(*types.Bytes32, *cs.Evidence) error { return nil }
+	a.MockAddEvidence.Fn = func(*types.Bytes32, *chainscript.Evidence) error { return nil }
 
-	link := cstesting.RandomLink()
+	link := chainscripttest.RandomLink(t)
 	linkHash, _ := link.HashString()
-	e := cstesting.RandomEvidence()
+	e := chainscripttest.RandomEvidence(t)
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash, e, &body)
 	if err != nil {
@@ -200,11 +200,11 @@ func TestAddEvidence(t *testing.T) {
 
 func TestAddEvidence_err(t *testing.T) {
 	s, a := createServer()
-	a.MockAddEvidence.Fn = func(*types.Bytes32, *cs.Evidence) error { return errors.New("test") }
+	a.MockAddEvidence.Fn = func(*types.Bytes32, *chainscript.Evidence) error { return errors.New("test") }
 
-	link := cstesting.RandomLink()
+	link := chainscripttest.RandomLink(t)
 	linkHash, _ := link.HashString()
-	e := cstesting.RandomEvidence()
+	e := chainscripttest.RandomEvidence(t)
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash, e, &body)
 	if err != nil {
@@ -223,10 +223,10 @@ func TestAddEvidence_err(t *testing.T) {
 
 func TestGetSegment(t *testing.T) {
 	s, a := createServer()
-	s1 := cstesting.RandomSegment()
-	a.MockGetSegment.Fn = func(*types.Bytes32) (*cs.Segment, error) { return s1, nil }
+	s1 := chainscripttest.RandomSegment(t)
+	a.MockGetSegment.Fn = func(*types.Bytes32) (*chainscript.Segment, error) { return s1, nil }
 
-	var s2 cs.Segment
+	var s2 chainscript.Segment
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -273,7 +273,7 @@ func TestGetSegment_notFound(t *testing.T) {
 
 func TestGetSegment_err(t *testing.T) {
 	s, a := createServer()
-	a.MockGetSegment.Fn = func(*types.Bytes32) (*cs.Segment, error) { return nil, errors.New("error") }
+	a.MockGetSegment.Fn = func(*types.Bytes32) (*chainscript.Segment, error) { return nil, errors.New("error") }
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &body)
@@ -297,13 +297,13 @@ func TestGetSegment_err(t *testing.T) {
 
 func TestFindSegments(t *testing.T) {
 	s, a := createServer()
-	s1 := &cs.PaginatedSegments{}
+	s1 := &types.PaginatedSegments{}
 	for i := 0; i < 10; i++ {
-		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
+		s1.Segments = append(s1.Segments, chainscripttest.RandomSegment(t))
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
-	s2 := &cs.PaginatedSegments{}
+	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags%5B%5D=one&tags%5B%5D=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -345,13 +345,13 @@ func TestFindSegments(t *testing.T) {
 
 func TestFindSegments_multipleMapIDs(t *testing.T) {
 	s, a := createServer()
-	s1 := &cs.PaginatedSegments{}
+	s1 := &types.PaginatedSegments{}
 	for i := 0; i < 10; i++ {
-		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
+		s1.Segments = append(s1.Segments, chainscripttest.RandomSegment(t))
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
-	s2 := &cs.PaginatedSegments{}
+	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds[]=123&mapIds[]=456&prevLinkHash="+zeros+"&tags[]=one&tags%5B%5D=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -395,13 +395,13 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 
 func TestFindSegments_multipleLinkHashes(t *testing.T) {
 	s, a := createServer()
-	s1 := &cs.PaginatedSegments{}
+	s1 := &types.PaginatedSegments{}
 	for i := 0; i < 10; i++ {
-		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
+		s1.Segments = append(s1.Segments, chainscripttest.RandomSegment(t))
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
-	s2 := &cs.PaginatedSegments{}
+	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&linkHashes[]="+zeros+"&linkHashes%5B%5D="+zeros, nil, &s2)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -418,13 +418,13 @@ func TestFindSegments_multipleLinkHashes(t *testing.T) {
 
 func TestFindSegments_defaultLimit(t *testing.T) {
 	s, a := createServer()
-	s1 := &cs.PaginatedSegments{}
+	s1 := &types.PaginatedSegments{}
 	for i := 0; i < 10; i++ {
-		s1.Segments = append(s1.Segments, cstesting.RandomSegment())
+		s1.Segments = append(s1.Segments, chainscripttest.RandomSegment(t))
 	}
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) { return s1, nil }
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
-	s2 := &cs.PaginatedSegments{}
+	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags[]=one&tags[]=two", nil, &s2)
 	if err != nil {
 		t.Fatalf("testutil.RequestJSON(): err: %s", err)
@@ -466,7 +466,7 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 
 func TestFindSegments_err(t *testing.T) {
 	s, a := createServer()
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
 		return nil, errors.New("test")
 	}
 
@@ -647,7 +647,7 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestGetSocket(t *testing.T) {
-	link := cstesting.RandomLink()
+	link := chainscripttest.RandomLink(t)
 	event := store.NewSavedLinks(link)
 
 	// Chan that will receive the store event channel.
@@ -716,7 +716,7 @@ func TestGetSocket(t *testing.T) {
 	// Wait for message to be broadcasted.
 	select {
 	case <-doneChan:
-		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message).Data.([]*cs.Link)
+		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message).Data.([]*chainscript.Link)
 		if len(got) != 1 {
 			t.Fatalf("Invalid number of links in json data")
 		}

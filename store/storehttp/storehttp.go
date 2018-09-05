@@ -53,7 +53,6 @@ import (
 	"github.com/stratumn/go-indigocore/jsonws"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 
 	"go.opencensus.io/trace"
 )
@@ -205,14 +204,14 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 		return nil, err
 	}
 
-	return link.Segmentify(), nil
+	return link.Segmentify()
 }
 
 func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
 	ctx, span := trace.StartSpan(r.Context(), "storehttp/addEvidence")
 	defer span.End()
 
-	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
+	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, err
@@ -238,7 +237,7 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 	ctx, span := trace.StartSpan(r.Context(), "storehttp/getSegment")
 	defer span.End()
 
-	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
+	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, jsonhttp.NewErrBadRequest(err.Error())

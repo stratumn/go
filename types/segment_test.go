@@ -51,9 +51,9 @@ func TestSegmentSliceSort_Priority(t *testing.T) {
 		}
 
 		slice.Sort(false)
-		assert.True(t, slice[0].LinkHashString() < slice[1].LinkHashString())
+		assert.True(t, slice[0].LinkHash().String() < slice[1].LinkHash().String())
 
 		slice.Sort(true)
-		assert.True(t, slice[0].LinkHashString() > slice[1].LinkHashString())
+		assert.True(t, slice[0].LinkHash().String() > slice[1].LinkHash().String())
 	})
 }

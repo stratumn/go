@@ -24,7 +24,6 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,10 +32,10 @@ func (f Factory) TestGetSegment(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	link := RandomLink(t)
+	link := testutil.RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), link)
 
-	link2 := link.SetData(chainscripttest.RandomString(24))
+	link2 := chainscripttest.NewLinkBuilder(t).From(t, link).WithData(t, chainscripttest.RandomString(24)).Build()
 	linkHash2, _ := a.CreateLink(context.Background(), link2)
 
 	t.Run("Getting an existing segment should work", func(t *testing.T) {
@@ -63,7 +62,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 
 	t.Run("Getting an unknown segment should return nil", func(t *testing.T) {
 		ctx := context.Background()
-		s, err := a.GetSegment(ctx, testutil.RandomHash())
+		s, err := a.GetSegment(ctx, chainscripttest.RandomHash())
 		assert.NoError(t, err)
 		assert.Nil(t, s)
 	})
@@ -94,9 +93,9 @@ func (f Factory) BenchmarkGetSegment(b *testing.B) {
 	a := f.initAdapterB(b)
 	defer f.freeAdapter(a)
 
-	linkHashes := make([]*types.Bytes32, b.N)
+	linkHashes := make([]chainscript.LinkHash, b.N)
 	for i := 0; i < b.N; i++ {
-		l := RandomLink(t)
+		l := RandomLink(b, b.N, i)
 		linkHash, _ := a.CreateLink(context.Background(), l)
 		linkHashes[i] = linkHash
 	}
@@ -118,9 +117,9 @@ func (f Factory) BenchmarkGetSegmentParallel(b *testing.B) {
 	a := f.initAdapterB(b)
 	defer f.freeAdapter(a)
 
-	linkHashes := make([]*types.Bytes32, b.N)
+	linkHashes := make([]chainscript.LinkHash, b.N)
 	for i := 0; i < b.N; i++ {
-		l := RandomLink(t)
+		l := RandomLink(b, b.N, i)
 		linkHash, _ := a.CreateLink(context.Background(), l)
 		linkHashes[i] = linkHash
 	}

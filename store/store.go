@@ -37,7 +37,7 @@ const (
 type SegmentReader interface {
 	// Get a segment by link hash. Returns nil if no match is found.
 	// Will return link and evidences (if there are some in that store).
-	GetSegment(ctx context.Context, linkHash []byte) (*chainscript.Segment, error)
+	GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error)
 
 	// Find segments. Returns an empty slice if there are no results.
 	// Will return links and evidences (if there are some).
@@ -53,7 +53,7 @@ type LinkWriter interface {
 	// Create the immutable part of a segment.
 	// The input link is expected to be valid.
 	// Returns the link hash or an error.
-	CreateLink(ctx context.Context, link *chainscript.Link) ([]byte, error)
+	CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error)
 }
 
 // EvidenceReader is the interface for reading segment evidence from a store.
@@ -61,13 +61,13 @@ type EvidenceReader interface {
 	// Get the evidences for a segment.
 	// Can return a nil error with an empty evidence slice if
 	// the segment currently doesn't have evidence.
-	GetEvidences(ctx context.Context, linkHash []byte) ([]*chainscript.Evidence, error)
+	GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error)
 }
 
 // EvidenceWriter is the interface for adding evidence to a segment in a store.
 type EvidenceWriter interface {
 	// Add an evidence to a segment.
-	AddEvidence(ctx context.Context, linkHash []byte, evidence *chainscript.Evidence) error
+	AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error
 }
 
 // EvidenceStore is the interface for storing and reading segment evidence.
@@ -237,10 +237,12 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		lh, _ := link.HashString()
+		lh, _ := link.Hash()
+		lhs := lh.String()
+
 		var match bool
 		for _, linkHash := range filter.LinkHashes {
-			if linkHash == lh {
+			if linkHash == lhs {
 				match = true
 				break
 			}

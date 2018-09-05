@@ -24,8 +24,6 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	bcbatchevidences "github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
@@ -36,7 +34,7 @@ import (
 var emptyPrevLinkHash = ""
 var priorities = sort.Float64Slice{}
 
-func createLink(adapter store.Adapter, link *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {
+func createLink(t *testing.T, adapter store.Adapter, link *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {
 	if prepareLink != nil {
 		prepareLink(link)
 	}
@@ -49,12 +47,12 @@ func createLink(adapter store.Adapter, link *chainscript.Link, prepareLink func(
 	return link
 }
 
-func createRandomLink(adapter store.Adapter, prepareLink func(l *chainscript.Link)) *chainscript.Link {
-	return createLink(adapter, RandomLink(t), prepareLink)
+func createRandomLink(t *testing.T, adapter store.Adapter, prepareLink func(l *chainscript.Link)) *chainscript.Link {
+	return createLink(t, adapter, testutil.RandomLink(t), prepareLink)
 }
 
-func createLinkBranch(adapter store.Adapter, parent *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {
-	return createLink(adapter, chainscripttest.NewLinkBuilder(t).Branch(parent).Build(), prepareLink)
+func createLinkBranch(t *testing.T, adapter store.Adapter, parent *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {
+	return createLink(t, adapter, chainscripttest.NewLinkBuilder(t).Branch(t, parent).Build(), prepareLink)
 }
 
 func verifyPriorities(t *testing.T, segments *types.PaginatedSegments, offset int, reverse bool) {
@@ -104,41 +102,41 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	testPageSize := 3
 	segmentsTotalCount := 8
 
-	createRandomLink(a, func(l *chainscript.Link) {
-		l.Meta.MapID = "map1"
-		l.Meta.PrevLinkHash = ""
-		l.Meta.Process = "Foo"
+	createRandomLink(t, a, func(l *chainscript.Link) {
+		l.Meta.MapId = "map1"
+		l.Meta.PrevLinkHash = nil
+		l.Meta.Process.Name = "Foo"
 	})
 
-	createRandomLink(a, func(l *chainscript.Link) {
+	createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", "tag42"}
-		l.Meta.MapID = "map2"
+		l.Meta.MapId = "map2"
 	})
 
-	createRandomLink(a, func(l *chainscript.Link) {
+	createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag2"}
 	})
 
-	link4 := createRandomLink(a, nil)
+	link4 := createRandomLink(t, a, nil)
 	linkHash4, _ := link4.Hash()
 
-	createLinkBranch(a, link4, func(l *chainscript.Link) {
+	createLinkBranch(t, a, link4, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", testutil.RandomString(5)}
-		l.Meta.MapID = "map1"
+		l.Meta.MapId = "map1"
 	})
 
-	link6 := createRandomLink(a, func(l *chainscript.Link) {
+	link6 := createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag2", "tag42"}
-		l.Meta.Process = "Foo"
-		l.Meta.PrevLinkHash = ""
+		l.Meta.Process.Name = "Foo"
+		l.Meta.PrevLinkHash = nil
 	})
 	linkHash6, _ := link6.Hash()
 
-	createRandomLink(a, func(l *chainscript.Link) {
-		l.Meta.MapID = "map2"
+	createRandomLink(t, a, func(l *chainscript.Link) {
+		l.Meta.MapId = "map2"
 	})
 
-	createLinkBranch(a, link4, nil)
+	createLinkBranch(t, a, link4, nil)
 
 	t.Run("Should order by priority", func(t *testing.T) {
 		ctx := context.Background()
@@ -390,9 +388,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := chainscript.Evidence{Backend: "dummy", Provider: "1", Proof: &chainscript.GenericProof{}}
-		e2 := chainscript.Evidence{Backend: "batch", Provider: "2", Proof: &batchevidences.BatchProof{}}
-		e3 := chainscript.Evidence{Backend: "bcbatch", Provider: "3", Proof: &bcbatchevidences.BcBatchProof{}}
+		e1 := chainscript.Evidence{Backend: "dummy", Provider: "1"}
+		e2 := chainscript.Evidence{Backend: "batch", Provider: "2"}
+		e3 := chainscript.Evidence{Backend: "bcbatch", Provider: "3"}
 		e4 := chainscript.Evidence{Backend: "generic", Provider: "4"}
 		testEvidences := []chainscript.Evidence{e1, e2, e3, e4}
 

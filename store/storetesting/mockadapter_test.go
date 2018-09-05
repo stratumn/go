@@ -18,14 +18,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMockAdapter_GetInfo(t *testing.T) {
@@ -55,36 +54,36 @@ func TestMockAdapter_AddStoreEventChan(t *testing.T) {
 
 func TestMockAdapter_CreateLink(t *testing.T) {
 	a := &MockAdapter{}
-	l := cstesting.RandomLink()
+	l := chainscripttest.RandomLink(t)
 
 	_, err := a.CreateLink(context.Background(), l)
 	require.NoError(t, err)
 
-	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, nil }
+	a.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return nil, nil }
 	_, err = a.CreateLink(context.Background(), l)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, a.MockCreateLink.CalledCount)
-	assert.Equal(t, []*cs.Link{l, l}, a.MockCreateLink.CalledWith)
+	assert.Equal(t, []*chainscript.Link{l, l}, a.MockCreateLink.CalledWith)
 	assert.Equal(t, l, a.MockCreateLink.LastCalledWith)
 }
 
 func TestMockAdapter_GetSegment(t *testing.T) {
 	a := &MockAdapter{}
 
-	linkHash1 := testutil.RandomHash()
+	linkHash1 := chainscripttest.RandomHash()
 	_, err := a.GetSegment(context.Background(), linkHash1)
 	require.NoError(t, err)
 
-	s1 := cstesting.RandomSegment()
-	a.MockGetSegment.Fn = func(linkHash *types.Bytes32) (*cs.Segment, error) { return s1, nil }
-	linkHash2 := testutil.RandomHash()
+	s1, _ := chainscripttest.RandomLink(t).Segmentify()
+	a.MockGetSegment.Fn = func(linkHash chainscript.LinkHash) (*chainscript.Segment, error) { return s1, nil }
+	linkHash2 := chainscripttest.RandomHash()
 	s2, err := a.GetSegment(context.Background(), linkHash2)
 	require.NoError(t, err)
 
 	assert.Equal(t, s1, s2)
 	assert.Equal(t, 2, a.MockGetSegment.CalledCount)
-	assert.Equal(t, []*types.Bytes32{linkHash1, linkHash2}, a.MockGetSegment.CalledWith)
+	assert.Equal(t, [][]byte{linkHash1, linkHash2}, a.MockGetSegment.CalledWith)
 	assert.Equal(t, linkHash2, a.MockGetSegment.LastCalledWith)
 }
 
@@ -94,10 +93,10 @@ func TestMockAdapter_FindSegments(t *testing.T) {
 	_, err := a.FindSegments(context.Background(), nil)
 	require.NoError(t, err)
 
-	s := cstesting.RandomSegment()
-	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-		return &cs.PaginatedSegments{
-			Segments:   cs.SegmentSlice{s},
+	s, _ := chainscripttest.RandomLink(t).Segmentify()
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+		return &types.PaginatedSegments{
+			Segments:   types.SegmentSlice{s},
 			TotalCount: 1,
 		}, nil
 	}
@@ -106,7 +105,7 @@ func TestMockAdapter_FindSegments(t *testing.T) {
 	s1, err := a.FindSegments(context.Background(), &f)
 	require.NoError(t, err)
 
-	assert.Equal(t, (&cs.PaginatedSegments{Segments: cs.SegmentSlice{s}, TotalCount: 1}), s1)
+	assert.Equal(t, (&types.PaginatedSegments{Segments: types.SegmentSlice{s}, TotalCount: 1}), s1)
 	assert.Equal(t, 2, a.MockFindSegments.CalledCount)
 	assert.Equal(t, []*store.SegmentFilter{nil, &f}, a.MockFindSegments.CalledWith)
 	assert.Equal(t, &f, a.MockFindSegments.LastCalledWith)

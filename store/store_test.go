@@ -18,10 +18,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,39 +36,43 @@ var (
 	badLinkHashTestingValue       string
 	emptyPrevLinkHashTestingValue = ""
 
-	paginatedSegments *cs.PaginatedSegments
+	paginatedSegments *types.PaginatedSegments
 	stringSlice       []string
 )
 
 func init() {
-	prevLinkHashTestingValue = testutil.RandomHash().String()
-	badLinkHashTestingValue = testutil.RandomHash().String()
+	prevLinkHashTestingValue = chainscript.LinkHash(chainscripttest.RandomHash()).String()
+	badLinkHashTestingValue = chainscript.LinkHash(chainscripttest.RandomHash()).String()
 
-	paginatedSegments = &cs.PaginatedSegments{}
-	paginatedSegments.Segments = make(cs.SegmentSlice, sliceSize)
+	paginatedSegments = &types.PaginatedSegments{}
+	paginatedSegments.Segments = make(types.SegmentSlice, sliceSize)
 	stringSlice = make([]string, sliceSize)
 	for i := 0; i < sliceSize; i++ {
-		paginatedSegments.Segments[i] = cstesting.RandomSegment()
-		stringSlice[i] = testutil.RandomString(10)
+		link, _ := chainscript.NewLinkBuilder(
+			chainscripttest.RandomString(6),
+			chainscripttest.RandomString(8)).
+			WithData(chainscripttest.RandomString(12)).
+			Build()
+		paginatedSegments.Segments[i], _ = link.Segmentify()
+		stringSlice[i] = chainscripttest.RandomString(10)
 	}
 }
 
-func defaultTestingSegment() *cs.Segment {
-	link := &cs.Link{
-		Meta: cs.LinkMeta{
-			PrevLinkHash: prevLinkHashTestingValue,
-			Process:      "TheProcess",
-			MapID:        "TheMapId",
-			Tags:         []string{"Foo", "Bar"},
-			Priority:     42.,
-		},
-	}
-	return link.Segmentify()
+func defaultTestingSegment() *chainscript.Segment {
+	prevLinkHash, _ := chainscript.NewLinkHashFromString(prevLinkHashTestingValue)
+	link, _ := chainscript.NewLinkBuilder("TheProcess", "TheMapId").
+		WithPriority(42.).
+		WithTags("Foo", "Bar").
+		WithParent(prevLinkHash).
+		Build()
+
+	segment, _ := link.Segmentify()
+	return segment
 }
 
-func emptyPrevLinkHashTestingSegment() *cs.Segment {
+func emptyPrevLinkHashTestingSegment() *chainscript.Segment {
 	seg := defaultTestingSegment()
-	seg.Link.Meta.PrevLinkHash = ""
+	seg.Link.Meta.PrevLinkHash = nil
 	return seg
 }
 
@@ -81,11 +85,14 @@ func TestSegmentFilter_Match(t *testing.T) {
 		LinkHashes   []string
 		Tags         []string
 	}
+
 	type args struct {
-		segment *cs.Segment
+		segment *chainscript.Segment
 	}
+
 	linkHashesSegment := defaultTestingSegment()
-	linkHashesSegmentHash := linkHashesSegment.GetLinkHashString()
+	linkHashesSegmentHash := linkHashesSegment.LinkHash()
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -159,14 +166,19 @@ func TestSegmentFilter_Match(t *testing.T) {
 			want:   false,
 		},
 		{
-			name:   "LinkHashes ok",
-			fields: fields{LinkHashes: []string{testutil.RandomHash().String(), linkHashesSegmentHash}},
-			args:   args{linkHashesSegment},
-			want:   true,
+			name: "LinkHashes ok",
+			fields: fields{
+				LinkHashes: []string{
+					chainscript.LinkHash(chainscripttest.RandomHash()).String(),
+					linkHashesSegmentHash.String(),
+				},
+			},
+			args: args{linkHashesSegment},
+			want: true,
 		},
 		{
 			name:   "LinkHashes ko",
-			fields: fields{LinkHashes: []string{testutil.RandomHash().String()}},
+			fields: fields{LinkHashes: []string{chainscript.LinkHash(chainscripttest.RandomHash()).String()}},
 			args:   args{segment: defaultTestingSegment()},
 			want:   false,
 		},
@@ -219,7 +231,7 @@ func TestMapFilter_Match(t *testing.T) {
 		Suffix     string
 	}
 	type args struct {
-		segment *cs.Segment
+		segment *chainscript.Segment
 	}
 	tests := []struct {
 		name   string
@@ -302,13 +314,13 @@ func TestPagination_PaginateSegments(t *testing.T) {
 		Limit  int
 	}
 	type args struct {
-		a *cs.PaginatedSegments
+		a *types.PaginatedSegments
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   *cs.PaginatedSegments
+		want   *types.PaginatedSegments
 	}{
 		{
 			name: "Nothing to paginate",
@@ -326,7 +338,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  sliceSize / 2,
 			},
 			args: args{paginatedSegments},
-			want: &cs.PaginatedSegments{
+			want: &types.PaginatedSegments{
 				Segments:   paginatedSegments.Segments[:sliceSize/2],
 				TotalCount: paginatedSegments.TotalCount,
 			},
@@ -338,7 +350,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  sliceSize / 2,
 			},
 			args: args{paginatedSegments},
-			want: &cs.PaginatedSegments{
+			want: &types.PaginatedSegments{
 				Segments:   paginatedSegments.Segments[5 : 5+sliceSize/2],
 				TotalCount: paginatedSegments.TotalCount,
 			},
@@ -350,7 +362,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  0,
 			},
 			args: args{paginatedSegments},
-			want: &cs.PaginatedSegments{Segments: cs.SegmentSlice{}},
+			want: &types.PaginatedSegments{Segments: types.SegmentSlice{}},
 		},
 		{
 			name: "Paginate outer offset",
@@ -359,7 +371,7 @@ func TestPagination_PaginateSegments(t *testing.T) {
 				Limit:  sliceSize,
 			},
 			args: args{paginatedSegments},
-			want: &cs.PaginatedSegments{Segments: cs.SegmentSlice{}},
+			want: &types.PaginatedSegments{Segments: types.SegmentSlice{}},
 		},
 	}
 	for _, tt := range tests {
@@ -452,43 +464,49 @@ func TestEvents(t *testing.T) {
 	t.Run("SavedLinks constructor", func(t *testing.T) {
 		e := store.NewSavedLinks()
 		assert.EqualValues(t, store.SavedLinks, e.EventType)
-		assert.IsType(t, []*cs.Link{}, e.Data, "Event.Data should be a slice of *cs.Link")
+		assert.IsType(t, []*chainscript.Link{}, e.Data, "Event.Data should be a slice of *chainscript.Link")
 	})
 
 	t.Run("Links can be added to SavedLinks event", func(t *testing.T) {
 		e := store.NewSavedLinks()
 		assert.Empty(t, e.Data, "Links should be initially empty")
 
-		e.AddSavedLinks(cstesting.RandomLink(), cstesting.RandomLink())
+		e.AddSavedLinks(
+			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
+			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
+		)
 		assert.Len(t, e.Data, 2, "Two links should have been added")
 	})
 
 	t.Run("SavedLinks event can be initialized with links", func(t *testing.T) {
-		e := store.NewSavedLinks(cstesting.RandomLink(), cstesting.RandomLink())
+		e := store.NewSavedLinks(
+			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
+			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
+		)
 		assert.Len(t, e.Data, 2, "Links should be initially empty")
 	})
 
 	t.Run("SavedEvidences constructor", func(t *testing.T) {
 		e := store.NewSavedEvidences()
 		assert.EqualValues(t, store.SavedEvidences, e.EventType)
-		assert.IsType(t, map[string]*cs.Evidence{}, e.Data, "Event.Data should be a map of string/*cs.Evidence")
+		assert.IsType(t, map[string]*chainscript.Evidence{}, e.Data, "Event.Data should be a map of string/*chainscript.Evidence")
 	})
 
 	t.Run("Evidence can be added to SavedEvidences event", func(t *testing.T) {
 		e := store.NewSavedEvidences()
 		assert.Empty(t, e.Data, "Evidences should be initially empty")
 
-		linkHash := testutil.RandomHash()
-		evidence := cstesting.RandomEvidence()
+		linkHash := chainscript.LinkHash(chainscripttest.RandomHash())
+		evidence := chainscripttest.RandomEvidence(t)
 		e.AddSavedEvidence(linkHash, evidence)
 
 		assert.Len(t, e.Data, 1, "An evidence should have been added")
-		evidences := e.Data.(map[string]*cs.Evidence)
+		evidences := e.Data.(map[string]*chainscript.Evidence)
 		assert.EqualValues(t, evidence, evidences[linkHash.String()], "Invalid evidence")
 	})
 
 	t.Run("SavedLinks serialization", func(t *testing.T) {
-		link := cstesting.RandomLink()
+		link := chainscripttest.NewLinkBuilder(t).WithRandomData().Build()
 		e := store.NewSavedLinks(link)
 
 		b, err := json.Marshal(e)
@@ -499,15 +517,15 @@ func TestEvents(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualValues(t, e.EventType, e2.EventType, "Invalid event type")
 
-		links := e2.Data.([]*cs.Link)
+		links := e2.Data.([]*chainscript.Link)
 		assert.Len(t, links, 1, "Invalid number of links")
 		assert.EqualValues(t, link, links[0], "Invalid link")
 	})
 
 	t.Run("SavedEvidences serialization", func(t *testing.T) {
 		e := store.NewSavedEvidences()
-		evidence := cstesting.RandomEvidence()
-		linkHash := testutil.RandomHash()
+		evidence := chainscripttest.RandomEvidence(t)
+		linkHash := chainscript.LinkHash(chainscripttest.RandomHash())
 		e.AddSavedEvidence(linkHash, evidence)
 
 		b, err := json.Marshal(e)
@@ -518,7 +536,7 @@ func TestEvents(t *testing.T) {
 		assert.NoError(t, err)
 		assert.EqualValues(t, e.EventType, e2.EventType, "Invalid event type")
 
-		evidences := e2.Data.(map[string]*cs.Evidence)
+		evidences := e2.Data.(map[string]*chainscript.Evidence)
 		deserialized := evidences[linkHash.String()]
 		deserialized.Proof = nil
 		assert.EqualValues(t, evidence, deserialized, "Invalid evidence")

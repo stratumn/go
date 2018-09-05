@@ -56,7 +56,7 @@ func (s SegmentSlice) Less(i, j int) bool {
 		return false
 	}
 
-	return s1.LinkHashString() < s2.LinkHashString()
+	return s1.LinkHash().String() < s2.LinkHash().String()
 }
 
 // Sort returns the sorted segment slice.

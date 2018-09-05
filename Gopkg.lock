@@ -257,30 +257,6 @@
   revision = "553a641470496b2327abcac10b36396bd98e45c9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9abc49f39e3e23e262594bb4fb70abf74c0c99e94f99153f43b143805e850719"
-  name = "github.com/google/go-querystring"
-  packages = ["query"]
-  pruneopts = ""
-  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
-
-[[projects]]
-  digest = "1:20ed7daa9b3b38b6d1d39b48ab3fd31122be5419461470d0c28de3e121c93ecf"
-  name = "github.com/gorilla/context"
-  packages = ["."]
-  pruneopts = ""
-  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
-  version = "v1.1"
-
-[[projects]]
-  digest = "1:aa016bbb412f496a7baed9e02787a60cd15c9a3edfa72da9c4a95d6cea610334"
-  name = "github.com/gorilla/mux"
-  packages = ["."]
-  pruneopts = ""
-  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
-  version = "v1.6.1"
-
-[[projects]]
   digest = "1:64d212c703a2b94054be0ce470303286b177ad260b2f89a307e3d1bb6c073ef6"
   name = "github.com/gorilla/websocket"
   packages = ["."]
@@ -490,14 +466,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fc34cfb2a143c98e589eb14446f2794eefc4ce0a3718a0a9339559761cb7824f"
+  digest = "1:9b4781416cbee46c4223ced107f562d8ef414c6ffd96fdbbcfa8ac947ed2b905"
   name = "github.com/stratumn/go-chainscript"
   packages = [
     ".",
     "chainscripttest",
   ]
   pruneopts = ""
-  revision = "7fafb3d957a903196e29d4c722f4a5b4be3a7ce2"
+  revision = "75f39a80b1455d89c1c4026dea365fbe6179f68b"
 
 [[projects]]
   digest = "1:3536bd8a6bec567bdd0d79679c180f80bddaa8a0adf23d3dafd8e6661f9676cb"
@@ -887,8 +863,6 @@
     "github.com/fsnotify/fsnotify",
     "github.com/gibson042/canonicaljson-go",
     "github.com/golang/mock/gomock",
-    "github.com/google/go-querystring/query",
-    "github.com/gorilla/mux",
     "github.com/gorilla/websocket",
     "github.com/julienschmidt/httprouter",
     "github.com/lib/pq",
