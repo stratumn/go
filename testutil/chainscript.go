@@ -19,6 +19,8 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stretchr/testify/require"
 )
 
 // RandomLink creates a link with random data.
@@ -38,5 +40,15 @@ func RandomEvidence(t *testing.T) *chainscript.Evidence {
 		Backend:  chainscripttest.RandomString(6),
 		Provider: chainscripttest.RandomString(10),
 		Proof:    chainscripttest.RandomBytes(64),
+	}
+}
+
+// PaginatedSegmentsEqual verifies that two paginated segment lists are equal.
+func PaginatedSegmentsEqual(t *testing.T, s1, s2 *types.PaginatedSegments) {
+	require.Equal(t, s1.TotalCount, s2.TotalCount, "TotalCount")
+	require.Equal(t, len(s1.Segments), len(s2.Segments), "Length")
+
+	for i := 0; i < len(s1.Segments); i++ {
+		chainscripttest.SegmentsEqual(t, s1.Segments[i], s2.Segments[i])
 	}
 }

@@ -16,12 +16,10 @@ package storehttp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
@@ -35,6 +33,7 @@ import (
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const zeros = "0000000000000000000000000000000000000000000000000000000000000000"
@@ -45,19 +44,11 @@ func TestRoot(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.StatusCode = %d want %d", got, want)
-	}
-	if got, want := body["adapter"].(string), "test"; got != want {
-		t.Errorf(`body["adapter"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetInfo.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetInfo.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "test", body["adapter"].(string))
+	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
 func TestRoot_err(t *testing.T) {
@@ -66,91 +57,54 @@ func TestRoot_err(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetInfo.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetInfo.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
 func TestCreateLink(t *testing.T) {
 	s, a := createServer()
-	a.MockCreateLink.Fn = func(l *chainscript.Link) (*types.Bytes32, error) { return l.Hash() }
+	a.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return l.Hash() }
 
 	l1 := chainscripttest.RandomLink(t)
 	var s1 chainscript.Segment
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &s1)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if !reflect.DeepEqual(a.MockCreateLink.LastCalledWith, l1) {
-		got, _ := json.MarshalIndent(a.MockCreateLink.LastCalledWith, "", "  ")
-		want, _ := json.MarshalIndent(l1, "", "  ")
-		t.Errorf("a.MockCreateLink.LastCalledWith = %s\nwant %s", got, want)
-	}
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(&s1.Link, l1) {
-		got, _ := json.MarshalIndent(&s1.Link, "", "  ")
-		want, _ := json.MarshalIndent(l1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockCreateLink.CalledCount, 1; got != want {
-		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockCreateLink.CalledCount)
+	chainscripttest.LinksEqual(t, l1, a.MockCreateLink.LastCalledWith)
+	chainscripttest.LinksEqual(t, l1, s1.Link)
 }
 
 func TestCreateLink_err(t *testing.T) {
 	s, a := createServer()
-	a.MockCreateLink.Fn = func(l *chainscript.Link) (*types.Bytes32, error) { return nil, errors.New("test") }
+	a.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return nil, errors.New("test") }
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", chainscripttest.RandomLink(t), &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockCreateLink.CalledCount, 1; got != want {
-		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockCreateLink.CalledCount)
 }
 
 func TestCreateLink_invalidLink(t *testing.T) {
 	s, a := createServer()
 
 	l1 := chainscripttest.RandomLink(t)
-	l1.Meta.Process = ""
+	l1.Meta.Process.Name = ""
+
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), "link.meta.process should be a non empty string"; got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
-		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrBadRequest("").Status(), w.Code)
+	assert.Equal(t, "link process is missing", body["error"].(string))
+	assert.Zero(t, a.MockCreateLink.CalledCount)
 }
 
 func TestCreateLink_invalidJSON(t *testing.T) {
@@ -158,94 +112,58 @@ func TestCreateLink_invalidJSON(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", "azertyuio", &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrBadRequest("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), "json: cannot unmarshal string into Go value of type chainscript.Link"; got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockCreateLink.CalledCount, 0; got != want {
-		t.Errorf("a.MockCreateLink.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrBadRequest("").Status(), w.Code)
+	assert.Equal(t, "json: cannot unmarshal string into Go value of type chainscript.Link", body["error"].(string))
+	assert.Zero(t, a.MockCreateLink.CalledCount)
 }
 
 func TestAddEvidence(t *testing.T) {
 	s, a := createServer()
-	a.MockAddEvidence.Fn = func(*types.Bytes32, *chainscript.Evidence) error { return nil }
+	a.MockAddEvidence.Fn = func(chainscript.LinkHash, *chainscript.Evidence) error { return nil }
 
 	link := chainscripttest.RandomLink(t)
-	linkHash, _ := link.HashString()
+	linkHash, _ := link.Hash()
 	e := chainscripttest.RandomEvidence(t)
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash, e, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash.String(), e, &body)
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := a.MockAddEvidence.LastCalledWith.Provider, e.Provider; got != want {
-		t.Errorf("a.MockAddEvidence.LastCalledWith = %s\nwant %s", got, want)
-	}
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-
-	if got, want := a.MockAddEvidence.CalledCount, 1; got != want {
-		t.Errorf("a.MockAddEvidence.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, e.Provider, a.MockAddEvidence.LastCalledWith.Provider)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockAddEvidence.CalledCount)
 }
 
 func TestAddEvidence_err(t *testing.T) {
 	s, a := createServer()
-	a.MockAddEvidence.Fn = func(*types.Bytes32, *chainscript.Evidence) error { return errors.New("test") }
+	a.MockAddEvidence.Fn = func(chainscript.LinkHash, *chainscript.Evidence) error { return errors.New("test") }
 
 	link := chainscripttest.RandomLink(t)
-	linkHash, _ := link.HashString()
+	linkHash, _ := link.Hash()
 	e := chainscripttest.RandomEvidence(t)
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash, e, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockAddEvidence.CalledCount, 1; got != want {
-		t.Errorf("a.MockAddEvidence.CalledCount = %d want %d", got, want)
-	}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash.String(), e, &body)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockAddEvidence.CalledCount)
 }
 
 func TestGetSegment(t *testing.T) {
 	s, a := createServer()
 	s1 := chainscripttest.RandomSegment(t)
-	a.MockGetSegment.Fn = func(*types.Bytes32) (*chainscript.Segment, error) { return s1, nil }
+	a.MockGetSegment.Fn = func(chainscript.LinkHash) (*chainscript.Segment, error) { return s1, nil }
 
 	var s2 chainscript.Segment
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := a.MockGetSegment.LastCalledWith.String(), zeros; got != want {
-		t.Errorf("a.MockGetSegment.LastCalledWith = %q\nwant %q", got, want)
-	}
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(&s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockGetSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetSegment.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, zeros, a.MockGetSegment.LastCalledWith.String())
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
+	chainscripttest.SegmentsEqual(t, s1, &s2)
 }
 
 func TestGetSegment_notFound(t *testing.T) {
@@ -253,46 +171,26 @@ func TestGetSegment_notFound(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := a.MockGetSegment.LastCalledWith.String(), zeros; got != want {
-		t.Errorf("a.MockGetSegment.LastCalledWith = %q\nwant %q", got, want)
-	}
-	if got, want := w.Code, jsonhttp.NewErrNotFound("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetSegment.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, zeros, a.MockGetSegment.LastCalledWith.String())
+	assert.Equal(t, jsonhttp.NewErrNotFound("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrNotFound("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
 }
 
 func TestGetSegment_err(t *testing.T) {
 	s, a := createServer()
-	a.MockGetSegment.Fn = func(*types.Bytes32) (*chainscript.Segment, error) { return nil, errors.New("error") }
+	a.MockGetSegment.Fn = func(chainscript.LinkHash) (*chainscript.Segment, error) { return nil, errors.New("error") }
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := a.MockGetSegment.LastCalledWith.String(), zeros; got != want {
-		t.Errorf("a.MockGetSegment.LastCalledWith = %q\nwant %q", got, want)
-	}
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetSegment.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetSegment.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, zeros, a.MockGetSegment.LastCalledWith.String())
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
 }
 
 func TestFindSegments(t *testing.T) {
@@ -305,42 +203,18 @@ func TestFindSegments(t *testing.T) {
 
 	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags%5B%5D=one&tags%5B%5D=two", nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 1; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
 
 	f := a.MockFindSegments.LastCalledWith
-	if got, want := f.Offset, 1; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Offset = %d want %d", got, want)
-	}
-	if got, want := f.Limit, 2; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Limit = %d want %d", got, want)
-	}
-	if got, want := len(f.MapIDs), 1; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	} else if got, want := f.MapIDs[0], "123"; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	}
-	if got := f.PrevLinkHash; got == nil {
-		t.Error("a.MockFindSegments.LastCalledWith.PrevLinkHash is nil")
-	} else if got, want := *f.PrevLinkHash, zeros; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
-	}
-	if got, want := f.Tags, []string{"one", "two"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Tags = %v want %v", got, want)
-	}
+	assert.Equal(t, 1, f.Offset)
+	assert.Equal(t, 2, f.Limit)
+	assert.Equal(t, []string{"123"}, f.MapIDs)
+	assert.Equal(t, zeros, *f.PrevLinkHash)
+	assert.Equal(t, []string{"one", "two"}, f.Tags)
 }
 
 func TestFindSegments_multipleMapIDs(t *testing.T) {
@@ -353,44 +227,18 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 
 	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds[]=123&mapIds[]=456&prevLinkHash="+zeros+"&tags[]=one&tags%5B%5D=two", nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 1; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
 
 	f := a.MockFindSegments.LastCalledWith
-	if got, want := f.Offset, 1; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Offset = %d want %d", got, want)
-	}
-	if got, want := f.Limit, 2; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Limit = %d want %d", got, want)
-	}
-	if got, want := len(f.MapIDs), 2; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	} else if got, want := f.MapIDs[0], "123"; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	} else if got, want := f.MapIDs[1], "456"; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	}
-	if got := f.PrevLinkHash; got == nil {
-		t.Error("a.MockFindSegments.LastCalledWith.PrevLinkHash is nil")
-	} else if got, want := *f.PrevLinkHash, zeros; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
-	}
-	if got, want := f.Tags, []string{"one", "two"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Tags = %v want %v", got, want)
-	}
+	assert.Equal(t, 1, f.Offset)
+	assert.Equal(t, 2, f.Limit)
+	assert.Equal(t, []string{"123", "456"}, f.MapIDs)
+	assert.Equal(t, zeros, *f.PrevLinkHash)
+	assert.Equal(t, []string{"one", "two"}, f.Tags)
 }
 
 func TestFindSegments_multipleLinkHashes(t *testing.T) {
@@ -405,7 +253,7 @@ func TestFindSegments_multipleLinkHashes(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&linkHashes[]="+zeros+"&linkHashes%5B%5D="+zeros, nil, &s2)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, s1, s2)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
 	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
 
 	f := a.MockFindSegments.LastCalledWith
@@ -426,42 +274,18 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 
 	s2 := &types.PaginatedSegments{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags[]=one&tags[]=two", nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if !reflect.DeepEqual(s2, s1) {
-		got, _ := json.MarshalIndent(s2, "", "  ")
-		want, _ := json.MarshalIndent(s1, "", "  ")
-		t.Errorf("s2 = %s\nwant %s", got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 1; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
 
 	f := a.MockFindSegments.LastCalledWith
-	if got, want := f.Offset, 1; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Offset = %d want %d", got, want)
-	}
-	if got, want := f.Limit, store.DefaultLimit; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Limit = %d want %d", got, want)
-	}
-	if got, want := len(f.MapIDs), 1; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	} else if got, want := f.MapIDs[0], "123"; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.MapIDs = %q want %q", got, want)
-	}
-	if got := f.PrevLinkHash; got == nil {
-		t.Error("a.MockFindSegments.LastCalledWith.PrevLinkHash is nil")
-	} else if got, want := *f.PrevLinkHash, zeros; got != want {
-		t.Errorf("a.MockFindSegments.LastCalledWith.PrevLinkHash = %q want %q", got, want)
-	}
-	if got, want := f.Tags, []string{"one", "two"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("a.MockFindSegments.LastCalledWith.Tags = %v want %v", got, want)
-	}
+	assert.Equal(t, 1, f.Offset)
+	assert.Equal(t, store.DefaultLimit, f.Limit)
+	assert.Equal(t, []string{"123"}, f.MapIDs)
+	assert.Equal(t, zeros, *f.PrevLinkHash)
+	assert.Equal(t, []string{"one", "two"}, f.Tags)
 }
 
 func TestFindSegments_err(t *testing.T) {
@@ -472,19 +296,11 @@ func TestFindSegments_err(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 1; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
 }
 
 func TestFindSegments_invalidOffset(t *testing.T) {
@@ -492,19 +308,11 @@ func TestFindSegments_invalidOffset(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=a", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, newErrOffset("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), newErrOffset("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 0; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, newErrOffset("").Status(), w.Code)
+	assert.Equal(t, newErrOffset("").Error(), body["error"].(string))
+	assert.Zero(t, a.MockFindSegments.CalledCount)
 }
 
 func TestFindSegments_invalidPrevLinkHash(t *testing.T) {
@@ -512,26 +320,20 @@ func TestFindSegments_invalidPrevLinkHash(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?prevLinkHash=3", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, newErrPrevLinkHash("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), newErrPrevLinkHash("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockFindSegments.CalledCount, 0; got != want {
-		t.Errorf("a.MockFindSegments.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, newErrPrevLinkHash("").Status(), w.Code)
+	assert.Equal(t, newErrPrevLinkHash("").Error(), body["error"].(string))
+	assert.Zero(t, a.MockFindSegments.CalledCount)
 }
+
 func TestFindSegments_invalidLinkHashes(t *testing.T) {
 	s, a := createServer()
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?linkHashes[]=3", nil, &body)
-	assert.NoError(t, err)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
 	assert.Equal(t, newErrLinkHashes("").Status(), w.Code)
 	assert.Equal(t, newErrLinkHashes("").Error(), body["error"].(string))
 	assert.Equal(t, 0, a.MockFindSegments.CalledCount)
@@ -544,27 +346,15 @@ func TestGetMapIDs(t *testing.T) {
 
 	var s2 []string
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/maps?offset=20&limit=10", nil, &s2)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := s2, s1; !reflect.DeepEqual(got, want) {
-		t.Errorf("s2 = %v want %v", got, want)
-	}
-	if got, want := a.MockGetMapIDs.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetMapIDs(pagination).CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockGetMapIDs.CalledCount)
+	assert.ElementsMatch(t, s1, s2)
 
 	p := a.MockGetMapIDs.LastCalledWith
-	if got, want := p.Offset, 20; got != want {
-		t.Errorf("a.MockGetMapIDs.LastCalledWith.Offset = %d want %d", got, want)
-	}
-	if got, want := p.Limit, 10; got != want {
-		t.Errorf("a.MockGetMapIDs.LastCalledWith.Limit = %d want %d", got, want)
-	}
+	assert.Equal(t, 20, p.Offset)
+	assert.Equal(t, 10, p.Limit)
 }
 
 func TestGetMapIDs_err(t *testing.T) {
@@ -573,19 +363,11 @@ func TestGetMapIDs_err(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/maps", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetMapIDs.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetMapIDs.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, 1, a.MockGetMapIDs.CalledCount)
 }
 
 func TestGetMapIDs_invalidLimit(t *testing.T) {
@@ -593,19 +375,11 @@ func TestGetMapIDs_invalidLimit(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/maps?limit=-1", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, newErrOffset("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), newErrLimit("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetMapIDs.CalledCount, 0; got != want {
-		t.Errorf("a.MockGetMapIDs.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, newErrOffset("").Status(), w.Code)
+	assert.Equal(t, newErrLimit("").Error(), body["error"].(string))
+	assert.Zero(t, a.MockGetMapIDs.CalledCount)
 }
 
 func TestGetMapIDs_limitTooLarge(t *testing.T) {
@@ -614,19 +388,11 @@ func TestGetMapIDs_limitTooLarge(t *testing.T) {
 	var body map[string]interface{}
 	limit := store.MaxLimit + 1
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", fmt.Sprintf("/maps?limit=%d", limit), nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, newErrOffset("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), newErrLimit("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetMapIDs.CalledCount, 0; got != want {
-		t.Errorf("a.MockGetMapIDs.CalledCount = %d want %d", got, want)
-	}
+	assert.Equal(t, newErrOffset("").Status(), w.Code)
+	assert.Equal(t, newErrLimit("").Error(), body["error"].(string))
+	assert.Zero(t, a.MockGetMapIDs.CalledCount)
 }
 
 func TestNotFound(t *testing.T) {
@@ -634,16 +400,10 @@ func TestNotFound(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/azerty", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
+	require.NoError(t, err, "testutil.RequestJSON()")
 
-	if got, want := w.Code, jsonhttp.NewErrNotFound("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
+	assert.Equal(t, jsonhttp.NewErrNotFound("").Status(), w.Code)
+	assert.Equal(t, jsonhttp.NewErrNotFound("").Error(), body["error"].(string))
 }
 
 func TestGetSocket(t *testing.T) {
@@ -706,26 +466,20 @@ func TestGetSocket(t *testing.T) {
 		select {
 		case <-readyChan:
 		case <-time.After(time.Second):
-			t.Fatalf("connection ready timeout")
+			require.Fail(t, "connection ready timeout")
 		}
 		c <- event
 	case <-time.After(time.Second):
-		t.Fatalf("save channel not added")
+		require.Fail(t, "save channel not added")
 	}
 
 	// Wait for message to be broadcasted.
 	select {
 	case <-doneChan:
 		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message).Data.([]*chainscript.Link)
-		if len(got) != 1 {
-			t.Fatalf("Invalid number of links in json data")
-		}
-		if !reflect.DeepEqual(got[0], link) {
-			gotjs, _ := json.MarshalIndent(got, "", "  ")
-			wantjs, _ := json.MarshalIndent(link, "", "  ")
-			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
-		}
+		require.Len(t, got, 1)
+		chainscripttest.LinksEqual(t, link, got[0])
 	case <-time.After(2 * time.Second):
-		t.Fatalf("saved segment not broadcasted")
+		require.Fail(t, "saved segment not broadcasted")
 	}
 }

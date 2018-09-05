@@ -524,7 +524,12 @@ func TestEvents(t *testing.T) {
 
 	t.Run("SavedEvidences serialization", func(t *testing.T) {
 		e := store.NewSavedEvidences()
-		evidence := chainscripttest.RandomEvidence(t)
+		evidence := &chainscript.Evidence{
+			Version:  "1.0.0",
+			Backend:  chainscripttest.RandomString(8),
+			Provider: chainscripttest.RandomString(10),
+		}
+
 		linkHash := chainscript.LinkHash(chainscripttest.RandomHash())
 		e.AddSavedEvidence(linkHash, evidence)
 
@@ -538,8 +543,6 @@ func TestEvents(t *testing.T) {
 
 		evidences := e2.Data.(map[string]*chainscript.Evidence)
 		deserialized := evidences[linkHash.String()]
-		deserialized.Proof = nil
 		assert.EqualValues(t, evidence, deserialized, "Invalid evidence")
 	})
-
 }

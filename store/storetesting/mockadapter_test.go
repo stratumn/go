@@ -77,13 +77,13 @@ func TestMockAdapter_GetSegment(t *testing.T) {
 
 	s1, _ := chainscripttest.RandomLink(t).Segmentify()
 	a.MockGetSegment.Fn = func(linkHash chainscript.LinkHash) (*chainscript.Segment, error) { return s1, nil }
-	linkHash2 := chainscripttest.RandomHash()
+	linkHash2 := chainscript.LinkHash(chainscripttest.RandomHash())
 	s2, err := a.GetSegment(context.Background(), linkHash2)
 	require.NoError(t, err)
 
 	assert.Equal(t, s1, s2)
 	assert.Equal(t, 2, a.MockGetSegment.CalledCount)
-	assert.Equal(t, [][]byte{linkHash1, linkHash2}, a.MockGetSegment.CalledWith)
+	assert.Equal(t, []chainscript.LinkHash{linkHash1, linkHash2}, a.MockGetSegment.CalledWith)
 	assert.Equal(t, linkHash2, a.MockGetSegment.LastCalledWith)
 }
 
