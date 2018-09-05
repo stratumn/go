@@ -18,8 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,21 +31,21 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 	c := make(chan *store.Event, 10)
 	a.AddStoreEventChannel(c)
 
-	link := cstesting.RandomLink()
+	link := RandomLink(t)
 	linkHash, err := a.CreateLink(context.Background(), link)
 	assert.NoError(t, err, "a.CreateLink()")
 
 	t.Run("Link saved event should be sent to channel", func(t *testing.T) {
 		got := <-c
 		assert.EqualValues(t, store.SavedLinks, got.EventType, "Invalid event type")
-		links := got.Data.([]*cs.Link)
+		links := got.Data.([]*chainscript.Link)
 		assert.Equal(t, 1, len(links), "Invalid number of links")
 		assert.EqualValues(t, link, links[0], "Invalid link")
 	})
 
 	t.Run("Evidence saved event should be sent to channel", func(t *testing.T) {
 		ctx := context.Background()
-		evidence := cstesting.RandomEvidence()
+		evidence := chainscript.NewEvidence("1.0.0", "btc", "testnet", []byte{42})
 		err = a.AddEvidence(ctx, linkHash, evidence)
 		assert.NoError(t, err, "a.AddEvidence()")
 
@@ -60,7 +59,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 				continue
 			}
 
-			evidences := got.Data.(map[string]*cs.Evidence)
+			evidences := got.Data.(map[string]*chainscript.Evidence)
 			e, found := evidences[linkHash.String()]
 			if found && e.Backend == evidence.Backend {
 				break
@@ -68,7 +67,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 		}
 
 		assert.EqualValues(t, store.SavedEvidences, got.EventType, "Expected saved evidences")
-		evidences := got.Data.(map[string]*cs.Evidence)
+		evidences := got.Data.(map[string]*chainscript.Evidence)
 		assert.EqualValues(t, evidence, evidences[linkHash.String()])
 	})
 }

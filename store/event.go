@@ -16,10 +16,10 @@
 package store
 
 import (
+	"encoding/hex"
 	"encoding/json"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-chainscript"
 )
 
 // EventType lets you know the kind of event received.
@@ -40,8 +40,8 @@ type Event struct {
 }
 
 // NewSavedLinks creates a new event to notify links were saved.
-func NewSavedLinks(linkArgs ...*cs.Link) *Event {
-	links := make([]*cs.Link, 0, len(linkArgs))
+func NewSavedLinks(linkArgs ...*chainscript.Link) *Event {
+	links := make([]*chainscript.Link, 0, len(linkArgs))
 	links = append(links, linkArgs...)
 	return &Event{
 		EventType: SavedLinks,
@@ -51,15 +51,15 @@ func NewSavedLinks(linkArgs ...*cs.Link) *Event {
 
 // AddSavedLinks adds links to the event.
 // It assumes the event is a correctly initialized SavedLinks event.
-func (event *Event) AddSavedLinks(links ...*cs.Link) {
-	linksData := event.Data.([]*cs.Link)
+func (event *Event) AddSavedLinks(links ...*chainscript.Link) {
+	linksData := event.Data.([]*chainscript.Link)
 	linksData = append(linksData, links...)
 	event.Data = linksData
 }
 
 // NewSavedEvidences creates a new event to notify evidences were saved.
 func NewSavedEvidences() *Event {
-	evidences := make(map[string]*cs.Evidence)
+	evidences := make(map[string]*chainscript.Evidence)
 	return &Event{
 		EventType: SavedEvidences,
 		Data:      evidences,
@@ -68,9 +68,9 @@ func NewSavedEvidences() *Event {
 
 // AddSavedEvidence adds an evidence to the event.
 // It assumes the event is a correctly initialized SavedEvidences event.
-func (event *Event) AddSavedEvidence(linkHash *types.Bytes32, e *cs.Evidence) {
-	evidencesData := event.Data.(map[string]*cs.Evidence)
-	evidencesData[linkHash.String()] = e
+func (event *Event) AddSavedEvidence(linkHash []byte, e *chainscript.Evidence) {
+	evidencesData := event.Data.(map[string]*chainscript.Evidence)
+	evidencesData[hex.EncodeToString(linkHash)] = e
 	event.Data = evidencesData
 }
 
@@ -88,13 +88,13 @@ func (event *Event) UnmarshalJSON(b []byte) error {
 	var data interface{}
 	switch partial.EventType {
 	case SavedLinks:
-		var links []*cs.Link
+		var links []*chainscript.Link
 		if err := json.Unmarshal(partial.Data, &links); err != nil {
 			return err
 		}
 		data = links
 	case SavedEvidences:
-		var evidences map[string]*cs.Evidence
+		var evidences map[string]*chainscript.Evidence
 		if err := json.Unmarshal(partial.Data, &evidences); err != nil {
 			return err
 		}

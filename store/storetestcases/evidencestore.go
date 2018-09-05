@@ -18,8 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stretchr/testify/require"
 	// Needed to serialize fossilizers evidence types.
 	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
@@ -32,19 +31,19 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	l := cstesting.RandomLink()
+	l := RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), l)
 
 	s := store.EvidenceStore(a)
 
 	t.Run("Adding evidences to a segment should work", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
-		e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
-		e3 := cs.Evidence{Backend: "batch", Provider: "3"}
-		e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
-		e5 := cs.Evidence{Backend: "generic", Provider: "5"}
-		evidences := []*cs.Evidence{&e1, &e2, &e3, &e4, &e5}
+		e1 := chainscript.Evidence{Backend: "TMPop", Provider: "1"}
+		e2 := chainscript.Evidence{Backend: "dummy", Provider: "2"}
+		e3 := chainscript.Evidence{Backend: "batch", Provider: "3"}
+		e4 := chainscript.Evidence{Backend: "bcbatch", Provider: "4"}
+		e5 := chainscript.Evidence{Backend: "generic", Provider: "5"}
+		evidences := []*chainscript.Evidence{&e1, &e2, &e3, &e4, &e5}
 
 		for _, evidence := range evidences {
 			err := s.AddEvidence(ctx, linkHash, evidence)
@@ -63,8 +62,8 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 	t.Run("Duplicate evidences should be discarded", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "TMPop", Provider: "42"}
-		e2 := cs.Evidence{Backend: "dummy", Provider: "42"}
+		e1 := chainscript.Evidence{Backend: "TMPop", Provider: "42"}
+		e2 := chainscript.Evidence{Backend: "dummy", Provider: "42"}
 
 		err := s.AddEvidence(ctx, linkHash, &e1)
 		require.NoError(t, err, "s.AddEvidence()")

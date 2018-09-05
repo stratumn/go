@@ -23,8 +23,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
@@ -38,11 +38,11 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 
 	processNames := [2]string{"Foo", "Bar"}
 	testPageSize := 3
-	maps := make(map[string]*cs.Link, 4)
+	maps := make(map[string]*chainscript.Link, 4)
 	for i := 0; i < testPageSize; i++ {
 		mapID := fmt.Sprintf("map%d", i)
 		for j := 0; j < testPageSize; j++ {
-			l := cstesting.NewLinkBuilder().
+			l := chainscripttest.NewLinkBuilder(t).
 				WithProcess(processNames[i%2]).
 				WithMapID(mapID).
 				Build()
@@ -53,7 +53,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 	}
 
 	mapID := "other-map2"
-	l := cstesting.NewLinkBuilder().
+	l := chainscripttest.NewLinkBuilder(t).
 		WithMapID(mapID).
 		Build()
 	_, err := a.CreateLink(context.Background(), l)

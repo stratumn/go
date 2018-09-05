@@ -22,12 +22,13 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
 	bcbatchevidences "github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +36,7 @@ import (
 var emptyPrevLinkHash = ""
 var priorities = sort.Float64Slice{}
 
-func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
+func createLink(adapter store.Adapter, link *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {
 	if prepareLink != nil {
 		prepareLink(link)
 	}
@@ -48,15 +49,15 @@ func createLink(adapter store.Adapter, link *cs.Link, prepareLink func(l *cs.Lin
 	return link
 }
 
-func createRandomLink(adapter store.Adapter, prepareLink func(l *cs.Link)) *cs.Link {
-	return createLink(adapter, cstesting.RandomLink(), prepareLink)
+func createRandomLink(adapter store.Adapter, prepareLink func(l *chainscript.Link)) *chainscript.Link {
+	return createLink(adapter, RandomLink(t), prepareLink)
 }
 
-func createLinkBranch(adapter store.Adapter, parent *cs.Link, prepareLink func(l *cs.Link)) *cs.Link {
-	return createLink(adapter, cstesting.NewLinkBuilder().Branch(parent).Build(), prepareLink)
+func createLinkBranch(adapter store.Adapter, parent *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {
+	return createLink(adapter, chainscripttest.NewLinkBuilder(t).Branch(parent).Build(), prepareLink)
 }
 
-func verifyPriorities(t *testing.T, segments *cs.PaginatedSegments, offset int, reverse bool) {
+func verifyPriorities(t *testing.T, segments *types.PaginatedSegments, offset int, reverse bool) {
 	sort.Sort(sort.Reverse(priorities))
 	want, op := 100.0, "<="
 	f := func(got, want float64) func() bool { return func() bool { return got <= want } }
@@ -73,15 +74,15 @@ func verifyPriorities(t *testing.T, segments *cs.PaginatedSegments, offset int, 
 	}
 }
 
-func verifyPriorityOrdering(t *testing.T, segments *cs.PaginatedSegments, offset int) {
+func verifyPriorityOrdering(t *testing.T, segments *types.PaginatedSegments, offset int) {
 	verifyPriorities(t, segments, offset, false)
 }
 
-func verifyReversePriorityOrdering(t *testing.T, segments *cs.PaginatedSegments, offset int) {
+func verifyReversePriorityOrdering(t *testing.T, segments *types.PaginatedSegments, offset int) {
 	verifyPriorities(t, segments, offset, true)
 }
 
-func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount, expectedTotalCount int) {
+func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *types.PaginatedSegments, expectedCount, expectedTotalCount int) {
 	assert.NoError(t, err)
 	require.NotNil(t, segments)
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
@@ -89,7 +90,7 @@ func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *cs.Pagi
 	assert.Conditionf(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results. got: %d / expected less than %d", len(segments.Segments), segments.TotalCount)
 }
 
-func verifyResultsCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount int) {
+func verifyResultsCount(t *testing.T, err error, segments *types.PaginatedSegments, expectedCount int) {
 	verifyResultsCountWithTotalCount(t, err, segments, expectedCount, expectedCount)
 }
 
@@ -103,37 +104,37 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	testPageSize := 3
 	segmentsTotalCount := 8
 
-	createRandomLink(a, func(l *cs.Link) {
+	createRandomLink(a, func(l *chainscript.Link) {
 		l.Meta.MapID = "map1"
 		l.Meta.PrevLinkHash = ""
 		l.Meta.Process = "Foo"
 	})
 
-	createRandomLink(a, func(l *cs.Link) {
+	createRandomLink(a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", "tag42"}
 		l.Meta.MapID = "map2"
 	})
 
-	createRandomLink(a, func(l *cs.Link) {
+	createRandomLink(a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag2"}
 	})
 
 	link4 := createRandomLink(a, nil)
 	linkHash4, _ := link4.Hash()
 
-	createLinkBranch(a, link4, func(l *cs.Link) {
+	createLinkBranch(a, link4, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", testutil.RandomString(5)}
 		l.Meta.MapID = "map1"
 	})
 
-	link6 := createRandomLink(a, func(l *cs.Link) {
+	link6 := createRandomLink(a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag2", "tag42"}
 		l.Meta.Process = "Foo"
 		l.Meta.PrevLinkHash = ""
 	})
 	linkHash6, _ := link6.Hash()
 
-	createRandomLink(a, func(l *cs.Link) {
+	createRandomLink(a, func(l *chainscript.Link) {
 		l.Meta.MapID = "map2"
 	})
 
@@ -389,11 +390,11 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "dummy", Provider: "1", Proof: &cs.GenericProof{}}
-		e2 := cs.Evidence{Backend: "batch", Provider: "2", Proof: &batchevidences.BatchProof{}}
-		e3 := cs.Evidence{Backend: "bcbatch", Provider: "3", Proof: &bcbatchevidences.BcBatchProof{}}
-		e4 := cs.Evidence{Backend: "generic", Provider: "4"}
-		testEvidences := []cs.Evidence{e1, e2, e3, e4}
+		e1 := chainscript.Evidence{Backend: "dummy", Provider: "1", Proof: &chainscript.GenericProof{}}
+		e2 := chainscript.Evidence{Backend: "batch", Provider: "2", Proof: &batchevidences.BatchProof{}}
+		e3 := chainscript.Evidence{Backend: "bcbatch", Provider: "3", Proof: &bcbatchevidences.BcBatchProof{}}
+		e4 := chainscript.Evidence{Backend: "generic", Provider: "4"}
+		testEvidences := []chainscript.Evidence{e1, e2, e3, e4}
 
 		for _, e := range testEvidences {
 			err := a.AddEvidence(ctx, linkHash4, &e)
@@ -460,7 +461,7 @@ func (f Factory) BenchmarkFindSegments(b *testing.B, numLinks int, createLinkFun
 		if s, err := a.FindSegments(context.Background(), filters[i]); err != nil {
 			b.Fatal(err)
 		} else if s.Segments == nil {
-			b.Error("s = nil want cs.SegmentSlice")
+			b.Error("s = nil want types.SegmentSlice")
 		}
 	}
 }
@@ -616,7 +617,7 @@ func (f Factory) BenchmarkFindSegmentsParallel(b *testing.B, numLinks int, creat
 			if s, err := a.FindSegments(context.Background(), filters[i]); err != nil {
 				b.Error(err)
 			} else if s.Segments == nil {
-				b.Error("s = nil want cs.SegmentSlice")
+				b.Error("s = nil want types.SegmentSlice")
 			}
 		}
 	})

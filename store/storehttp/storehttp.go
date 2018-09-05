@@ -48,7 +48,7 @@ import (
 	"sync"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/jsonws"
 	"github.com/stratumn/go-indigocore/monitoring"
@@ -190,7 +190,7 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 
 	decoder := json.NewDecoder(r.Body)
 
-	var link cs.Link
+	var link chainscript.Link
 	if err := decoder.Decode(&link); err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
@@ -220,7 +220,7 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 
 	decoder := json.NewDecoder(r.Body)
 
-	var evidence cs.Evidence
+	var evidence chainscript.Evidence
 	if err := decoder.Decode(&evidence); err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
