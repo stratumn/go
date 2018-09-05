@@ -297,7 +297,7 @@ func (a *MockAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkH
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.Adapter.GetEvidences.
-func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) ([]*chainscript.Evidence, error) {
+func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	a.MockGetEvidences.CalledCount++
 	a.MockGetEvidences.CalledWith = append(a.MockGetEvidences.CalledWith, linkHash)
 	a.MockGetEvidences.LastCalledWith = linkHash

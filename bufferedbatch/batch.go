@@ -15,9 +15,10 @@
 package bufferedbatch
 
 import (
+	"bytes"
 	"context"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
@@ -33,7 +34,7 @@ import (
 // Only the Write method must be implemented.
 type Batch struct {
 	originalStore store.Adapter
-	Links         []*cs.Link
+	Links         []*chainscript.Link
 }
 
 // NewBatch creates a new Batch.
@@ -43,7 +44,7 @@ func NewBatch(ctx context.Context, a store.Adapter) *Batch {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32, err error) {
+func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chainscript.LinkHash, err error) {
 	_, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
@@ -52,7 +53,7 @@ func (b *Batch) CreateLink(ctx context.Context, link *cs.Link) (_ *types.Bytes32
 }
 
 // GetSegment returns a segment from the cache or delegates the call to the store.
-func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segment *cs.Segment, err error) {
+func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (segment *chainscript.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetSegment")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
@@ -62,8 +63,13 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segmen
 			return nil, err
 		}
 
-		if *lh == *linkHash {
-			segment = link.Segmentify()
+		if bytes.Equal(lh, linkHash) {
+			segment, err = link.Segmentify()
+			if err != nil {
+				return nil, err
+			}
+
+			break
 		}
 	}
 
@@ -75,7 +81,7 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segmen
 }
 
 // FindSegments returns the union of segments in the store and not committed yet.
-func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ *cs.PaginatedSegments, err error) {
+func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ *types.PaginatedSegments, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/FindSegments")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
@@ -86,7 +92,12 @@ func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 
 	for _, link := range b.Links {
 		if filter.MatchLink(link) {
-			segments.Segments = append(segments.Segments, link.Segmentify())
+			segment, err := link.Segmentify()
+			if err != nil {
+				return nil, err
+			}
+
+			segments.Segments = append(segments.Segments, segment)
 			segments.TotalCount++
 		}
 	}
@@ -111,7 +122,7 @@ func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []str
 	// Apply uncommitted links
 	for _, link := range b.Links {
 		if filter.MatchLink(link) {
-			mapIDs[link.Meta.MapID]++
+			mapIDs[link.Meta.MapId]++
 		}
 	}
 
