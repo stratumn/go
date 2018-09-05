@@ -41,8 +41,8 @@ var (
 )
 
 func init() {
-	prevLinkHashTestingValue = chainscript.LinkHash(chainscripttest.RandomHash()).String()
-	badLinkHashTestingValue = chainscript.LinkHash(chainscripttest.RandomHash()).String()
+	prevLinkHashTestingValue = chainscripttest.RandomHash().String()
+	badLinkHashTestingValue = chainscripttest.RandomHash().String()
 
 	paginatedSegments = &types.PaginatedSegments{}
 	paginatedSegments.Segments = make(types.SegmentSlice, sliceSize)
@@ -169,7 +169,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 			name: "LinkHashes ok",
 			fields: fields{
 				LinkHashes: []string{
-					chainscript.LinkHash(chainscripttest.RandomHash()).String(),
+					chainscripttest.RandomHash().String(),
 					linkHashesSegmentHash.String(),
 				},
 			},
@@ -178,7 +178,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 		},
 		{
 			name:   "LinkHashes ko",
-			fields: fields{LinkHashes: []string{chainscript.LinkHash(chainscripttest.RandomHash()).String()}},
+			fields: fields{LinkHashes: []string{chainscripttest.RandomHash().String()}},
 			args:   args{segment: defaultTestingSegment()},
 			want:   false,
 		},
@@ -496,7 +496,7 @@ func TestEvents(t *testing.T) {
 		e := store.NewSavedEvidences()
 		assert.Empty(t, e.Data, "Evidences should be initially empty")
 
-		linkHash := chainscript.LinkHash(chainscripttest.RandomHash())
+		linkHash := chainscripttest.RandomHash()
 		evidence := chainscripttest.RandomEvidence(t)
 		e.AddSavedEvidence(linkHash, evidence)
 
@@ -530,7 +530,7 @@ func TestEvents(t *testing.T) {
 			Provider: chainscripttest.RandomString(10),
 		}
 
-		linkHash := chainscript.LinkHash(chainscripttest.RandomHash())
+		linkHash := chainscripttest.RandomHash()
 		e.AddSavedEvidence(linkHash, evidence)
 
 		b, err := json.Marshal(e)

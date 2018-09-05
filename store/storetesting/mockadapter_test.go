@@ -77,7 +77,7 @@ func TestMockAdapter_GetSegment(t *testing.T) {
 
 	s1, _ := chainscripttest.RandomLink(t).Segmentify()
 	a.MockGetSegment.Fn = func(linkHash chainscript.LinkHash) (*chainscript.Segment, error) { return s1, nil }
-	linkHash2 := chainscript.LinkHash(chainscripttest.RandomHash())
+	linkHash2 := chainscripttest.RandomHash()
 	s2, err := a.GetSegment(context.Background(), linkHash2)
 	require.NoError(t, err)
 
