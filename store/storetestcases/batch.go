@@ -74,7 +74,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		found, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err, "a.GetSegment()")
 		require.NotNil(t, found, "a.GetSegment()")
-		assert.EqualValues(t, *link, found.Link, "Link should be found in adapter after a Write")
+		chainscripttest.LinksEqual(t, link, found.Link)
 	})
 
 	t.Run("Finding segments should find in both batch and underlying store", func(t *testing.T) {

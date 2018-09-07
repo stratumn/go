@@ -43,7 +43,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		s, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err)
 		assert.NotNil(t, s, "Segment should be found")
-		assert.EqualValues(t, link, &s.Link, "Invalid link")
+		chainscripttest.LinksEqual(t, link, s.Link)
 		gotHash, err := s.Link.Hash()
 		assert.NoError(t, err, "Hash should be computed")
 		assert.EqualValues(t, linkHash, gotHash, "Invalid linkHash")
@@ -54,7 +54,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		got, err := a.GetSegment(ctx, linkHash2)
 		assert.NoError(t, err)
 		assert.NotNil(t, got, "Segment should be found")
-		assert.EqualValues(t, link2, &got.Link, "Invalid link")
+		chainscripttest.LinksEqual(t, link2, got.Link)
 		gotHash, err := got.Link.Hash()
 		assert.NoError(t, err, "Hash should be computed")
 		assert.EqualValues(t, linkHash2, gotHash, "Invalid linkHash")
@@ -69,15 +69,15 @@ func (f Factory) TestGetSegment(t *testing.T) {
 
 	t.Run("Getting a segment should return its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := chainscript.Evidence{Backend: "TMPop", Provider: "1"}
-		e2 := chainscript.Evidence{Backend: "dummy", Provider: "2"}
-		e3 := chainscript.Evidence{Backend: "batch", Provider: "3"}
-		e4 := chainscript.Evidence{Backend: "bcbatch", Provider: "4"}
-		e5 := chainscript.Evidence{Backend: "generic", Provider: "5"}
-		evidences := []chainscript.Evidence{e1, e2, e3, e4, e5}
+		e1 := &chainscript.Evidence{Backend: "TMPop", Provider: "1"}
+		e2 := &chainscript.Evidence{Backend: "dummy", Provider: "2"}
+		e3 := &chainscript.Evidence{Backend: "batch", Provider: "3"}
+		e4 := &chainscript.Evidence{Backend: "bcbatch", Provider: "4"}
+		e5 := &chainscript.Evidence{Backend: "generic", Provider: "5"}
+		evidences := []*chainscript.Evidence{e1, e2, e3, e4, e5}
 
 		for _, e := range evidences {
-			err := a.AddEvidence(ctx, linkHash2, &e)
+			err := a.AddEvidence(ctx, linkHash2, e)
 			assert.NoError(t, err, "a.AddEvidence()")
 		}
 

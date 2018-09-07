@@ -282,8 +282,8 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			LinkHashes: []string{
-				testutil.RandomHash().String(),
-				testutil.RandomHash().String(),
+				chainscripttest.RandomHash().String(),
+				chainscripttest.RandomHash().String(),
 			},
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
@@ -354,7 +354,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns no result for previous link hash not found", func(t *testing.T) {
 		ctx := context.Background()
-		notFoundPrevLinkHash := testutil.RandomHash().String()
+		notFoundPrevLinkHash := chainscripttest.RandomHash().String()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
@@ -388,14 +388,14 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := chainscript.Evidence{Backend: "dummy", Provider: "1"}
-		e2 := chainscript.Evidence{Backend: "batch", Provider: "2"}
-		e3 := chainscript.Evidence{Backend: "bcbatch", Provider: "3"}
-		e4 := chainscript.Evidence{Backend: "generic", Provider: "4"}
-		testEvidences := []chainscript.Evidence{e1, e2, e3, e4}
+		e1 := &chainscript.Evidence{Backend: "dummy", Provider: "1"}
+		e2 := &chainscript.Evidence{Backend: "batch", Provider: "2"}
+		e3 := &chainscript.Evidence{Backend: "bcbatch", Provider: "3"}
+		e4 := &chainscript.Evidence{Backend: "generic", Provider: "4"}
+		testEvidences := []*chainscript.Evidence{e1, e2, e3, e4}
 
 		for _, e := range testEvidences {
-			err := a.AddEvidence(ctx, linkHash4, &e)
+			err := a.AddEvidence(ctx, linkHash4, e)
 			assert.NoError(t, err, "a.AddEvidence()")
 		}
 

@@ -72,6 +72,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		got := &chainscript.Segment{}
 		err = makeQuery(h, tmpop.GetSegment, linkHash2, got)
 		assert.NoError(t, err)
+		require.NotNil(t, got.Meta)
 		require.Len(t, got.Meta.Evidences, 1, "Segment should have an evidence added")
 
 		storedEvidence := got.GetEvidence("dummy", "1")
@@ -98,7 +99,7 @@ func (f Factory) TestQuery(t *testing.T) {
 		require.Len(t, gots.Segments, 1, "Unexpected number of segments")
 
 		got := gots.Segments[0]
-		assert.EqualValues(t, link2, &got.Link)
+		chainscripttest.LinksEqual(t, link2, got.Link)
 	})
 
 	t.Run("FindSegments() skips invalid links", func(t *testing.T) {

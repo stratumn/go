@@ -306,26 +306,30 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash9, got)
 		assert.NoError(t, err)
+		require.NotNil(t, got)
+		require.NotNil(t, got.Meta)
 		assert.Empty(t, got.Meta.Evidences, "Link should not have evidence before the next block is signed")
 	})
 
 	// It is possible to add invalid links to a block.
-	// It can happen if validation rules change between
-	// the checkTx and deliverTx messages.
-	// It's ok to have such links in the blockchain, but
-	// we should not generate evidence for them.
+	// It can happen if validation rules change between the checkTx and
+	// deliverTx messages.
+	// It's ok to have such links in the blockchain, but we should not generate
+	// evidence for them.
 	t.Run("Does not add evidence to invalid links", func(t *testing.T) {
 		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, invalidLinkHash1, got)
 		assert.NoError(t, err)
 		assert.Zero(t, got.Link, "Link should not be found")
-		assert.Empty(t, got.Meta.Evidences, "Evidence should not be added to invalid link")
+		assert.Nil(t, got.Meta)
 	})
 
 	t.Run("Does not add evidence if signatures are missing", func(t *testing.T) {
 		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash4, got)
 		assert.NoError(t, err)
+
+		require.NotNil(t, got.Meta)
 		assert.Empty(
 			t,
 			got.Meta.Evidences,
@@ -337,6 +341,8 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash7, got)
 		assert.NoError(t, err)
+
+		require.NotNil(t, got.Meta)
 		assert.Empty(
 			t,
 			got.Meta.Evidences,
@@ -348,6 +354,8 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash8, got)
 		assert.NoError(t, err)
+
+		require.NotNil(t, got.Meta)
 		assert.Empty(
 			t,
 			got.Meta.Evidences,

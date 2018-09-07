@@ -63,17 +63,16 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 	t.Run("Duplicate evidences should be discarded", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := chainscript.Evidence{Backend: "TMPop", Provider: "42"}
-		e2 := chainscript.Evidence{Backend: "dummy", Provider: "42"}
+		e := &chainscript.Evidence{Backend: "TMPop", Provider: "42"}
 
-		err := s.AddEvidence(ctx, linkHash, &e1)
+		err := s.AddEvidence(ctx, linkHash, e)
 		require.NoError(t, err, "s.AddEvidence()")
 		// Add duplicate - some stores return an error, others silently ignore
-		s.AddEvidence(ctx, linkHash, &e2)
+		s.AddEvidence(ctx, linkHash, e)
 
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
 		assert.Equal(t, 6, len(storedEvidences), "Invalid number of evidences")
-		assert.EqualValues(t, e1.Backend, storedEvidences.GetEvidence("TMPop", "42").Backend, "Invalid evidence backend")
+		assert.EqualValues(t, e.Backend, storedEvidences.GetEvidence("TMPop", "42").Backend, "Invalid evidence backend")
 	})
 }

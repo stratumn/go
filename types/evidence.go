@@ -26,7 +26,7 @@ type EvidenceSlice []*chainscript.Evidence
 // AddEvidence adds an evidence to the slice.
 func (e *EvidenceSlice) AddEvidence(evidence *chainscript.Evidence) error {
 	if e.GetEvidence(evidence.Backend, evidence.Provider) != nil {
-		return fmt.Errorf("evidence already exist for provider %s", evidence.Provider)
+		return fmt.Errorf("evidence already exist for backend %s and provider %s", evidence.Backend, evidence.Provider)
 	}
 
 	*e = append(*e, evidence)

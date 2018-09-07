@@ -143,7 +143,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 
 		for _, mapID := range slice {
 			assert.True(t, strings.HasPrefix(mapID, prefix))
-			assert.Equal(t, process, maps[mapID].Meta.Process)
+			assert.Equal(t, process, maps[mapID].Meta.Process.Name)
 		}
 	})
 
@@ -176,7 +176,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 
 		for _, mapID := range slice {
 			assert.True(t, strings.HasSuffix(mapID, suffix))
-			assert.Equal(t, process, maps[mapID].Meta.Process)
+			assert.Equal(t, process, maps[mapID].Meta.Process.Name)
 		}
 	})
 

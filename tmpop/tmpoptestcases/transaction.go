@@ -42,7 +42,7 @@ func (f Factory) TestCheckTx(t *testing.T) {
 	t.Run("Check link with invalid reference returns not-ok", func(t *testing.T) {
 		link := chainscripttest.RandomLink(t)
 		link.Meta.Refs = []*chainscript.LinkReference{&chainscript.LinkReference{
-			Process:  "proc",
+			Process:  link.Meta.Process.Name,
 			LinkHash: []byte("invalidLinkHash"),
 		}}
 		tx := makeCreateLinkTx(t, link)
@@ -145,7 +145,7 @@ func (f Factory) TestCommitTx(t *testing.T) {
 
 		savedLinks := savedEvent.Data.([]*chainscript.Link)
 		require.Len(t, savedLinks, 2, "Invalid number of links")
-		assert.EqualValues(t, link1, savedLinks[0])
-		assert.EqualValues(t, link2, savedLinks[1])
+		chainscripttest.LinksEqual(t, link1, savedLinks[0])
+		chainscripttest.LinksEqual(t, link2, savedLinks[1])
 	})
 }

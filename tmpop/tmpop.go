@@ -303,11 +303,19 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		}
 
 	case GetSegment:
-		linkHash := reqQuery.Data
+		var linkHash chainscript.LinkHash
+		if err = json.Unmarshal(reqQuery.Data, &linkHash); err != nil {
+			break
+		}
+
 		result, err = t.adapter.GetSegment(ctx, linkHash)
 
 	case GetEvidences:
-		linkHash := reqQuery.Data
+		var linkHash chainscript.LinkHash
+		if err = json.Unmarshal(reqQuery.Data, &linkHash); err != nil {
+			break
+		}
+
 		result, err = t.adapter.GetEvidences(ctx, linkHash)
 
 	case AddEvidence:
