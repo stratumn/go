@@ -17,9 +17,8 @@ package tmpop
 import (
 	"sync"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 )
 
 // Tendermint doesn't allow us to fire arbitrary events to notify TMStore.
@@ -30,7 +29,7 @@ type eventsManager struct {
 	lock          sync.Mutex
 }
 
-func (e *eventsManager) AddSavedLinks(links []*cs.Link) {
+func (e *eventsManager) AddSavedLinks(links []*chainscript.Link) {
 	if len(links) > 0 {
 		savedEvent := store.NewSavedLinks(links...)
 
@@ -40,11 +39,11 @@ func (e *eventsManager) AddSavedLinks(links []*cs.Link) {
 	}
 }
 
-func (e *eventsManager) AddSavedEvidences(evidences map[*types.Bytes32]*cs.Evidence) {
+func (e *eventsManager) AddSavedEvidences(evidences map[*chainscript.LinkHash]*chainscript.Evidence) {
 	if len(evidences) > 0 {
 		evidenceEvent := store.NewSavedEvidences()
 		for linkHash, evidence := range evidences {
-			evidenceEvent.AddSavedEvidence(linkHash, evidence)
+			evidenceEvent.AddSavedEvidence(*linkHash, evidence)
 		}
 
 		e.lock.Lock()

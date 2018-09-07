@@ -18,10 +18,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/utils"
-	validation "github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-indigocore/validation"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,15 +63,15 @@ func (f Factory) TestValidation(t *testing.T) {
 	defer f.free()
 
 	h.BeginBlock(req)
-	state := map[string]interface{}{"string": "test"}
+	data := map[string]string{"string": "test"}
 
 	t.Run("Validation succeeded", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("testProcess").
-			WithType("init").
-			WithPrevLinkHash("").
-			WithState(state).
-			Sign().
+			WithStep("init").
+			WithoutParent().
+			WithData(t, data).
+			WithSignature(t, "").
 			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
@@ -80,10 +80,10 @@ func (f Factory) TestValidation(t *testing.T) {
 	})
 
 	t.Run("Link does not match any validator", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("testProcess").
-			WithType("notfound").
-			WithPrevLinkHash("").
+			WithStep("notfound").
+			WithoutParent().
 			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
@@ -93,12 +93,12 @@ func (f Factory) TestValidation(t *testing.T) {
 	})
 
 	t.Run("Schema validation failed", func(t *testing.T) {
-		badState := map[string]interface{}{"string": 42}
-		l := cstesting.NewLinkBuilder().
+		badData := map[string]interface{}{"string": 42}
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("testProcess").
-			WithType("init").
-			WithPrevLinkHash("").
-			WithState(badState).
+			WithStep("init").
+			WithoutParent().
+			WithData(t, badData).
 			Build()
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
@@ -108,15 +108,19 @@ func (f Factory) TestValidation(t *testing.T) {
 	})
 
 	t.Run("Signature validation failed", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("testProcess").
-			WithType("init").WithPrevLinkHash("").
-			WithState(state).Sign().
+			WithStep("init").
+			WithoutParent().
+			WithData(t, data).
+			WithSignature(t, "").
 			Build()
-		l.Signatures[0].Signature = `-----BEGIN MESSAGE-----
+
+		l.Signatures[0].Signature = []byte(`-----BEGIN MESSAGE-----
 BEDZR29+Zk8M72ZlgWstb3o96MdKNXeT0Q7LfzDFQKjv9dLjeHpRL4BSjkjPWbuA
 Kmq1nHIk7T7bpLBohyy0lRYO
------END MESSAGE-----`
+-----END MESSAGE-----`)
+
 		tx := makeCreateLinkTx(t, l)
 		res := h.DeliverTx(tx)
 

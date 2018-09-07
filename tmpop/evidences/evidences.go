@@ -20,45 +20,60 @@ package evidences
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/json"
 
-	"github.com/stratumn/go-indigocore/cs"
+	json "github.com/gibson042/canonicaljson-go"
+	"github.com/pkg/errors"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/types"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/tendermint/go-crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-var (
-	// TMPopName is the name used as the Tendermint PoP backend
+const (
+	// Version0_1_0 is used with Tendermint 0.18.0.
+	// It shouldn't be used in production.
+	Version0_1_0 = "0.1.0"
+
+	// Version is the current version of the Tendermint evidence.
+	Version = Version0_1_0
+
+	// TMPopName is the name used as the Tendermint PoP backend.
 	TMPopName = "TMPop"
+)
+
+// Errors used by the Tendermint evidence.
+var (
+	ErrInvalidBackend = errors.New("backend is not TMPop")
+	ErrMissingChainID = errors.New("provider should be the ID of the tendermint chain")
+	ErrUnknownVersion = errors.New("unknown evidence version")
 )
 
 // TendermintVote is a signed vote by one of the Tendermint validator nodes.
 type TendermintVote struct {
-	PubKey *crypto.PubKey `json:"pub_key"`
+	PubKey *crypto.PubKey `json:"pubKey"`
 	Vote   *tmtypes.Vote  `json:"vote"`
 }
 
 // TendermintProof implements the Proof interface.
 type TendermintProof struct {
-	BlockHeight int64 `json:"block_height"`
+	BlockHeight int64 `json:"blockHeight"`
 
-	Root            *types.Bytes32 `json:"merkle_root"`
-	Path            mktypes.Path   `json:"merkle_path"`
-	ValidationsHash *types.Bytes32 `json:"validations_hash"`
+	Root            *types.Bytes32 `json:"merkleRoot"`
+	Path            mktypes.Path   `json:"merklePath"`
+	ValidationsHash *types.Bytes32 `json:"validationsHash"`
 
 	// The header and its votes are needed to validate
 	// the previous app hash and metadata such as the height and time.
 	Header             *tmtypes.Header       `json:"header"`
-	HeaderVotes        []*TendermintVote     `json:"header_votes"`
-	HeaderValidatorSet *tmtypes.ValidatorSet `json:"header_validator_set"`
+	HeaderVotes        []*TendermintVote     `json:"headerVotes"`
+	HeaderValidatorSet *tmtypes.ValidatorSet `json:"headerValidatorSet"`
 
 	// The next header and its votes are needed to validate
 	// the app hash representing the validations and merkle path.
-	NextHeader             *tmtypes.Header       `json:"next_header"`
-	NextHeaderVotes        []*TendermintVote     `json:"next_header_votes"`
-	NextHeaderValidatorSet *tmtypes.ValidatorSet `json:"next_header_validator_set"`
+	NextHeader             *tmtypes.Header       `json:"nextHeader"`
+	NextHeaderVotes        []*TendermintVote     `json:"nextHeaderVotes"`
+	NextHeaderValidatorSet *tmtypes.ValidatorSet `json:"nextHeaderValidatorSet"`
 }
 
 // Time returns the timestamp from the block header
@@ -66,18 +81,9 @@ func (p *TendermintProof) Time() uint64 {
 	return uint64(p.Header.Time.Unix())
 }
 
-// FullProof returns a JSON formatted proof
-func (p *TendermintProof) FullProof() []byte {
-	bytes, err := json.MarshalIndent(p, "", "   ")
-	if err != nil {
-		return nil
-	}
-	return bytes
-}
-
 // Verify returns true if the proof of a given linkHash is correct
 func (p *TendermintProof) Verify(linkHash interface{}) bool {
-	lh, ok := linkHash.(*types.Bytes32)
+	lh, ok := linkHash.(chainscript.LinkHash)
 	if !ok {
 		return false
 	}
@@ -111,7 +117,7 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	if len(p.Path) == 0 {
 		// If the tree contains a single element,
 		// it's valid only if it's the root.
-		if !lh.Equals(p.Root) {
+		if !bytes.Equal(lh, p.Root[:]) {
 			return false
 		}
 	} else {
@@ -121,7 +127,7 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 		}
 
 		// And it should start at the given link hash.
-		if !lh.EqualsBytes(p.Path[0].Left) && !lh.EqualsBytes(p.Path[0].Right) {
+		if !bytes.Equal(lh, p.Path[0].Left) && !bytes.Equal(lh, p.Path[0].Right) {
 			return false
 		}
 	}
@@ -203,12 +209,36 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 	return 3*votesPower > 2*validatorSet.TotalVotingPower()
 }
 
-func init() {
-	cs.DeserializeMethods[TMPopName] = func(rawProof json.RawMessage) (cs.Proof, error) {
-		p := TendermintProof{}
-		if err := json.Unmarshal(rawProof, &p); err != nil {
+// Evidence wraps the proof in a versioned evidence.
+func (p *TendermintProof) Evidence(chainID string) (*chainscript.Evidence, error) {
+	proof, err := json.Marshal(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return chainscript.NewEvidence(Version, TMPopName, chainID, proof)
+}
+
+// UnmarshalProof unmarshals the Tendermint proof contained in an evidence.
+func UnmarshalProof(e *chainscript.Evidence) (*TendermintProof, error) {
+	if e.Backend != TMPopName {
+		return nil, ErrInvalidBackend
+	}
+
+	if len(e.Provider) == 0 {
+		return nil, ErrMissingChainID
+	}
+
+	switch e.Version {
+	case Version0_1_0:
+		var proof TendermintProof
+		err := json.Unmarshal(e.Proof, &proof)
+		if err != nil {
 			return nil, err
 		}
-		return &p, nil
+
+		return &proof, nil
+	default:
+		return nil, ErrUnknownVersion
 	}
 }

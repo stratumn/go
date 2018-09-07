@@ -20,11 +20,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
-
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -100,12 +99,12 @@ func makeQuery(h *tmpop.TMPop, name string, args interface{}, res interface{}) e
 	return json.Unmarshal(q.Value, &res)
 }
 
-func makeCreateRandomLinkTx(t *testing.T) (*cs.Link, []byte) {
-	l := cstesting.RandomLink()
+func makeCreateRandomLinkTx(t *testing.T) (*chainscript.Link, []byte) {
+	l := chainscripttest.RandomLink(t)
 	return l, makeCreateLinkTx(t, l)
 }
 
-func makeCreateLinkTx(t *testing.T, l *cs.Link) []byte {
+func makeCreateLinkTx(t *testing.T, l *chainscript.Link) []byte {
 	tx := tmpop.Tx{
 		TxType: tmpop.CreateLink,
 		Link:   l,
@@ -128,13 +127,13 @@ func makeBeginBlock(appHash []byte, height int64) abci.RequestBeginBlock {
 	}
 }
 
-func commitLink(t *testing.T, h *tmpop.TMPop, l *cs.Link, requestBeginBlock abci.RequestBeginBlock) abci.RequestBeginBlock {
+func commitLink(t *testing.T, h *tmpop.TMPop, l *chainscript.Link, requestBeginBlock abci.RequestBeginBlock) abci.RequestBeginBlock {
 	tx := makeCreateLinkTx(t, l)
 	nextBeginBlock := commitTx(t, h, requestBeginBlock, tx)
 	return nextBeginBlock
 }
 
-func commitRandomLink(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock) (*cs.Link, abci.RequestBeginBlock) {
+func commitRandomLink(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock) (*chainscript.Link, abci.RequestBeginBlock) {
 	l, tx := makeCreateRandomLinkTx(t)
 	nextBeginBlock := commitTx(t, h, requestBeginBlock, tx)
 	return l, nextBeginBlock
@@ -159,10 +158,10 @@ func commitTxs(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBegin
 	return makeBeginBlock(commitResult.Data, requestBeginBlock.Header.Height+1)
 }
 
-func verifyLinkStored(t *testing.T, h *tmpop.TMPop, link *cs.Link) {
+func verifyLinkStored(t *testing.T, h *tmpop.TMPop, link *chainscript.Link) {
 	linkHash, _ := link.Hash()
 
-	got := &cs.Segment{}
+	got := &chainscript.Segment{}
 	err := makeQuery(h, tmpop.GetSegment, linkHash, got)
 	if err != nil {
 		t.Fatal(err)
