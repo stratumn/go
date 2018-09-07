@@ -19,14 +19,13 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/utils"
 	"github.com/stratumn/go-indigocore/validation"
 	"github.com/stratumn/go-indigocore/validation/testutils"
 	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var pluginFile string
@@ -271,7 +270,7 @@ func TestLoadValidators_Error(t *testing.T) {
 		}, nil)
 
 		assert.Nil(t, validatorList)
-		assert.EqualError(t, err, validators.ErrMissingLinkType.Error())
+		assert.EqualError(t, err, validators.ErrMissingLinkStep.Error())
 	})
 
 	t.Run("Missing schema", func(T *testing.T) {

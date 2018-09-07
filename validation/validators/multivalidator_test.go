@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
@@ -161,47 +161,47 @@ func TestMultiValidator_Validate(t *testing.T) {
 	validatorList := []validators.Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2}
 	mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
 
-	testState := map[string]interface{}{"message": "test"}
+	testData := map[string]string{"message": "test"}
 
 	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("p").
-			WithType("a1").
-			WithState(testState).
-			Sign().
+			WithStep("a1").
+			WithData(t, testData).
+			WithSignature(t, "").
 			Build()
-		l.Signatures[0].PublicKey = "TESTKEY1"
+		l.Signatures[0].PublicKey = []byte("TESTKEY1")
 
 		err := mv.Validate(context.Background(), nil, l)
 		assert.NoError(t, err)
 	})
 
 	t.Run("Validate fails if no validator matches the given segment", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
-			WithType("nomatch").
+		l := chainscripttest.NewLinkBuilder(t).
+			WithStep("nomatch").
 			Build()
-		process := l.Meta.Process
+		process := l.Meta.Process.Name
 
 		err := mv.Validate(context.Background(), nil, l)
-		assert.EqualError(t, err, fmt.Sprintf("Validation failed: link with process: [%s] and type: [nomatch] does not match any validator", process))
+		assert.EqualError(t, err, fmt.Sprintf("Validation failed: link with process: [%s] and step: [nomatch] does not match any validator", process))
 	})
 
 	t.Run("Validate fails if one of the children fails (schema)", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("p").
-			WithType("a2").
+			WithStep("a2").
 			Build()
 
 		err := mv.Validate(context.Background(), nil, l)
-		assert.EqualError(t, err, "link validation failed: [message: message is required]")
+		assert.Error(t, err)
 	})
 
 	t.Run("Validate fails if one of the children fails (pki)", func(t *testing.T) {
-		l := cstesting.NewLinkBuilder().
+		l := chainscripttest.NewLinkBuilder(t).
 			WithProcess("p").
-			WithType("a1").
-			WithState(testState).
-			Sign().
+			WithStep("a1").
+			WithData(t, testData).
+			WithSignature(t, "").
 			Build()
 
 		err := mv.Validate(context.Background(), nil, l)

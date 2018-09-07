@@ -125,15 +125,15 @@ type TypeSchema struct {
 func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]TypeSchema, pki *validators.PKI) (validators.Validators, error) {
 	missingTransitionValidation := make([]string, 0)
 	var validatorList validators.Validators
-	for linkType, val := range jsonStruct {
-		if linkType == "" {
-			return nil, validators.ErrMissingLinkType
+	for linkStep, val := range jsonStruct {
+		if linkStep == "" {
+			return nil, validators.ErrMissingLinkStep
 		}
 		if len(val.Signatures) == 0 && val.Schema == nil && val.Transitions == nil {
 			return nil, ErrInvalidValidator
 		}
 
-		baseConfig, err := validators.NewValidatorBaseConfig(process, linkType)
+		baseConfig, err := validators.NewValidatorBaseConfig(process, linkStep)
 		if err != nil {
 			return nil, err
 		}
@@ -168,7 +168,7 @@ func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]Typ
 		if len(val.Transitions) > 0 {
 			validatorList = append(validatorList, validators.NewTransitionValidator(baseConfig, val.Transitions))
 		} else {
-			missingTransitionValidation = append(missingTransitionValidation, linkType)
+			missingTransitionValidation = append(missingTransitionValidation, linkStep)
 		}
 	}
 

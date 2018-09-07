@@ -18,13 +18,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/dummystore"
-	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/validation/validators"
-
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,20 +47,20 @@ var (
 )
 
 type stateMachineLinks struct {
-	createdProduct *cs.Link
+	createdProduct *chainscript.Link
 
 	// Complete workflow
-	signedProduct      *cs.Link
-	finalProduct       *cs.Link
-	finalSignedProduct *cs.Link
+	signedProduct      *chainscript.Link
+	finalProduct       *chainscript.Link
+	finalSignedProduct *chainscript.Link
 
 	// Hacked workflow
-	hacked1Product     *cs.Link
-	hacked2Product     *cs.Link
-	hackedFinalProduct *cs.Link
+	hacked1Product     *chainscript.Link
+	hacked2Product     *chainscript.Link
+	hackedFinalProduct *chainscript.Link
 
 	// Bypass workflow
-	approvedProduct *cs.Link
+	approvedProduct *chainscript.Link
 }
 
 func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
@@ -71,18 +69,18 @@ func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
 
 	var links stateMachineLinks
 
-	links.createdProduct = cstesting.NewLinkBuilder().
+	links.createdProduct = chainscripttest.NewLinkBuilder(t).
 		WithProcess(process).
-		WithType(stateCreatedProduct).
-		WithPrevLinkHash("").
+		WithStep(stateCreatedProduct).
+		WithoutParent().
 		Build()
 	_, err := store.CreateLink(context.Background(), links.createdProduct)
 	require.NoError(t, err)
 
-	appendLink := func(prevLink *cs.Link, linkType string) *cs.Link {
-		l := cstesting.NewLinkBuilder().
-			Branch(prevLink).
-			WithType(linkType).
+	appendLink := func(prevLink *chainscript.Link, linkStep string) *chainscript.Link {
+		l := chainscripttest.NewLinkBuilder(t).
+			Branch(t, prevLink).
+			WithStep(linkStep).
 			Build()
 		_, err := store.CreateLink(context.Background(), l)
 		require.NoError(t, err)
@@ -109,7 +107,7 @@ func TestTransitionValidator(t *testing.T) {
 		name        string
 		valid       bool
 		err         string
-		link        *cs.Link
+		link        *chainscript.Link
 		transitions []string
 	}
 
@@ -156,9 +154,9 @@ func TestTransitionValidator(t *testing.T) {
 			name:  "prevLink not found",
 			valid: false,
 			err:   "previous segment not found.*",
-			link: func() *cs.Link {
+			link: func() *chainscript.Link {
 				l, _ := links.finalProduct.Clone()
-				l.Meta.PrevLinkHash = testutil.RandomHash().String()
+				l.Meta.PrevLinkHash = chainscripttest.RandomHash()
 				return l
 			}(),
 			transitions: []string{stateCreatedProduct},
@@ -167,7 +165,7 @@ func TestTransitionValidator(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			baseCfg, err := validators.NewValidatorBaseConfig(process, tt.link.Meta.Type)
+			baseCfg, err := validators.NewValidatorBaseConfig(process, tt.link.Meta.Step)
 			require.NoError(t, err)
 			v := validators.NewTransitionValidator(baseCfg, tt.transitions)
 
@@ -190,7 +188,7 @@ func TestTransitionShouldValidate(t *testing.T) {
 		name string
 		ret  bool
 		conf *validators.ValidatorBaseConfig
-		link *cs.Link
+		link *chainscript.Link
 	}
 
 	NewConf := func(process, linkType string) *validators.ValidatorBaseConfig {
@@ -203,19 +201,19 @@ func TestTransitionShouldValidate(t *testing.T) {
 		{
 			name: "has to validate",
 			ret:  true,
-			conf: NewConf(links.createdProduct.Meta.Process, links.createdProduct.Meta.Type),
+			conf: NewConf(links.createdProduct.Meta.Process.Name, links.createdProduct.Meta.Step),
 			link: links.createdProduct,
 		},
 		{
 			name: "bad process",
 			ret:  false,
-			conf: NewConf("foo", links.createdProduct.Meta.Type),
+			conf: NewConf("foo", links.createdProduct.Meta.Step),
 			link: links.createdProduct,
 		},
 		{
 			name: "bad state",
 			ret:  false,
-			conf: NewConf(links.createdProduct.Meta.Process, "bar"),
+			conf: NewConf(links.createdProduct.Meta.Process.Name, "bar"),
 			link: links.createdProduct,
 		},
 	}
@@ -233,7 +231,7 @@ func TestTransitionHash(t *testing.T) {
 	t.Parallel()
 	_, links := populateStore(t)
 
-	baseCfg, err := validators.NewValidatorBaseConfig(process, links.finalProduct.Meta.Type)
+	baseCfg, err := validators.NewValidatorBaseConfig(process, links.finalProduct.Meta.Step)
 	require.NoError(t, err)
 	v1 := validators.NewTransitionValidator(baseCfg, finalProductTransitions)
 	v2 := validators.NewTransitionValidator(baseCfg, createdProductTransitions)

@@ -20,8 +20,7 @@ import (
 
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
-
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -51,7 +50,7 @@ func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 }
 
 // ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
-func (tv TransitionValidator) ShouldValidate(link *cs.Link) bool {
+func (tv TransitionValidator) ShouldValidate(link *chainscript.Link) bool {
 	return tv.Config.ShouldValidate(link)
 }
 
@@ -59,12 +58,12 @@ func (tv TransitionValidator) ShouldValidate(link *cs.Link) bool {
 // It checks that the link follows a valid transition.
 // If there is no previous link, an empty link has to be allowed,
 // Otherwise the meta.type of the prevLink must exist in authorized previous statement.
-func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *cs.Link) error {
+func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *chainscript.Link) error {
 	error := func(src string) error {
-		return errors.Errorf("no transition found %s --> %s", src, tv.Config.LinkType)
+		return errors.Errorf("no transition found %s --> %s", src, tv.Config.LinkStep)
 	}
 
-	prevLinkHash := link.Meta.GetPrevLinkHash()
+	prevLinkHash := chainscript.LinkHash(link.Meta.PrevLinkHash)
 	if prevLinkHash == nil {
 		for _, t := range tv.Transitions {
 			if t == "" {
@@ -83,9 +82,9 @@ func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentR
 	}
 
 	for _, t := range tv.Transitions {
-		if t == seg.Link.Meta.Type {
+		if t == seg.Link.Meta.Step {
 			return nil
 		}
 	}
-	return error(seg.Link.Meta.Type)
+	return error(seg.Link.Meta.Step)
 }

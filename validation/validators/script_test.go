@@ -20,19 +20,17 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/validation/validators"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestScriptValidator(t *testing.T) {
-
-	testLink := cstesting.NewLinkBuilder().WithProcess("test").WithType("init").Build()
+	testLink := chainscripttest.NewLinkBuilder(t).WithProcess("test").WithStep("init").Build()
 
 	t.Run("New", func(t *testing.T) {
 
@@ -49,7 +47,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "valid-config",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "init",
+					LinkStep: "init",
 				},
 				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
@@ -61,7 +59,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "bad-script-type",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "invalid",
+					LinkStep: "invalid",
 				},
 				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
@@ -74,7 +72,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "script-not-found",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "invalid",
+					LinkStep: "invalid",
 				},
 				scriptCfg: &validators.ScriptConfig{
 					File: "test",
@@ -87,7 +85,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "unknown-script-validator-for-linkType",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "unknown",
+					LinkStep: "unknown",
 				},
 				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
@@ -99,7 +97,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "bad-script-function-signature",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "badSignature",
+					LinkStep: "badSignature",
 				},
 				scriptCfg: &validators.ScriptConfig{
 					File: pluginFile,
@@ -165,7 +163,7 @@ func TestScriptValidator(t *testing.T) {
 			ret       bool
 			baseCfg   *validators.ValidatorBaseConfig
 			scriptCfg *validators.ScriptConfig
-			link      *cs.Link
+			link      *chainscript.Link
 		}
 
 		scriptConfig := &validators.ScriptConfig{
@@ -179,7 +177,7 @@ func TestScriptValidator(t *testing.T) {
 				ret:  true,
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "init",
+					LinkStep: "init",
 				},
 				link: testLink,
 			},
@@ -188,18 +186,18 @@ func TestScriptValidator(t *testing.T) {
 				ret:  false,
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "bad",
-					LinkType: "init",
+					LinkStep: "init",
 				},
-				link: cstesting.NewLinkBuilder().WithProcess("test").Build(),
+				link: chainscripttest.NewLinkBuilder(t).WithProcess("test").Build(),
 			},
 			{
 				name: "bad type",
 				ret:  false,
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "invalid",
+					LinkStep: "invalid",
 				},
-				link: cstesting.NewLinkBuilder().WithType("init").Build(),
+				link: chainscripttest.NewLinkBuilder(t).WithStep("init").Build(),
 			},
 		}
 
@@ -213,10 +211,9 @@ func TestScriptValidator(t *testing.T) {
 	})
 
 	t.Run("Validate", func(t *testing.T) {
-
 		type testCase struct {
 			name     string
-			testLink *cs.Link
+			testLink *chainscript.Link
 			baseCfg  *validators.ValidatorBaseConfig
 			valid    bool
 			err      string
@@ -231,7 +228,7 @@ func TestScriptValidator(t *testing.T) {
 				name: "valid-link",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "init",
+					LinkStep: "init",
 				},
 				testLink: testLink,
 				valid:    true,
@@ -240,18 +237,18 @@ func TestScriptValidator(t *testing.T) {
 				name: "fetch-link",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "fetchLink",
+					LinkStep: "fetchLink",
 				},
-				testLink: cstesting.NewLinkBuilder().WithType("fetchLink").Build(),
+				testLink: chainscripttest.NewLinkBuilder(t).WithStep("fetchLink").Build(),
 				valid:    true,
 			},
 			{
 				name: "validation-fails",
 				baseCfg: &validators.ValidatorBaseConfig{
 					Process:  "test",
-					LinkType: "invalid",
+					LinkStep: "invalid",
 				},
-				testLink: cstesting.NewLinkBuilder().WithType("invalid").Build(),
+				testLink: chainscripttest.NewLinkBuilder(t).WithStep("invalid").Build(),
 				valid:    false,
 				err:      "error",
 			},

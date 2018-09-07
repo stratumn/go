@@ -17,12 +17,11 @@ package validators
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 
@@ -61,20 +60,15 @@ func (sv SchemaValidator) Hash() (*types.Bytes32, error) {
 }
 
 // ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
-func (sv SchemaValidator) ShouldValidate(link *cs.Link) bool {
+func (sv SchemaValidator) ShouldValidate(link *chainscript.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
 
 // Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
-// It validates the schema of a link's state.
-func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
-	stateBytes, err := json.Marshal(link.State)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	stateData := gojsonschema.NewBytesLoader(stateBytes)
-	result, err := sv.schema.Validate(stateData)
+// It validates the schema of a link's data.
+func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
+	linkData := gojsonschema.NewBytesLoader(link.Data)
+	result, err := sv.schema.Validate(linkData)
 	if err != nil {
 		return errors.WithStack(err)
 	}

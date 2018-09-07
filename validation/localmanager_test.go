@@ -33,14 +33,13 @@ import (
 )
 
 func TestLocalManager(t *testing.T) {
-
 	t.Run("New", func(t *testing.T) {
 		t.Run("Governance without file", func(t *testing.T) {
 			var v validators.Validator
 			a := new(storetesting.MockAdapter)
 			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{})
-			assert.NoError(t, err, "Gouvernance is initialized by store")
-			assert.NotNil(t, gov, "Gouvernance is initialized by store")
+			assert.NoError(t, err, "Governance is initialized by store")
+			assert.NotNil(t, gov, "Governance is initialized by store")
 
 			v = gov.Current()
 
@@ -54,8 +53,8 @@ func TestLocalManager(t *testing.T) {
 			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{
 				PluginsPath: pluginsPath,
 			})
-			assert.NoError(t, err, "Gouvernance is initialized by store")
-			require.NotNil(t, gov, "Gouvernance is initialized by store")
+			assert.NoError(t, err, "Governance is initialized by store")
+			require.NotNil(t, gov, "Governance is initialized by store")
 
 			v = gov.Current()
 			assert.NotNil(t, v, "Validator loaded from store")
@@ -71,8 +70,8 @@ func TestLocalManager(t *testing.T) {
 				RulesPath:   testFile,
 				PluginsPath: pluginsPath,
 			})
-			assert.NoError(t, err, "Gouvernance is initialized by file and store")
-			assert.NotNil(t, gov, "Gouvernance is initialized by file and store")
+			assert.NoError(t, err, "Governance is initialized by file and store")
+			assert.NotNil(t, gov, "Governance is initialized by file and store")
 
 			v = gov.Current()
 
@@ -85,7 +84,7 @@ func TestLocalManager(t *testing.T) {
 				RulesPath: "localmanager_test.go",
 			})
 			assert.EqualError(t, err, "Cannot load validator rules file localmanager_test.go: invalid character '/' looking for beginning of value")
-			require.NotNil(t, gov, "Gouvernance is initialized by store")
+			require.NotNil(t, gov, "Governance is initialized by store")
 		})
 
 		t.Run("Governance with unexisting file", func(t *testing.T) {
@@ -93,8 +92,8 @@ func TestLocalManager(t *testing.T) {
 			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{
 				RulesPath: "foo/bar",
 			})
-			assert.Error(t, err, "Cannot initialize gouvernance with bad file")
-			assert.Nil(t, gov, "Cannot initialize gouvernance with bad file")
+			assert.Error(t, err, "Cannot initialize governance with bad file")
+			assert.Nil(t, gov, "Cannot initialize governance with bad file")
 		})
 
 		t.Run("New validator uploaded at startup", func(t *testing.T) {
@@ -109,7 +108,7 @@ func TestLocalManager(t *testing.T) {
 				RulesPath:   testFile,
 				PluginsPath: pluginsPath,
 			})
-			require.NotNil(t, gov, "Gouvernance is initialized by file and store")
+			require.NotNil(t, gov, "Governance is initialized by file and store")
 			assert.NoError(t, err, "Validator updated")
 
 			v = gov.Current()
@@ -130,7 +129,7 @@ func TestLocalManager(t *testing.T) {
 			gov, err := validation.NewLocalManager(ctx, a, &validation.Config{
 				RulesPath: testFile,
 			})
-			require.NotNil(t, gov, "Gouvernance is initialized by file and store")
+			require.NotNil(t, gov, "Governance is initialized by file and store")
 			go gov.ListenAndUpdate(ctx)
 			waitValidator := gov.Subscribe()
 			v = <-waitValidator

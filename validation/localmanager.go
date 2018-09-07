@@ -19,7 +19,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/validation/validators"
 )
@@ -107,7 +107,7 @@ func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesV
 		_, loadConfigErr := LoadConfig(m.validationCfg, func(process string, schema *RulesSchema, validators validators.Validators) {
 			newValidatorLink, err := m.store.LinkFromSchema(ctx, process, schema)
 			if err != nil {
-				log.Error("Could not create link from validation rules", err)
+				log.Error("Could not create link from validation rules: ", err)
 				return
 			}
 			updateStoreErr = m.store.UpdateValidator(ctx, newValidatorLink)
