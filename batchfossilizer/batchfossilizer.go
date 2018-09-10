@@ -29,8 +29,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/types"
@@ -177,7 +177,7 @@ type Fossilizer struct {
 }
 
 // Transformer is the type of a function to transform results.
-type Transformer func(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error)
+type Transformer func(evidence *chainscript.Evidence, data, meta []byte) (*fossilizer.Result, error)
 
 // New creates an instance of a Fossilizer.
 func New(config *Config) (*Fossilizer, error) {
@@ -282,7 +282,7 @@ func (a *Fossilizer) SetTransformer(t Transformer) {
 	if t != nil {
 		a.transformer = t
 	} else {
-		a.transformer = func(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error) {
+		a.transformer = func(evidence *chainscript.Evidence, data, meta []byte) (*fossilizer.Result, error) {
 			return &fossilizer.Result{
 				Evidence: *evidence,
 				Data:     data,
@@ -420,17 +420,19 @@ func (a *Fossilizer) sendEvidence(ctx context.Context, tree *merkle.StaticTree, 
 			r    *fossilizer.Result
 		)
 
-		evidence := cs.Evidence{
-			Backend:  Name,
-			Provider: Name,
-			Proof: &evidences.BatchProof{
-				Timestamp: ts,
-				Root:      types.NewBytes32FromBytes(root),
-				Path:      tree.Path(i),
-			},
+		proof := &evidences.BatchProof{
+			Timestamp: ts,
+			Root:      types.NewBytes32FromBytes(root),
+			Path:      tree.Path(i),
+		}
+		evidence, err := proof.Evidence(Name)
+		if err != nil {
+			log.WithField("error", err).Error("Failed to create evidence")
+			span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+			continue
 		}
 
-		if r, err = a.transformer(&evidence, d, m); err != nil {
+		if r, err = a.transformer(evidence, d, m); err != nil {
 			log.WithField("error", err).Error("Failed to transform evidence")
 			span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		} else {

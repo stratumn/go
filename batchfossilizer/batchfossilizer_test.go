@@ -17,7 +17,6 @@ package batchfossilizer
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -25,9 +24,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetInfo(t *testing.T) {
@@ -242,7 +243,7 @@ func TestSetTransformer(t *testing.T) {
 		t.Fatalf("New(): err: %s", err)
 	}
 	transformerCalled := false
-	transformer := func(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error) {
+	transformer := func(evidence *chainscript.Evidence, data, meta []byte) (*fossilizer.Result, error) {
 		transformerCalled = true
 		return &fossilizer.Result{
 			Evidence: *evidence,
@@ -268,12 +269,12 @@ func TestSetTransformer(t *testing.T) {
 
 func TestBatchProof(t *testing.T) {
 	t.Parallel()
+
 	a, err := New(&Config{
 		Interval: interval,
 	})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
+	require.NoError(t, err)
+
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
 		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
@@ -285,32 +286,19 @@ func TestBatchProof(t *testing.T) {
 
 	t.Run("TestTime()", func(t *testing.T) {
 		for _, r := range results {
-			e := r.Evidence.Proof.(*evidences.BatchProof)
-			if e.Time() != uint64(time.Now().Unix()) {
-				t.Errorf("wrong timestamp in BcBatchProof")
-			}
-		}
-	})
+			e, err := evidences.UnmarshalProof(&r.Evidence)
+			require.NoError(t, err)
 
-	t.Run("TestFullProof()", func(t *testing.T) {
-		for _, r := range results {
-			e := r.Evidence.Proof.(*evidences.BatchProof)
-			p := e.FullProof()
-			if p == nil {
-				t.Errorf("got evidence.FullProof() == nil")
-			}
-			if err := json.Unmarshal(p, &evidences.BatchProof{}); err != nil {
-				t.Errorf("Could not unmarshal bytes proof, err = %+v", err)
-			}
+			assert.Equal(t, uint64(time.Now().Unix()), e.Time())
 		}
 	})
 
 	t.Run("TestVerify()", func(t *testing.T) {
 		for _, r := range results {
-			e := r.Evidence.Proof.(*evidences.BatchProof)
-			if e.Verify(nil) != true {
-				t.Errorf("got evidence.Verify() == false")
-			}
+			e, err := evidences.UnmarshalProof(&r.Evidence)
+			require.NoError(t, err)
+
+			assert.True(t, e.Verify(nil))
 		}
 	})
 }
