@@ -16,11 +16,9 @@ package bcbatchfossilizer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"reflect"
 	"testing"
 	"time"
 
@@ -31,6 +29,8 @@ import (
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	mktypes "github.com/stratumn/merkle/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fossilizeTest struct {
@@ -48,17 +48,17 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest) (
 	defer cancel()
 
 	go func() {
-		if err := a.Start(ctx); err != nil && errors.Cause(err) != context.Canceled {
-			t.Errorf("a.Start(): err: %s", err)
+		if err := a.Start(ctx); err != nil {
+			assert.EqualError(t, errors.Cause(err), context.Canceled.Error())
 		}
 	}()
 
 	<-a.Started()
 
 	for _, test := range tests {
-		if err := a.Fossilize(context.Background(), test.data, test.meta); err != nil {
-			t.Errorf("a.Fossilize(): err: %s", err)
-		}
+		err := a.Fossilize(context.Background(), test.data, test.meta)
+		assert.NoError(t, err, "a.Fossilize()")
+
 		if test.sleep > 0 {
 			time.Sleep(test.sleep)
 		}
@@ -72,17 +72,12 @@ RESULT_LOOP:
 			test := &tests[i]
 			if string(test.meta) == string(r.Meta) {
 				test.fossilized = true
-				if !reflect.DeepEqual(r.Data, test.data) {
-					a := fmt.Sprintf("%x", r.Data)
-					e := fmt.Sprintf("%x", test.data)
-					t.Errorf("test#%d: Data = %q want %q", i, a, e)
-				}
-				evidence := r.Evidence.Proof.(*evidences.BcBatchProof)
-				if !reflect.DeepEqual(evidence.Batch.Path, test.path) {
-					ajs, _ := json.MarshalIndent(evidence.Batch.Path, "", "  ")
-					ejs, _ := json.MarshalIndent(test.path, "", "  ")
-					t.Errorf("test#%d: Path = %s\nwant %s", i, ajs, ejs)
-				}
+				assert.Equal(t, test.data, r.Data)
+
+				proof, err := evidences.UnmarshalProof(&r.Evidence)
+				require.NoError(t, err)
+				assert.Equal(t, test.path, proof.Batch.Path)
+
 				results = append(results, r)
 				continue RESULT_LOOP
 			}
@@ -91,10 +86,8 @@ RESULT_LOOP:
 		t.Errorf("unexpected Meta %q", a)
 	}
 
-	for i, test := range tests {
-		if !test.fossilized {
-			t.Errorf("test#%d: not fossilized", i)
-		}
+	for _, test := range tests {
+		assert.True(t, test.fossilized)
 	}
 
 	return results

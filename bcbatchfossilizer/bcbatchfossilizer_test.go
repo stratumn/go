@@ -17,13 +17,14 @@ package bcbatchfossilizer
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/stratumn/go-indigocore/batchfossilizer"
 	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetInfo(t *testing.T) {
@@ -70,9 +71,8 @@ func TestBcBatchProof(t *testing.T) {
 	}, &batchfossilizer.Config{
 		Interval: testInterval,
 	})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
+	require.NoError(t, err)
+
 	tests := []fossilizeTest{
 		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
 		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
@@ -84,32 +84,19 @@ func TestBcBatchProof(t *testing.T) {
 
 	t.Run("TestTime()", func(t *testing.T) {
 		for _, r := range results {
-			e := r.Evidence.Proof.(*evidences.BcBatchProof)
-			if e.Time() != uint64(time.Now().Unix()) {
-				t.Errorf("wrong timestamp in BcBatchProof")
-			}
-		}
-	})
+			p, err := evidences.UnmarshalProof(&r.Evidence)
+			require.NoError(t, err)
 
-	t.Run("TestFullProof()", func(t *testing.T) {
-		for _, r := range results {
-			e := r.Evidence.Proof.(*evidences.BcBatchProof)
-			p := e.FullProof()
-			if p == nil {
-				t.Errorf("got evidence.FullProof() == nil")
-			}
-			if err := json.Unmarshal(p, &evidences.BcBatchProof{}); err != nil {
-				t.Errorf("Could not unmarshal bytes proof, err = %+v", err)
-			}
+			assert.Equal(t, uint64(time.Now().Unix()), p.Time())
 		}
 	})
 
 	t.Run("TestVerify()", func(t *testing.T) {
 		for _, r := range results {
-			e := r.Evidence.Proof.(*evidences.BcBatchProof)
-			if e.Verify(nil) != true {
-				t.Errorf("got evidence.Verify() == false")
-			}
+			p, err := evidences.UnmarshalProof(&r.Evidence)
+			require.NoError(t, err)
+
+			assert.True(t, p.Verify(nil))
 		}
 	})
 }
