@@ -271,7 +271,7 @@ func (t *TMStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHas
 		return
 	}
 
-	err = json.Unmarshal(response.Value, evidences)
+	err = json.Unmarshal(response.Value, &evidences)
 	if err != nil {
 		return
 	}
