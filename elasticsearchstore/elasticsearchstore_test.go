@@ -117,7 +117,7 @@ func TestElasticSearchTMPop(t *testing.T) {
 }
 
 func verifyResultsCount(t *testing.T, err error, segments *types.PaginatedSegments, expectedCount int) {
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, segments)
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Condition(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results")
@@ -125,8 +125,8 @@ func verifyResultsCount(t *testing.T, err error, segments *types.PaginatedSegmen
 
 func TestElasticSearchStoreSearch(t *testing.T) {
 	a, err := newTestElasticSearchStore()
-	assert.NoError(t, err, "newTestElasticSearchStore()")
-	assert.NotNil(t, a, "ES adapter")
+	require.NoError(t, err, "newTestElasticSearchStore()")
+	require.NotNil(t, a, "ES adapter")
 	defer freeTestElasticSearchStore(a)
 
 	data1 := map[string]interface{}{"nested": map[string]interface{}{

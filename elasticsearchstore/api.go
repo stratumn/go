@@ -31,14 +31,20 @@ const (
 	valuesIndex    = "values"
 
 	// This is the mapping for the links index.
-	// We voluntarily disable indexing of the following fields:
-	// meta.inputs, meta.refs, state, signatures
+	// We voluntarily disable indexing of some fields, such as:
+	// meta.refs, meta.data, data, signatures, etc.
 	linksMapping = `{
 		"mappings": {
 			"_doc": {
 				"properties": {
+					"version": {
+						"enabled": false
+					},
 					"meta": {
-						"properties":{
+						"properties": {
+							"clientId": {
+								"enabled": false
+							},
 							"mapId": {
 								"type": "text",
 								"fields": {
@@ -48,10 +54,22 @@ const (
 								}
 							},
 							"process": {
-								"type": "text",
-								"fields": {
-									"keyword": {
-										"type": "keyword"
+								"properties": {
+									"name": {
+										"type": "text",
+										"fields": {
+											"keyword": {
+												"type": "keyword"
+											}
+										}
+									},
+									"state": {
+										"type": "text",
+										"fields": {
+											"keyword": {
+												"type": "keyword"
+											}
+										}
 									}
 								}
 							},
@@ -63,18 +81,13 @@ const (
 									}
 								}
 							},
-							"type": {
-								"type": "text",
-								"fields": {
-									"keyword": {
-										"type": "keyword"
-									}
-								}
-							},
-							"inputs": {
+							"priority": {
 								"enabled": false
 							},
-							"tags": {
+							"prevLinkHash": {
+								"enabled": false
+							},
+							"step": {
 								"type": "text",
 								"fields": {
 									"keyword": {
@@ -82,10 +95,7 @@ const (
 									}
 								}
 							},
-							"priority": {
-								"type": "double"
-							},
-							"prevLinkHash": {
+							"tags": {
 								"type": "text",
 								"fields": {
 									"keyword": {
@@ -96,18 +106,29 @@ const (
 							"refs": {
 								"enabled": false
 							},
-							"data":{
+							"data": {
 								"enabled": false
 							}
 						}
 					},
-					"state": {
+					"data": {
 						"enabled": false
 					},
 					"signatures": {
 						"enabled": false
 					},
-					"stateTokens": {
+					"priority": {
+						"type": "double"
+					},
+					"prevLinkHash": {
+						"type": "text",
+						"fields": {
+							"keyword": {
+								"type": "keyword"
+							}
+						}
+					},
+					"dataTokens": {
 						"type": "text"
 					}
 				}
@@ -142,7 +163,9 @@ type Value struct {
 
 type linkDoc struct {
 	chainscript.Link
-	DataTokens []string `json:"dataTokens"`
+	Priority     float64  `json:"priority"`
+	PrevLinkHash string   `json:"prevLinkHash"`
+	DataTokens   []string `json:"dataTokens"`
 }
 
 // SearchQuery contains pagination and query string information.
@@ -239,16 +262,27 @@ func (o *linkDoc) extractTokens(obj interface{}) {
 func fromLink(link *chainscript.Link) (*linkDoc, error) {
 	doc := linkDoc{
 		Link:       *link,
+		Priority:   link.Meta.Priority,
 		DataTokens: []string{},
 	}
 
-	var data map[string]interface{}
-	err := link.StructurizeData(&data)
-	if err != nil {
-		return nil, err
+	if len(link.PrevLinkHash()) > 0 {
+		doc.PrevLinkHash = link.PrevLinkHash().String()
 	}
 
-	doc.extractTokens(data)
+	if len(link.Data) > 0 {
+		var strData string
+		err := link.StructurizeData(&strData)
+		if err == nil {
+			doc.extractTokens(strData)
+		}
+
+		var objData map[string]interface{}
+		err = link.StructurizeData(&objData)
+		if err == nil {
+			doc.extractTokens(objData)
+		}
+	}
 
 	return &doc, nil
 }
@@ -425,7 +459,7 @@ func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
 	filterQueries := []elastic.Query{}
 
 	if filter.Process != "" {
-		q := elastic.NewTermQuery("meta.process.keyword", filter.Process)
+		q := elastic.NewTermQuery("meta.process.name.keyword", filter.Process)
 		filterQueries = append(filterQueries, q)
 	}
 
@@ -465,13 +499,13 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 
 	// prevLinkHash filter.
 	if filter.PrevLinkHash != nil {
-		q := elastic.NewTermQuery("meta.prevLinkHash.keyword", *filter.PrevLinkHash)
+		q := elastic.NewTermQuery("prevLinkHash.keyword", *filter.PrevLinkHash)
 		filterQueries = append(filterQueries, q)
 	}
 
 	// process filter.
 	if filter.Process != "" {
-		q := elastic.NewTermQuery("meta.process.keyword", filter.Process)
+		q := elastic.NewTermQuery("meta.process.name.keyword", filter.Process)
 		filterQueries = append(filterQueries, q)
 	}
 
@@ -521,7 +555,7 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 
 	// add pagination.
 	svc = svc.
-		Sort("meta.priority", filter.Reverse).
+		Sort("priority", filter.Reverse).
 		From(filter.Pagination.Offset).
 		Size(filter.Pagination.Limit)
 
@@ -575,15 +609,15 @@ func (es *ESStore) simpleSearchQuery(query *SearchQuery) (*types.PaginatedSegmen
 }
 
 func (es *ESStore) multiMatchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
-	// fields to search through: all meta + stateTokens.
+	// fields to search through: all meta + dataTokens.
 	fields := []string{
 		"meta.mapId",
-		"meta.process",
+		"meta.process.name",
 		"meta.action",
-		"meta.type",
+		"meta.step",
 		"meta.tags",
-		"meta.prevLinkHash",
-		"stateTokens",
+		"prevLinkHash",
+		"dataTokens",
 	}
 
 	// prepare Query.

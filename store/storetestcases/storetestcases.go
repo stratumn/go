@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Factory wraps functions to allocate and free an adapter,
@@ -131,8 +131,8 @@ func (f Factory) RunKeyValueStoreBenchmarks(b *testing.B) {
 
 func (f Factory) initAdapter(t *testing.T) store.Adapter {
 	a, err := f.New()
-	assert.NoError(t, err, "f.New()")
-	assert.NotNil(t, a, "Store.Adapter")
+	require.NoError(t, err, "f.New()")
+	require.NotNil(t, a, "Store.Adapter")
 	return a
 }
 
@@ -155,8 +155,8 @@ func (f Factory) freeAdapter(adapter store.Adapter) {
 
 func (f Factory) initKeyValueStore(t *testing.T) store.KeyValueStore {
 	a, err := f.NewKeyValueStore()
-	assert.NoError(t, err, "f.NewKeyValueStore()")
-	assert.NotNil(t, a, "Store.KeyValueStore")
+	require.NoError(t, err, "f.NewKeyValueStore()")
+	require.NotNil(t, a, "Store.KeyValueStore")
 	return a
 }
 

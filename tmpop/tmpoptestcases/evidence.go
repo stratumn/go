@@ -261,7 +261,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 		proof, err := evidences.UnmarshalProof(evidence)
 		require.NoError(t, err)
-		assert.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
+		require.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
 		assert.Equal(t, int64(2), proof.BlockHeight, "Invalid block height in proof")
 
 		tree, _ := merkle.NewStaticTree([][]byte{linkHash1[:], linkHash2[:]})

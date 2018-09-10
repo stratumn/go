@@ -84,7 +84,6 @@ func (l debugLogger) Printf(format string, vars ...interface{}) {
 
 // New creates a new instance of an ElasticSearch store.
 func New(config *Config) (*ESStore, error) {
-
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(config.URL),
 		elastic.SetSniff(config.Sniffing),

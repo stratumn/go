@@ -25,6 +25,7 @@ import (
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetSegment tests what happens when you get a segment.
@@ -42,7 +43,8 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		ctx := context.Background()
 		s, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err)
-		assert.NotNil(t, s, "Segment should be found")
+		require.NotNil(t, s, "Segment should be found")
+
 		chainscripttest.LinksEqual(t, link, s.Link)
 		gotHash, err := s.Link.Hash()
 		assert.NoError(t, err, "Hash should be computed")
@@ -53,7 +55,8 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		ctx := context.Background()
 		got, err := a.GetSegment(ctx, linkHash2)
 		assert.NoError(t, err)
-		assert.NotNil(t, got, "Segment should be found")
+		require.NotNil(t, got, "Segment should be found")
+
 		chainscripttest.LinksEqual(t, link2, got.Link)
 		gotHash, err := got.Link.Hash()
 		assert.NoError(t, err, "Hash should be computed")
@@ -83,7 +86,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 
 		got, err := a.GetSegment(ctx, linkHash2)
 		assert.NoError(t, err, "a.GetSegment()")
-		assert.NotNil(t, got)
+		require.NotNil(t, got)
 		assert.Len(t, got.Meta.Evidences, 5, "Invalid number of evidences")
 	})
 }

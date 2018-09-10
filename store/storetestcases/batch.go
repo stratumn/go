@@ -30,7 +30,7 @@ import (
 func initBatch(t *testing.T, a store.Adapter) store.Batch {
 	b, err := a.NewBatch(context.Background())
 	require.NoError(t, err, "a.NewBatch()")
-	assert.NotNil(t, b, "Batch should not be nil")
+	require.NotNil(t, b, "Batch should not be nil")
 	return b
 }
 
