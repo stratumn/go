@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
 )
@@ -62,10 +62,10 @@ type Document struct {
 	ObjectType string `json:"docType,omitempty"`
 
 	// The following fields are used when querying couchdb for link documents.
-	Link *cs.Link `json:"link,omitempty"`
+	Link *chainscript.Link `json:"link,omitempty"`
 
 	// The following fields are used when querying couchdb for evidences documents.
-	Evidences *cs.Evidences `json:"evidences,omitempty"`
+	Evidences types.EvidenceSlice `json:"evidences,omitempty"`
 
 	// The following fields are used when querying couchdb for map documents
 	Process string `json:"process,omitempty"`
@@ -172,7 +172,7 @@ func (c *CouchStore) CreateIndex(dbName string, indexName string, fields []strin
 	return nil
 }
 
-func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
+func (c *CouchStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return nil, err
@@ -197,15 +197,15 @@ func (c *CouchStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 		linkDoc,
 		{
 			ObjectType: objectTypeMap,
-			ID:         linkDoc.Link.Meta.MapID,
-			Process:    linkDoc.Link.Meta.Process,
+			ID:         linkDoc.Link.Meta.MapId,
+			Process:    linkDoc.Link.Meta.Process.Name,
 		},
 	}
 
 	return linkHash, c.saveDocuments(dbLink, docs)
 }
 
-func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
+func (c *CouchStore) addEvidence(linkHash string, evidence *chainscript.Evidence) error {
 	currentDoc, err := c.getDocument(dbEvidences, linkHash)
 	if err != nil {
 		return err
@@ -216,22 +216,26 @@ func (c *CouchStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 		}
 	}
 	if currentDoc.Evidences == nil {
-		currentDoc.Evidences = &cs.Evidences{}
+		currentDoc.Evidences = types.EvidenceSlice{}
 	}
 
-	if err := currentDoc.Evidences.AddEvidence(*evidence); err != nil {
+	if err := currentDoc.Evidences.AddEvidence(evidence); err != nil {
 		return err
 	}
 
 	return c.saveDocument(dbEvidences, linkHash, *currentDoc)
 }
 
-func (c *CouchStore) segmentify(ctx context.Context, link *cs.Link) *cs.Segment {
-	segment := link.Segmentify()
-
-	if evidences, err := c.GetEvidences(ctx, segment.Meta.GetLinkHash()); evidences != nil && err == nil {
-		segment.Meta.Evidences = *evidences
+func (c *CouchStore) segmentify(ctx context.Context, link *chainscript.Link) *chainscript.Segment {
+	segment, err := link.Segmentify()
+	if err != nil {
+		panic(err)
 	}
+
+	if evidences, err := c.GetEvidences(ctx, segment.LinkHash()); evidences != nil && err == nil {
+		segment.Meta.Evidences = evidences
+	}
+
 	return segment
 }
 
