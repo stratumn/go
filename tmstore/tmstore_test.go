@@ -23,8 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-crypto/keys"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetestcases"
@@ -98,17 +97,16 @@ func TestTMStore(t *testing.T) {
 	t.Run("Validation", func(t *testing.T) {
 		tmstore.StartWebsocket(context.Background())
 		updateValidatorRulesFile(t, filepath.Join("testdata", "rules.json"), rulesFilename)
-		state := map[string]interface{}{"string": "test"}
+		data := map[string]interface{}{"string": "test"}
 
 		var err error
 		t.Run("Validation succeeds", func(t *testing.T) {
-			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
-			l := cstesting.NewLinkBuilder().
+			l := chainscripttest.NewLinkBuilder(t).
 				WithProcess("testProcess").
-				WithPrevLinkHash("").
-				WithType("init").
-				WithState(state).
-				SignWithKey(ITPrivateKey).
+				WithoutParent().
+				WithStep("init").
+				WithData(t, data).
+				WithSignatureFromKey(t, []byte(itPrivKey), "").
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -116,12 +114,12 @@ func TestTMStore(t *testing.T) {
 		})
 
 		t.Run("Schema validation failed", func(t *testing.T) {
-			badState := map[string]interface{}{"string": 42}
-			l := cstesting.NewLinkBuilder().
+			badData := map[string]interface{}{"string": 42}
+			l := chainscripttest.NewLinkBuilder(t).
 				WithProcess("testProcess").
-				WithType("init").
-				WithPrevLinkHash("").
-				WithState(badState).
+				WithStep("init").
+				WithoutParent().
+				WithData(t, badData).
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -134,12 +132,12 @@ func TestTMStore(t *testing.T) {
 
 		t.Run("Signature validation failed", func(t *testing.T) {
 			// here we sign the link before modifying the state, making the signature out-of-date
-			l := cstesting.NewLinkBuilder().
+			l := chainscripttest.NewLinkBuilder(t).
 				WithProcess("testProcess").
-				WithType("init").
-				WithPrevLinkHash("").
-				Sign().
-				WithState(state).
+				WithStep("init").
+				WithoutParent().
+				WithSignature(t, "").
+				WithData(t, data).
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -150,21 +148,20 @@ func TestTMStore(t *testing.T) {
 		})
 
 		t.Run("Validation rules update succeeds", func(t *testing.T) {
-			prevLink := cstesting.NewLinkBuilder().
+			prevLink := chainscripttest.NewLinkBuilder(t).
 				WithProcess("testProcess").
-				WithType("init").
-				WithPrevLinkHash("").
+				WithStep("init").
+				WithoutParent().
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), prevLink)
 			assert.NoError(t, err, "CreateLink(init) failed")
 
-			ITPrivateKey, _, _ := keys.ParseSecretKey([]byte(itPrivKey))
-			l := cstesting.NewLinkBuilder().
-				Branch(prevLink).
-				WithType("processing").
-				WithState(state).
-				SignWithKey(ITPrivateKey).
+			l := chainscripttest.NewLinkBuilder(t).
+				Branch(t, prevLink).
+				WithStep("processing").
+				WithData(t, data).
+				WithSignatureFromKey(t, []byte(itPrivKey), "").
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)
@@ -172,11 +169,11 @@ func TestTMStore(t *testing.T) {
 
 			updateValidatorRulesFile(t, filepath.Join("testdata", "rules.new.json"), rulesFilename)
 
-			l = cstesting.NewLinkBuilder().
+			l = chainscripttest.NewLinkBuilder(t).
 				WithProcess("testProcess").
-				WithType("processing").
-				WithState(state).
-				SignWithKey(ITPrivateKey).
+				WithStep("processing").
+				WithData(t, data).
+				WithSignatureFromKey(t, []byte(itPrivKey), "").
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), l)

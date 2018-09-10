@@ -22,22 +22,20 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
-
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmcommon "github.com/tendermint/tmlibs/common"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/jsonhttp"
 
 	"go.opencensus.io/trace"
 )
@@ -216,7 +214,7 @@ func (t *TMStore) GetInfo(ctx context.Context) (interface{}, error) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (t *TMStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (t *TMStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return linkHash, err
@@ -233,16 +231,16 @@ func (t *TMStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (t *TMStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
-	// Adding an external evidence does not require consensus
+func (t *TMStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
+	// Adding an external evidence does not require consensus.
 	// So it will not go through a blockchain transaction, but will rather
-	// be stored in TMPoP's store directly
+	// be stored in TMPoP's store directly.
 	_, err := t.sendQuery(
 		ctx,
 		tmpop.AddEvidence,
 		struct {
-			LinkHash *types.Bytes32
-			Evidence *cs.Evidence
+			LinkHash chainscript.LinkHash
+			Evidence *chainscript.Evidence
 		}{
 			linkHash,
 			evidence,
@@ -263,8 +261,8 @@ func (t *TMStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evid
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (t *TMStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (evidences *cs.Evidences, err error) {
-	evidences = &cs.Evidences{}
+func (t *TMStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (evidences types.EvidenceSlice, err error) {
+	evidences = types.EvidenceSlice{}
 	response, err := t.sendQuery(ctx, tmpop.GetEvidences, linkHash)
 	if err != nil {
 		return
@@ -282,7 +280,7 @@ func (t *TMStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (ev
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (t *TMStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segment *cs.Segment, err error) {
+func (t *TMStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (segment *chainscript.Segment, err error) {
 	response, err := t.sendQuery(ctx, tmpop.GetSegment, linkHash)
 	if err != nil {
 		return
@@ -291,21 +289,17 @@ func (t *TMStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (segm
 		return
 	}
 
-	segment = &cs.Segment{}
+	segment = &chainscript.Segment{}
 	err = json.Unmarshal(response.Value, segment)
 	if err != nil {
 		return
 	}
 
-	// Return nil when no segment has been found (and not an empty segment)
-	if segment.IsEmpty() {
-		segment = nil
-	}
 	return
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (segments *cs.PaginatedSegments, err error) {
+func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (segments *types.PaginatedSegments, err error) {
 	response, err := t.sendQuery(ctx, tmpop.FindSegments, filter)
 	if err != nil {
 		return
