@@ -121,7 +121,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	linkHash4, _ := link4.Hash()
 
 	createLinkBranch(t, a, link4, func(l *chainscript.Link) {
-		l.Meta.Tags = []string{"tag1", testutil.RandomString(5)}
+		l.Meta.Tags = []string{"tag1", chainscripttest.RandomString(5)}
 		l.Meta.MapId = "map1"
 	})
 
@@ -253,7 +253,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			LinkHashes: []string{
 				linkHash4.String(),
-				testutil.RandomHash().String(),
+				chainscripttest.RandomHash().String(),
 				linkHash6.String(),
 			},
 			Pagination: store.Pagination{

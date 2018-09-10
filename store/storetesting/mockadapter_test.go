@@ -100,7 +100,7 @@ func TestMockAdapter_FindSegments(t *testing.T) {
 			TotalCount: 1,
 		}, nil
 	}
-	prevLinkHash := testutil.RandomHash().String()
+	prevLinkHash := chainscripttest.RandomHash().String()
 	f := store.SegmentFilter{PrevLinkHash: &prevLinkHash}
 	s1, err := a.FindSegments(context.Background(), &f)
 	require.NoError(t, err)

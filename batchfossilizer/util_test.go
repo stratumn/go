@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"
@@ -133,7 +133,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 
 	data := make([][]byte, n)
 	for i := 0; i < n; i++ {
-		data[i] = atos(*testutil.RandomHash())
+		data[i] = chainscripttest.RandomHash()
 	}
 
 	<-a.Started()

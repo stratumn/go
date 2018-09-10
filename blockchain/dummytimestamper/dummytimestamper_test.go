@@ -17,7 +17,7 @@ package dummytimestamper
 import (
 	"testing"
 
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/types"
 )
 
@@ -37,14 +37,14 @@ func TestTimestamperNetwork(t *testing.T) {
 
 func TestTimestamperTimestamp(t *testing.T) {
 	ts := Timestamper{}
-	if _, err := ts.Timestamp(map[string]types.Bytes32{"hash": *testutil.RandomHash()}); err != nil {
+	if _, err := ts.Timestamp(map[string]types.Bytes32{"hash": *types.NewBytes32FromBytes(chainscripttest.RandomHash())}); err != nil {
 		t.Errorf("ts.Timestamp(): err: %s", err)
 	}
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
 	ts := Timestamper{}
-	if _, err := ts.TimestampHash(testutil.RandomHash()); err != nil {
+	if _, err := ts.TimestampHash(types.NewBytes32FromBytes(chainscripttest.RandomHash())); err != nil {
 		t.Errorf("ts.TimestampHash(): err: %s", err)
 	}
 }

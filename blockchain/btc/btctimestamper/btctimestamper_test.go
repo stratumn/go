@@ -18,9 +18,9 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/blockchain/btc"
 	"github.com/stratumn/go-indigocore/blockchain/btc/btctesting"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 )
 
@@ -74,7 +74,7 @@ func TestTimestamperTimestampHash(t *testing.T) {
 		t.Fatalf("New(): err: %s", err)
 	}
 
-	if _, err := ts.TimestampHash(testutil.RandomHash()); err != nil {
+	if _, err := ts.TimestampHash(types.NewBytes32FromBytes(chainscripttest.RandomHash())); err != nil {
 		t.Fatalf("ts.TimestampHash(): err: %s", err)
 	}
 

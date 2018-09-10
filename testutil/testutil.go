@@ -24,29 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/stratumn/go-indigocore/types"
 )
-
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-// RandomHash creates a random hash.
-func RandomHash() *types.Bytes32 {
-	var hash types.Bytes32
-	for i := range hash {
-		hash[i] = byte(letters[rand.Intn(len(letters))])
-	}
-	return &hash
-}
-
-// RandomString generates a random string.
-func RandomString(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
 
 // ContainsString checks if an array contains a string.
 func ContainsString(a []string, s string) bool {

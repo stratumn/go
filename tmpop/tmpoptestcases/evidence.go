@@ -23,7 +23,6 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
@@ -193,7 +192,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	linkHash7, _ := link7.Hash()
 
 	// Invalid app hash to prevent next block from producing valid proofs.
-	appHashes[8] = testutil.RandomHash()[:]
+	appHashes[8] = chainscripttest.RandomHash()
 	blocks[8] = &tmpop.Block{
 		Header:     createHeader(8),
 		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link7}},

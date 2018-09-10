@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,8 +45,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 
 	t.Run("Produces different hashes based on internal validators", func(t *testing.T) {
 		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
-		testHash1 := testutil.RandomHash()
-		testHash2 := testutil.RandomHash()
+		testHash1 := types.NewBytes32FromBytes(chainscripttest.RandomHash())
+		testHash2 := types.NewBytes32FromBytes(chainscripttest.RandomHash())
 
 		type testCase struct {
 			name string
@@ -107,10 +107,10 @@ func TestMultiValidator_Hash(t *testing.T) {
 
 	t.Run("Uses child validators' Hash() function", func(t *testing.T) {
 		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
-		schemaValidator := &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testutil.RandomHash()}
+		schemaValidator := &validators.SchemaValidator{Config: baseConfig, SchemaHash: *types.NewBytes32FromBytes(chainscripttest.RandomHash())}
 		transitionValidator := validators.NewTransitionValidator(baseConfig, []string{"king"})
 		pkiValidator := validators.NewPKIValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
-		scriptValidator := &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testutil.RandomHash()}
+		scriptValidator := &validators.ScriptValidator{Config: baseConfig, ScriptHash: *types.NewBytes32FromBytes(chainscripttest.RandomHash())}
 
 		validatorList := []validators.Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator}
 		mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
