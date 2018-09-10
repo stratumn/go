@@ -42,7 +42,7 @@ func (f Factory) TestBatch(t *testing.T) {
 
 	// Initialize the adapter with a few links with specific map ids
 	for i := 0; i < 6; i++ {
-		link := chainscripttest.NewLinkBuilder(t).WithMapID(fmt.Sprintf("map%d", i%3)).Build()
+		link := chainscripttest.NewLinkBuilder(t).WithRandomData().WithMapID(fmt.Sprintf("map%d", i%3)).Build()
 		_, err := a.CreateLink(ctx, link)
 		require.NoError(t, err, "a.CreateLink()")
 	}

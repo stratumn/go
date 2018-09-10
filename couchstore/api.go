@@ -47,27 +47,52 @@ const (
 type CouchResponseStatus struct {
 	Ok         bool
 	StatusCode int
-	Error      string `json:"error;omitempty"`
-	Reason     string `json:"reason;omitempty"`
+	Error      string `json:"error,omitempty"`
+	Reason     string `json:"reason,omitempty"`
 }
 
 func (c *CouchResponseStatus) error() error {
 	return errors.Errorf("Status code: %v, error: %v, reason: %v", c.StatusCode, c.Error, c.Reason)
 }
 
-// Document is the type used in couchdb
+// LinkWrapper wraps a link before saving it to a CouchDB document.
+// Links omit empty values in their JSON representation, which can break
+// CouchDB's filtering.
+// So we make sure the LinkWrapper contains explicit default values for all
+// fields we want to be able to sort on.
+type LinkWrapper struct {
+	Link         *chainscript.Link `json:"link"`
+	Priority     float64           `json:"priority"`
+	PrevLinkHash string            `json:"prevLinkHash"`
+}
+
+// WrapLink wraps a link.
+func WrapLink(link *chainscript.Link) *LinkWrapper {
+	wrapper := &LinkWrapper{
+		Link:     link,
+		Priority: link.Meta.Priority,
+	}
+
+	if len(link.PrevLinkHash()) > 0 {
+		wrapper.PrevLinkHash = link.PrevLinkHash().String()
+	}
+
+	return wrapper
+}
+
+// Document is the object stored in CouchDB.
 type Document struct {
 	ID         string `json:"_id,omitempty"`
 	Revision   string `json:"_rev,omitempty"`
 	ObjectType string `json:"docType,omitempty"`
 
 	// The following fields are used when querying couchdb for link documents.
-	Link *chainscript.Link `json:"link,omitempty"`
+	LinkWrapper *LinkWrapper `json:"linkWrapper,omitempty"`
 
 	// The following fields are used when querying couchdb for evidences documents.
 	Evidences types.EvidenceSlice `json:"evidences,omitempty"`
 
-	// The following fields are used when querying couchdb for map documents
+	// The following fields are used when querying couchdb for map documents.
 	Process string `json:"process,omitempty"`
 
 	// The following fields are used when querying couchdb for values stored via key/value.
@@ -180,9 +205,9 @@ func (c *CouchStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 	linkHashStr := linkHash.String()
 
 	linkDoc := &Document{
-		ObjectType: objectTypeLink,
-		Link:       link,
-		ID:         linkHashStr,
+		ObjectType:  objectTypeLink,
+		LinkWrapper: WrapLink(link),
+		ID:          linkHashStr,
 	}
 
 	currentLinkDoc, err := c.getDocument(dbLink, linkHashStr)
@@ -197,8 +222,8 @@ func (c *CouchStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 		linkDoc,
 		{
 			ObjectType: objectTypeMap,
-			ID:         linkDoc.Link.Meta.MapId,
-			Process:    linkDoc.Link.Meta.Process.Name,
+			ID:         linkDoc.LinkWrapper.Link.Meta.MapId,
+			Process:    linkDoc.LinkWrapper.Link.Meta.Process.Name,
 		},
 	}
 

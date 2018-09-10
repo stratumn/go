@@ -105,11 +105,11 @@ func New(config *Config) (*CouchStore, error) {
 		return nil, err
 	}
 
-	if err := couchstore.CreateIndex(dbLink, "mapID", []string{"link.meta.mapId"}); err != nil {
+	if err := couchstore.CreateIndex(dbLink, "mapID", []string{"linkWrapper.link.meta.mapId"}); err != nil {
 		return nil, err
 	}
 
-	if err := couchstore.CreateIndex(dbLink, "priority", []string{"link.meta.priority"}); err != nil {
+	if err := couchstore.CreateIndex(dbLink, "priority", []string{"linkWrapper.priority"}); err != nil {
 		return nil, err
 	}
 
@@ -175,7 +175,7 @@ func (c *CouchStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHa
 	if err != nil || linkDoc == nil {
 		return nil, err
 	}
-	return c.segmentify(ctx, linkDoc.Link), nil
+	return c.segmentify(ctx, linkDoc.LinkWrapper.Link), nil
 }
 
 // findSegmentsSlice implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
@@ -201,7 +201,7 @@ func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.Segmen
 
 	segments := types.SegmentSlice{}
 	for _, doc := range couchFindResponse.Docs {
-		segments = append(segments, c.segmentify(ctx, doc.Link))
+		segments = append(segments, c.segmentify(ctx, doc.LinkWrapper.Link))
 	}
 	return segments, nil
 }

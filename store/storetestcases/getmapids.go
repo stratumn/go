@@ -43,6 +43,7 @@ func (f Factory) TestGetMapIDs(t *testing.T) {
 		mapID := fmt.Sprintf("map%d", i)
 		for j := 0; j < testPageSize; j++ {
 			l := chainscripttest.NewLinkBuilder(t).
+				WithRandomData().
 				WithProcess(processNames[i%2]).
 				WithMapID(mapID).
 				Build()

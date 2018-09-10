@@ -38,10 +38,10 @@ func createLink(t *testing.T, adapter store.Adapter, link *chainscript.Link, pre
 	if prepareLink != nil {
 		prepareLink(link)
 	}
+
 	_, err := adapter.CreateLink(context.Background(), link)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err, "adapter.CreateLink()")
+
 	priorities = append(priorities, link.Meta.Priority)
 
 	return link
@@ -81,8 +81,9 @@ func verifyReversePriorityOrdering(t *testing.T, segments *types.PaginatedSegmen
 }
 
 func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *types.PaginatedSegments, expectedCount, expectedTotalCount int) {
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, segments)
+
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Equal(t, expectedTotalCount, segments.TotalCount, "Invalid number of results before pagination")
 	assert.Conditionf(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results. got: %d / expected less than %d", len(segments.Segments), segments.TotalCount)
