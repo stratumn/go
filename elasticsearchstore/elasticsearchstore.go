@@ -20,8 +20,8 @@ import (
 
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -153,7 +153,7 @@ func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (es *ESStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := es.createLink(link)
 	if err != nil {
 		return nil, err
@@ -167,7 +167,7 @@ func (es *ESStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes3
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (es *ESStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (es *ESStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	if err := es.addEvidence(linkHash.String(), evidence); err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (es *ESStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evi
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (es *ESStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	link, err := es.getLink(linkHash.String())
 	if err != nil || link == nil {
 		return nil, err
@@ -192,7 +192,7 @@ func (es *ESStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	return es.findSegments(filter)
 }
 
@@ -202,7 +202,7 @@ func (es *ESStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]st
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (es *ESStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (es *ESStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	return es.getEvidences(linkHash.String())
 }
 
@@ -231,12 +231,12 @@ func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) 
 
 // SimpleSearchQuery searches through the store for segments matching query criteria
 // using ES simple query string feature
-func (es *ESStore) SimpleSearchQuery(query *SearchQuery) (*cs.PaginatedSegments, error) {
+func (es *ESStore) SimpleSearchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
 	return es.simpleSearchQuery(query)
 }
 
 // MultiMatchQuery searches through the store for segments matching query criteria
 // using ES multi match query
-func (es *ESStore) MultiMatchQuery(query *SearchQuery) (*cs.PaginatedSegments, error) {
+func (es *ESStore) MultiMatchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
 	return es.multiMatchQuery(query)
 }

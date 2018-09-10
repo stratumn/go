@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/olivere/elastic"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -128,10 +128,10 @@ const (
 	docType = "_doc"
 )
 
-// Evidences is a wrapper around cs.Evidences for json ElasticSearch serialization compliance.
+// Evidences is a wrapper around types.EvidenceSlice for json ElasticSearch serialization compliance.
 // Elastic Search does not allow indexing of arrays directly.
 type Evidences struct {
-	Evidences *cs.Evidences `json:"evidences,omitempty"`
+	Evidences types.EvidenceSlice `json:"evidences,omitempty"`
 }
 
 // Value is a wrapper struct for the value of the keyvalue store part.
@@ -141,8 +141,8 @@ type Value struct {
 }
 
 type linkDoc struct {
-	cs.Link
-	StateTokens []string `json:"stateTokens"`
+	chainscript.Link
+	DataTokens []string `json:"dataTokens"`
 }
 
 // SearchQuery contains pagination and query string information.
@@ -220,7 +220,7 @@ func (es *ESStore) notifyEvent(event *store.Event) {
 func (o *linkDoc) extractTokens(obj interface{}) {
 	switch value := obj.(type) {
 	case string:
-		o.StateTokens = append(o.StateTokens, value)
+		o.DataTokens = append(o.DataTokens, value)
 	case map[string]interface{}:
 		for _, v := range value {
 			o.extractTokens(v)
@@ -236,18 +236,24 @@ func (o *linkDoc) extractTokens(obj interface{}) {
 	}
 }
 
-func fromLink(link *cs.Link) (*linkDoc, error) {
+func fromLink(link *chainscript.Link) (*linkDoc, error) {
 	doc := linkDoc{
-		Link:        *link,
-		StateTokens: []string{},
+		Link:       *link,
+		DataTokens: []string{},
 	}
 
-	doc.extractTokens(link.State)
+	var data map[string]interface{}
+	err := link.StructurizeData(&data)
+	if err != nil {
+		return nil, err
+	}
+
+	doc.extractTokens(data)
 
 	return &doc, nil
 }
 
-func (es *ESStore) createLink(link *cs.Link) (*types.Bytes32, error) {
+func (es *ESStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return nil, err
@@ -308,7 +314,7 @@ func (es *ESStore) deleteDocument(indexName, id string) error {
 	return err
 }
 
-func (es *ESStore) getLink(id string) (*cs.Link, error) {
+func (es *ESStore) getLink(id string) (*chainscript.Link, error) {
 	var link linkDoc
 	jsn, err := es.getDocument(linksIndex, id)
 	if err != nil {
@@ -321,25 +327,25 @@ func (es *ESStore) getLink(id string) (*cs.Link, error) {
 	return &link.Link, err
 }
 
-func (es *ESStore) getEvidences(id string) (*cs.Evidences, error) {
+func (es *ESStore) getEvidences(id string) (types.EvidenceSlice, error) {
 	jsn, err := es.getDocument(evidencesIndex, id)
 	if err != nil {
 		return nil, err
 	}
-	evidences := Evidences{Evidences: &cs.Evidences{}}
+	evidences := Evidences{Evidences: types.EvidenceSlice{}}
 	if jsn != nil {
 		err = json.Unmarshal(*jsn, &evidences)
 	}
 	return evidences.Evidences, err
 }
 
-func (es *ESStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
+func (es *ESStore) addEvidence(linkHash string, evidence *chainscript.Evidence) error {
 	currentDoc, err := es.getEvidences(linkHash)
 	if err != nil {
 		return err
 	}
 
-	if err := currentDoc.AddEvidence(*evidence); err != nil {
+	if err := currentDoc.AddEvidence(evidence); err != nil {
 		return err
 	}
 
@@ -382,12 +388,15 @@ func (es *ESStore) deleteValue(key string) ([]byte, error) {
 	return value, es.deleteDocument(valuesIndex, key)
 }
 
-func (es *ESStore) segmentify(ctx context.Context, link *cs.Link) *cs.Segment {
-	segment := link.Segmentify()
+func (es *ESStore) segmentify(ctx context.Context, link *chainscript.Link) *chainscript.Segment {
+	segment, err := link.Segmentify()
+	if err != nil {
+		panic(err)
+	}
 
-	evidences, err := es.GetEvidences(ctx, segment.Meta.GetLinkHash())
+	evidences, err := es.GetEvidences(ctx, segment.LinkHash())
 	if evidences != nil && err == nil {
-		segment.Meta.Evidences = *evidences
+		segment.Meta.Evidences = evidences
 	}
 	return segment
 }
@@ -497,7 +506,7 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 	return filterQueries
 }
 
-func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (*cs.PaginatedSegments, error) {
+func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (*types.PaginatedSegments, error) {
 	// Flush to make sure the documents got written.
 	ctx := context.TODO()
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
@@ -524,16 +533,16 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 
 	// populate SegmentSlice.
 	if sr == nil || sr.TotalHits() == 0 {
-		return &cs.PaginatedSegments{}, nil
+		return &types.PaginatedSegments{}, nil
 	}
 
-	res := &cs.PaginatedSegments{
-		Segments:   cs.SegmentSlice{},
+	res := &types.PaginatedSegments{
+		Segments:   types.SegmentSlice{},
 		TotalCount: int(sr.TotalHits()),
 	}
 
 	for _, hit := range sr.Hits.Hits {
-		var link cs.Link
+		var link chainscript.Link
 		if err := json.Unmarshal(*hit.Source, &link); err != nil {
 			return nil, err
 		}
@@ -545,7 +554,7 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 	return res, nil
 }
 
-func (es *ESStore) findSegments(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (es *ESStore) findSegments(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	// prepare query.
 	q := elastic.NewBoolQuery().Filter(makeFilterQueries(filter)...)
 
@@ -553,7 +562,7 @@ func (es *ESStore) findSegments(filter *store.SegmentFilter) (*cs.PaginatedSegme
 	return es.genericSearch(filter, q)
 }
 
-func (es *ESStore) simpleSearchQuery(query *SearchQuery) (*cs.PaginatedSegments, error) {
+func (es *ESStore) simpleSearchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
 	// prepare Query.
 	q := elastic.NewBoolQuery().
 		// add filter queries.
@@ -565,7 +574,7 @@ func (es *ESStore) simpleSearchQuery(query *SearchQuery) (*cs.PaginatedSegments,
 	return es.genericSearch(&query.SegmentFilter, q)
 }
 
-func (es *ESStore) multiMatchQuery(query *SearchQuery) (*cs.PaginatedSegments, error) {
+func (es *ESStore) multiMatchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
 	// fields to search through: all meta + stateTokens.
 	fields := []string{
 		"meta.mapId",
