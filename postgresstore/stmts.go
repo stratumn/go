@@ -20,10 +20,8 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 )
 
 const (
@@ -350,11 +348,10 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 	}
 
 	if filter.PrevLinkHash != nil {
-
 		if *filter.PrevLinkHash == "" {
 			filters = append(filters, "prev_link_hash = '\\x'")
 		} else {
-			prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash)
+			prevLinkHashBytes, err := chainscript.NewLinkHashFromString(*filter.PrevLinkHash)
 			if err != nil {
 				return nil, err
 			}
@@ -366,9 +363,14 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		linkHashes, err := cs.NewLinkHashesFromStrings(filter.LinkHashes)
-		if err != nil {
-			return nil, err
+		var linkHashes []chainscript.LinkHash
+		for _, lh := range filter.LinkHashes {
+			linkHash, err := chainscript.NewLinkHashFromString(lh)
+			if err != nil {
+				return nil, err
+			}
+
+			linkHashes = append(linkHashes, linkHash)
 		}
 
 		filters = append(filters, fmt.Sprintf("l.link_hash = ANY($%d::bytea[])", cnt))

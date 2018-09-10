@@ -19,8 +19,7 @@ import (
 	"encoding/json"
 
 	"github.com/lib/pq"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-chainscript"
 )
 
 type writer struct {
@@ -48,10 +47,10 @@ func (a *writer) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
-func (a *writer) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	var (
 		priority     = link.Meta.Priority
-		mapID        = link.Meta.MapID
+		mapID        = link.Meta.MapId
 		prevLinkHash = link.Meta.GetPrevLinkHash()
 		tags         = link.Meta.Tags
 		process      = link.Meta.Process
