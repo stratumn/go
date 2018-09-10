@@ -19,12 +19,10 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stretchr/testify/require"
-	// Needed to serialize fossilizers evidence types.
-	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEvidenceStore runs all tests for the store.EvidenceStore interface

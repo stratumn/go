@@ -20,7 +20,6 @@ import (
 	"runtime"
 
 	log "github.com/sirupsen/logrus"
-
 	"github.com/stratumn/go-indigocore/tendermint"
 	"github.com/tendermint/abci/types"
 )

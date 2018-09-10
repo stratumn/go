@@ -19,8 +19,6 @@ import (
 	"flag"
 
 	log "github.com/sirupsen/logrus"
-
-	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/postgresstore"
 	"github.com/stratumn/go-indigocore/store/storehttp"
