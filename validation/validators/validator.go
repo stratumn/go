@@ -38,8 +38,8 @@ type Validator interface {
 	Hash() (*types.Bytes32, error)
 }
 
-//Validators is an array of Validator.
+// Validators is an array of Validator.
 type Validators []Validator
 
-//ProcessesValidators maps a process name to a list of validators.
+// ProcessesValidators maps a process name to a list of validators.
 type ProcessesValidators map[string]Validators

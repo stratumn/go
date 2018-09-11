@@ -152,10 +152,11 @@ func TestTMStore(t *testing.T) {
 				WithProcess("testProcess").
 				WithStep("init").
 				WithoutParent().
+				WithData(t, data).
 				Build()
 
 			_, err = tmstore.CreateLink(context.Background(), prevLink)
-			assert.NoError(t, err, "CreateLink(init) failed")
+			require.NoError(t, err, "CreateLink(init) failed")
 
 			l := chainscripttest.NewLinkBuilder(t).
 				Branch(t, prevLink).

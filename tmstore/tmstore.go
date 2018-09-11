@@ -295,6 +295,10 @@ func (t *TMStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash)
 		return
 	}
 
+	if segment.Link == nil {
+		segment = nil
+	}
+
 	return
 }
 

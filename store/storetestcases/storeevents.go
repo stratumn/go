@@ -45,7 +45,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 			assert.EqualValues(t, store.SavedLinks, got.EventType, "Invalid event type")
 			links := got.Data.([]*chainscript.Link)
 			assert.Equal(t, 1, len(links), "Invalid number of links")
-			assert.EqualValues(t, link, links[0], "Invalid link")
+			chainscripttest.LinksEqual(t, link, links[0])
 		case <-time.After(10 * time.Second):
 			require.Fail(t, "Timeout waiting for link saved event")
 		}
