@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +30,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	l := testutil.RandomLink(t)
+	l := chainscripttest.RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), l)
 
 	s := store.EvidenceStore(a)

@@ -21,7 +21,6 @@ import (
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,7 +50,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		link := testutil.RandomLink(t)
+		link := chainscripttest.RandomLink(t)
 		linkHash, err := b.CreateLink(ctx, link)
 		assert.NoError(t, err, "b.CreateLink()")
 
@@ -64,7 +63,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		link := testutil.RandomLink(t)
+		link := chainscripttest.RandomLink(t)
 		linkHash, err := b.CreateLink(ctx, link)
 		assert.NoError(t, err, "b.CreateLink()")
 
@@ -89,9 +88,9 @@ func (f Factory) TestBatch(t *testing.T) {
 		assert.Len(t, segs.Segments, segs.TotalCount)
 		adapterLinksCount := len(segs.Segments)
 
-		_, err = b.CreateLink(ctx, testutil.RandomLink(t))
+		_, err = b.CreateLink(ctx, chainscripttest.RandomLink(t))
 		require.NoError(t, err, "b.CreateLink()")
-		_, err = b.CreateLink(ctx, testutil.RandomLink(t))
+		_, err = b.CreateLink(ctx, chainscripttest.RandomLink(t))
 		require.NoError(t, err, "b.CreateLink()")
 
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})

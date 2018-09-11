@@ -472,16 +472,16 @@ func TestEvents(t *testing.T) {
 		assert.Empty(t, e.Data, "Links should be initially empty")
 
 		e.AddSavedLinks(
-			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
-			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
+			chainscripttest.RandomLink(t),
+			chainscripttest.RandomLink(t),
 		)
 		assert.Len(t, e.Data, 2, "Two links should have been added")
 	})
 
 	t.Run("SavedLinks event can be initialized with links", func(t *testing.T) {
 		e := store.NewSavedLinks(
-			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
-			chainscripttest.NewLinkBuilder(t).WithRandomData().Build(),
+			chainscripttest.RandomLink(t),
+			chainscripttest.RandomLink(t),
 		)
 		assert.Len(t, e.Data, 2, "Links should be initially empty")
 	})
@@ -506,7 +506,7 @@ func TestEvents(t *testing.T) {
 	})
 
 	t.Run("SavedLinks serialization", func(t *testing.T) {
-		link := chainscripttest.NewLinkBuilder(t).WithRandomData().Build()
+		link := chainscripttest.RandomLink(t)
 		e := store.NewSavedLinks(link)
 
 		b, err := json.Marshal(e)

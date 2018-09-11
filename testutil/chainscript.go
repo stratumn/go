@@ -17,34 +17,10 @@ package testutil
 import (
 	"testing"
 
-	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/require"
 )
-
-// RandomLink creates a link with random data.
-func RandomLink(t *testing.T) *chainscript.Link {
-	return chainscripttest.NewLinkBuilder(t).WithRandomData().Build()
-}
-
-// RandomSegment creates a segment with random data.
-func RandomSegment(t *testing.T) *chainscript.Segment {
-	return chainscripttest.NewLinkBuilder(t).WithRandomData().Segmentify(t)
-}
-
-// RandomEvidence creates a random evidence.
-func RandomEvidence(t *testing.T) *chainscript.Evidence {
-	e, err := chainscript.NewEvidence(
-		"1.0.0",
-		chainscripttest.RandomString(6),
-		chainscripttest.RandomString(10),
-		chainscripttest.RandomBytes(64),
-	)
-	require.NoError(t, err)
-
-	return e
-}
 
 // PaginatedSegmentsEqual verifies that two paginated segment lists are equal.
 func PaginatedSegmentsEqual(t *testing.T, s1, s2 *types.PaginatedSegments) {

@@ -25,7 +25,6 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +47,7 @@ func createLink(t *testing.T, adapter store.Adapter, link *chainscript.Link, pre
 }
 
 func createRandomLink(t *testing.T, adapter store.Adapter, prepareLink func(l *chainscript.Link)) *chainscript.Link {
-	return createLink(t, adapter, testutil.RandomLink(t), prepareLink)
+	return createLink(t, adapter, chainscripttest.RandomLink(t), prepareLink)
 }
 
 func createLinkBranch(t *testing.T, adapter store.Adapter, parent *chainscript.Link, prepareLink func(l *chainscript.Link)) *chainscript.Link {

@@ -23,7 +23,6 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +32,7 @@ func (f Factory) TestGetSegment(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	link := testutil.RandomLink(t)
+	link := chainscripttest.RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), link)
 
 	link2 := chainscripttest.NewLinkBuilder(t).From(t, link).WithData(t, chainscripttest.RandomString(24)).Build()

@@ -23,7 +23,6 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,14 +33,14 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := testutil.RandomLink(t)
+		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink with no priority should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := testutil.RandomLink(t)
+		l := chainscripttest.RandomLink(t)
 		l.Meta.Priority = 0.0
 
 		_, err := a.CreateLink(ctx, l)
@@ -50,7 +49,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink and update state should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := testutil.RandomLink(t)
+		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
@@ -63,7 +62,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink and update map ID should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l1 := testutil.RandomLink(t)
+		l1 := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l1)
 		assert.NoError(t, err, "a.CreateLink()")
 
@@ -74,7 +73,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink with previous link hash should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := testutil.RandomLink(t)
+		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
