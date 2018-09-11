@@ -84,7 +84,7 @@ func verifyResultsCountWithTotalCount(t *testing.T, err error, segments *types.P
 	require.NoError(t, err)
 	require.NotNil(t, segments)
 
-	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
+	require.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Equal(t, expectedTotalCount, segments.TotalCount, "Invalid number of results before pagination")
 	assert.Conditionf(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results. got: %d / expected less than %d", len(segments.Segments), segments.TotalCount)
 }
@@ -389,10 +389,10 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := &chainscript.Evidence{Backend: "dummy", Provider: "1"}
-		e2 := &chainscript.Evidence{Backend: "batch", Provider: "2"}
-		e3 := &chainscript.Evidence{Backend: "bcbatch", Provider: "3"}
-		e4 := &chainscript.Evidence{Backend: "generic", Provider: "4"}
+		e1, _ := chainscript.NewEvidence("1.0.0", "dummy", "1", []byte{1})
+		e2, _ := chainscript.NewEvidence("1.0.0", "batch", "2", []byte{2})
+		e3, _ := chainscript.NewEvidence("1.0.0", "bcbatch", "3", []byte{3})
+		e4, _ := chainscript.NewEvidence("1.0.0", "generic", "4", []byte{4})
 		testEvidences := []*chainscript.Evidence{e1, e2, e3, e4}
 
 		for _, e := range testEvidences {

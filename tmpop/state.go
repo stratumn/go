@@ -170,7 +170,7 @@ func (s *State) computeAppHash() (*types.Bytes32, error) {
 		var treeLeaves [][]byte
 		for _, link := range s.deliveredLinksList {
 			linkHash, _ := link.Hash()
-			treeLeaves = append(treeLeaves, linkHash[:])
+			treeLeaves = append(treeLeaves, linkHash)
 		}
 
 		merkle, err := merkle.NewStaticTree(treeLeaves)

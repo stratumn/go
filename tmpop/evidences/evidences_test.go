@@ -138,12 +138,12 @@ func TestTendermintProof(t *testing.T) {
 					}
 				}`)
 
-			tmEvidence := &chainscript.Evidence{
-				Version:  evidences.Version0_1_0,
-				Backend:  evidences.TMPopName,
-				Provider: "testTendermintChain",
-				Proof:    proofData,
-			}
+			tmEvidence, _ := chainscript.NewEvidence(
+				evidences.Version0_1_0,
+				evidences.TMPopName,
+				"testTendermintChain",
+				proofData,
+			)
 
 			proof, err := evidences.UnmarshalProof(tmEvidence)
 			require.NoError(t, err)
@@ -417,7 +417,7 @@ func createMerkleTree(linksCount int) (chainscript.LinkHash, *merkle.StaticTree,
 	treeLeaves := make([][]byte, linksCount)
 	for i := 0; i < linksCount; i++ {
 		if i == position {
-			treeLeaves[i] = linkHash[:]
+			treeLeaves[i] = linkHash
 		} else {
 			treeLeaves[i] = chainscripttest.RandomHash()[:]
 		}

@@ -33,7 +33,7 @@ type reader struct {
 func (a *reader) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	var segments = make(types.SegmentSlice, 0, 1)
 
-	rows, err := a.stmts.GetSegment.Query(linkHash[:])
+	rows, err := a.stmts.GetSegment.Query(linkHash)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,6 @@ func (a *reader) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) 
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
 func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
-
 	rows, err := a.stmts.FindSegmentsWithFilters(filter)
 	if err != nil {
 		return nil, err
@@ -66,11 +65,11 @@ func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) 
 
 func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCount *int) error {
 	var currentSegment *chainscript.Segment
-	var currentHash []byte
+	var currentHash chainscript.LinkHash
 
 	for rows.Next() {
 		var (
-			linkHash     []byte
+			linkHash     chainscript.LinkHash
 			linkData     string
 			link         chainscript.Link
 			evidenceData sql.NullString
@@ -96,7 +95,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 			if err != nil {
 				return err
 			}
-			currentHash = hash[:]
+			currentHash = hash
 
 			currentSegment, err = link.Segmentify()
 			if err != nil {
@@ -160,7 +159,7 @@ func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 func (a *reader) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	var evidences types.EvidenceSlice
 
-	rows, err := a.stmts.GetEvidences.Query(linkHash[:])
+	rows, err := a.stmts.GetEvidences.Query(linkHash)
 	if err != nil {
 		return nil, err
 	}

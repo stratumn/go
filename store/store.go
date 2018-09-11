@@ -230,7 +230,7 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 			}
 		} else {
 			filterPrevLinkHash, err := hex.DecodeString(*filter.PrevLinkHash)
-			if err != nil || !bytes.Equal(filterPrevLinkHash[:], prevLinkHash) {
+			if err != nil || !bytes.Equal(filterPrevLinkHash, prevLinkHash) {
 				return false
 			}
 		}

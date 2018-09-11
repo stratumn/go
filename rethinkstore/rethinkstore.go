@@ -200,7 +200,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 	}
 
 	w := linkWrapper{
-		ID:        linkHash[:],
+		ID:        linkHash,
 		Content:   link,
 		Priority:  link.Meta.Priority,
 		UpdatedAt: time.Now().UTC(),
@@ -210,7 +210,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 	}
 
 	if prevLinkHash != nil {
-		w.PrevLinkHash = prevLinkHash[:]
+		w.PrevLinkHash = prevLinkHash
 	}
 
 	if err := a.links.Get(linkHash).Replace(&w).Exec(a.session); err != nil {
@@ -228,7 +228,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
 func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
-	cur, err := a.links.Get(linkHash[:]).Run(a.session)
+	cur, err := a.links.Get(linkHash).Run(a.session)
 
 	if err != nil {
 		return nil, err
@@ -463,7 +463,7 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 	}
 
 	w := evidencesWrapper{
-		ID:        linkHash[:],
+		ID:        linkHash,
 		Content:   currentEvidences,
 		UpdatedAt: time.Now(),
 	}

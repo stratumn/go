@@ -22,6 +22,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 )
 
 const (
@@ -357,15 +358,15 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 			}
 
 			filters = append(filters, fmt.Sprintf("prev_link_hash = $%d", cnt))
-			values = append(values, prevLinkHashBytes[:])
+			values = append(values, prevLinkHashBytes)
 			cnt++
 		}
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		var linkHashes []chainscript.LinkHash
+		var linkHashes []*types.Bytes32
 		for _, lh := range filter.LinkHashes {
-			linkHash, err := chainscript.NewLinkHashFromString(lh)
+			linkHash, err := types.NewBytes32FromString(lh)
 			if err != nil {
 				return nil, err
 			}

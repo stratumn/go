@@ -72,11 +72,11 @@ func (f Factory) TestGetSegment(t *testing.T) {
 
 	t.Run("Getting a segment should return its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := &chainscript.Evidence{Backend: "TMPop", Provider: "1"}
-		e2 := &chainscript.Evidence{Backend: "dummy", Provider: "2"}
-		e3 := &chainscript.Evidence{Backend: "batch", Provider: "3"}
-		e4 := &chainscript.Evidence{Backend: "bcbatch", Provider: "4"}
-		e5 := &chainscript.Evidence{Backend: "generic", Provider: "5"}
+		e1, _ := chainscript.NewEvidence("1.0.0", "TMPop", "1", chainscripttest.RandomBytes(6))
+		e2, _ := chainscript.NewEvidence("1.0.0", "dummy", "2", chainscripttest.RandomBytes(6))
+		e3, _ := chainscript.NewEvidence("1.0.0", "batch", "3", chainscripttest.RandomBytes(6))
+		e4, _ := chainscript.NewEvidence("1.0.0", "bcbatch", "4", chainscripttest.RandomBytes(6))
+		e5, _ := chainscript.NewEvidence("1.0.0", "generic", "5", chainscripttest.RandomBytes(6))
 		evidences := []*chainscript.Evidence{e1, e2, e3, e4, e5}
 
 		for _, e := range evidences {

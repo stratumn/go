@@ -139,7 +139,7 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 		return err
 	}
 
-	_, err = a.stmts.AddEvidence.Exec(linkHash[:], evidence.Provider, data)
+	_, err = a.stmts.AddEvidence.Exec(linkHash, evidence.Provider, data)
 	if err != nil {
 		return err
 	}

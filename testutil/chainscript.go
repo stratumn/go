@@ -35,12 +35,15 @@ func RandomSegment(t *testing.T) *chainscript.Segment {
 
 // RandomEvidence creates a random evidence.
 func RandomEvidence(t *testing.T) *chainscript.Evidence {
-	return &chainscript.Evidence{
-		Version:  "1.0.0",
-		Backend:  chainscripttest.RandomString(6),
-		Provider: chainscripttest.RandomString(10),
-		Proof:    chainscripttest.RandomBytes(64),
-	}
+	e, err := chainscript.NewEvidence(
+		"1.0.0",
+		chainscripttest.RandomString(6),
+		chainscripttest.RandomString(10),
+		chainscripttest.RandomBytes(64),
+	)
+	require.NoError(t, err)
+
+	return e
 }
 
 // PaginatedSegmentsEqual verifies that two paginated segment lists are equal.

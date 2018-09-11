@@ -37,12 +37,12 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 	t.Run("Adding evidences to a segment should work", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := chainscript.Evidence{Backend: "TMPop", Provider: "1"}
-		e2 := chainscript.Evidence{Backend: "dummy", Provider: "2"}
-		e3 := chainscript.Evidence{Backend: "batch", Provider: "3"}
-		e4 := chainscript.Evidence{Backend: "bcbatch", Provider: "4"}
-		e5 := chainscript.Evidence{Backend: "generic", Provider: "5"}
-		evidences := []*chainscript.Evidence{&e1, &e2, &e3, &e4, &e5}
+		e1, _ := chainscript.NewEvidence("1.0.0", "TMPop", "1", []byte{1})
+		e2, _ := chainscript.NewEvidence("1.0.0", "dummy", "2", []byte{2})
+		e3, _ := chainscript.NewEvidence("1.0.0", "batch", "3", []byte{3})
+		e4, _ := chainscript.NewEvidence("1.0.0", "bcbatch", "4", []byte{4})
+		e5, _ := chainscript.NewEvidence("1.0.0", "generic", "5", []byte{5})
+		evidences := []*chainscript.Evidence{e1, e2, e3, e4, e5}
 
 		for _, evidence := range evidences {
 			err := s.AddEvidence(ctx, linkHash, evidence)
@@ -61,7 +61,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 	t.Run("Duplicate evidences should be discarded", func(t *testing.T) {
 		ctx := context.Background()
-		e := &chainscript.Evidence{Backend: "TMPop", Provider: "42"}
+		e, _ := chainscript.NewEvidence("1.0.0", "TMPop", "42", []byte{42})
 
 		err := s.AddEvidence(ctx, linkHash, e)
 		require.NoError(t, err, "s.AddEvidence()")

@@ -524,11 +524,12 @@ func TestEvents(t *testing.T) {
 
 	t.Run("SavedEvidences serialization", func(t *testing.T) {
 		e := store.NewSavedEvidences()
-		evidence := &chainscript.Evidence{
-			Version:  "1.0.0",
-			Backend:  chainscripttest.RandomString(8),
-			Provider: chainscripttest.RandomString(10),
-		}
+		evidence, _ := chainscript.NewEvidence(
+			"1.0.0",
+			chainscripttest.RandomString(8),
+			chainscripttest.RandomString(10),
+			chainscripttest.RandomBytes(8),
+		)
 
 		linkHash := chainscripttest.RandomHash()
 		e.AddSavedEvidence(linkHash, evidence)

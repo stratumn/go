@@ -58,7 +58,7 @@ func (f Factory) TestQuery(t *testing.T) {
 	})
 
 	t.Run("AddEvidence() adds an external evidence", func(t *testing.T) {
-		evidence := &chainscript.Evidence{Backend: "dummy", Provider: "1"}
+		evidence, _ := chainscript.NewEvidence("1.0.0", "dummy", "1", chainscripttest.RandomBytes(24))
 		evidenceRequest := &struct {
 			LinkHash chainscript.LinkHash
 			Evidence *chainscript.Evidence

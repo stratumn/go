@@ -53,7 +53,7 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 		mapID        = link.Meta.MapId
 		prevLinkHash = link.Meta.GetPrevLinkHash()
 		tags         = link.Meta.Tags
-		process      = link.Meta.Process
+		process      = link.Meta.Process.Name
 	)
 
 	linkHash, err := link.Hash()
@@ -66,10 +66,10 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 		return linkHash, err
 	}
 
-	if prevLinkHash == nil {
-		_, err = a.stmts.CreateLink.Exec(linkHash[:], priority, mapID, []byte{}, pq.Array(tags), string(data), process)
+	if len(prevLinkHash) == 0 {
+		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, []byte{}, pq.Array(tags), string(data), process)
 	} else {
-		_, err = a.stmts.CreateLink.Exec(linkHash[:], priority, mapID, prevLinkHash[:], pq.Array(tags), string(data), process)
+		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), string(data), process)
 	}
 
 	return linkHash, err
