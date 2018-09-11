@@ -79,10 +79,11 @@ func TestEvidenceSlice(t *testing.T) {
 	t.Run("FindEvidences", func(t *testing.T) {
 		t.Run("missing evidence", func(t *testing.T) {
 			var e types.EvidenceSlice
-			e.AddEvidence(&chainscript.Evidence{
+			err := e.AddEvidence(&chainscript.Evidence{
 				Backend:  "btc",
 				Provider: "testnet",
 			})
+			require.NoError(t, err)
 
 			e2 := e.FindEvidences("eth")
 			assert.Empty(t, e2)
@@ -90,14 +91,14 @@ func TestEvidenceSlice(t *testing.T) {
 
 		t.Run("evidence match", func(t *testing.T) {
 			var e types.EvidenceSlice
-			e.AddEvidence(&chainscript.Evidence{
+			require.NoError(t, e.AddEvidence(&chainscript.Evidence{
 				Backend:  "btc",
 				Provider: "testnet",
-			})
-			e.AddEvidence(&chainscript.Evidence{
+			}))
+			require.NoError(t, e.AddEvidence(&chainscript.Evidence{
 				Backend:  "btc",
 				Provider: "mainnet",
-			})
+			}))
 
 			e2 := e.FindEvidences("btc")
 			assert.Len(t, e2, 2)
