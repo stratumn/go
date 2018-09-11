@@ -66,7 +66,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 		err := s.AddEvidence(ctx, linkHash, e)
 		require.NoError(t, err, "s.AddEvidence()")
 		// Add duplicate - some stores return an error, others silently ignore
-		s.AddEvidence(ctx, linkHash, e)
+		_ = s.AddEvidence(ctx, linkHash, e)
 
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")

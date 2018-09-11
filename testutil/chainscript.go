@@ -27,7 +27,7 @@ func PaginatedSegmentsEqual(t *testing.T, s1, s2 *types.PaginatedSegments) {
 	require.Equal(t, s1.TotalCount, s2.TotalCount, "TotalCount")
 	require.Equal(t, len(s1.Segments), len(s2.Segments), "Length")
 
-	for i := 0; i < len(s1.Segments); i++ {
-		chainscripttest.SegmentsEqual(t, s1.Segments[i], s2.Segments[i])
+	for i, s := range s1.Segments {
+		chainscripttest.SegmentsEqual(t, s, s2.Segments[i])
 	}
 }
