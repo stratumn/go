@@ -15,8 +15,7 @@
 package types
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 )
 
@@ -26,7 +25,7 @@ type EvidenceSlice []*chainscript.Evidence
 // AddEvidence adds an evidence to the slice.
 func (e *EvidenceSlice) AddEvidence(evidence *chainscript.Evidence) error {
 	if e.GetEvidence(evidence.Backend, evidence.Provider) != nil {
-		return fmt.Errorf("evidence already exist for backend %s and provider %s", evidence.Backend, evidence.Provider)
+		return errors.Errorf("evidence already exist for backend %s and provider %s", evidence.Backend, evidence.Provider)
 	}
 
 	*e = append(*e, evidence)

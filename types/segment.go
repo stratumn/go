@@ -41,12 +41,10 @@ func (s SegmentSlice) Swap(i, j int) {
 
 // Less implements sort.Interface.Less.
 func (s SegmentSlice) Less(i, j int) bool {
-	var (
-		s1 = s[i]
-		s2 = s[j]
-		p1 = s1.Link.Meta.Priority
-		p2 = s2.Link.Meta.Priority
-	)
+	s1 := s[i]
+	s2 := s[j]
+	p1 := s1.Link.Meta.Priority
+	p2 := s2.Link.Meta.Priority
 
 	if p1 > p2 {
 		return true
