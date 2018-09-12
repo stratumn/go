@@ -20,7 +20,6 @@ package postgresstore
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
@@ -134,7 +133,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
-	data, err := json.Marshal(evidence)
+	data, err := chainscript.MarshalEvidence(evidence)
 	if err != nil {
 		return err
 	}
