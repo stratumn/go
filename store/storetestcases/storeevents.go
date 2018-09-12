@@ -17,11 +17,13 @@ package storetestcases
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestStoreEvents tests store channel event notifications.
@@ -32,21 +34,25 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 	c := make(chan *store.Event, 10)
 	a.AddStoreEventChannel(c)
 
-	link := cstesting.RandomLink()
+	link := chainscripttest.RandomLink(t)
 	linkHash, err := a.CreateLink(context.Background(), link)
 	assert.NoError(t, err, "a.CreateLink()")
 
 	t.Run("Link saved event should be sent to channel", func(t *testing.T) {
-		got := <-c
-		assert.EqualValues(t, store.SavedLinks, got.EventType, "Invalid event type")
-		links := got.Data.([]*cs.Link)
-		assert.Equal(t, 1, len(links), "Invalid number of links")
-		assert.EqualValues(t, link, links[0], "Invalid link")
+		select {
+		case got := <-c:
+			assert.EqualValues(t, store.SavedLinks, got.EventType, "Invalid event type")
+			links := got.Data.([]*chainscript.Link)
+			assert.Equal(t, 1, len(links), "Invalid number of links")
+			chainscripttest.LinksEqual(t, link, links[0])
+		case <-time.After(10 * time.Second):
+			require.Fail(t, "Timeout waiting for link saved event")
+		}
 	})
 
 	t.Run("Evidence saved event should be sent to channel", func(t *testing.T) {
 		ctx := context.Background()
-		evidence := cstesting.RandomEvidence()
+		evidence := chainscripttest.RandomEvidence(t)
 		err = a.AddEvidence(ctx, linkHash, evidence)
 		assert.NoError(t, err, "a.AddEvidence()")
 
@@ -55,12 +61,17 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 		// There might be a race between the external evidence added
 		// and an evidence produced by a blockchain store (hence the for loop)
 		for i := 0; i < 3; i++ {
-			got = <-c
+			select {
+			case got = <-c:
+			case <-time.After(10 * time.Second):
+				require.Fail(t, "Timeout waiting for evidence saved event")
+			}
+
 			if got.EventType != store.SavedEvidences {
 				continue
 			}
 
-			evidences := got.Data.(map[string]*cs.Evidence)
+			evidences := got.Data.(map[string]*chainscript.Evidence)
 			e, found := evidences[linkHash.String()]
 			if found && e.Backend == evidence.Backend {
 				break
@@ -68,7 +79,7 @@ func (f Factory) TestStoreEvents(t *testing.T) {
 		}
 
 		assert.EqualValues(t, store.SavedEvidences, got.EventType, "Expected saved evidences")
-		evidences := got.Data.(map[string]*cs.Evidence)
+		evidences := got.Data.(map[string]*chainscript.Evidence)
 		assert.EqualValues(t, evidence, evidences[linkHash.String()])
 	})
 }

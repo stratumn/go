@@ -25,8 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
@@ -97,20 +97,20 @@ type Store struct {
 }
 
 type linkWrapper struct {
-	ID           []byte    `json:"id"`
-	Content      *cs.Link  `json:"content"`
-	Priority     float64   `json:"priority"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	MapID        string    `json:"mapId"`
-	PrevLinkHash []byte    `json:"prevLinkHash"`
-	Tags         []string  `json:"tags,omitempty"`
-	Process      string    `json:"process"`
+	ID           []byte            `json:"id"`
+	Content      *chainscript.Link `json:"content"`
+	Priority     float64           `json:"priority"`
+	UpdatedAt    time.Time         `json:"updatedAt"`
+	MapID        string            `json:"mapId"`
+	PrevLinkHash []byte            `json:"prevLinkHash"`
+	Tags         []string          `json:"tags,omitempty"`
+	Process      string            `json:"process"`
 }
 
 type evidencesWrapper struct {
-	ID        []byte        `json:"id"`
-	Content   *cs.Evidences `json:"content"`
-	UpdatedAt time.Time     `json:"updatedAt"`
+	ID        []byte              `json:"id"`
+	Content   types.EvidenceSlice `json:"content"`
+	UpdatedAt time.Time           `json:"updatedAt"`
 }
 
 type valueWrapper struct {
@@ -176,23 +176,20 @@ func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 }
 
 // Rethink cannot retrieve nil slices, so we force putting empty slices in Link
-func formatLink(link *cs.Link) {
+func formatLink(link *chainscript.Link) {
 	if link.Meta.Tags == nil {
 		link.Meta.Tags = []string{}
 	}
-	if link.Meta.Inputs == nil {
-		link.Meta.Inputs = []interface{}{}
-	}
 	if link.Meta.Refs == nil {
-		link.Meta.Refs = []cs.SegmentReference{}
+		link.Meta.Refs = []*chainscript.LinkReference{}
 	}
 	if link.Signatures == nil {
-		link.Signatures = []*cs.Signature{}
+		link.Signatures = []*chainscript.Signature{}
 	}
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	prevLinkHash := link.Meta.GetPrevLinkHash()
 
 	formatLink(link)
@@ -203,17 +200,17 @@ func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, 
 	}
 
 	w := linkWrapper{
-		ID:        linkHash[:],
+		ID:        linkHash,
 		Content:   link,
 		Priority:  link.Meta.Priority,
 		UpdatedAt: time.Now().UTC(),
-		MapID:     link.Meta.MapID,
+		MapID:     link.Meta.MapId,
 		Tags:      link.Meta.Tags,
-		Process:   link.Meta.Process,
+		Process:   link.Meta.Process.Name,
 	}
 
 	if prevLinkHash != nil {
-		w.PrevLinkHash = prevLinkHash[:]
+		w.PrevLinkHash = prevLinkHash
 	}
 
 	if err := a.links.Get(linkHash).Replace(&w).Exec(a.session); err != nil {
@@ -230,8 +227,8 @@ func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, 
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
-	cur, err := a.links.Get(linkHash[:]).Run(a.session)
+func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
+	cur, err := a.links.Get(linkHash).Run(a.session)
 
 	if err != nil {
 		return nil, err
@@ -246,16 +243,20 @@ func (a *Store) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Se
 		return nil, err
 	}
 
-	segment := w.Content.Segmentify()
-	if evidences, err := a.GetEvidences(ctx, segment.Meta.GetLinkHash()); evidences != nil && err == nil {
-		segment.Meta.Evidences = *evidences
+	segment, err := w.Content.Segmentify()
+	if err != nil {
+		return nil, err
+	}
+
+	if evidences, err := a.GetEvidences(ctx, segment.LinkHash()); evidences != nil && err == nil {
+		segment.Meta.Evidences = evidences
 	}
 
 	return segment, nil
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	var prevLinkHash []byte
 	q := a.links
 
@@ -277,10 +278,14 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	}
 
 	if len(filter.LinkHashes) > 0 {
+		var linkHashes []chainscript.LinkHash
+		for _, lh := range filter.LinkHashes {
+			linkHash, err := chainscript.NewLinkHashFromString(lh)
+			if err != nil {
+				return nil, err
+			}
 
-		linkHashes, err := cs.NewLinkHashesFromStrings(filter.LinkHashes)
-		if err != nil {
-			return nil, err
+			linkHashes = append(linkHashes, linkHash)
 		}
 
 		ids := make([]interface{}, len(linkHashes))
@@ -331,7 +336,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		return map[string]interface{}{
 			"link": row.Field("left").Field("content"),
 			"meta": map[string]interface{}{
-				"evidences": rethink.Branch(row.HasFields("right"), row.Field("right").Field("content"), cs.Evidences{}),
+				"evidences": rethink.Branch(row.HasFields("right"), row.Field("right").Field("content"), types.EvidenceSlice{}),
 			},
 		}
 	})
@@ -342,8 +347,8 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	}
 	defer cur.Close()
 
-	segments := &cs.PaginatedSegments{
-		Segments: make(cs.SegmentSlice, 0, filter.Limit),
+	segments := &types.PaginatedSegments{
+		Segments: make(types.SegmentSlice, 0, filter.Limit),
 	}
 	if err := cur.All(&segments.Segments); err != nil {
 		return nil, err
@@ -355,7 +360,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		return nil, err
 	}
 	defer totalCountCur.Close()
-	segIt := cs.Segment{}
+	segIt := chainscript.Segment{}
 	for totalCountCur.Next(&segIt) {
 		segments.TotalCount++
 	}
@@ -434,7 +439,7 @@ func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]strin
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
 		return err
@@ -450,15 +455,15 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, eviden
 
 	currentEvidences := ew.Content
 	if currentEvidences == nil {
-		currentEvidences = &cs.Evidences{}
+		currentEvidences = types.EvidenceSlice{}
 	}
 
-	if err := currentEvidences.AddEvidence(*evidence); err != nil {
+	if err := currentEvidences.AddEvidence(evidence); err != nil {
 		return err
 	}
 
 	w := evidencesWrapper{
-		ID:        linkHash[:],
+		ID:        linkHash,
 		Content:   currentEvidences,
 		UpdatedAt: time.Now(),
 	}
@@ -476,7 +481,7 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, eviden
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *Store) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *Store) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
 		return nil, err
@@ -486,7 +491,7 @@ func (a *Store) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.
 	var ew evidencesWrapper
 	if err := cur.One(&ew); err != nil {
 		if err == rethink.ErrEmptyResult {
-			return &cs.Evidences{}, nil
+			return types.EvidenceSlice{}, nil
 		}
 		return nil, err
 	}
@@ -552,7 +557,7 @@ type rethinkBufferedBatch struct {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	formatLink(link)
 	return b.Batch.CreateLink(ctx, link)
 }

@@ -21,7 +21,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/dummyfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
 )
@@ -78,16 +77,18 @@ func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossi
 
 // Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
 func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
+	proof := &evidences.DummyProof{
+		Timestamp: uint64(time.Now().Unix()),
+	}
+	evidence, err := proof.Evidence(evidences.Name)
+	if err != nil {
+		return err
+	}
+
 	r := &fossilizer.Result{
-		Evidence: cs.Evidence{
-			Backend:  evidences.Name,
-			Provider: evidences.Name,
-			Proof: &evidences.DummyProof{
-				Timestamp: uint64(time.Now().Unix()),
-			},
-		},
-		Data: data,
-		Meta: meta,
+		Evidence: *evidence,
+		Data:     data,
+		Meta:     meta,
 	}
 	event := &fossilizer.Event{
 		EventType: fossilizer.DidFossilizeLink,

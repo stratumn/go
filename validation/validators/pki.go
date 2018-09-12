@@ -21,8 +21,7 @@ import (
 
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
-
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -100,25 +99,27 @@ func (pv PKIValidator) Hash() (*types.Bytes32, error) {
 }
 
 // ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
-func (pv PKIValidator) ShouldValidate(link *cs.Link) bool {
+func (pv PKIValidator) ShouldValidate(link *chainscript.Link) bool {
 	return pv.Config.ShouldValidate(link)
 }
 
 // Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
 // it checks that the provided signatures match the required ones.
 // a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
-func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *cs.Link) error {
+func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	for _, required := range pv.RequiredSignatures {
 		fulfilled := false
 		for _, sig := range link.Signatures {
-			if pv.PKI.matchRequirement(required, sig.PublicKey) {
+			if pv.PKI.matchRequirement(required, string(sig.PublicKey)) {
 				fulfilled = true
 				break
 			}
 		}
+
 		if !fulfilled {
-			return errors.Errorf("Missing signatory for validator %s of process %s: signature from %s is required", pv.Config.LinkType, pv.Config.Process, required)
+			return errors.Errorf("Missing signatory for validator %s of process %s: signature from %s is required", pv.Config.LinkStep, pv.Config.Process, required)
 		}
 	}
+
 	return nil
 }

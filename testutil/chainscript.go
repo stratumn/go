@@ -12,12 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package testutil
 
-const (
-	// URLRequiredError is the error message returned when a client is initialized with an empty URL
-	URLRequiredError string = "An URL must be provided to initialize a client"
+import (
+	"testing"
 
-	// ProcessNotFoundError is the error message returned when a
-	ProcessNotFoundError string = "Not Found"
+	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-indigocore/types"
+	"github.com/stretchr/testify/require"
 )
+
+// PaginatedSegmentsEqual verifies that two paginated segment lists are equal.
+func PaginatedSegmentsEqual(t *testing.T, s1, s2 *types.PaginatedSegments) {
+	require.Equal(t, s1.TotalCount, s2.TotalCount, "TotalCount")
+	require.Equal(t, len(s1.Segments), len(s2.Segments), "Length")
+
+	for i, s := range s1.Segments {
+		chainscripttest.SegmentsEqual(t, s, s2.Segments[i])
+	}
+}

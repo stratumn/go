@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 
@@ -61,7 +61,7 @@ func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) 
 }
 
 // AddEvidence instruments the call and delegates to the underlying store.
-func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) (err error) {
+func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) (err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/AddEvidence", a.name))
 	defer SetSpanStatusAndEnd(span, err)
 
@@ -70,7 +70,7 @@ func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash *types.Bytes32,
 }
 
 // GetEvidences instruments the call and delegates to the underlying store.
-func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (e *cs.Evidences, err error) {
+func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (e types.EvidenceSlice, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetEvidences", a.name))
 	defer SetSpanStatusAndEnd(span, err)
 
@@ -79,7 +79,7 @@ func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash *types.Bytes32
 }
 
 // CreateLink instruments the call and delegates to the underlying store.
-func (a *StoreAdapter) CreateLink(ctx context.Context, link *cs.Link) (lh *types.Bytes32, err error) {
+func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (lh chainscript.LinkHash, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/CreateLink", a.name))
 	defer SetSpanStatusAndEnd(span, err)
 
@@ -88,7 +88,7 @@ func (a *StoreAdapter) CreateLink(ctx context.Context, link *cs.Link) (lh *types
 }
 
 // GetSegment instruments the call and delegates to the underlying store.
-func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash *types.Bytes32) (s *cs.Segment, err error) {
+func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (s *chainscript.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetSegment", a.name))
 	defer SetSpanStatusAndEnd(span, err)
 
@@ -97,7 +97,7 @@ func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash *types.Bytes32) 
 }
 
 // FindSegments instruments the call and delegates to the underlying store.
-func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss *cs.PaginatedSegments, err error) {
+func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss *types.PaginatedSegments, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name))
 	defer SetSpanStatusAndEnd(span, err)
 

@@ -19,7 +19,7 @@ import (
 	"crypto/sha256"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -38,7 +38,7 @@ func NewMultiValidator(validators ProcessesValidators) Validator {
 }
 
 // ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
-func (v MultiValidator) ShouldValidate(link *cs.Link) bool {
+func (v MultiValidator) ShouldValidate(link *chainscript.Link) bool {
 	return true
 }
 
@@ -59,8 +59,8 @@ func (v MultiValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-func (v MultiValidator) matchValidators(l *cs.Link) (linkValidators []Validator) {
-	processValidators, ok := v.validators[l.Meta.Process]
+func (v MultiValidator) matchValidators(l *chainscript.Link) (linkValidators []Validator) {
+	processValidators, ok := v.validators[l.Meta.Process.Name]
 	if !ok {
 		return nil
 	}
@@ -76,10 +76,10 @@ func (v MultiValidator) matchValidators(l *cs.Link) (linkValidators []Validator)
 // Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
 // It runs the validation on every child validator matching the provided link.
 // It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
-func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *cs.Link) error {
+func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
 	linkValidators := v.matchValidators(l)
 	if len(linkValidators) == 0 {
-		return errors.Errorf("Validation failed: link with process: [%s] and type: [%s] does not match any validator", l.Meta.Process, l.Meta.Type)
+		return errors.Errorf("Validation failed: link with process: [%s] and step: [%s] does not match any validator", l.Meta.Process.Name, l.Meta.Step)
 	}
 
 	for _, child := range linkValidators {

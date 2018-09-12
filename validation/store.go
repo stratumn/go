@@ -19,12 +19,10 @@ import (
 	"context"
 	"encoding/json"
 
-	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-
-	"github.com/prometheus/common/log"
-	"github.com/stratumn/go-indigocore/cs"
+	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/validation/validators"
 )
@@ -139,14 +137,19 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 	if err != nil || len(segments.Segments) == 0 {
 		return nil, ErrValidatorNotFound
 	}
-	linkState := segments.Segments[0].Link.State
+
+	var linkData map[string]interface{}
+	err = segments.Segments[0].Link.StructurizeData(&linkData)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
 	var pki validators.PKI
-	if err := mapToStruct(linkState["pki"], &pki); err != nil {
+	if err := mapToStruct(linkData["pki"], &pki); err != nil {
 		return nil, ErrBadGovernanceSegment
 	}
 	var types map[string]TypeSchema
-	if err := mapToStruct(linkState["types"], &types); err != nil {
+	if err := mapToStruct(linkData["types"], &types); err != nil {
 		return nil, ErrBadGovernanceSegment
 	}
 
@@ -158,8 +161,14 @@ func (s *Store) getProcessValidators(ctx context.Context, process string) (valid
 
 // UpdateValidator replaces the current validation rules in the store by the provided ones.
 // It checks that the provided link correcly references the previous rules' link.
-func (s *Store) UpdateValidator(ctx context.Context, link *cs.Link) error {
-	process, ok := link.Meta.Data[ProcessMetaKey].(string)
+func (s *Store) UpdateValidator(ctx context.Context, link *chainscript.Link) error {
+	var linkMetadata map[string]string
+	err := link.StructurizeMetadata(&linkMetadata)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	process, ok := linkMetadata[ProcessMetaKey]
 	if !ok {
 		return ErrMissingProcess
 	}
@@ -175,47 +184,66 @@ func (s *Store) UpdateValidator(ctx context.Context, link *cs.Link) error {
 
 	if len(segments.Segments) == 0 {
 		log.Infof("No governance segments found for process %s, creating validator", process)
-		if link.Meta.PrevLinkHash != "" {
+		if len(link.Meta.PrevLinkHash) > 0 {
 			return ErrBadPrevLinkHash
 		}
+
 		return s.uploadValidator(ctx, link)
 	}
 
 	lastGovernanceLink := segments.Segments[0].Link
-	if canonicalCompare(link.State, lastGovernanceLink.State) != nil {
+	var lastGovernanceLinkMetadata map[string]string
+	err = lastGovernanceLink.StructurizeMetadata(&lastGovernanceLinkMetadata)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if !bytes.Equal(link.Data, lastGovernanceLink.Data) {
 		log.Infof("Validator of process %s has to be updated in store", process)
 		if link.Meta.Priority <= lastGovernanceLink.Meta.Priority {
 			return ErrBadPriority
 		}
-		lastGovernanceLinkHash, _ := lastGovernanceLink.HashString()
-		if link.Meta.PrevLinkHash != lastGovernanceLinkHash {
+
+		lastGovernanceLinkHash, _ := lastGovernanceLink.Hash()
+		if !bytes.Equal(link.Meta.PrevLinkHash, lastGovernanceLinkHash) {
 			return ErrBadPrevLinkHash
 		}
-		if link.Meta.MapID != lastGovernanceLink.Meta.MapID {
+
+		if link.Meta.MapId != lastGovernanceLink.Meta.MapId {
 			return ErrBadMapID
 		}
-		if process != lastGovernanceLink.Meta.Data[ProcessMetaKey] {
+
+		if process != lastGovernanceLinkMetadata[ProcessMetaKey] {
 			return ErrBadProcess
 		}
+
 		return s.uploadValidator(ctx, link)
 	}
 	return nil
 }
 
-func (s *Store) uploadValidator(ctx context.Context, link *cs.Link) error {
+func (s *Store) uploadValidator(ctx context.Context, link *chainscript.Link) error {
+	var linkMetadata map[string]string
+	err := link.StructurizeMetadata(&linkMetadata)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	hash, err := s.store.CreateLink(ctx, link)
 	if err != nil {
-		return errors.Wrapf(err, "cannot create link for process governance %s", link.Meta.Data[ProcessMetaKey])
+		return errors.Wrapf(err, "cannot create link for process governance %s", linkMetadata[ProcessMetaKey])
 	}
-	log.Infof("New validator rules store for process %s: %q", link.Meta.Data[ProcessMetaKey], hash)
+
+	log.Infof("New validator rules store for process %s: %q", linkMetadata[ProcessMetaKey], hash)
 	return nil
 }
 
 // LinkFromSchema creates a chainscript link from a PKI and a set of rules.
-// It first tries to fetch the previous governance link for this process and builds the new one on top of it.
+// It first tries to fetch the previous governance link for this process and
+// builds the new one on top of it.
 // If no previous governance link exists, a link from a new map is created.
-func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *RulesSchema) (*cs.Link, error) {
-	var lastGovernanceLink cs.Link
+func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *RulesSchema) (*chainscript.Link, error) {
+	var lastGovernanceLink *chainscript.Link
 	segments, err := s.store.FindSegments(ctx, &store.SegmentFilter{
 		Pagination: defaultPagination,
 		Process:    GovernanceProcessName,
@@ -225,58 +253,38 @@ func (s *Store) LinkFromSchema(ctx context.Context, process string, schema *Rule
 		return nil, errors.Wrap(errors.WithStack(err), "Cannot retrieve governance segments")
 	}
 
-	priority := 0.
-	mapID := ""
-	prevLinkHash := ""
-	if len(segments.Segments) > 0 {
-		lastGovernanceLink = segments.Segments[0].Link
-		priority = lastGovernanceLink.Meta.Priority + 1.
-		mapID = lastGovernanceLink.Meta.MapID
-		var err error
-		if prevLinkHash, err = lastGovernanceLink.HashString(); err != nil {
-			return nil, errors.Wrapf(err, "cannot get previous hash for process governance %s", process)
-		}
-	} else {
-		mapID = uuid.NewV4().String()
-	}
-
-	linkState := map[string]interface{}{
+	linkData := map[string]interface{}{
 		"pki":   schema.PKI,
 		"types": schema.Types,
 	}
-	linkMeta := cs.LinkMeta{
-		Process:      GovernanceProcessName,
-		MapID:        mapID,
-		PrevLinkHash: prevLinkHash,
-		Priority:     priority,
-		Tags:         []string{process, ValidatorTag},
-		Data:         map[string]interface{}{ProcessMetaKey: process},
+
+	// If we have a previous governance link, extend it.
+	if len(segments.Segments) > 0 {
+		lastGovernanceLink = segments.Segments[0].Link
+		priority := lastGovernanceLink.Meta.Priority + 1.
+		mapID := lastGovernanceLink.Meta.MapId
+
+		prevLinkHash, err := lastGovernanceLink.Hash()
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot get previous hash for process governance %s", process)
+		}
+
+		return chainscript.NewLinkBuilder(GovernanceProcessName, mapID).
+			WithParent(prevLinkHash).
+			WithPriority(priority).
+			WithTags(process, ValidatorTag).
+			WithData(linkData).
+			WithMetadata(map[string]string{ProcessMetaKey: process}).
+			Build()
 	}
 
-	return &cs.Link{
-		State:      linkState,
-		Meta:       linkMeta,
-		Signatures: cs.Signatures{},
-	}, nil
-}
-
-func canonicalCompare(metaData interface{}, fileData interface{}) error {
-	if metaData == nil {
-		return errors.Errorf("missing data to compare")
-	}
-	canonStoreData, err := cj.Marshal(metaData)
-	if err != nil {
-		return errors.Wrapf(err, "cannot canonical marshal store data")
-	}
-	canonFileData, err := cj.Marshal(fileData)
-	if err != nil {
-		return errors.Wrapf(err, "cannot canonical marshal file data")
-	}
-
-	if !bytes.Equal(canonStoreData, canonFileData) {
-		return errors.New("data different from file and from store")
-	}
-	return nil
+	// Otherwise initialize a new map.
+	mapID := uuid.NewV4().String()
+	return chainscript.NewLinkBuilder(GovernanceProcessName, mapID).
+		WithTags(process, ValidatorTag).
+		WithData(linkData).
+		WithMetadata(map[string]string{ProcessMetaKey: process}).
+		Build()
 }
 
 func mapToStruct(src interface{}, dest interface{}) error {

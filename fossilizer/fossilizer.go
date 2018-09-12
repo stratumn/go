@@ -18,7 +18,7 @@ package fossilizer
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 )
 
 // Adapter must be implemented by a fossilier.
@@ -37,7 +37,7 @@ type Adapter interface {
 // Result is the type sent to the result channels.
 type Result struct {
 	// Evidence created by the fossilizer.
-	Evidence cs.Evidence
+	Evidence chainscript.Evidence
 
 	// The data that was fossilized.
 	Data []byte

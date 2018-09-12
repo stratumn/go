@@ -24,8 +24,9 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/pkg/errors"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -66,8 +67,8 @@ type DummyStore struct {
 	mutex      sync.RWMutex // simple global mutex
 }
 
-type linkMap map[string]*cs.Link
-type evidenceMap map[string]*cs.Evidences
+type linkMap map[string]*chainscript.Link
+type evidenceMap map[string]types.EvidenceSlice
 type hashSet map[string]struct{}
 type hashSetMap map[string]hashSet
 type valueMap map[string][]byte
@@ -103,14 +104,14 @@ func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *DummyStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *DummyStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
 	return a.createLink(link)
 }
 
-func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
+func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return nil, err
@@ -119,7 +120,7 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 	linkHashStr := linkHash.String()
 	a.links[linkHashStr] = link
 
-	mapID := link.Meta.MapID
+	mapID := link.Meta.MapId
 	_, exists := a.maps[mapID]
 	if !exists {
 		a.maps[mapID] = hashSet{}
@@ -137,7 +138,7 @@ func (a *DummyStore) createLink(link *cs.Link) (*types.Bytes32, error) {
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *DummyStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *DummyStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
@@ -155,13 +156,13 @@ func (a *DummyStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, e
 	return nil
 }
 
-func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
+func (a *DummyStore) addEvidence(linkHash string, evidence *chainscript.Evidence) error {
 	currentEvidences := a.evidences[linkHash]
 	if currentEvidences == nil {
-		currentEvidences = &cs.Evidences{}
+		currentEvidences = types.EvidenceSlice{}
 	}
 
-	if err := currentEvidences.AddEvidence(*evidence); err != nil {
+	if err := currentEvidences.AddEvidence(evidence); err != nil {
 		return err
 	}
 
@@ -173,7 +174,7 @@ func (a *DummyStore) addEvidence(linkHash string, evidence *cs.Evidence) error {
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (a *DummyStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *DummyStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -181,30 +182,27 @@ func (a *DummyStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (a *DummyStore) getSegment(linkHash string) (*cs.Segment, error) {
+func (a *DummyStore) getSegment(linkHash string) (*chainscript.Segment, error) {
 	link, exists := a.links[linkHash]
 	if !exists {
 		return nil, nil
 	}
 
-	segment := &cs.Segment{
-		Link: *link,
-		Meta: cs.SegmentMeta{
-			Evidences: cs.Evidences{},
-			LinkHash:  linkHash,
-		},
+	segment, err := link.Segmentify()
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
 
 	evidences, exists := a.evidences[linkHash]
 	if exists {
-		segment.Meta.Evidences = *evidences
+		segment.Meta.Evidences = evidences
 	}
 
 	return segment, nil
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -248,7 +246,7 @@ func (a *DummyStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *DummyStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *DummyStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 
@@ -311,8 +309,8 @@ func (a *DummyStore) NewBatch(ctx context.Context) (store.Batch, error) {
 
 /********** Utilities **********/
 
-func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
-	segments := &cs.PaginatedSegments{}
+func (a *DummyStore) findHashesSegments(linkHashes hashSet, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
+	segments := &types.PaginatedSegments{}
 
 	for linkHash := range linkHashes {
 		segment, err := a.getSegment(linkHash)

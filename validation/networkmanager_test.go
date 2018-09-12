@@ -20,12 +20,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/cs/cstesting"
-
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetesting"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/validation"
 	"github.com/stratumn/go-indigocore/validation/testutils"
 	"github.com/stratumn/go-indigocore/validation/validators"
@@ -34,12 +34,11 @@ import (
 )
 
 func TestNetworkManager(t *testing.T) {
-
 	auctionPKI, _ := testutils.LoadPKI([]byte(strings.Replace(testutils.ValidChatJSONPKIConfig, "Bob", "Dave", -1)))
 	auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidChatJSONTypesConfig))
 
 	t.Run("New", func(t *testing.T) {
-		linkChan := make(chan *cs.Link)
+		linkChan := make(chan *chainscript.Link)
 		t.Run("Manager without chan", func(t *testing.T) {
 			var v validators.Validator
 			a := new(storetesting.MockAdapter)
@@ -58,8 +57,8 @@ func TestNetworkManager(t *testing.T) {
 			gov, err := validation.NewNetworkManager(context.Background(), a, linkChan, &validation.Config{
 				PluginsPath: pluginsPath,
 			})
-			assert.NoError(t, err, "Gouvernance is initialized by store")
-			require.NotNil(t, gov, "Gouvernance is initialized by store")
+			assert.NoError(t, err, "Governance is initialized by store")
+			require.NotNil(t, gov, "Governance is initialized by store")
 
 			v = gov.Current()
 			assert.NotNil(t, v, "Validator loaded from store")
@@ -67,16 +66,18 @@ func TestNetworkManager(t *testing.T) {
 
 		t.Run("Manager fails to load rules from store", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
-					return &cs.PaginatedSegments{}, nil
+					return &types.PaginatedSegments{}, nil
 				}
-				link := cstesting.NewLinkBuilder().
+
+				segment := chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "process").
-					Build()
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{link.Segmentify()},
+					Segmentify(t)
+
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{segment},
 					TotalCount: 1,
 				}, nil
 			}
@@ -89,11 +90,11 @@ func TestNetworkManager(t *testing.T) {
 	})
 
 	t.Run("ListenAndUpdate", func(t *testing.T) {
-		linkChan := make(chan *cs.Link)
+		linkChan := make(chan *chainscript.Link)
 
 		t.Run("Update rules in store when receiving new ones", func(t *testing.T) {
 			var v validators.Validator
-			linkChan := make(chan *cs.Link)
+			linkChan := make(chan *chainscript.Link)
 			ctx := context.Background()
 			a := dummystore.New(nil)
 			populateStoreWithValidData(t, a)
@@ -117,15 +118,15 @@ func TestNetworkManager(t *testing.T) {
 
 			go func() {
 				parent := getLastValidator(t, a, "chat")
-				parentHash, _ := parent.HashString()
-				newRules := cstesting.NewLinkBuilder().
-					WithMapID(parent.Meta.MapID).
-					WithPrevLinkHash(parentHash).
+				parentHash, _ := parent.Hash()
+				newRules := chainscripttest.NewLinkBuilder(t).
+					WithMapID(parent.Meta.MapId).
+					WithParentHash(parentHash).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "chat").
-					WithMetadata(validation.ProcessMetaKey, "chat").
+					WithMetadata(t, map[string]string{validation.ProcessMetaKey: "chat"}).
 					WithPriority(1.).
-					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					WithData(t, map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
 					Build()
 				linkChan <- newRules
 			}()
@@ -149,10 +150,10 @@ func TestNetworkManager(t *testing.T) {
 			}()
 
 			go func() {
-				linkChan <- cstesting.NewLinkBuilder().
+				linkChan <- chainscripttest.NewLinkBuilder(t).
 					WithTags("process", validation.ValidatorTag).
-					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
-					WithMetadata(validation.ProcessMetaKey, "process").
+					WithData(t, map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					WithMetadata(t, map[string]string{validation.ProcessMetaKey: "process"}).
 					Build()
 			}()
 
@@ -177,11 +178,11 @@ func TestNetworkManager(t *testing.T) {
 			}()
 
 			go func() {
-				linkChan <- cstesting.NewLinkBuilder().
+				linkChan <- chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTag("process").
-					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
-					WithMetadata(validation.ProcessMetaKey, "process").
+					WithData(t, map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					WithMetadata(t, map[string]string{validation.ProcessMetaKey: "process"}).
 					Build()
 			}()
 
@@ -206,10 +207,10 @@ func TestNetworkManager(t *testing.T) {
 			}()
 
 			go func() {
-				linkChan <- cstesting.NewLinkBuilder().
+				linkChan <- chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags("process", validation.ValidatorTag).
-					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					WithData(t, map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
 					Build()
 			}()
 
@@ -235,11 +236,11 @@ func TestNetworkManager(t *testing.T) {
 
 			go func() {
 				// PKI is missing
-				linkChan <- cstesting.NewLinkBuilder().
+				linkChan <- chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags("process", validation.ValidatorTag).
-					WithState(map[string]interface{}{"types": auctionTypes}).
-					WithMetadata(validation.ProcessMetaKey, "process").
+					WithData(t, map[string]interface{}{"types": auctionTypes}).
+					WithMetadata(t, map[string]string{validation.ProcessMetaKey: "process"}).
 					Build()
 			}()
 
@@ -280,7 +281,7 @@ func TestNetworkManager(t *testing.T) {
 	})
 
 	t.Run("Current", func(t *testing.T) {
-		linkChan := make(chan *cs.Link)
+		linkChan := make(chan *chainscript.Link)
 		t.Run("returns the current validator set", func(t *testing.T) {
 			ctx := context.Background()
 			a := dummystore.New(nil)
@@ -294,13 +295,13 @@ func TestNetworkManager(t *testing.T) {
 
 			newValidator := gov.Subscribe()
 			go func() {
-				newRules := cstesting.NewLinkBuilder().
+				newRules := chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "chat").
-					WithPrevLinkHash("").
-					WithMetadata(validation.ProcessMetaKey, "chat").
+					WithoutParent().
+					WithMetadata(t, map[string]string{validation.ProcessMetaKey: "chat"}).
 					WithPriority(0.).
-					WithState(map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
+					WithData(t, map[string]interface{}{"pki": auctionPKI, "types": auctionTypes}).
 					Build()
 				linkChan <- newRules
 			}()

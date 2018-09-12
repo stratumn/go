@@ -20,12 +20,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/stratumn/go-crypto/keys"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/testutil"
@@ -33,11 +29,13 @@ import (
 	"github.com/stratumn/go-indigocore/validation"
 	"github.com/stratumn/go-indigocore/validation/testutils"
 	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testCase struct {
 	name  string
-	link  *cs.Link
+	link  *chainscript.Link
 	valid bool
 }
 
@@ -65,22 +63,21 @@ func TestMain(m *testing.M) {
 
 func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 	store := dummystore.New(nil)
-	state := map[string]interface{}{
+	data := map[string]interface{}{
 		"buyer":        "alice",
 		"seller":       "bob",
 		"lot":          "painting",
 		"initialPrice": 12,
 	}
-	priv, _, err := keys.ParseSecretKey([]byte(testutils.AlicePrivateKey))
-	require.NoError(t, err)
 
-	initAuctionLink := cstesting.NewLinkBuilder().
+	initAuctionLink := chainscripttest.NewLinkBuilder(t).
 		WithProcess("auction").
-		WithType("init").
-		WithPrevLinkHash("").
-		WithState(state).
-		SignWithKey(priv).
+		WithStep("init").
+		WithoutParent().
+		WithData(t, data).
+		WithSignatureFromKey(t, []byte(testutils.AlicePrivateKey), "").
 		Build()
+
 	initAuctionLinkHash, err := store.CreateLink(context.Background(), initAuctionLink)
 	require.NoError(t, err)
 
@@ -90,51 +87,40 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		valid: true,
 	}, {
 		name: "valid-link",
-		link: &cs.Link{
-			State: map[string]interface{}{
+		link: chainscripttest.NewLinkBuilder(t).
+			WithData(t, map[string]interface{}{
 				"buyer":    "alice",
 				"bidPrice": 42,
-			},
-			Meta: cs.LinkMeta{
-				Process:      "auction",
-				PrevLinkHash: initAuctionLinkHash.String(),
-				Type:         "bid",
-			},
-		},
+			}).
+			WithParentHash(initAuctionLinkHash).
+			WithProcess("auction").
+			WithStep("bid").
+			Build(),
 		valid: true,
 	}, {
-		name: "no-validator-match",
-		link: &cs.Link{
-			Meta: cs.LinkMeta{
-				Process: "auction",
-				Type:    "unknown",
-			},
-		},
+		name:  "no-validator-match",
+		link:  chainscripttest.NewLinkBuilder(t).WithProcess("auction").WithStep("unknown").Build(),
 		valid: false,
 	}, {
 		name: "missing-required-field",
-		link: &cs.Link{
-			State: map[string]interface{}{
+		link: chainscripttest.NewLinkBuilder(t).
+			WithData(t, map[string]interface{}{
 				"to": "bob",
-			},
-			Meta: cs.LinkMeta{
-				Process: "chat",
-				Type:    "message",
-			},
-		},
+			}).
+			WithProcess("chat").
+			WithStep("message").
+			Build(),
 		valid: false,
 	}, {
 		name: "invalid-field-value",
-		link: &cs.Link{
-			State: map[string]interface{}{
+		link: chainscripttest.NewLinkBuilder(t).
+			WithData(t, map[string]interface{}{
 				"buyer":    "alice",
 				"bidPrice": -10,
-			},
-			Meta: cs.LinkMeta{
-				Process: "auction",
-				Type:    "bid",
-			},
-		},
+			}).
+			WithProcess("auction").
+			WithStep("bid").
+			Build(),
 		valid: false,
 	}}
 	return store, testCases

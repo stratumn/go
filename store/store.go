@@ -16,10 +16,12 @@
 package store
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"strings"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/types"
 )
 
@@ -35,11 +37,11 @@ const (
 type SegmentReader interface {
 	// Get a segment by link hash. Returns nil if no match is found.
 	// Will return link and evidences (if there are some in that store).
-	GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error)
+	GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error)
 
 	// Find segments. Returns an empty slice if there are no results.
 	// Will return links and evidences (if there are some).
-	FindSegments(ctx context.Context, filter *SegmentFilter) (*cs.PaginatedSegments, error)
+	FindSegments(ctx context.Context, filter *SegmentFilter) (*types.PaginatedSegments, error)
 
 	// Get all the existing map IDs.
 	GetMapIDs(ctx context.Context, filter *MapFilter) ([]string, error)
@@ -51,7 +53,7 @@ type LinkWriter interface {
 	// Create the immutable part of a segment.
 	// The input link is expected to be valid.
 	// Returns the link hash or an error.
-	CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error)
+	CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error)
 }
 
 // EvidenceReader is the interface for reading segment evidence from a store.
@@ -59,13 +61,13 @@ type EvidenceReader interface {
 	// Get the evidences for a segment.
 	// Can return a nil error with an empty evidence slice if
 	// the segment currently doesn't have evidence.
-	GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error)
+	GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error)
 }
 
 // EvidenceWriter is the interface for adding evidence to a segment in a store.
 type EvidenceWriter interface {
 	// Add an evidence to a segment.
-	AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error
+	AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error
 }
 
 // EvidenceStore is the interface for storing and reading segment evidence.
@@ -169,7 +171,7 @@ type MapFilter struct {
 	Process string `json:"process" url:"-"`
 }
 
-// PaginateStrings paginates a list of strings
+// PaginateStrings paginates a list of strings.
 func (p *Pagination) PaginateStrings(a []string) []string {
 	l := len(a)
 	if p.Offset >= l {
@@ -180,18 +182,18 @@ func (p *Pagination) PaginateStrings(a []string) []string {
 	return a[p.Offset:end]
 }
 
-// PaginateSegments paginate a list of segments
-func (p *Pagination) PaginateSegments(a *cs.PaginatedSegments) *cs.PaginatedSegments {
+// PaginateSegments paginate a list of segments.
+func (p *Pagination) PaginateSegments(a *types.PaginatedSegments) *types.PaginatedSegments {
 	l := len(a.Segments)
 	if p.Offset >= l {
-		return &cs.PaginatedSegments{
-			Segments:   cs.SegmentSlice{},
+		return &types.PaginatedSegments{
+			Segments:   types.SegmentSlice{},
 			TotalCount: a.TotalCount,
 		}
 	}
 
 	end := min(l, p.Offset+p.Limit)
-	return &cs.PaginatedSegments{
+	return &types.PaginatedSegments{
 		Segments:   a.Segments[p.Offset:end],
 		TotalCount: a.TotalCount,
 	}
@@ -205,40 +207,42 @@ func min(a, b int) int {
 	return b
 }
 
-// Match checks if segment matches with filter
-func (filter SegmentFilter) Match(segment *cs.Segment) bool {
+// Match checks if segment matches with filter.
+func (filter SegmentFilter) Match(segment *chainscript.Segment) bool {
 	if segment == nil {
 		return false
 	}
 
-	return filter.MatchLink(&segment.Link)
+	return filter.MatchLink(segment.Link)
 }
 
-// MatchLink checks if link matches with filter
-func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
+// MatchLink checks if link matches with filter.
+func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 	if link == nil {
 		return false
 	}
 
 	if filter.PrevLinkHash != nil {
-		prevLinkHash := link.Meta.GetPrevLinkHash()
+		prevLinkHash := link.Meta.PrevLinkHash
 		if *filter.PrevLinkHash == "" {
-			if prevLinkHash != nil {
+			if len(prevLinkHash) > 0 {
 				return false
 			}
 		} else {
-			filterPrevLinkHash, err := types.NewBytes32FromString(*filter.PrevLinkHash)
-			if err != nil || prevLinkHash == nil || *filterPrevLinkHash != *prevLinkHash {
+			filterPrevLinkHash, err := hex.DecodeString(*filter.PrevLinkHash)
+			if err != nil || !bytes.Equal(filterPrevLinkHash, prevLinkHash) {
 				return false
 			}
 		}
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		lh, _ := link.HashString()
+		lh, _ := link.Hash()
+		lhs := lh.String()
+
 		var match bool
 		for _, linkHash := range filter.LinkHashes {
-			if linkHash == lh {
+			if linkHash == lhs {
 				match = true
 				break
 			}
@@ -248,13 +252,13 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 		}
 	}
 
-	if filter.Process != "" && filter.Process != link.Meta.Process {
+	if filter.Process != "" && filter.Process != link.Meta.Process.Name {
 		return false
 	}
 
 	if len(filter.MapIDs) > 0 {
 		var match = false
-		mapID := link.Meta.MapID
+		mapID := link.Meta.MapId
 		for _, filterMapIDs := range filter.MapIDs {
 			match = match || filterMapIDs == mapID
 		}
@@ -264,7 +268,7 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 	}
 
 	if len(filter.Tags) > 0 {
-		tags := link.Meta.GetTagMap()
+		tags := link.TagMap()
 		for _, tag := range filter.Tags {
 			if _, ok := tags[tag]; !ok {
 				return false
@@ -274,27 +278,27 @@ func (filter SegmentFilter) MatchLink(link *cs.Link) bool {
 	return true
 }
 
-// Match checks if segment matches with filter
-func (filter MapFilter) Match(segment *cs.Segment) bool {
+// Match checks if segment matches with filter.
+func (filter MapFilter) Match(segment *chainscript.Segment) bool {
 	if segment == nil {
 		return false
 	}
 
-	return filter.MatchLink(&segment.Link)
+	return filter.MatchLink(segment.Link)
 }
 
-// MatchLink checks if link matches with filter
-func (filter MapFilter) MatchLink(link *cs.Link) bool {
+// MatchLink checks if link matches with filter.
+func (filter MapFilter) MatchLink(link *chainscript.Link) bool {
 	if link == nil {
 		return false
 	}
-	if filter.Process != "" && filter.Process != link.Meta.Process {
+	if filter.Process != "" && filter.Process != link.Meta.Process.Name {
 		return false
 	}
-	if filter.Prefix != "" && !strings.HasPrefix(link.Meta.MapID, filter.Prefix) {
+	if filter.Prefix != "" && !strings.HasPrefix(link.Meta.MapId, filter.Prefix) {
 		return false
 	}
-	if filter.Suffix != "" && !strings.HasSuffix(link.Meta.MapID, filter.Suffix) {
+	if filter.Suffix != "" && !strings.HasSuffix(link.Meta.MapId, filter.Suffix) {
 		return false
 	}
 	return true

@@ -21,11 +21,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
-	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetSegment tests what happens when you get a segment.
@@ -33,18 +32,19 @@ func (f Factory) TestGetSegment(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	link := cstesting.RandomLink()
+	link := chainscripttest.RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), link)
 
-	link2 := cstesting.ChangeState(link)
+	link2 := chainscripttest.NewLinkBuilder(t).From(t, link).WithData(t, chainscripttest.RandomString(24)).Build()
 	linkHash2, _ := a.CreateLink(context.Background(), link2)
 
 	t.Run("Getting an existing segment should work", func(t *testing.T) {
 		ctx := context.Background()
 		s, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err)
-		assert.NotNil(t, s, "Segment should be found")
-		assert.EqualValues(t, link, &s.Link, "Invalid link")
+		require.NotNil(t, s, "Segment should be found")
+
+		chainscripttest.LinksEqual(t, link, s.Link)
 		gotHash, err := s.Link.Hash()
 		assert.NoError(t, err, "Hash should be computed")
 		assert.EqualValues(t, linkHash, gotHash, "Invalid linkHash")
@@ -54,8 +54,9 @@ func (f Factory) TestGetSegment(t *testing.T) {
 		ctx := context.Background()
 		got, err := a.GetSegment(ctx, linkHash2)
 		assert.NoError(t, err)
-		assert.NotNil(t, got, "Segment should be found")
-		assert.EqualValues(t, link2, &got.Link, "Invalid link")
+		require.NotNil(t, got, "Segment should be found")
+
+		chainscripttest.LinksEqual(t, link2, got.Link)
 		gotHash, err := got.Link.Hash()
 		assert.NoError(t, err, "Hash should be computed")
 		assert.EqualValues(t, linkHash2, gotHash, "Invalid linkHash")
@@ -63,28 +64,28 @@ func (f Factory) TestGetSegment(t *testing.T) {
 
 	t.Run("Getting an unknown segment should return nil", func(t *testing.T) {
 		ctx := context.Background()
-		s, err := a.GetSegment(ctx, testutil.RandomHash())
+		s, err := a.GetSegment(ctx, chainscripttest.RandomHash())
 		assert.NoError(t, err)
 		assert.Nil(t, s)
 	})
 
 	t.Run("Getting a segment should return its evidences", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
-		e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
-		e3 := cs.Evidence{Backend: "batch", Provider: "3"}
-		e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
-		e5 := cs.Evidence{Backend: "generic", Provider: "5"}
-		evidences := []cs.Evidence{e1, e2, e3, e4, e5}
+		e1, _ := chainscript.NewEvidence("1.0.0", "TMPop", "1", chainscripttest.RandomBytes(6))
+		e2, _ := chainscript.NewEvidence("1.0.0", "dummy", "2", chainscripttest.RandomBytes(6))
+		e3, _ := chainscript.NewEvidence("1.0.0", "batch", "3", chainscripttest.RandomBytes(6))
+		e4, _ := chainscript.NewEvidence("1.0.0", "bcbatch", "4", chainscripttest.RandomBytes(6))
+		e5, _ := chainscript.NewEvidence("1.0.0", "generic", "5", chainscripttest.RandomBytes(6))
+		evidences := []*chainscript.Evidence{e1, e2, e3, e4, e5}
 
 		for _, e := range evidences {
-			err := a.AddEvidence(ctx, linkHash2, &e)
+			err := a.AddEvidence(ctx, linkHash2, e)
 			assert.NoError(t, err, "a.AddEvidence()")
 		}
 
 		got, err := a.GetSegment(ctx, linkHash2)
 		assert.NoError(t, err, "a.GetSegment()")
-		assert.NotNil(t, got)
+		require.NotNil(t, got)
 		assert.Len(t, got.Meta.Evidences, 5, "Invalid number of evidences")
 	})
 }
@@ -94,9 +95,9 @@ func (f Factory) BenchmarkGetSegment(b *testing.B) {
 	a := f.initAdapterB(b)
 	defer f.freeAdapter(a)
 
-	linkHashes := make([]*types.Bytes32, b.N)
+	linkHashes := make([]chainscript.LinkHash, b.N)
 	for i := 0; i < b.N; i++ {
-		l := cstesting.RandomLink()
+		l := RandomLink(b, b.N, i)
 		linkHash, _ := a.CreateLink(context.Background(), l)
 		linkHashes[i] = linkHash
 	}
@@ -108,7 +109,7 @@ func (f Factory) BenchmarkGetSegment(b *testing.B) {
 		if s, err := a.GetSegment(context.Background(), linkHashes[i]); err != nil {
 			b.Fatal(err)
 		} else if s == nil {
-			b.Error("s = nil want *cs.Segment")
+			b.Error("s = nil want *chainscript.Segment")
 		}
 	}
 }
@@ -118,9 +119,9 @@ func (f Factory) BenchmarkGetSegmentParallel(b *testing.B) {
 	a := f.initAdapterB(b)
 	defer f.freeAdapter(a)
 
-	linkHashes := make([]*types.Bytes32, b.N)
+	linkHashes := make([]chainscript.LinkHash, b.N)
 	for i := 0; i < b.N; i++ {
-		l := cstesting.RandomLink()
+		l := RandomLink(b, b.N, i)
 		linkHash, _ := a.CreateLink(context.Background(), l)
 		linkHashes[i] = linkHash
 	}
@@ -136,7 +137,7 @@ func (f Factory) BenchmarkGetSegmentParallel(b *testing.B) {
 			if s, err := a.GetSegment(context.Background(), linkHashes[i]); err != nil {
 				b.Error(err)
 			} else if s == nil {
-				b.Error("s = nil want *cs.Segment")
+				b.Error("s = nil want *chainscript.Segment")
 			}
 		}
 	})

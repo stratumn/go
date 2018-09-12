@@ -20,7 +20,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/filestore"
-	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/tendermint"
 	"github.com/stratumn/go-indigocore/tmpop"

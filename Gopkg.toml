@@ -18,14 +18,6 @@
 [[constraint]]
   name = "github.com/golang/mock"
   branch="master"
-  
-[[constraint]]
-  name = "github.com/google/go-querystring"
-  branch="master"
-
-[[constraint]]
-  name = "github.com/jmespath/go-jmespath"
-  branch="master"
 
 [[override]] 
   # This is required because Tendermint needs ~1.0.0
@@ -38,10 +30,6 @@
   name = "github.com/golang/protobuf"
   version = "^1.0.0"
 
-[[constraint]]
-  name = "github.com/stratumn/go-crypto"
-  branch = "master"
-
 [[override]]
   name = "github.com/chzyer/readline"
   branch = "fix-bell"
@@ -49,4 +37,8 @@
 
 [[constraint]]
   name = "go.opencensus.io"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/stratumn/go-chainscript"
   branch = "master"

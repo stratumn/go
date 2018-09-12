@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
-	"github.com/stratumn/go-indigocore/cs"
+	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/validation/validators"
 )
@@ -41,11 +41,11 @@ type NetworkManager struct {
 	validationCfg *Config
 	current       validators.Validator
 
-	networkListener <-chan *cs.Link
+	networkListener <-chan *chainscript.Link
 }
 
 // NewNetworkManager returns a new NetworkManager able to listen to the network and update governance rules.
-func NewNetworkManager(ctx context.Context, a store.Adapter, networkListener <-chan *cs.Link, validationCfg *Config) (Manager, error) {
+func NewNetworkManager(ctx context.Context, a store.Adapter, networkListener <-chan *chainscript.Link, validationCfg *Config) (Manager, error) {
 	var err error
 	var govMgr = NetworkManager{
 		UpdateBroadcaster: NewUpdateBroadcaster(),
@@ -92,17 +92,18 @@ func (m *NetworkManager) ListenAndUpdate(ctx context.Context) error {
 }
 
 // GetValidators extract the config from a link, parses it and returns as list of validators.
-func (m *NetworkManager) GetValidators(ctx context.Context, link *cs.Link) (validators.ProcessesValidators, error) {
-	jsonRules, err := json.Marshal(link.State)
-	if err != nil {
-		return nil, err
-	}
+func (m *NetworkManager) GetValidators(ctx context.Context, link *chainscript.Link) (validators.ProcessesValidators, error) {
 	var schema RulesSchema
-	if err := json.Unmarshal(jsonRules, &schema); err != nil {
+	if err := json.Unmarshal(link.Data, &schema); err != nil {
 		return nil, err
 	}
 
-	process, ok := link.Meta.Data["process"].(string)
+	var metadata map[string]string
+	if err := link.StructurizeMetadata(&metadata); err != nil {
+		return nil, err
+	}
+
+	process, ok := metadata[ProcessMetaKey]
 	if !ok {
 		return nil, ErrMissingProcess
 	}
@@ -112,14 +113,16 @@ func (m *NetworkManager) GetValidators(ctx context.Context, link *cs.Link) (vali
 	processRulesUpdate := func(process string, schema *RulesSchema, validators validators.Validators) {
 		updateStoreErr = m.store.UpdateValidator(ctx, link)
 		if updateStoreErr != nil {
-			log.Errorf("Could not update validation rules in store for process %s: %s", process, err)
+			log.Errorf("Could not update validation rules in store for process %s: %s", process, updateStoreErr)
 			return
 		}
 		processesValidators[process] = validators
 	}
-	if _, err = LoadProcessRules(&schema, process, m.validationCfg.PluginsPath, processRulesUpdate); err != nil {
+
+	if _, err := LoadProcessRules(&schema, process, m.validationCfg.PluginsPath, processRulesUpdate); err != nil {
 		return nil, err
 	}
+
 	if updateStoreErr != nil {
 		return nil, updateStoreErr
 	}
@@ -138,13 +141,14 @@ func (m *NetworkManager) updateCurrent(validatorsMap validators.ProcessesValidat
 	m.Broadcast(m.current)
 }
 
-func isGovernanceLink(link *cs.Link) bool {
-	if link.Meta.Process == GovernanceProcessName {
+func isGovernanceLink(link *chainscript.Link) bool {
+	if link.Meta.Process.Name == GovernanceProcessName {
 		for _, tag := range link.Meta.Tags {
 			if tag == ValidatorTag {
 				return true
 			}
 		}
 	}
+
 	return false
 }

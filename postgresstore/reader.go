@@ -20,7 +20,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -30,10 +30,10 @@ type reader struct {
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
-func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
-	var segments = make(cs.SegmentSlice, 0, 1)
+func (a *reader) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
+	var segments = make(types.SegmentSlice, 0, 1)
 
-	rows, err := a.stmts.GetSegment.Query(linkHash[:])
+	rows, err := a.stmts.GetSegment.Query(linkHash)
 	if err != nil {
 		return nil, err
 	}
@@ -50,31 +50,30 @@ func (a *reader) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.S
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
-func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
-
+func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	rows, err := a.stmts.FindSegmentsWithFilters(filter)
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
-	segments := &cs.PaginatedSegments{Segments: make(cs.SegmentSlice, 0, filter.Limit)}
+	segments := &types.PaginatedSegments{Segments: make(types.SegmentSlice, 0, filter.Limit)}
 	err = scanLinkAndEvidences(rows, &segments.Segments, &segments.TotalCount)
 
 	return segments, err
 }
 
-func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCount *int) error {
-	var currentSegment *cs.Segment
-	var currentHash []byte
+func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCount *int) error {
+	var currentSegment *chainscript.Segment
+	var currentHash chainscript.LinkHash
 
 	for rows.Next() {
 		var (
-			linkHash     []byte
+			linkHash     chainscript.LinkHash
 			linkData     string
-			link         cs.Link
+			link         chainscript.Link
 			evidenceData sql.NullString
-			evidence     cs.Evidence
+			evidence     chainscript.Evidence
 		)
 
 		if totalCount == nil {
@@ -96,9 +95,12 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCount 
 			if err != nil {
 				return err
 			}
-			currentHash = hash[:]
+			currentHash = hash
 
-			currentSegment = link.Segmentify()
+			currentSegment, err = link.Segmentify()
+			if err != nil {
+				return err
+			}
 
 			*segments = append(*segments, currentSegment)
 		}
@@ -108,7 +110,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *cs.SegmentSlice, totalCount 
 				return err
 			}
 
-			if err := currentSegment.Meta.AddEvidence(evidence); err != nil {
+			if err := currentSegment.AddEvidence(&evidence); err != nil {
 				return err
 			}
 		}
@@ -154,10 +156,10 @@ func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (a *reader) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
-	var evidences cs.Evidences
+func (a *reader) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
+	var evidences types.EvidenceSlice
 
-	rows, err := a.stmts.GetEvidences.Query(linkHash[:])
+	rows, err := a.stmts.GetEvidences.Query(linkHash)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +167,7 @@ func (a *reader) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs
 	for rows.Next() {
 		var (
 			data     string
-			evidence cs.Evidence
+			evidence chainscript.Evidence
 		)
 
 		if err := rows.Scan(&data); err != nil {
@@ -178,5 +180,5 @@ func (a *reader) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs
 		evidences = append(evidences, &evidence)
 
 	}
-	return &evidences, nil
+	return evidences, nil
 }

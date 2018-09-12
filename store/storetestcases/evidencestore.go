@@ -18,13 +18,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
-	"github.com/stretchr/testify/require"
-	// Needed to serialize fossilizers evidence types.
-	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEvidenceStore runs all tests for the store.EvidenceStore interface
@@ -32,19 +30,19 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 	a := f.initAdapter(t)
 	defer f.freeAdapter(a)
 
-	l := cstesting.RandomLink()
+	l := chainscripttest.RandomLink(t)
 	linkHash, _ := a.CreateLink(context.Background(), l)
 
 	s := store.EvidenceStore(a)
 
 	t.Run("Adding evidences to a segment should work", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "TMPop", Provider: "1"}
-		e2 := cs.Evidence{Backend: "dummy", Provider: "2"}
-		e3 := cs.Evidence{Backend: "batch", Provider: "3"}
-		e4 := cs.Evidence{Backend: "bcbatch", Provider: "4"}
-		e5 := cs.Evidence{Backend: "generic", Provider: "5"}
-		evidences := []*cs.Evidence{&e1, &e2, &e3, &e4, &e5}
+		e1, _ := chainscript.NewEvidence("1.0.0", "TMPop", "1", []byte{1})
+		e2, _ := chainscript.NewEvidence("1.0.0", "dummy", "2", []byte{2})
+		e3, _ := chainscript.NewEvidence("1.0.0", "batch", "3", []byte{3})
+		e4, _ := chainscript.NewEvidence("1.0.0", "bcbatch", "4", []byte{4})
+		e5, _ := chainscript.NewEvidence("1.0.0", "generic", "5", []byte{5})
+		evidences := []*chainscript.Evidence{e1, e2, e3, e4, e5}
 
 		for _, evidence := range evidences {
 			err := s.AddEvidence(ctx, linkHash, evidence)
@@ -53,7 +51,7 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
-		assert.Equal(t, 5, len(*storedEvidences), "Invalid number of evidences")
+		assert.Equal(t, 5, len(storedEvidences), "Invalid number of evidences")
 
 		for _, evidence := range evidences {
 			foundEvidence := storedEvidences.FindEvidences(evidence.Backend)
@@ -63,17 +61,16 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 
 	t.Run("Duplicate evidences should be discarded", func(t *testing.T) {
 		ctx := context.Background()
-		e1 := cs.Evidence{Backend: "TMPop", Provider: "42"}
-		e2 := cs.Evidence{Backend: "dummy", Provider: "42"}
+		e, _ := chainscript.NewEvidence("1.0.0", "TMPop", "42", []byte{42})
 
-		err := s.AddEvidence(ctx, linkHash, &e1)
+		err := s.AddEvidence(ctx, linkHash, e)
 		require.NoError(t, err, "s.AddEvidence()")
 		// Add duplicate - some stores return an error, others silently ignore
-		s.AddEvidence(ctx, linkHash, &e2)
+		_ = s.AddEvidence(ctx, linkHash, e)
 
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
-		assert.Equal(t, 6, len(*storedEvidences), "Invalid number of evidences")
-		assert.EqualValues(t, e1.Backend, storedEvidences.GetEvidence("42").Backend, "Invalid evidence backend")
+		assert.Equal(t, 6, len(storedEvidences), "Invalid number of evidences")
+		assert.EqualValues(t, e.Backend, storedEvidences.GetEvidence("TMPop", "42").Backend, "Invalid evidence backend")
 	})
 }

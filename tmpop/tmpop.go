@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop/evidences"
@@ -301,17 +301,18 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 			Version:     t.config.Version,
 			Commit:      t.config.Commit,
 		}
+
 	case GetSegment:
-		linkHash := &types.Bytes32{}
-		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
+		var linkHash chainscript.LinkHash
+		if err = json.Unmarshal(reqQuery.Data, &linkHash); err != nil {
 			break
 		}
 
 		result, err = t.adapter.GetSegment(ctx, linkHash)
 
 	case GetEvidences:
-		linkHash := &types.Bytes32{}
-		if err = linkHash.UnmarshalJSON(reqQuery.Data); err != nil {
+		var linkHash chainscript.LinkHash
+		if err = json.Unmarshal(reqQuery.Data, &linkHash); err != nil {
 			break
 		}
 
@@ -319,8 +320,8 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 
 	case AddEvidence:
 		evidence := &struct {
-			LinkHash *types.Bytes32
-			Evidence *cs.Evidence
+			LinkHash chainscript.LinkHash
+			Evidence *chainscript.Evidence
 		}{}
 		if err = json.Unmarshal(reqQuery.Data, evidence); err != nil {
 			break
@@ -377,7 +378,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	return
 }
 
-func (t *TMPop) doTx(ctx context.Context, createLink func(context.Context, *cs.Link) *ABCIError, txBytes []byte) *ABCIError {
+func (t *TMPop) doTx(ctx context.Context, createLink func(context.Context, *chainscript.Link) *ABCIError, txBytes []byte) *ABCIError {
 	if len(txBytes) == 0 {
 		return &ABCIError{
 			Code: CodeTypeValidation,
@@ -504,39 +505,43 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 	linksPositions := make(map[types.Bytes32]int)
 	for i, lh := range linkHashes {
-		linksPositions[lh] = i
+		linksPositions[*types.NewBytes32FromBytes(lh)] = i
 	}
 
-	newEvidences := make(map[*types.Bytes32]*cs.Evidence)
+	newEvidences := make(map[*chainscript.LinkHash]*chainscript.Evidence)
 	for _, tx := range evidenceBlock.Txs {
 		// We only create evidence for valid transactions
 		linkHash, _ := tx.Link.Hash()
-		position, valid := linksPositions[*linkHash]
+		position, valid := linksPositions[*types.NewBytes32FromBytes(linkHash)]
 
 		if valid {
-			evidence := &cs.Evidence{
-				Backend:  Name,
-				Provider: header.ChainID,
-				Proof: &evidences.TendermintProof{
-					BlockHeight:            evidenceHeight,
-					Root:                   merkleRoot,
-					Path:                   merkle.Path(position),
-					ValidationsHash:        validatorHash,
-					Header:                 evidenceBlock.Header,
-					HeaderVotes:            evidenceNextBlock.Votes,
-					HeaderValidatorSet:     evidenceNextBlock.Validators,
-					NextHeader:             evidenceNextBlock.Header,
-					NextHeaderVotes:        evidenceLastBlock.Votes,
-					NextHeaderValidatorSet: evidenceLastBlock.Validators,
-				},
+			proof := &evidences.TendermintProof{
+				BlockHeight:            evidenceHeight,
+				Root:                   merkleRoot,
+				Path:                   merkle.Path(position),
+				ValidationsHash:        validatorHash,
+				Header:                 evidenceBlock.Header,
+				HeaderVotes:            evidenceNextBlock.Votes,
+				HeaderValidatorSet:     evidenceNextBlock.Validators,
+				NextHeader:             evidenceNextBlock.Header,
+				NextHeaderVotes:        evidenceLastBlock.Votes,
+				NextHeaderValidatorSet: evidenceLastBlock.Validators,
+			}
+
+			evidence, err := proof.Evidence(header.ChainID)
+			if err != nil {
+				log.Warnf("Evidence could not be created: %v", err)
+				span.Annotatef(nil, "Evidence for %x could not be created: %s", linkHash.String(), err.Error())
 			}
 
 			if err := t.adapter.AddEvidence(ctx, linkHash, evidence); err != nil {
 				log.Warnf("Evidence could not be added to local store: %v", err)
-				span.Annotatef(nil, "Evidence for %x could not be added: %s", *linkHash, err.Error())
+				span.Annotatef(nil, "Evidence for %x could not be added: %s", linkHash.String(), err.Error())
 			}
 
-			newEvidences[linkHash] = evidence
+			if evidence != nil {
+				newEvidences[&linkHash] = evidence
+			}
 		}
 	}
 

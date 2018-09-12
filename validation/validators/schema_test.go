@@ -18,10 +18,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/validation/validators"
-
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -105,31 +104,31 @@ func TestSchemaValidator(t *testing.T) {
 	sv, err := validators.NewSchemaValidator(baseCfg, schema)
 	require.NoError(t, err)
 
-	rightState := map[string]interface{}{
+	rightData := map[string]interface{}{
 		"seller":       "Alice",
 		"lot":          "Secret key",
 		"initialPrice": 42,
 	}
 
-	badState := map[string]interface{}{
+	badData := map[string]interface{}{
 		"lot":          "Secret key",
 		"initialPrice": 42,
 	}
 
 	type testCase struct {
 		name  string
-		link  *cs.Link
+		link  *chainscript.Link
 		valid bool
 	}
 
 	testCases := []testCase{{
 		name:  "valid-link",
 		valid: true,
-		link:  cstesting.NewLinkBuilder().WithProcess("p1").WithType("sell").WithState(rightState).Build(),
+		link:  chainscripttest.NewLinkBuilder(t).WithProcess("p1").WithStep("sell").WithData(t, rightData).Build(),
 	}, {
 		name:  "invalid-link",
 		valid: false,
-		link:  cstesting.NewLinkBuilder().WithProcess("p1").WithType("sell").WithState(badState).Build(),
+		link:  chainscripttest.NewLinkBuilder(t).WithProcess("p1").WithStep("sell").WithData(t, badData).Build(),
 	}}
 
 	for _, tt := range testCases {

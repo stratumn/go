@@ -17,14 +17,13 @@ package tmpoptestcases
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
-
+	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/abci/types"
 )
 
@@ -65,23 +64,17 @@ func (f Factory) free() {
 // newTMPop creates a new TMPoP from scratch (no previous history)
 func (f *Factory) newTMPop(t *testing.T, config *tmpop.Config) (*tmpop.TMPop, abci.RequestBeginBlock) {
 	var err error
-	if f.adapter, f.kv, err = f.New(); err != nil {
-		t.Fatalf("f.New(): err: %s", err)
-	}
-	if f.adapter == nil {
-		t.Fatal("a = nil want store.Adapter")
-	}
-	if f.kv == nil {
-		t.Fatalf("kv = nil want store.KeyValueStore")
-	}
+	f.adapter, f.kv, err = f.New()
+	require.NoError(t, err, "f.New()")
+	require.NotNil(t, f.adapter, "store.Adapter")
+	require.NotNil(t, f.kv, "store.KeyValueStore")
 
 	if config == nil {
 		config = &tmpop.Config{}
 	}
+
 	h, err := tmpop.New(context.Background(), f.adapter, f.kv, config)
-	if err != nil {
-		t.Fatalf("tmpop.New(): err: %s", err)
-	}
+	require.NoError(t, err, "tmpop.New()")
 
 	return h, makeBeginBlock([]byte{}, int64(1))
 }
@@ -100,20 +93,19 @@ func makeQuery(h *tmpop.TMPop, name string, args interface{}, res interface{}) e
 	return json.Unmarshal(q.Value, &res)
 }
 
-func makeCreateRandomLinkTx(t *testing.T) (*cs.Link, []byte) {
-	l := cstesting.RandomLink()
+func makeCreateRandomLinkTx(t *testing.T) (*chainscript.Link, []byte) {
+	l := chainscripttest.RandomLink(t)
 	return l, makeCreateLinkTx(t, l)
 }
 
-func makeCreateLinkTx(t *testing.T, l *cs.Link) []byte {
+func makeCreateLinkTx(t *testing.T, l *chainscript.Link) []byte {
 	tx := tmpop.Tx{
 		TxType: tmpop.CreateLink,
 		Link:   l,
 	}
 	res, err := json.Marshal(tx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+
 	return res
 }
 
@@ -128,13 +120,13 @@ func makeBeginBlock(appHash []byte, height int64) abci.RequestBeginBlock {
 	}
 }
 
-func commitLink(t *testing.T, h *tmpop.TMPop, l *cs.Link, requestBeginBlock abci.RequestBeginBlock) abci.RequestBeginBlock {
+func commitLink(t *testing.T, h *tmpop.TMPop, l *chainscript.Link, requestBeginBlock abci.RequestBeginBlock) abci.RequestBeginBlock {
 	tx := makeCreateLinkTx(t, l)
 	nextBeginBlock := commitTx(t, h, requestBeginBlock, tx)
 	return nextBeginBlock
 }
 
-func commitRandomLink(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock) (*cs.Link, abci.RequestBeginBlock) {
+func commitRandomLink(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBeginBlock) (*chainscript.Link, abci.RequestBeginBlock) {
 	l, tx := makeCreateRandomLinkTx(t)
 	nextBeginBlock := commitTx(t, h, requestBeginBlock, tx)
 	return l, nextBeginBlock
@@ -152,25 +144,17 @@ func commitTxs(t *testing.T, h *tmpop.TMPop, requestBeginBlock abci.RequestBegin
 	}
 
 	commitResult := h.Commit()
-	if len(commitResult.GetData()) == 0 {
-		t.Errorf("a.Commit(): failed")
-	}
+	require.NotEmpty(t, commitResult.GetData(), "h.Commit()")
 
 	return makeBeginBlock(commitResult.Data, requestBeginBlock.Header.Height+1)
 }
 
-func verifyLinkStored(t *testing.T, h *tmpop.TMPop, link *cs.Link) {
+func verifyLinkStored(t *testing.T, h *tmpop.TMPop, link *chainscript.Link) {
 	linkHash, _ := link.Hash()
 
-	got := &cs.Segment{}
+	got := &chainscript.Segment{}
 	err := makeQuery(h, tmpop.GetSegment, linkHash, got)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want, got := *link, got.Link; !reflect.DeepEqual(want, got) {
-		gotJS, _ := json.MarshalIndent(got, "", "  ")
-		wantJS, _ := json.MarshalIndent(want, "", "  ")
-		t.Errorf("h.Commit(): expected to return %s, got %s", wantJS, gotJS)
-	}
+	require.NoError(t, err)
+	require.NotNil(t, got.Link)
+	chainscripttest.LinksEqual(t, link, got.Link)
 }

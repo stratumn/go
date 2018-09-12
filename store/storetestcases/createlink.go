@@ -21,8 +21,8 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,15 +33,15 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := cstesting.RandomLink()
+		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink with no priority should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := cstesting.RandomLink()
-		delete(l.Meta.Data, "priority")
+		l := chainscripttest.RandomLink(t)
+		l.Meta.Priority = 0.0
 
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
@@ -49,34 +49,35 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 	t.Run("CreateLink and update state should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := cstesting.RandomLink()
+		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
-		l = cstesting.ChangeState(l)
+		err = l.SetData(chainscripttest.RandomString(32))
+		assert.NoError(t, err)
+
 		_, err = a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
 	t.Run("CreateLink and update map ID should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l1 := cstesting.RandomLink()
+		l1 := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l1)
 		assert.NoError(t, err, "a.CreateLink()")
 
-		l2 := cstesting.ChangeMapID(l1)
-		_, err = a.CreateLink(ctx, l2)
+		l1.Meta.MapId = chainscripttest.RandomString(12)
+		_, err = a.CreateLink(ctx, l1)
 		assert.NoError(t, err, "a.CreateLink()")
-
 	})
 
 	t.Run("CreateLink with previous link hash should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
-		l := cstesting.RandomLink()
+		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 
-		l = cstesting.NewLinkBuilder().Branch(l).Build()
+		l = chainscripttest.NewLinkBuilder(t).Branch(t, l).Build()
 		_, err = a.CreateLink(ctx, l)
 		assert.NoError(t, err, "a.CreateLink()")
 	})
@@ -87,9 +88,9 @@ func (f Factory) BenchmarkCreateLink(b *testing.B) {
 	a := f.initAdapterB(b)
 	defer f.freeAdapter(a)
 
-	slice := make([]*cs.Link, b.N)
+	slice := make([]*chainscript.Link, b.N)
 	for i := 0; i < b.N; i++ {
-		slice[i] = cstesting.RandomLink()
+		slice[i] = RandomLink(b, b.N, i)
 	}
 
 	b.ResetTimer()
@@ -107,9 +108,9 @@ func (f Factory) BenchmarkCreateLinkParallel(b *testing.B) {
 	a := f.initAdapterB(b)
 	defer f.freeAdapter(a)
 
-	slice := make([]*cs.Link, b.N)
+	slice := make([]*chainscript.Link, b.N)
 	for i := 0; i < b.N; i++ {
-		slice[i] = cstesting.RandomLink()
+		slice[i] = RandomLink(b, b.N, i)
 	}
 
 	var counter uint64

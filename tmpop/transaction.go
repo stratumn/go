@@ -17,8 +17,7 @@ package tmpop
 import (
 	"encoding/json"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-chainscript"
 )
 
 // TxType represents the type of a Transaction
@@ -31,9 +30,9 @@ const (
 
 // Tx represents a TMPoP transaction
 type Tx struct {
-	TxType   TxType         `json:"type"`
-	Link     *cs.Link       `json:"link"`
-	LinkHash *types.Bytes32 `json:"linkhash"`
+	TxType   TxType               `json:"type"`
+	Link     *chainscript.Link    `json:"link"`
+	LinkHash chainscript.LinkHash `json:"linkhash"`
 }
 
 func unmarshallTx(txBytes []byte) (*Tx, *ABCIError) {

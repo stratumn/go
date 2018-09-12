@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +29,7 @@ import (
 func initBatch(t *testing.T, a store.Adapter) store.Batch {
 	b, err := a.NewBatch(context.Background())
 	require.NoError(t, err, "a.NewBatch()")
-	assert.NotNil(t, b, "Batch should not be nil")
+	require.NotNil(t, b, "Batch should not be nil")
 	return b
 }
 
@@ -41,7 +41,7 @@ func (f Factory) TestBatch(t *testing.T) {
 
 	// Initialize the adapter with a few links with specific map ids
 	for i := 0; i < 6; i++ {
-		link := cstesting.NewLinkBuilder().WithMapID(fmt.Sprintf("map%d", i%3)).Build()
+		link := chainscripttest.NewLinkBuilder(t).WithRandomData().WithMapID(fmt.Sprintf("map%d", i%3)).Build()
 		_, err := a.CreateLink(ctx, link)
 		require.NoError(t, err, "a.CreateLink()")
 	}
@@ -50,7 +50,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		link := cstesting.RandomLink()
+		link := chainscripttest.RandomLink(t)
 		linkHash, err := b.CreateLink(ctx, link)
 		assert.NoError(t, err, "b.CreateLink()")
 
@@ -63,7 +63,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		link := cstesting.RandomLink()
+		link := chainscripttest.RandomLink(t)
 		linkHash, err := b.CreateLink(ctx, link)
 		assert.NoError(t, err, "b.CreateLink()")
 
@@ -73,14 +73,14 @@ func (f Factory) TestBatch(t *testing.T) {
 		found, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err, "a.GetSegment()")
 		require.NotNil(t, found, "a.GetSegment()")
-		assert.EqualValues(t, *link, found.Link, "Link should be found in adapter after a Write")
+		chainscripttest.LinksEqual(t, link, found.Link)
 	})
 
 	t.Run("Finding segments should find in both batch and underlying store", func(t *testing.T) {
 		ctx = context.Background()
 		b := initBatch(t, a)
 
-		var segs *cs.PaginatedSegments
+		var segs *types.PaginatedSegments
 		var err error
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
 		assert.NoError(t, err, "b.FindSegments()")
@@ -88,9 +88,9 @@ func (f Factory) TestBatch(t *testing.T) {
 		assert.Len(t, segs.Segments, segs.TotalCount)
 		adapterLinksCount := len(segs.Segments)
 
-		_, err = b.CreateLink(ctx, cstesting.RandomLink())
+		_, err = b.CreateLink(ctx, chainscripttest.RandomLink(t))
 		require.NoError(t, err, "b.CreateLink()")
-		_, err = b.CreateLink(ctx, cstesting.RandomLink())
+		_, err = b.CreateLink(ctx, chainscripttest.RandomLink(t))
 		require.NoError(t, err, "b.CreateLink()")
 
 		segs, err = b.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}})
@@ -108,7 +108,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		adapterMapIdsCount := len(mapIDs)
 
 		for _, mapID := range []string{"map42", "map43"} {
-			link := cstesting.NewLinkBuilder().WithMapID(mapID).Build()
+			link := chainscripttest.NewLinkBuilder(t).WithMapID(mapID).Build()
 			_, err = b.CreateLink(ctx, link)
 			require.NoError(t, err, "b.CreateLink()")
 		}

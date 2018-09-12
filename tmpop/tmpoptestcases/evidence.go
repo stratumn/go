@@ -20,10 +20,9 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
@@ -94,7 +93,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	blocks[0] = &tmpop.Block{Header: createHeader(0)}
 
 	// Block1
-	invalidLink1 := cstesting.NewLinkBuilder().Invalid().Build()
+	invalidLink1 := chainscripttest.NewLinkBuilder(t).WithInvalidFields().Build()
 	invalidLinkHash1, _ := invalidLink1.Hash()
 	req = commitLink(t, h, invalidLink1, req)
 
@@ -107,9 +106,9 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	tmClientMock.EXPECT().Block(gomock.Any(), int64(1)).Return(blocks[1], nil).AnyTimes()
 
 	// Block2
-	link1 := cstesting.RandomLink()
+	link1 := chainscripttest.RandomLink(t)
 	linkHash1, _ := link1.Hash()
-	link2 := cstesting.RandomLink()
+	link2 := chainscripttest.RandomLink(t)
 	linkHash2, _ := link2.Hash()
 	req = commitTxs(t, h, req, [][]byte{makeCreateLinkTx(t, link1), makeCreateLinkTx(t, link2)})
 
@@ -139,7 +138,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	tmClientMock.EXPECT().Block(gomock.Any(), int64(3)).Return(blocks[3], nil).AnyTimes()
 
 	// Block4
-	invalidLink2 := cstesting.NewLinkBuilder().Invalid().Build()
+	invalidLink2 := chainscripttest.NewLinkBuilder(t).WithInvalidFields().Build()
 	req = commitLink(t, h, invalidLink2, req)
 
 	appHashes[4] = req.Header.AppHash
@@ -193,7 +192,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	linkHash7, _ := link7.Hash()
 
 	// Invalid app hash to prevent next block from producing valid proofs.
-	appHashes[8] = testutil.RandomHash()[:]
+	appHashes[8] = chainscripttest.RandomHash()
 	blocks[8] = &tmpop.Block{
 		Header:     createHeader(8),
 		Txs:        []*tmpop.Tx{&tmpop.Tx{TxType: tmpop.CreateLink, Link: link7}},
@@ -253,15 +252,16 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	tmClientMock.EXPECT().Block(gomock.Any(), int64(12)).Return(blocks[12], nil).AnyTimes()
 
 	t.Run("Adds evidence when block is properly signed", func(t *testing.T) {
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash2, got)
 		assert.NoError(t, err)
 
-		evidence := got.Meta.GetEvidence(h.GetCurrentHeader().GetChainID())
+		evidence := got.GetEvidence(evidences.TMPopName, h.GetCurrentHeader().GetChainID())
 		require.NotNil(t, evidence, "Evidence is missing")
 
-		proof := evidence.Proof.(*evidences.TendermintProof)
-		assert.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
+		proof, err := evidences.UnmarshalProof(evidence)
+		require.NoError(t, err)
+		require.NotNil(t, proof, "h.Commit(): expected proof not to be nil")
 		assert.Equal(t, int64(2), proof.BlockHeight, "Invalid block height in proof")
 
 		tree, _ := merkle.NewStaticTree([][]byte{linkHash1[:], linkHash2[:]})
@@ -291,40 +291,44 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 
 		require.Len(t, evidenceEvents, 2, "Invalid number of events")
 
-		savedEvidences := evidenceEvents[0].Data.(map[string]*cs.Evidence)
+		savedEvidences := evidenceEvents[0].Data.(map[string]*chainscript.Evidence)
 		assert.Len(t, savedEvidences, 2, "Invalid number of evidence produced")
-		assert.NotNil(t, savedEvidences[linkHash1.String()], "Evidence missing for %x", *linkHash1)
-		assert.NotNil(t, savedEvidences[linkHash2.String()], "Evidence missing for %x", *linkHash2)
+		assert.NotNil(t, savedEvidences[linkHash1.String()], "Evidence missing for %x", linkHash1)
+		assert.NotNil(t, savedEvidences[linkHash2.String()], "Evidence missing for %x", linkHash2)
 
-		savedEvidences = evidenceEvents[1].Data.(map[string]*cs.Evidence)
+		savedEvidences = evidenceEvents[1].Data.(map[string]*chainscript.Evidence)
 		assert.Len(t, savedEvidences, 1, "Invalid number of evidence produced")
-		assert.NotNil(t, savedEvidences[linkHash3.String()], "Evidence missing for %x", *linkHash3)
+		assert.NotNil(t, savedEvidences[linkHash3.String()], "Evidence missing for %x", linkHash3)
 	})
 
 	t.Run("Does not add evidence right after commit", func(t *testing.T) {
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash9, got)
 		assert.NoError(t, err)
+		require.NotNil(t, got)
+		require.NotNil(t, got.Meta)
 		assert.Empty(t, got.Meta.Evidences, "Link should not have evidence before the next block is signed")
 	})
 
 	// It is possible to add invalid links to a block.
-	// It can happen if validation rules change between
-	// the checkTx and deliverTx messages.
-	// It's ok to have such links in the blockchain, but
-	// we should not generate evidence for them.
+	// It can happen if validation rules change between the checkTx and
+	// deliverTx messages.
+	// It's ok to have such links in the blockchain, but we should not generate
+	// evidence for them.
 	t.Run("Does not add evidence to invalid links", func(t *testing.T) {
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, invalidLinkHash1, got)
 		assert.NoError(t, err)
 		assert.Zero(t, got.Link, "Link should not be found")
-		assert.Empty(t, got.Meta.Evidences, "Evidence should not be added to invalid link")
+		assert.Nil(t, got.Meta)
 	})
 
 	t.Run("Does not add evidence if signatures are missing", func(t *testing.T) {
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash4, got)
 		assert.NoError(t, err)
+
+		require.NotNil(t, got.Meta)
 		assert.Empty(
 			t,
 			got.Meta.Evidences,
@@ -333,9 +337,11 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	})
 
 	t.Run("Does not add evidence in case of Tendermint Core error", func(t *testing.T) {
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash7, got)
 		assert.NoError(t, err)
+
+		require.NotNil(t, got.Meta)
 		assert.Empty(
 			t,
 			got.Meta.Evidences,
@@ -344,9 +350,11 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 	})
 
 	t.Run("Does not add evidence if app hash doesn't match", func(t *testing.T) {
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err := makeQuery(h, tmpop.GetSegment, linkHash8, got)
 		assert.NoError(t, err)
+
+		require.NotNil(t, got.Meta)
 		assert.Empty(
 			t,
 			got.Meta.Evidences,

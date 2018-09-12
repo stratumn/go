@@ -21,11 +21,11 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/batchfossilizer"
 	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/blockchain"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/fossilizer"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -105,12 +105,18 @@ func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 	}, nil
 }
 
-func (a *Fossilizer) transform(evidence *cs.Evidence, data, meta []byte) (*fossilizer.Result, error) {
+func (a *Fossilizer) transform(evidence *chainscript.Evidence, data, meta []byte) (*fossilizer.Result, error) {
 	var (
-		root = evidence.Proof.(*batchevidences.BatchProof).Root
 		txid types.TransactionID
 		err  error
 	)
+
+	batchProof, err := batchevidences.UnmarshalProof(evidence)
+	if err != nil {
+		return nil, err
+	}
+
+	root := batchProof.Root
 
 	if a.lastRoot == nil || *root != *a.lastRoot {
 		txid, err = a.config.HashTimestamper.TimestampHash(root)
@@ -128,10 +134,17 @@ func (a *Fossilizer) transform(evidence *cs.Evidence, data, meta []byte) (*fossi
 
 	evidence.Provider = a.config.HashTimestamper.GetInfo().Network.String()
 	evidence.Backend = Name
-	evidence.Proof = &evidences.BcBatchProof{
-		Batch:         *evidence.Proof.(*batchevidences.BatchProof),
+
+	bcProof := &evidences.BcBatchProof{
+		Batch:         *batchProof,
 		TransactionID: a.lastTransactionID,
 	}
+	bcEvidence, err := bcProof.Evidence(evidence.Provider)
+	if err != nil {
+		return nil, err
+	}
+
+	evidence.Proof = bcEvidence.Proof
 
 	r := fossilizer.Result{
 		Evidence: *evidence,

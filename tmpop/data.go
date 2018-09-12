@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	abci "github.com/tendermint/abci/types"
@@ -102,14 +102,14 @@ func getCommitLinkHashesKey(height int64) []byte {
 // doesn't provide yet an easy way to know which transactions are invalid in
 // a block, this is useful to generate valid evidence and ignore invalid
 // transactions.
-func (t *TMPop) saveCommitLinkHashes(ctx context.Context, links []*cs.Link) error {
+func (t *TMPop) saveCommitLinkHashes(ctx context.Context, links []*chainscript.Link) error {
 	if len(links) > 0 {
 		key := getCommitLinkHashesKey(t.currentHeader.Height)
 
-		var linkHashes []types.Bytes32
+		var linkHashes []chainscript.LinkHash
 		for _, link := range links {
 			linkHash, _ := link.Hash()
-			linkHashes = append(linkHashes, *linkHash)
+			linkHashes = append(linkHashes, linkHash)
 		}
 
 		value, err := json.Marshal(linkHashes)
@@ -127,14 +127,14 @@ func (t *TMPop) saveCommitLinkHashes(ctx context.Context, links []*cs.Link) erro
 
 // getCommitLinkHashes gets the link hashes included in a block at a specific height.
 // This is useful to ignore invalid links included in that block.
-func (t *TMPop) getCommitLinkHashes(ctx context.Context, height int64) ([]types.Bytes32, error) {
+func (t *TMPop) getCommitLinkHashes(ctx context.Context, height int64) ([]chainscript.LinkHash, error) {
 	key := getCommitLinkHashesKey(height)
 	value, err := t.kvDB.GetValue(ctx, key)
 	if err != nil || value == nil {
 		return nil, err
 	}
 
-	var linkHashes []types.Bytes32
+	var linkHashes []chainscript.LinkHash
 	if err := json.Unmarshal(value, &linkHashes); err != nil {
 		return nil, err
 	}

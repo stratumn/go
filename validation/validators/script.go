@@ -24,7 +24,7 @@ import (
 
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -54,7 +54,7 @@ type ScriptConfig struct {
 }
 
 // ScriptValidatorFunc is the function called when enforcing a custom validation rule
-type ScriptValidatorFunc = func(store.SegmentReader, *cs.Link) error
+type ScriptValidatorFunc = func(store.SegmentReader, *chainscript.Link) error
 
 // ScriptValidator validates a link according to custom rules written as a go plugin.
 type ScriptValidator struct {
@@ -80,17 +80,17 @@ func NewScriptValidator(baseConfig *ValidatorBaseConfig, scriptCfg *ScriptConfig
 	pluginFile := path.Join(pluginsPath, scriptCfg.File)
 	p, err := plugin.Open(pluginFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkType)
+		return nil, errors.Wrapf(err, ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkStep)
 	}
 
-	symbol, err := p.Lookup(strings.Title(baseConfig.LinkType))
+	symbol, err := p.Lookup(strings.Title(baseConfig.LinkStep))
 	if err != nil {
-		return nil, errors.Wrapf(err, ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkType)
+		return nil, errors.Wrapf(err, ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkStep)
 	}
 
 	customValidator, ok := symbol.(ScriptValidatorFunc)
 	if !ok {
-		return nil, errors.Wrapf(errors.New(ErrBadPlugin), ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkType)
+		return nil, errors.Wrapf(errors.New(ErrBadPlugin), ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkStep)
 	}
 
 	// here we ignore the error since there is no way we cannot read the file if the plugin has been loaded successfully
@@ -113,11 +113,11 @@ func (sv ScriptValidator) Hash() (*types.Bytes32, error) {
 }
 
 // ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
-func (sv ScriptValidator) ShouldValidate(link *cs.Link) bool {
+func (sv ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
 
 // Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
-func (sv ScriptValidator) Validate(_ context.Context, storeReader store.SegmentReader, link *cs.Link) error {
+func (sv ScriptValidator) Validate(_ context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
 	return sv.script(storeReader, link)
 }

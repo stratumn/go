@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/validation"
@@ -40,7 +40,7 @@ type State struct {
 
 	adapter            store.Adapter
 	deliveredLinks     store.Batch
-	deliveredLinksList []*cs.Link
+	deliveredLinksList []*chainscript.Link
 	checkedLinks       store.Batch
 
 	governance validation.Manager
@@ -88,12 +88,12 @@ func (s *State) UpdateValidators(ctx context.Context) {
 }
 
 // Check checks if creating this link is a valid operation
-func (s *State) Check(ctx context.Context, link *cs.Link) *ABCIError {
+func (s *State) Check(ctx context.Context, link *chainscript.Link) *ABCIError {
 	return s.checkLinkAndAddToBatch(ctx, link, s.checkedLinks)
 }
 
 // Deliver adds a link to the list of links to be committed
-func (s *State) Deliver(ctx context.Context, link *cs.Link) *ABCIError {
+func (s *State) Deliver(ctx context.Context, link *chainscript.Link) *ABCIError {
 	res := s.checkLinkAndAddToBatch(ctx, link, s.deliveredLinks)
 	if res.IsOK() {
 		s.deliveredLinksList = append(s.deliveredLinksList, link)
@@ -102,7 +102,7 @@ func (s *State) Deliver(ctx context.Context, link *cs.Link) *ABCIError {
 }
 
 // checkLinkAndAddToBatch validates the link's format and runs the validations (signatures, schema)
-func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch store.Batch) *ABCIError {
+func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *chainscript.Link, batch store.Batch) *ABCIError {
 	err := link.Validate(ctx, batch.GetSegment)
 	if err != nil {
 		return &ABCIError{
@@ -131,11 +131,9 @@ func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *cs.Link, batch
 	return nil
 }
 
-// Commit commits the delivered links,
-// resets delivered and checked state,
-// and returns the hash for the commit
-// and the list of committed links.
-func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*cs.Link, error) {
+// Commit commits the delivered links, resets delivered and checked state,
+// and returns the hash for the commit and the list of committed links.
+func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*chainscript.Link, error) {
 	appHash, err := s.computeAppHash()
 	if err != nil {
 		return nil, nil, err
@@ -150,7 +148,7 @@ func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*cs.Link, error) 
 	}
 	s.checkedLinks = bufferedbatch.NewBatch(ctx, s.adapter)
 
-	committedLinks := make([]*cs.Link, len(s.deliveredLinksList))
+	committedLinks := make([]*chainscript.Link, len(s.deliveredLinksList))
 	copy(committedLinks, s.deliveredLinksList)
 	s.deliveredLinksList = nil
 
@@ -172,7 +170,7 @@ func (s *State) computeAppHash() (*types.Bytes32, error) {
 		var treeLeaves [][]byte
 		for _, link := range s.deliveredLinksList {
 			linkHash, _ := link.Hash()
-			treeLeaves = append(treeLeaves, linkHash[:])
+			treeLeaves = append(treeLeaves, linkHash)
 		}
 
 		merkle, err := merkle.NewStaticTree(treeLeaves)

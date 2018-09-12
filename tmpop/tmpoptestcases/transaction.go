@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
@@ -40,10 +40,10 @@ func (f Factory) TestCheckTx(t *testing.T) {
 	})
 
 	t.Run("Check link with invalid reference returns not-ok", func(t *testing.T) {
-		link := cstesting.RandomLink()
-		link.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
-			Process:  "proc",
-			LinkHash: "invalidLinkHash",
+		link := chainscripttest.RandomLink(t)
+		link.Meta.Refs = []*chainscript.LinkReference{&chainscript.LinkReference{
+			Process:  link.Meta.Process.Name,
+			LinkHash: []byte("invalidLinkHash"),
 		}}
 		tx := makeCreateLinkTx(t, link)
 
@@ -57,10 +57,10 @@ func (f Factory) TestCheckTx(t *testing.T) {
 		linkHash, _ := link.Hash()
 		res := h.CheckTx(tx)
 
-		linkWithRef := cstesting.NewLinkBuilder().WithProcess(link.Meta.Process).Build()
-		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
-			Process:  link.Meta.Process,
-			LinkHash: linkHash.String(),
+		linkWithRef := chainscripttest.NewLinkBuilder(t).WithProcess(link.Meta.Process.Name).Build()
+		linkWithRef.Meta.Refs = []*chainscript.LinkReference{&chainscript.LinkReference{
+			Process:  link.Meta.Process.Name,
+			LinkHash: linkHash,
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
 
@@ -89,10 +89,10 @@ func (f Factory) TestDeliverTx(t *testing.T) {
 		linkHash, _ := link.Hash()
 		h.CheckTx(tx)
 
-		linkWithRef := cstesting.NewLinkBuilder().WithProcess(link.Meta.Process).Build()
-		linkWithRef.Meta.Refs = []cs.SegmentReference{cs.SegmentReference{
-			Process:  link.Meta.Process,
-			LinkHash: linkHash.String(),
+		linkWithRef := chainscripttest.NewLinkBuilder(t).WithProcess(link.Meta.Process.Name).Build()
+		linkWithRef.Meta.Refs = []*chainscript.LinkReference{&chainscript.LinkReference{
+			Process:  link.Meta.Process.Name,
+			LinkHash: linkHash,
 		}}
 		tx = makeCreateLinkTx(t, linkWithRef)
 		res := h.DeliverTx(tx)
@@ -143,9 +143,9 @@ func (f Factory) TestCommitTx(t *testing.T) {
 		savedEvent := events[0]
 		assert.EqualValues(t, store.SavedLinks, savedEvent.EventType)
 
-		savedLinks := savedEvent.Data.([]*cs.Link)
+		savedLinks := savedEvent.Data.([]*chainscript.Link)
 		require.Len(t, savedLinks, 2, "Invalid number of links")
-		assert.EqualValues(t, link1, savedLinks[0])
-		assert.EqualValues(t, link2, savedLinks[1])
+		chainscripttest.LinksEqual(t, link1, savedLinks[0])
+		chainscripttest.LinksEqual(t, link2, savedLinks[1])
 	})
 }

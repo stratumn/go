@@ -16,13 +16,12 @@ package evidences_test
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"math/rand"
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/tmpop/evidences"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/merkle"
@@ -79,17 +78,14 @@ func TestTendermintProof(t *testing.T) {
 		name string
 		test func(*testing.T)
 	}{{
-		"deserialize",
+		"unmarshal",
 		func(t *testing.T) {
-			jsonTestEvidences := `[{
-				"backend": "TMPop",
-				"provider": "testTendermintChain",
-				"proof": {
-					"block_height": 42,
-					"merkle_root":
+			proofData := []byte(`{
+					"blockHeight": 42,
+					"merkleRoot":
 					  "59655543574b735862477952414f6d4254764b534a666a7a614c62745a73794d",
-					"merkle_path": [],
-					"validations_hash":
+					"merklePath": [],
+					"validationsHash":
 					  "4e7377594e734752757373566d616f7a465a4273624f4a694651475a736e7754",
 					"header": {
 					  "chain_id": "testchain",
@@ -111,12 +107,12 @@ func TestTendermintProof(t *testing.T) {
 					  "last_results_hash": "",
 					  "evidence_hash": ""
 					},
-					"header_votes": [],
-					"header_validator_set": {
+					"headerVotes": [],
+					"headerValidatorSet": {
 					  "validators": [],
 					  "proposer": null
 					},
-					"next_header": {
+					"nextHeader": {
 					  "chain_id": "testchain",
 					  "height": 43,
 					  "time": "1970-01-01T01:00:43+01:00",
@@ -135,33 +131,81 @@ func TestTendermintProof(t *testing.T) {
 					  "last_results_hash": "",
 					  "evidence_hash": ""
 					},
-					"next_header_votes": [],
-					"next_header_validator_set": {
+					"nextHeaderVotes": [],
+					"nextHeaderValidatorSet": {
 					  "validators": [],
 					  "proposer": null
 					}
-				}
-			}]`
-			proofs := cs.Evidences{}
-			require.NoError(t, json.Unmarshal([]byte(jsonTestEvidences), &proofs))
-			require.Len(t, proofs, 1)
-			assert.Equal(t, "testTendermintChain", proofs[0].Provider)
-			assert.NotNil(t, proofs[0].Proof)
-			assert.Equal(t, "testchain", proofs[0].Proof.(*evidences.TendermintProof).Header.ChainID)
+				}`)
+
+			tmEvidence, _ := chainscript.NewEvidence(
+				evidences.Version0_1_0,
+				evidences.TMPopName,
+				"testTendermintChain",
+				proofData,
+			)
+
+			proof, err := evidences.UnmarshalProof(tmEvidence)
+			require.NoError(t, err)
+			assert.Equal(t, "testchain", proof.Header.ChainID)
+		},
+	}, {
+		"unmarshal-invalid-backend",
+		func(t *testing.T) {
+			e := &chainscript.Evidence{
+				Version:  evidences.Version0_1_0,
+				Backend:  "t3nd3rm1nt",
+				Provider: "testChain",
+			}
+
+			p, err := evidences.UnmarshalProof(e)
+			assert.Nil(t, p)
+			assert.EqualError(t, err, evidences.ErrInvalidBackend.Error())
+		},
+	}, {
+		"unmarshal-missing-chain-id",
+		func(t *testing.T) {
+			e := &chainscript.Evidence{
+				Version: evidences.Version0_1_0,
+				Backend: evidences.TMPopName,
+			}
+
+			p, err := evidences.UnmarshalProof(e)
+			assert.Nil(t, p)
+			assert.EqualError(t, err, evidences.ErrMissingChainID.Error())
+		},
+	}, {
+		"unmarshal-invalid-version",
+		func(t *testing.T) {
+			e := &chainscript.Evidence{
+				Version:  "0.42.0",
+				Backend:  evidences.TMPopName,
+				Provider: "testChain",
+			}
+
+			p, err := evidences.UnmarshalProof(e)
+			assert.Nil(t, p)
+			assert.EqualError(t, err, evidences.ErrUnknownVersion.Error())
+		},
+	}, {
+		"unmarshal-invalid-bytes",
+		func(t *testing.T) {
+			e := &chainscript.Evidence{
+				Version:  evidences.Version0_1_0,
+				Backend:  evidences.TMPopName,
+				Provider: "testChain",
+				Proof:    []byte{42},
+			}
+
+			p, err := evidences.UnmarshalProof(e)
+			assert.Nil(t, p)
+			assert.Error(t, err)
 		},
 	}, {
 		"time",
 		func(t *testing.T) {
 			e := &evidences.TendermintProof{Header: &tmtypes.Header{Time: time.Unix(42, 0)}}
 			assert.Equal(t, uint64(42), e.Time(), "Invalid proof time")
-		},
-	}, {
-		"full-proof",
-		func(t *testing.T) {
-			_, e := CreateTendermintProof(t, 2)
-			fullProof := e.FullProof()
-			assert.NoError(t, json.Unmarshal(fullProof, &evidences.TendermintProof{}),
-				"Could not unmarshal bytes proof")
 		},
 	}, {
 		"single-link",
@@ -175,7 +219,7 @@ func TestTendermintProof(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 5)
 			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
-			e.ValidationsHash = testutil.RandomHash()
+			e.ValidationsHash = types.NewBytes32FromBytes(chainscripttest.RandomHash())
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if validations hash changed")
 		},
 	}, {
@@ -184,7 +228,7 @@ func TestTendermintProof(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 3)
 			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
-			e.Root = linkHash
+			e.Root = types.NewBytes32FromBytes(linkHash)
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if merkle root changed")
 		},
 	}, {
@@ -193,7 +237,7 @@ func TestTendermintProof(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 4)
 			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
-			e.Header.AppHash = linkHash[:]
+			e.Header.AppHash = []byte(linkHash)
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if previous app hash changed")
 		},
 	}, {
@@ -313,19 +357,19 @@ func TestTendermintProof(t *testing.T) {
 // It creates linksCount random links to include in a block,
 // generates a valid block and its proof, and returns the link
 // and the evidence.
-func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evidences.TendermintProof) {
-	validationsHash := testutil.RandomHash()
-	appHash := testutil.RandomHash()
+func CreateTendermintProof(t *testing.T, linksCount int) (chainscript.LinkHash, *evidences.TendermintProof) {
+	validationsHash := chainscripttest.RandomHash()
+	appHash := chainscripttest.RandomHash()
 	linkHash, tree, merklePath := createMerkleTree(linksCount)
 
 	validatorSet := &tmtypes.ValidatorSet{Validators: validators}
 	validatorsHash := validatorSet.Hash()
 
 	header := &tmtypes.Header{
-		AppHash:        appHash[:],
+		AppHash:        []byte(appHash),
 		ChainID:        "testchain",
 		Height:         42,
-		LastBlockID:    tmtypes.BlockID{Hash: testutil.RandomHash()[:]},
+		LastBlockID:    tmtypes.BlockID{Hash: []byte(chainscripttest.RandomHash())},
 		NumTxs:         int64(linksCount),
 		Time:           time.Unix(42, 0),
 		TotalTxs:       int64(linksCount),
@@ -351,7 +395,7 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 		BlockHeight:            42,
 		Root:                   types.NewBytes32FromBytes(tree.Root()),
 		Path:                   merklePath,
-		ValidationsHash:        validationsHash,
+		ValidationsHash:        types.NewBytes32FromBytes(validationsHash),
 		Header:                 header,
 		HeaderVotes:            vote(header),
 		HeaderValidatorSet:     validatorSet,
@@ -366,16 +410,16 @@ func CreateTendermintProof(t *testing.T, linksCount int) (*types.Bytes32, *evide
 // createMerkleTree creates linksCount random links and builds
 // a merkle tree from it. It also returns the merkle path for
 // the chosen link.
-func createMerkleTree(linksCount int) (*types.Bytes32, *merkle.StaticTree, mktypes.Path) {
+func createMerkleTree(linksCount int) (chainscript.LinkHash, *merkle.StaticTree, mktypes.Path) {
 	position := rand.Intn(linksCount)
-	linkHash := testutil.RandomHash()
+	linkHash := chainscripttest.RandomHash()
 
 	treeLeaves := make([][]byte, linksCount)
 	for i := 0; i < linksCount; i++ {
 		if i == position {
-			treeLeaves[i] = linkHash[:]
+			treeLeaves[i] = linkHash
 		} else {
-			treeLeaves[i] = testutil.RandomHash()[:]
+			treeLeaves[i] = chainscripttest.RandomHash()[:]
 		}
 	}
 

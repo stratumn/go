@@ -17,15 +17,14 @@ package tmpoptestcases
 import (
 	"testing"
 
-	abci "github.com/tendermint/abci/types"
-
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/tmpop"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	abci "github.com/tendermint/abci/types"
 )
 
 // TestQuery tests each query request type implemented by TMPop
@@ -35,14 +34,14 @@ func (f Factory) TestQuery(t *testing.T) {
 
 	link1, req := commitRandomLink(t, h, req)
 
-	invalidLink := cstesting.NewLinkBuilder().
-		Invalid().
-		WithProcess(link1.Meta.Process).
+	invalidLink := chainscripttest.NewLinkBuilder(t).
+		WithInvalidFields().
+		WithProcess(link1.Meta.Process.Name).
 		Build()
 	invalidLinkHash, _ := invalidLink.Hash()
 	req = commitLink(t, h, invalidLink, req)
 
-	link2 := cstesting.NewLinkBuilder().WithProcess(link1.Meta.Process).Build()
+	link2 := chainscripttest.NewLinkBuilder(t).WithProcess(link1.Meta.Process.Name).Build()
 	linkHash2, _ := link2.Hash()
 	commitLink(t, h, link2, req)
 
@@ -59,10 +58,10 @@ func (f Factory) TestQuery(t *testing.T) {
 	})
 
 	t.Run("AddEvidence() adds an external evidence", func(t *testing.T) {
-		evidence := &cs.Evidence{Backend: "dummy", Provider: "1"}
+		evidence, _ := chainscript.NewEvidence("1.0.0", "dummy", "1", chainscripttest.RandomBytes(24))
 		evidenceRequest := &struct {
-			LinkHash *types.Bytes32
-			Evidence *cs.Evidence
+			LinkHash chainscript.LinkHash
+			Evidence *chainscript.Evidence
 		}{
 			linkHash2,
 			evidence,
@@ -70,12 +69,13 @@ func (f Factory) TestQuery(t *testing.T) {
 		err := makeQuery(h, tmpop.AddEvidence, evidenceRequest, nil)
 		assert.NoError(t, err)
 
-		got := &cs.Segment{}
+		got := &chainscript.Segment{}
 		err = makeQuery(h, tmpop.GetSegment, linkHash2, got)
 		assert.NoError(t, err)
+		require.NotNil(t, got.Meta)
 		require.Len(t, got.Meta.Evidences, 1, "Segment should have an evidence added")
 
-		storedEvidence := got.Meta.GetEvidence("1")
+		storedEvidence := got.GetEvidence("dummy", "1")
 		assert.True(t, storedEvidence.Backend == evidence.Backend && storedEvidence.Provider == evidence.Provider)
 	})
 
@@ -84,22 +84,22 @@ func (f Factory) TestQuery(t *testing.T) {
 	})
 
 	t.Run("FindSegments()", func(t *testing.T) {
-		wantedPrevLinkHashStr := link2.Meta.PrevLinkHash
+		wantedPrevLinkHashStr := link2.PrevLinkHash().String()
 		args := &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: store.DefaultLimit,
 			},
-			MapIDs:       []string{link2.Meta.MapID},
+			MapIDs:       []string{link2.Meta.MapId},
 			PrevLinkHash: &wantedPrevLinkHashStr,
 			Tags:         link2.Meta.Tags,
 		}
-		gots := cs.PaginatedSegments{}
+		gots := types.PaginatedSegments{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
 		require.Len(t, gots.Segments, 1, "Unexpected number of segments")
 
 		got := gots.Segments[0]
-		assert.EqualValues(t, link2, &got.Link)
+		chainscripttest.LinksEqual(t, link2, got.Link)
 	})
 
 	t.Run("FindSegments() skips invalid links", func(t *testing.T) {
@@ -107,15 +107,15 @@ func (f Factory) TestQuery(t *testing.T) {
 			Pagination: store.Pagination{
 				Limit: store.DefaultLimit,
 			},
-			Process: link1.Meta.Process,
+			Process: link1.Meta.Process.Name,
 		}
-		gots := cs.PaginatedSegments{}
+		gots := types.PaginatedSegments{}
 		err := makeQuery(h, tmpop.FindSegments, args, &gots)
 		assert.NoError(t, err)
 		assert.Len(t, gots.Segments, 2, "Unexpected number of segments")
 
 		for _, segment := range gots.Segments {
-			assert.NotEqual(t, *invalidLinkHash, *segment.GetLinkHash(),
+			assert.NotEqual(t, invalidLinkHash, segment.LinkHash(),
 				"Invalid segment found in FindSegments")
 		}
 	})
@@ -137,7 +137,7 @@ func (f Factory) TestQuery(t *testing.T) {
 			mapIdsFound[mapID] = true
 		}
 
-		for _, mapID := range []string{link1.Meta.MapID, link2.Meta.MapID} {
+		for _, mapID := range []string{link1.Meta.MapId, link2.Meta.MapId} {
 			_, found := mapIdsFound[mapID]
 			assert.True(t, found, "Couldn't find map id %s", mapID)
 		}

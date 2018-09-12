@@ -46,25 +46,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a74730e052a45a3fab1d310fdef2ec17ae3d6af16228421e238320846f2aaec8"
-  name = "github.com/alecthomas/template"
-  packages = [
-    ".",
-    "parse",
-  ]
-  pruneopts = ""
-  revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8483994d21404c8a1d489f6be756e25bfccd3b45d65821f25695577791a08e68"
-  name = "github.com/alecthomas/units"
-  packages = ["."]
-  pruneopts = ""
-  revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
-
-[[projects]]
-  branch = "master"
   digest = "1:c0bec5f9b98d0bc872ff5e834fac186b807b656683bd29cb82fb207a1513fabb"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
@@ -257,30 +238,6 @@
   revision = "553a641470496b2327abcac10b36396bd98e45c9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9abc49f39e3e23e262594bb4fb70abf74c0c99e94f99153f43b143805e850719"
-  name = "github.com/google/go-querystring"
-  packages = ["query"]
-  pruneopts = ""
-  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
-
-[[projects]]
-  digest = "1:20ed7daa9b3b38b6d1d39b48ab3fd31122be5419461470d0c28de3e121c93ecf"
-  name = "github.com/gorilla/context"
-  packages = ["."]
-  pruneopts = ""
-  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
-  version = "v1.1"
-
-[[projects]]
-  digest = "1:aa016bbb412f496a7baed9e02787a60cd15c9a3edfa72da9c4a95d6cea610334"
-  name = "github.com/gorilla/mux"
-  packages = ["."]
-  pruneopts = ""
-  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
-  version = "v1.6.1"
-
-[[projects]]
   digest = "1:64d212c703a2b94054be0ce470303286b177ad260b2f89a307e3d1bb6c073ef6"
   name = "github.com/gorilla/websocket"
   packages = ["."]
@@ -445,7 +402,6 @@
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
-    "log",
     "model",
   ]
   pruneopts = ""
@@ -490,6 +446,16 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:fbc4760832f849c351dc0e59698862e3090e7a6a887c132140db85dc694ecae8"
+  name = "github.com/stratumn/go-chainscript"
+  packages = [
+    ".",
+    "chainscripttest",
+  ]
+  pruneopts = ""
+  revision = "2781b528faccb0cec0e9450ad548e3c6f07a2443"
+
+[[projects]]
   digest = "1:3536bd8a6bec567bdd0d79679c180f80bddaa8a0adf23d3dafd8e6661f9676cb"
   name = "github.com/stratumn/go-crypto"
   packages = [
@@ -499,6 +465,7 @@
   ]
   pruneopts = ""
   revision = "51a04ed715ee95f4c6a9f639e6da8bd4cc4fd470"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -512,15 +479,15 @@
   revision = "b637554c3514b4b1a4a6de1eeb4ce0c1f2b91c37"
 
 [[projects]]
-  digest = "1:a30066593578732a356dc7e5d7f78d69184ca65aeeff5939241a3ab10559bb06"
+  digest = "1:c587772fb8ad29ad4db67575dad25ba17a51f072ff18a22b4f0257a4d9c24f75"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "require",
   ]
   pruneopts = ""
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
@@ -749,8 +716,6 @@
   packages = [
     "unix",
     "windows",
-    "windows/registry",
-    "windows/svc/eventlog",
   ]
   pruneopts = ""
   revision = "3b87a42e500a6dc65dae1a55d0b641295971163e"
@@ -821,14 +786,6 @@
   version = "v1.7.5"
 
 [[projects]]
-  digest = "1:15d017551627c8bb091bde628215b2861bed128855343fdd570c62d08871f6e1"
-  name = "gopkg.in/alecthomas/kingpin.v2"
-  packages = ["."]
-  pruneopts = ""
-  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
-  version = "v2.2.6"
-
-[[projects]]
   digest = "1:c000cdb28da4ecb244e1addc10fcab87e130be5e71cc34c7eee80d1ea568671f"
   name = "gopkg.in/dancannon/gorethink.v4"
   packages = ["."]
@@ -876,20 +833,16 @@
     "github.com/fsnotify/fsnotify",
     "github.com/gibson042/canonicaljson-go",
     "github.com/golang/mock/gomock",
-    "github.com/google/go-querystring/query",
-    "github.com/gorilla/mux",
     "github.com/gorilla/websocket",
-    "github.com/jmespath/go-jmespath",
     "github.com/julienschmidt/httprouter",
     "github.com/lib/pq",
     "github.com/olivere/elastic",
     "github.com/pkg/errors",
-    "github.com/prometheus/common/log",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
-    "github.com/stratumn/go-crypto/encoding",
+    "github.com/stratumn/go-chainscript",
+    "github.com/stratumn/go-chainscript/chainscripttest",
     "github.com/stratumn/go-crypto/keys",
-    "github.com/stratumn/go-crypto/signatures",
     "github.com/stratumn/merkle",
     "github.com/stratumn/merkle/types",
     "github.com/stretchr/testify/assert",

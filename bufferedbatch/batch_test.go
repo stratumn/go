@@ -15,15 +15,15 @@
 package bufferedbatch
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetesting"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,10 +34,10 @@ func TestBatch_CreateLink(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(ctx, a)
 
-	l := cstesting.RandomLink()
+	l := chainscripttest.RandomLink(t)
 
 	wantedErr := errors.New("error on MockCreateLink")
-	a.MockCreateLink.Fn = func(link *cs.Link) (*types.Bytes32, error) { return nil, wantedErr }
+	a.MockCreateLink.Fn = func(link *chainscript.Link) (chainscript.LinkHash, error) { return nil, wantedErr }
 
 	_, err := batch.CreateLink(ctx, l)
 	assert.NoError(t, err)
@@ -45,7 +45,7 @@ func TestBatch_CreateLink(t *testing.T) {
 	assert.Equal(t, 1, len(batch.Links))
 
 	// Batch shouldn't do any kind of validation.
-	l.Meta.MapID = ""
+	l.Meta.MapId = ""
 	_, err = batch.CreateLink(ctx, l)
 	assert.NoError(t, err)
 }
@@ -56,39 +56,39 @@ func TestBatch_GetSegment(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(ctx, a)
 
-	storedLink := cstesting.RandomLink()
+	storedLink := chainscripttest.RandomLink(t)
 	storedLinkHash, _ := storedLink.Hash()
-	batchLink1 := cstesting.RandomLink()
-	batchLink2 := cstesting.RandomLink()
+	batchLink1 := chainscripttest.RandomLink(t)
+	batchLink2 := chainscripttest.RandomLink(t)
 
 	batchLinkHash1, _ := batch.CreateLink(ctx, batchLink1)
 	batchLinkHash2, _ := batch.CreateLink(ctx, batchLink2)
 
 	notFoundErr := errors.New("Unit test error")
-	a.MockGetSegment.Fn = func(linkHash *types.Bytes32) (*cs.Segment, error) {
-		if *storedLinkHash == *linkHash {
-			return storedLink.Segmentify(), nil
+	a.MockGetSegment.Fn = func(linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
+		if bytes.Equal(storedLinkHash, linkHash) {
+			return storedLink.Segmentify()
 		}
 
 		return nil, notFoundErr
 	}
 
-	var segment *cs.Segment
+	var segment *chainscript.Segment
 	var err error
 
 	segment, err = batch.GetSegment(ctx, batchLinkHash1)
 	assert.NoError(t, err, "batch.GetSegment()")
-	assert.Equal(t, batchLink1, &segment.Link)
+	assert.Equal(t, batchLink1, segment.Link)
 
 	segment, err = batch.GetSegment(ctx, batchLinkHash2)
 	assert.NoError(t, err, "batch.GetSegment()")
-	assert.Equal(t, batchLink2, &segment.Link)
+	assert.Equal(t, batchLink2, segment.Link)
 
 	segment, err = batch.GetSegment(ctx, storedLinkHash)
 	assert.NoError(t, err, "batch.GetSegment()")
-	assert.Equal(t, storedLink, &segment.Link)
+	assert.Equal(t, storedLink, segment.Link)
 
-	segment, err = batch.GetSegment(ctx, testutil.RandomHash())
+	segment, err = batch.GetSegment(ctx, chainscripttest.RandomHash())
 	assert.EqualError(t, err, notFoundErr.Error())
 }
 
@@ -98,30 +98,32 @@ func TestBatch_FindSegments(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(ctx, a)
 
-	storedLink := cstesting.RandomLink()
-	storedLink.Meta.Process = "Foo"
-	l1 := cstesting.NewLinkBuilder().WithProcess("Foo").Build()
-	l2 := cstesting.NewLinkBuilder().WithProcess("Bar").Build()
+	storedLink := chainscripttest.RandomLink(t)
+	storedLink.Meta.Process.Name = "Foo"
+	storedSegment, _ := storedLink.Segmentify()
+
+	l1 := chainscripttest.NewLinkBuilder(t).WithProcess("Foo").Build()
+	l2 := chainscripttest.NewLinkBuilder(t).WithProcess("Bar").Build()
 
 	batch.CreateLink(ctx, l1)
 	batch.CreateLink(ctx, l2)
 
 	notFoundErr := errors.New("Unit test error")
-	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+	a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 		if filter.Process == "Foo" {
-			return &cs.PaginatedSegments{
-				Segments:   cs.SegmentSlice{storedLink.Segmentify()},
+			return &types.PaginatedSegments{
+				Segments:   types.SegmentSlice{storedSegment},
 				TotalCount: 1,
 			}, nil
 		}
 		if filter.Process == "Bar" {
-			return &cs.PaginatedSegments{}, nil
+			return &types.PaginatedSegments{}, nil
 		}
 
 		return nil, notFoundErr
 	}
 
-	var segments *cs.PaginatedSegments
+	var segments *types.PaginatedSegments
 	var err error
 
 	segments, err = batch.FindSegments(ctx, &store.SegmentFilter{Pagination: store.Pagination{Limit: store.DefaultLimit}, Process: "Foo"})
@@ -144,34 +146,34 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	batch := NewBatch(ctx, a)
 
-	storedLink1 := cstesting.RandomLink()
-	storedLink1.Meta.MapID = "Foo1"
-	storedLink1.Meta.Process = "FooProcess"
-	storedLink2 := cstesting.RandomLink()
-	storedLink2.Meta.MapID = "Bar"
-	storedLink2.Meta.Process = "BarProcess"
+	storedLink1 := chainscripttest.RandomLink(t)
+	storedLink1.Meta.MapId = "Foo1"
+	storedLink1.Meta.Process.Name = "FooProcess"
+	storedLink2 := chainscripttest.RandomLink(t)
+	storedLink2.Meta.MapId = "Bar"
+	storedLink2.Meta.Process.Name = "BarProcess"
 
-	batchLink1 := cstesting.RandomLink()
-	batchLink1.Meta.MapID = "Foo2"
-	batchLink1.Meta.Process = "FooProcess"
-	batchLink2 := cstesting.RandomLink()
-	batchLink2.Meta.MapID = "Yin"
-	batchLink2.Meta.Process = "YinProcess"
+	batchLink1 := chainscripttest.RandomLink(t)
+	batchLink1.Meta.MapId = "Foo2"
+	batchLink1.Meta.Process.Name = "FooProcess"
+	batchLink2 := chainscripttest.RandomLink(t)
+	batchLink2.Meta.MapId = "Yin"
+	batchLink2.Meta.Process.Name = "YinProcess"
 
 	batch.CreateLink(ctx, batchLink1)
 	batch.CreateLink(ctx, batchLink2)
 
 	a.MockGetMapIDs.Fn = func(filter *store.MapFilter) ([]string, error) {
-		if filter.Process == storedLink1.Meta.Process {
-			return []string{storedLink1.Meta.MapID}, nil
+		if filter.Process == storedLink1.Meta.Process.Name {
+			return []string{storedLink1.Meta.MapId}, nil
 		}
-		if filter.Process == storedLink2.Meta.Process {
-			return []string{storedLink2.Meta.MapID}, nil
+		if filter.Process == storedLink2.Meta.Process.Name {
+			return []string{storedLink2.Meta.MapId}, nil
 		}
 
 		return []string{
-			storedLink1.Meta.MapID,
-			storedLink2.Meta.MapID,
+			storedLink1.Meta.MapId,
+			storedLink2.Meta.MapId,
 		}, nil
 	}
 
@@ -191,8 +193,8 @@ func TestBatch_GetMapIDs(t *testing.T) {
 	assert.Equal(t, 2, len(mapIDs))
 
 	for _, mapID := range []string{
-		storedLink1.Meta.MapID,
-		batchLink1.Meta.MapID,
+		storedLink1.Meta.MapId,
+		batchLink1.Meta.MapId,
 	} {
 		assert.True(t, mapIDs[0] == mapID || mapIDs[1] == mapID)
 	}
@@ -220,7 +222,7 @@ func TestBatch_WriteLink(t *testing.T) {
 	ctx := context.Background()
 
 	a := &storetesting.MockAdapter{}
-	l := cstesting.RandomLink()
+	l := chainscripttest.RandomLink(t)
 
 	batch := NewBatch(ctx, a)
 
@@ -239,10 +241,10 @@ func TestBatch_WriteLinkWithFailure(t *testing.T) {
 	a := &storetesting.MockAdapter{}
 	mockError := errors.New("Error")
 
-	la := cstesting.RandomLink()
-	lb := cstesting.RandomLink()
+	la := chainscripttest.RandomLink(t)
+	lb := chainscripttest.RandomLink(t)
 
-	a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) {
+	a.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) {
 		if l == la {
 			return nil, mockError
 		}

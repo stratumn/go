@@ -17,7 +17,7 @@ package storetesting
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -47,13 +47,13 @@ type MockBatchCreateLink struct {
 	CalledCount int
 
 	// The link that was passed to each call.
-	CalledWith []*cs.Link
+	CalledWith []*chainscript.Link
 
 	// The last link that was passed.
-	LastCalledWith *cs.Link
+	LastCalledWith *chainscript.Link
 
 	// An optional implementation of the function.
-	Fn func(*cs.Link) (*types.Bytes32, error)
+	Fn func(*chainscript.Link) (chainscript.LinkHash, error)
 }
 
 // MockBatchWrite mocks the Write function.
@@ -71,7 +71,7 @@ type MockBatchGetSegment struct {
 	CalledCount int
 
 	// An optional implementation of the function.
-	Fn func(linkHash *types.Bytes32) (*cs.Segment, error)
+	Fn func(linkHash chainscript.LinkHash) (*chainscript.Segment, error)
 }
 
 // MockBatchFindSegments mocks the FindSegments function.
@@ -80,7 +80,7 @@ type MockBatchFindSegments struct {
 	CalledCount int
 
 	// An optional implementation of the function.
-	Fn func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error)
+	Fn func(filter *store.SegmentFilter) (*types.PaginatedSegments, error)
 }
 
 // MockBatchGetMapIDs mocks the GetMapIDs function.
@@ -93,7 +93,7 @@ type MockBatchGetMapIDs struct {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.Batch.CreateLink.
-func (a *MockBatch) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *MockBatch) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
 	a.MockCreateLink.LastCalledWith = link
@@ -116,7 +116,7 @@ func (a *MockBatch) Write(ctx context.Context) error {
 }
 
 // GetSegment delegates the call to a underlying store
-func (a *MockBatch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *MockBatch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	a.MockGetSegment.CalledCount++
 
 	if a.MockGetSegment.Fn != nil {
@@ -126,7 +126,7 @@ func (a *MockBatch) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*c
 }
 
 // FindSegments delegates the call to a underlying store
-func (a *MockBatch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (a *MockBatch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	a.MockFindSegments.CalledCount++
 
 	if a.MockFindSegments.Fn != nil {

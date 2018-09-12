@@ -21,13 +21,13 @@ import (
 	"github.com/stratumn/go-indigocore/store"
 )
 
-// LinkSelector used in LinkQuery
+// LinkSelector used in LinkQuery.
 type LinkSelector struct {
 	ObjectType   string        `json:"docType"`
-	PrevLinkHash *PrevLinkHash `json:"link.meta.prevLinkHash,omitempty"`
-	Process      string        `json:"link.meta.process,omitempty"`
-	MapIds       *MapIdsIn     `json:"link.meta.mapId,omitempty"`
-	Tags         *TagsAll      `json:"link.meta.tags,omitempty"`
+	PrevLinkHash *PrevLinkHash `json:"linkWrapper.prevLinkHash,omitempty"`
+	Process      string        `json:"linkWrapper.link.meta.process.name,omitempty"`
+	MapIds       *MapIdsIn     `json:"linkWrapper.link.meta.mapId,omitempty"`
+	Tags         *TagsAll      `json:"linkWrapper.link.meta.tags,omitempty"`
 	LinkHash     *LinkHashIn   `json:"_id,omitempty"`
 }
 
@@ -72,7 +72,7 @@ func buildSortArgs(reverse bool) []map[string]string {
 	}
 	return []map[string]string{
 		map[string]string{
-			"link.meta.priority": order,
+			"linkWrapper.priority": order,
 		},
 	}
 }
@@ -112,7 +112,7 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	return json.Marshal(linkQuery)
 }
 
-// MapSelector used in MapQuery
+// MapSelector used in MapQuery.
 type MapSelector struct {
 	ObjectType string         `json:"docType"`
 	Process    string         `json:"process,omitempty"`
@@ -130,7 +130,7 @@ type MapIdsFilter struct {
 	MapIdsMatch string `json:"$regex,omitempty"`
 }
 
-// MapQuery used in CouchDB rich queries
+// MapQuery used in CouchDB rich queries.
 type MapQuery struct {
 	Selector MapSelector `json:"selector,omitempty"`
 	Limit    int         `json:"limit,omitempty"`

@@ -17,7 +17,7 @@ package storetesting
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -96,13 +96,13 @@ type MockCreateLink struct {
 	CalledCount int
 
 	// The link that was passed to each call.
-	CalledWith []*cs.Link
+	CalledWith []*chainscript.Link
 
 	// The last link that was passed.
-	LastCalledWith *cs.Link
+	LastCalledWith *chainscript.Link
 
 	// An optional implementation of the function.
-	Fn func(*cs.Link) (*types.Bytes32, error)
+	Fn func(*chainscript.Link) (chainscript.LinkHash, error)
 }
 
 // MockAddEvidence mocks the AddEvidence function.
@@ -111,13 +111,13 @@ type MockAddEvidence struct {
 	CalledCount int
 
 	// The evidence that was passed to each call.
-	CalledWith []*cs.Evidence
+	CalledWith []*chainscript.Evidence
 
 	// The last evidence that was passed.
-	LastCalledWith *cs.Evidence
+	LastCalledWith *chainscript.Evidence
 
 	// An optional implementation of the function.
-	Fn func(linkHash *types.Bytes32, evidence *cs.Evidence) error
+	Fn func(linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error
 }
 
 // MockGetSegment mocks the GetSegment function.
@@ -126,13 +126,13 @@ type MockGetSegment struct {
 	CalledCount int
 
 	// The link hash that was passed to each call.
-	CalledWith []*types.Bytes32
+	CalledWith []chainscript.LinkHash
 
 	// The last link hash that was passed.
-	LastCalledWith *types.Bytes32
+	LastCalledWith chainscript.LinkHash
 
 	// An optional implementation of the function.
-	Fn func(*types.Bytes32) (*cs.Segment, error)
+	Fn func(chainscript.LinkHash) (*chainscript.Segment, error)
 }
 
 // MockGetEvidences mocks the GetEvidences function.
@@ -141,13 +141,13 @@ type MockGetEvidences struct {
 	CalledCount int
 
 	// The link hash that was passed to each call.
-	CalledWith []*types.Bytes32
+	CalledWith []chainscript.LinkHash
 
 	// The last link hash that was passed.
-	LastCalledWith *types.Bytes32
+	LastCalledWith chainscript.LinkHash
 
 	// An optional implementation of the function.
-	Fn func(*types.Bytes32) (*cs.Evidences, error)
+	Fn func(chainscript.LinkHash) (types.EvidenceSlice, error)
 }
 
 // MockFindSegments mocks the FindSegments function.
@@ -162,7 +162,7 @@ type MockFindSegments struct {
 	LastCalledWith *store.SegmentFilter
 
 	// An optional implementation of the function.
-	Fn func(*store.SegmentFilter) (*cs.PaginatedSegments, error)
+	Fn func(*store.SegmentFilter) (*types.PaginatedSegments, error)
 }
 
 // MockGetMapIDs mocks the GetMapIDs function.
@@ -258,7 +258,7 @@ func (a *MockAdapter) AddStoreEventChannel(storeChan chan *store.Event) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
-func (a *MockAdapter) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *MockAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
 	a.MockCreateLink.LastCalledWith = link
@@ -271,7 +271,7 @@ func (a *MockAdapter) CreateLink(ctx context.Context, link *cs.Link) (*types.Byt
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.Adapter.AddEvidence.
-func (a *MockAdapter) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *MockAdapter) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	a.MockAddEvidence.CalledCount++
 	a.MockAddEvidence.CalledWith = append(a.MockAddEvidence.CalledWith, evidence)
 	a.MockAddEvidence.LastCalledWith = evidence
@@ -284,7 +284,7 @@ func (a *MockAdapter) AddEvidence(ctx context.Context, linkHash *types.Bytes32, 
 }
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (a *MockAdapter) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (a *MockAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	a.MockGetSegment.CalledCount++
 	a.MockGetSegment.CalledWith = append(a.MockGetSegment.CalledWith, linkHash)
 	a.MockGetSegment.LastCalledWith = linkHash
@@ -297,7 +297,7 @@ func (a *MockAdapter) GetSegment(ctx context.Context, linkHash *types.Bytes32) (
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.Adapter.GetEvidences.
-func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	a.MockGetEvidences.CalledCount++
 	a.MockGetEvidences.CalledWith = append(a.MockGetEvidences.CalledWith, linkHash)
 	a.MockGetEvidences.LastCalledWith = linkHash
@@ -310,7 +310,7 @@ func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash *types.Bytes32)
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	a.MockFindSegments.CalledCount++
 	a.MockFindSegments.CalledWith = append(a.MockFindSegments.CalledWith, filter)
 	a.MockFindSegments.LastCalledWith = filter
@@ -319,7 +319,7 @@ func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFil
 		return a.MockFindSegments.Fn(filter)
 	}
 
-	return &cs.PaginatedSegments{}, nil
+	return &types.PaginatedSegments{}, nil
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.

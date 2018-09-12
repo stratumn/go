@@ -15,13 +15,14 @@
 package dummyfossilizer
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
+	"github.com/stratumn/go-indigocore/dummyfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetInfo(t *testing.T) {
@@ -77,31 +78,24 @@ func TestDummyProof(t *testing.T) {
 	)
 
 	go func() {
-		if err := a.Fossilize(context.Background(), data, meta); err != nil {
-			t.Errorf("a.Fossilize(): err: %s", err)
-		}
+		err := a.Fossilize(context.Background(), data, meta)
+		assert.NoError(t, err, "a.Fossilize()")
 	}()
 
 	e := <-ec
 	r := e.Data.(*fossilizer.Result)
 
 	t.Run("Time()", func(t *testing.T) {
-		if got, want := r.Evidence.Proof, timestamp; got.Time() != want {
-			t.Errorf(`<-rc: Evidence.originalProof.Time() = %d, want %d`, got.Time(), want)
-		}
-	})
+		p, err := evidences.UnmarshalProof(&r.Evidence)
+		require.NoError(t, err)
 
-	t.Run("FullProof()", func(t *testing.T) {
-		got := r.Evidence.Proof
-		want := fmt.Sprintf("{\n   \"timestamp\": %d\n}", got.Time())
-		if bytes.Compare(got.FullProof(), []byte(want)) != 0 {
-			t.Errorf(`<-rc: Evidence.originalProof.FullProof() = %s, want %s`, got.FullProof(), want)
-		}
+		assert.Equal(t, timestamp, p.Time())
 	})
 
 	t.Run("Verify()", func(t *testing.T) {
-		if got, want := r.Evidence.Proof.Verify(""), true; got != want {
-			t.Errorf(`<-rc: Evidence.originalProof.Verify() = %v, want %v`, got, want)
-		}
+		p, err := evidences.UnmarshalProof(&r.Evidence)
+		require.NoError(t, err)
+
+		assert.True(t, p.Verify(""))
 	})
 }

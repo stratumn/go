@@ -20,9 +20,7 @@ import (
 	"flag"
 
 	log "github.com/sirupsen/logrus"
-
 	"github.com/stratumn/go-indigocore/elasticsearchstore"
-	_ "github.com/stratumn/go-indigocore/fossilizer/evidences"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store/storehttp"
 )

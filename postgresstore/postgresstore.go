@@ -22,9 +22,8 @@ import (
 	"database/sql"
 	"encoding/json"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 )
 
 const (
@@ -119,7 +118,7 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 }
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := a.writer.CreateLink(ctx, link)
 	if err != nil {
 		return nil, err
@@ -134,13 +133,13 @@ func (a *Store) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, 
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (a *Store) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	data, err := json.Marshal(evidence)
 	if err != nil {
 		return err
 	}
 
-	_, err = a.stmts.AddEvidence.Exec(linkHash[:], evidence.Provider, data)
+	_, err = a.stmts.AddEvidence.Exec(linkHash, evidence.Provider, data)
 	if err != nil {
 		return err
 	}

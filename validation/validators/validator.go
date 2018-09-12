@@ -17,7 +17,7 @@ package validators
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -27,10 +27,10 @@ import (
 type Validator interface {
 	// Validate runs validations on a link and returns an error
 	// if the link is invalid.
-	Validate(context.Context, store.SegmentReader, *cs.Link) error
+	Validate(context.Context, store.SegmentReader, *chainscript.Link) error
 
 	// ShouldValidate returns a boolean whether the link should be checked
-	ShouldValidate(*cs.Link) bool
+	ShouldValidate(*chainscript.Link) bool
 
 	// Hash returns the hash of the validator's state.
 	// It can be used to know which set of validations were applied
@@ -38,8 +38,8 @@ type Validator interface {
 	Hash() (*types.Bytes32, error)
 }
 
-//Validators is an array of Validator.
+// Validators is an array of Validator.
 type Validators []Validator
 
-//ProcessesValidators maps a process name to a list of validators.
+// ProcessesValidators maps a process name to a list of validators.
 type ProcessesValidators map[string]Validators

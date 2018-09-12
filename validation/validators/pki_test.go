@@ -20,9 +20,9 @@ import (
 	"encoding/base64"
 	"testing"
 
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-crypto/keys"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
 	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,34 +31,39 @@ import (
 
 func TestPKIValidator(t *testing.T) {
 	t.Parallel()
-	process := "p1"
-	linkType := "test"
 
+	process := "p1"
+	linkStep := "test"
 	_, priv1, _ := keys.NewEd25519KeyPair()
+	priv1Bytes, _ := keys.EncodeSecretkey(priv1)
 	_, priv2, _ := keys.NewEd25519KeyPair()
-	link1 := cstesting.NewLinkBuilder().
-		WithProcess(process).WithType(linkType).
-		SignWithKey(priv1).
+	priv2Bytes, _ := keys.EncodeSecretkey(priv2)
+
+	link1 := chainscripttest.NewLinkBuilder(t).
+		WithProcess(process).
+		WithStep(linkStep).
+		WithSignatureFromKey(t, priv1Bytes, "").
 		Build()
-	link2 := cstesting.NewLinkBuilder().
-		WithProcess(process).WithType(linkType).
-		SignWithKey(priv2).
+	link2 := chainscripttest.NewLinkBuilder(t).
+		WithProcess(process).
+		WithStep(linkStep).
+		WithSignatureFromKey(t, priv2Bytes, "").
 		Build()
 
 	pki := &validators.PKI{
 		"Alice Van den Budenmayer": &validators.Identity{
-			Keys:  []string{link1.Signatures[0].PublicKey},
+			Keys:  []string{string(link1.Signatures[0].PublicKey)},
 			Roles: []string{"employee"},
 		},
 		"Bob Wagner": &validators.Identity{
-			Keys:  []string{link2.Signatures[0].PublicKey},
+			Keys:  []string{string(link2.Signatures[0].PublicKey)},
 			Roles: []string{"manager", "it"},
 		},
 	}
 
 	type testCase struct {
 		name               string
-		link               *cs.Link
+		link               *chainscript.Link
 		valid              bool
 		err                string
 		requiredSignatures []string
@@ -68,13 +73,17 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:  "valid-link",
 			valid: true,
-			link:  cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
+			link: chainscripttest.NewLinkBuilder(t).
+				WithProcess(process).
+				WithStep(linkStep).
+				WithSignature(t, "").
+				Build(),
 		},
 		{
 			name:               "required-signature-pubkey",
 			valid:              true,
 			link:               link1,
-			requiredSignatures: []string{link1.Signatures[0].PublicKey},
+			requiredSignatures: []string{string(link1.Signatures[0].PublicKey)},
 		},
 		{
 			name:               "required-signature-name",
@@ -91,26 +100,26 @@ func TestPKIValidator(t *testing.T) {
 		{
 			name:               "required-signature-extra",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().From(link1).Sign().Build(),
+			link:               chainscripttest.NewLinkBuilder(t).From(t, link1).WithSignature(t, "").Build(),
 			requiredSignatures: []string{"employee"},
 		},
 		{
 			name:               "required-signature-multi",
 			valid:              true,
-			link:               cstesting.NewLinkBuilder().From(link1).SignWithKey(priv2).Build(),
+			link:               chainscripttest.NewLinkBuilder(t).From(t, link1).WithSignatureFromKey(t, priv2Bytes, "").Build(),
 			requiredSignatures: []string{"employee", "it", "Bob Wagner"},
 		},
 		{
 			name:               "required-signature-fails",
 			valid:              false,
 			err:                "Missing signatory for validator test of process p1: signature from Alice Van den Budenmayer is required",
-			link:               cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
+			link:               chainscripttest.NewLinkBuilder(t).WithProcess(process).WithStep(linkStep).WithSignature(t, "").Build(),
 			requiredSignatures: []string{"Alice Van den Budenmayer"},
 		},
 	}
 
 	for _, tt := range testCases {
-		baseCfg, err := validators.NewValidatorBaseConfig(process, linkType)
+		baseCfg, err := validators.NewValidatorBaseConfig(process, linkStep)
 		require.NoError(t, err)
 		sv := validators.NewPKIValidator(baseCfg, tt.requiredSignatures, pki)
 

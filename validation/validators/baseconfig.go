@@ -16,45 +16,46 @@ package validators
 
 import (
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 )
 
 var (
 	// ErrMissingProcess is returned when the process name is missing for validation.
 	ErrMissingProcess = errors.New("validator requires a process")
 
-	// ErrMissingLinkType is returned when the link type is missing for validation.
-	ErrMissingLinkType = errors.New("validator requires a link type")
+	// ErrMissingLinkStep is returned when the link step is missing for validation.
+	ErrMissingLinkStep = errors.New("validator requires a link step")
 )
 
-// ValidatorBaseConfig is used to identify a validator by its process and link type.
+// ValidatorBaseConfig is used to identify a validator by its process and link
+// step.
 // Its ShouldValidate method is called by all validators.
 type ValidatorBaseConfig struct {
 	Process  string
-	LinkType string
+	LinkStep string
 }
 
 // NewValidatorBaseConfig returns a new ValidatorBaseConfig.
-func NewValidatorBaseConfig(process, linkType string) (*ValidatorBaseConfig, error) {
+func NewValidatorBaseConfig(process, linkStep string) (*ValidatorBaseConfig, error) {
 	if len(process) == 0 {
 		return nil, ErrMissingProcess
 	}
 
-	if len(linkType) == 0 {
-		return nil, ErrMissingLinkType
+	if len(linkStep) == 0 {
+		return nil, ErrMissingLinkStep
 	}
-	return &ValidatorBaseConfig{Process: process, LinkType: linkType}, nil
+	return &ValidatorBaseConfig{Process: process, LinkStep: linkStep}, nil
 }
 
 // ShouldValidate returns true if the link matches the validator's process
 // and type. Otherwise the link is considered valid because this validator
 // doesn't apply to it.
-func (bv *ValidatorBaseConfig) ShouldValidate(link *cs.Link) bool {
-	if link.Meta.Process != bv.Process {
+func (bv *ValidatorBaseConfig) ShouldValidate(link *chainscript.Link) bool {
+	if link.Meta.Process.Name != bv.Process {
 		return false
 	}
 
-	if link.Meta.Type != bv.LinkType {
+	if link.Meta.Step != bv.LinkStep {
 		return false
 	}
 

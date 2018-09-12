@@ -17,8 +17,8 @@ package validators_test
 import (
 	"testing"
 
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +48,7 @@ func TestBaseConfig(t *testing.T) {
 		process:       process,
 		linkType:      "",
 		valid:         false,
-		expectedError: validators.ErrMissingLinkType,
+		expectedError: validators.ErrMissingLinkStep,
 	}, {
 		id:       "valid-config",
 		process:  process,
@@ -80,16 +80,16 @@ func TestBaseConfig(t *testing.T) {
 
 func TestBaseConfig_ShouldValidate(t *testing.T) {
 	process := "p1"
-	linkType := "sell"
+	linkStep := "sell"
 	cfg, err := validators.NewValidatorBaseConfig(
 		process,
-		linkType,
+		linkStep,
 	)
 	require.NoError(t, err)
 
 	type testCase struct {
 		name           string
-		link           *cs.Link
+		link           *chainscript.Link
 		shouldValidate bool
 	}
 
@@ -97,27 +97,27 @@ func TestBaseConfig_ShouldValidate(t *testing.T) {
 		{
 			name:           "valid-link",
 			shouldValidate: true,
-			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType(linkType).Sign().Build(),
+			link:           chainscripttest.NewLinkBuilder(t).WithProcess(process).WithStep(linkStep).WithSignature(t, "").Build(),
 		},
 		{
 			name:           "no-process",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess("").WithType(linkType).Sign().Build(),
+			link:           chainscripttest.NewLinkBuilder(t).WithProcess("").WithStep(linkStep).WithSignature(t, "").Build(),
 		},
 		{
 			name:           "process-no-match",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess("test").WithType(linkType).Sign().Build(),
+			link:           chainscripttest.NewLinkBuilder(t).WithProcess("test").WithStep(linkStep).WithSignature(t, "").Build(),
 		},
 		{
 			name:           "no-type",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("").Sign().Build(),
+			link:           chainscripttest.NewLinkBuilder(t).WithProcess(process).WithStep("").WithSignature(t, "").Build(),
 		},
 		{
 			name:           "type-no-match",
 			shouldValidate: false,
-			link:           cstesting.NewLinkBuilder().WithProcess(process).WithType("test").Sign().Build(),
+			link:           chainscripttest.NewLinkBuilder(t).WithProcess(process).WithStep("test").WithSignature(t, "").Build(),
 		},
 	}
 

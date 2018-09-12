@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/cs"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
 )
@@ -105,11 +105,11 @@ func New(config *Config) (*CouchStore, error) {
 		return nil, err
 	}
 
-	if err := couchstore.CreateIndex(dbLink, "mapID", []string{"link.meta.mapId"}); err != nil {
+	if err := couchstore.CreateIndex(dbLink, "mapID", []string{"linkWrapper.link.meta.mapId"}); err != nil {
 		return nil, err
 	}
 
-	if err := couchstore.CreateIndex(dbLink, "priority", []string{"link.meta.priority"}); err != nil {
+	if err := couchstore.CreateIndex(dbLink, "priority", []string{"linkWrapper.priority"}); err != nil {
 		return nil, err
 	}
 
@@ -140,7 +140,7 @@ func (c *CouchStore) notifyEvent(event *store.Event) {
 /********** Store writer implementation **********/
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
-func (c *CouchStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Bytes32, error) {
+func (c *CouchStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := c.createLink(link)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (c *CouchStore) CreateLink(ctx context.Context, link *cs.Link) (*types.Byte
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
-func (c *CouchStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, evidence *cs.Evidence) error {
+func (c *CouchStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	if err := c.addEvidence(linkHash.String(), evidence); err != nil {
 		return err
 	}
@@ -170,16 +170,16 @@ func (c *CouchStore) AddEvidence(ctx context.Context, linkHash *types.Bytes32, e
 /********** Store reader implementation **********/
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
-func (c *CouchStore) GetSegment(ctx context.Context, linkHash *types.Bytes32) (*cs.Segment, error) {
+func (c *CouchStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	linkDoc, err := c.getDocument(dbLink, linkHash.String())
 	if err != nil || linkDoc == nil {
 		return nil, err
 	}
-	return c.segmentify(ctx, linkDoc.Link), nil
+	return c.segmentify(ctx, linkDoc.LinkWrapper.Link), nil
 }
 
 // findSegmentsSlice implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.SegmentFilter) (cs.SegmentSlice, error) {
+func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.SegmentFilter) (types.SegmentSlice, error) {
 	queryBytes, err := NewSegmentQuery(filter)
 	if err != nil {
 		return nil, err
@@ -199,15 +199,15 @@ func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.Segmen
 		return nil, err
 	}
 
-	segments := cs.SegmentSlice{}
+	segments := types.SegmentSlice{}
 	for _, doc := range couchFindResponse.Docs {
-		segments = append(segments, c.segmentify(ctx, doc.Link))
+		segments = append(segments, c.segmentify(ctx, doc.LinkWrapper.Link))
 	}
 	return segments, nil
 }
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
-func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	segments, err := c.findSegmentsSlice(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 		filter.Offset += filter.Limit
 	}
 
-	return &cs.PaginatedSegments{
+	return &types.PaginatedSegments{
 		Segments:   segments,
 		TotalCount: totalCount,
 	}, nil
@@ -267,13 +267,13 @@ func (c *CouchStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
-func (c *CouchStore) GetEvidences(ctx context.Context, linkHash *types.Bytes32) (*cs.Evidences, error) {
+func (c *CouchStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	evidencesDoc, err := c.getDocument(dbEvidences, linkHash.String())
 	if err != nil {
 		return nil, err
 	}
 	if evidencesDoc == nil {
-		return &cs.Evidences{}, nil
+		return types.EvidenceSlice{}, nil
 	}
 	return evidencesDoc.Evidences, nil
 }

@@ -23,8 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/dummystore"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetesting"
@@ -42,7 +42,7 @@ func TestStore(t *testing.T) {
 	t.Run("TestGetValidators", func(t *testing.T) {
 		t.Run("No processes", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) { return &cs.PaginatedSegments{}, nil }
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return &types.PaginatedSegments{}, nil }
 
 			s := validation.NewStore(a, &validation.Config{})
 			validators, err := s.GetValidators(ctx)
@@ -52,16 +52,18 @@ func TestStore(t *testing.T) {
 
 		t.Run("No validators found for process", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
-					return &cs.PaginatedSegments{}, nil
+					return &types.PaginatedSegments{}, nil
 				}
-				link := cstesting.NewLinkBuilder().
+
+				segment := chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(validation.ValidatorTag, "process").
-					Build()
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{link.Segmentify()},
+					Segmentify(t)
+
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{segment},
 					TotalCount: 1,
 				}, nil
 			}
@@ -74,18 +76,23 @@ func TestStore(t *testing.T) {
 
 		t.Run("Incomplete governance segment", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
-					link := cstesting.NewLinkBuilder().WithState(map[string]interface{}{
-						"pki": "test",
-					}).Build()
-					return &cs.PaginatedSegments{
-						Segments:   cs.SegmentSlice{link.Segmentify()},
+					segment := chainscripttest.NewLinkBuilder(t).
+						WithData(t, map[string]interface{}{
+							"pki": "test",
+						}).
+						Segmentify(t)
+
+					return &types.PaginatedSegments{
+						Segments:   types.SegmentSlice{segment},
 						TotalCount: 1,
 					}, nil
 				}
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{cstesting.NewLinkBuilder().WithTags("1", "2").Build().Segmentify()},
+
+				segment := chainscripttest.NewLinkBuilder(t).WithTags("1", "2").Segmentify(t)
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{segment},
 					TotalCount: 1,
 				}, nil
 			}
@@ -98,19 +105,24 @@ func TestStore(t *testing.T) {
 
 		t.Run("Bad governance segment format", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*cs.PaginatedSegments, error) {
+			a.MockFindSegments.Fn = func(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 				if len(filter.Tags) > 1 {
-					link := cstesting.NewLinkBuilder().WithState(map[string]interface{}{
-						"pki":   "test",
-						"types": 1,
-					}).Build()
-					return &cs.PaginatedSegments{
-						Segments:   cs.SegmentSlice{link.Segmentify()},
+					segment := chainscripttest.NewLinkBuilder(t).
+						WithData(t, map[string]interface{}{
+							"pki":   "test",
+							"types": 1,
+						}).
+						Segmentify(t)
+
+					return &types.PaginatedSegments{
+						Segments:   types.SegmentSlice{segment},
 						TotalCount: 1,
 					}, nil
 				}
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{cstesting.NewLinkBuilder().WithTags("1", "2").Build().Segmentify()},
+
+				segment := chainscripttest.NewLinkBuilder(t).WithTags("1", "2").Segmentify(t)
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{segment},
 					TotalCount: 1,
 				}, nil
 			}
@@ -141,7 +153,7 @@ func TestStore(t *testing.T) {
 
 		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
 				return nil, errors.New("error")
 			}
 
@@ -156,8 +168,8 @@ func TestStore(t *testing.T) {
 
 		t.Run("Creates a segment without parent", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{}, nil
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
@@ -166,25 +178,28 @@ func TestStore(t *testing.T) {
 				PKI:   auctionPKI,
 			})
 			assert.NoError(t, err)
-			assert.Equal(t, "", link.Meta.PrevLinkHash)
+			assert.Nil(t, link.Meta.PrevLinkHash)
 			assert.Equal(t, 0., link.Meta.Priority)
-			assert.Equal(t, process, link.Meta.Data[validation.ProcessMetaKey])
-			assert.Equal(t, validation.GovernanceProcessName, link.Meta.Process)
-			assert.NotNil(t, uuid.FromStringOrNil(link.Meta.MapID))
+			assert.Equal(t, validation.GovernanceProcessName, link.Meta.Process.Name)
+			assert.NotNil(t, uuid.FromStringOrNil(link.Meta.MapId))
 			assert.Contains(t, link.Meta.Tags, process)
 			assert.Contains(t, link.Meta.Tags, validation.ValidatorTag)
+
+			var metadata map[string]string
+			require.NoError(t, link.StructurizeMetadata(&metadata))
+			assert.Equal(t, process, metadata[validation.ProcessMetaKey])
 		})
 
 		t.Run("Creates a segment from a parent", func(t *testing.T) {
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				Segmentify(t)
 
-			parentHash, _ := parent.HashString()
+			parentHash := parent.LinkHash()
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
@@ -195,13 +210,16 @@ func TestStore(t *testing.T) {
 				PKI:   auctionPKI,
 			})
 			assert.NoError(t, err)
-			assert.Equal(t, parentHash, link.Meta.PrevLinkHash)
-			assert.Equal(t, parent.Meta.Priority+1, link.Meta.Priority)
-			assert.Equal(t, process, link.Meta.Data[validation.ProcessMetaKey])
-			assert.Equal(t, parent.Meta.MapID, link.Meta.MapID)
-			assert.Equal(t, validation.GovernanceProcessName, link.Meta.Process)
+			assert.Equal(t, []byte(parentHash), link.Meta.PrevLinkHash)
+			assert.Equal(t, parent.Link.Meta.Priority+1, link.Meta.Priority)
+			assert.Equal(t, parent.Link.Meta.MapId, link.Meta.MapId)
+			assert.Equal(t, validation.GovernanceProcessName, link.Meta.Process.Name)
 			assert.Contains(t, link.Meta.Tags, process)
 			assert.Contains(t, link.Meta.Tags, validation.ValidatorTag)
+
+			var metadata map[string]string
+			require.NoError(t, link.StructurizeMetadata(&metadata))
+			assert.Equal(t, process, metadata[validation.ProcessMetaKey])
 		})
 	})
 
@@ -213,42 +231,44 @@ func TestStore(t *testing.T) {
 
 		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
 				return nil, errors.New("error")
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, createGovernanceLink(process, 0., auctionPKI, auctionTypes))
+			err := s.UpdateValidator(ctx, createGovernanceLink(t, process, 0., auctionPKI, auctionTypes))
 			assert.EqualError(t, err, "Cannot retrieve governance segments: error")
 		})
 
 		t.Run("Fails when priority does not match", func(t *testing.T) {
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
-				WithMetadata(validation.ProcessMetaKey, process).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
+				Segmentify(t)
+
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
 
 			s := validation.NewStore(a, &validation.Config{})
-			err := s.UpdateValidator(ctx, createGovernanceLink(process, 0., updatedAuctionPKI, auctionTypes))
+			err := s.UpdateValidator(ctx, createGovernanceLink(t, process, 0., updatedAuctionPKI, auctionTypes))
 			assert.EqualError(t, err, validation.ErrBadPriority.Error())
 		})
 
 		t.Run("Fails when prevLinkHash does not match", func(t *testing.T) {
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
-				WithMetadata(validation.ProcessMetaKey, process).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
+				Segmentify(t)
+
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
@@ -258,20 +278,21 @@ func TestStore(t *testing.T) {
 				PKI:   updatedAuctionPKI,
 				Types: auctionTypes,
 			})
-			link.Meta.PrevLinkHash = "bad"
+			link.Meta.PrevLinkHash = []byte{42}
 			err := s.UpdateValidator(ctx, link)
 			assert.EqualError(t, err, validation.ErrBadPrevLinkHash.Error())
 		})
 
 		t.Run("Fails when mapID does not match", func(t *testing.T) {
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
-				WithMetadata(validation.ProcessMetaKey, process).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
+				Segmentify(t)
+
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
@@ -281,20 +302,21 @@ func TestStore(t *testing.T) {
 				PKI:   updatedAuctionPKI,
 				Types: auctionTypes,
 			})
-			link.Meta.MapID = "bad"
+			link.Meta.MapId = "bad"
 			err := s.UpdateValidator(ctx, link)
 			assert.EqualError(t, err, validation.ErrBadMapID.Error())
 		})
 
 		t.Run("Fails when process does not match", func(t *testing.T) {
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
-				WithMetadata(validation.ProcessMetaKey, process).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
+				Segmentify(t)
+
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
@@ -304,8 +326,10 @@ func TestStore(t *testing.T) {
 				PKI:   updatedAuctionPKI,
 				Types: auctionTypes,
 			})
-			link.Meta.Data[validation.ProcessMetaKey] = "bad"
-			err := s.UpdateValidator(ctx, link)
+			err := link.SetMetadata(map[string]string{validation.ProcessMetaKey: "bad"})
+			require.NoError(t, err)
+
+			err = s.UpdateValidator(ctx, link)
 			assert.EqualError(t, err, validation.ErrBadProcess.Error())
 		})
 
@@ -332,23 +356,24 @@ func TestStore(t *testing.T) {
 				Tags:       []string{process, validation.ValidatorTag},
 			})
 			assert.NoError(t, err)
-			require.Len(t, segments, 1)
+			require.Len(t, segments.Segments, 1)
 		})
 
 		t.Run("Fails to create new validator", func(t *testing.T) {
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
-				WithMetadata(validation.ProcessMetaKey, process).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": auctionPKI}).
+				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
+				Segmentify(t)
+
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
 
-			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
+			a.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
 			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
@@ -382,19 +407,19 @@ func TestStore(t *testing.T) {
 
 		t.Run("Fails to update an existing validator", func(t *testing.T) {
 			chatPKI := json.RawMessage(testutils.ValidChatJSONPKIConfig)
-			parent := cstesting.NewLinkBuilder().
-				WithState(map[string]interface{}{"types": auctionTypes, "pki": chatPKI}).
-				WithMetadata(validation.ProcessMetaKey, process).
-				Build()
+			parent := chainscripttest.NewLinkBuilder(t).
+				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": chatPKI}).
+				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
+				Segmentify(t)
 
 			a := new(storetesting.MockAdapter)
-			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*cs.PaginatedSegments, error) {
-				return &cs.PaginatedSegments{
-					Segments:   cs.SegmentSlice{parent.Segmentify()},
+			a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) {
+				return &types.PaginatedSegments{
+					Segments:   types.SegmentSlice{parent},
 					TotalCount: 1,
 				}, nil
 			}
-			a.MockCreateLink.Fn = func(l *cs.Link) (*types.Bytes32, error) { return nil, errors.New("error") }
+			a.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return nil, errors.New("error") }
 
 			s := validation.NewStore(a, &validation.Config{})
 			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
@@ -427,7 +452,7 @@ func TestStore(t *testing.T) {
 		t.Run("Lot of processeses", func(t *testing.T) {
 			a := dummystore.New(nil)
 			for i := 0; i < store.MaxLimit+42; i++ {
-				link := cstesting.NewLinkBuilder().
+				link := chainscripttest.NewLinkBuilder(t).
 					WithProcess(validation.GovernanceProcessName).
 					WithTags(fmt.Sprintf("p%d", i), validation.ValidatorTag).
 					Build()
@@ -442,7 +467,7 @@ func TestStore(t *testing.T) {
 	})
 }
 
-func getLastValidator(t *testing.T, a store.Adapter, process string) *cs.Link {
+func getLastValidator(t *testing.T, a store.Adapter, process string) *chainscript.Link {
 	segs, err := a.FindSegments(context.Background(), &store.SegmentFilter{
 		Pagination: store.Pagination{
 			Offset: 0,
@@ -454,43 +479,41 @@ func getLastValidator(t *testing.T, a store.Adapter, process string) *cs.Link {
 	assert.NoError(t, err, "FindSegment(governance) should sucess")
 	require.NotNil(t, segs, "Validator configs should be retrieved")
 	require.Len(t, segs.Segments, 1, "The last validator config should be retrieved")
-	return &segs.Segments[0].Link
+	return segs.Segments[0].Link
 }
 
 func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
 	auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
 	auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
-	link := createGovernanceLink("auction", 0., auctionPKI, auctionTypes)
+	link := createGovernanceLink(t, "auction", 0., auctionPKI, auctionTypes)
 	hash, err := a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 	assert.NotNil(t, hash, "LinkHash should not be nil")
 
 	auctionPKI, _ = testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "charlie", -1)))
-	link = createGovernanceLink("auction", 0., auctionPKI, auctionTypes)
-	link.Meta.PrevLinkHash = hash.String()
+	link = createGovernanceLink(t, "auction", 0., auctionPKI, auctionTypes)
+	link.Meta.PrevLinkHash = hash
 	link.Meta.Priority = 1.
 	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 
 	chatPKI, _ := testutils.LoadPKI([]byte(testutils.ValidChatJSONPKIConfig))
 	chatTypes, _ := testutils.LoadTypes([]byte(testutils.ValidChatJSONTypesConfig))
-	link = createGovernanceLink("chat", 0., chatPKI, chatTypes)
+	link = createGovernanceLink(t, "chat", 0., chatPKI, chatTypes)
 	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 }
 
-func createGovernanceLink(process string, priority float64, pki *validators.PKI, types map[string]validation.TypeSchema) *cs.Link {
+func createGovernanceLink(t *testing.T, process string, priority float64, pki *validators.PKI, types map[string]validation.TypeSchema) *chainscript.Link {
 	state := make(map[string]interface{}, 0)
-
 	state["pki"] = pki
 	state["types"] = types
 
-	link := cstesting.NewLinkBuilder().
+	return chainscripttest.NewLinkBuilder(t).
 		WithProcess(validation.GovernanceProcessName).
 		WithTags(process, validation.ValidatorTag).
-		WithState(state).
-		WithMetadata(validation.ProcessMetaKey, process).
+		WithData(t, state).
+		WithPriority(priority).
+		WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
 		Build()
-	link.Meta.Priority = priority
-	return link
 }

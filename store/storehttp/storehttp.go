@@ -48,12 +48,11 @@ import (
 	"sync"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/stratumn/go-indigocore/cs"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/jsonhttp"
 	"github.com/stratumn/go-indigocore/jsonws"
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 
 	"go.opencensus.io/trace"
 )
@@ -190,7 +189,7 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 
 	decoder := json.NewDecoder(r.Body)
 
-	var link cs.Link
+	var link chainscript.Link
 	if err := decoder.Decode(&link); err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
@@ -205,14 +204,14 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 		return nil, err
 	}
 
-	return link.Segmentify(), nil
+	return link.Segmentify()
 }
 
 func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
 	ctx, span := trace.StartSpan(r.Context(), "storehttp/addEvidence")
 	defer span.End()
 
-	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
+	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, err
@@ -220,7 +219,7 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 
 	decoder := json.NewDecoder(r.Body)
 
-	var evidence cs.Evidence
+	var evidence chainscript.Evidence
 	if err := decoder.Decode(&evidence); err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
@@ -238,7 +237,7 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 	ctx, span := trace.StartSpan(r.Context(), "storehttp/getSegment")
 	defer span.End()
 
-	linkHash, err := types.NewBytes32FromString(p.ByName("linkHash"))
+	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, jsonhttp.NewErrBadRequest(err.Error())

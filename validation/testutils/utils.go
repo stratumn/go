@@ -24,11 +24,11 @@ import (
 
 // These are the test key pairs of Alice and Bob.
 const (
-	AlicePrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nMFACAQAwBwYDK2VwBQAEQgRAtE8lRNmO/joDx3EgACAI1BwlQOvLMAKdt+S5EGQS\nK2Z1H1v5bLPeXY0V4yHl/nsx+W3W1Xu7OMGzyUQYno/orQ==\n-----END ED25519 PRIVATE KEY-----\n"
-	AlicePublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCwwBwYDK2VwBQADIQB1H1v5bLPeXY0V4yHl/nsx+W3W1Xu7OMGzyUQYno/orQ==\n-----END ED25519 PUBLIC KEY-----\n`
+	AlicePrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nME4CAQAwBQYDK2VwBEIEQByVNUFScxEsQJbHFjiV49lQ0OSGWqxXGSEV9CfD3RLc\n4HuxduXhOjSyr657IqXX4WBsj++R4pgRmqwJa9PN3W4=\n-----END ED25519 PRIVATE KEY-----\n"
+	AlicePublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEA4HuxduXhOjSyr657IqXX4WBsj++R4pgRmqwJa9PN3W4=\n-----END ED25519 PUBLIC KEY-----\n`
 
-	BobPrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nMFACAQAwBwYDK2VwBQAEQgRA9hQptFsW6tFhqbH/u6jRFHt1lzNqxg3svGbmJ+9t\n6iT62sVNwOC/igLDjnNh6lw+55htwatPtgdpTuVb3I3Eng==\n-----END ED25519 PRIVATE KEY-----\n"
-	BobPublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCwwBwYDK2VwBQADIQD62sVNwOC/igLDjnNh6lw+55htwatPtgdpTuVb3I3Eng==\n-----END ED25519 PUBLIC KEY-----\n`
+	BobPrivateKey = "-----BEGIN ED25519 PRIVATE KEY-----\nME4CAQAwBQYDK2VwBEIEQBNjYUKZhIQCu1a2DZde6jM5kSltWKqRXkim3MUeWyUT\nPAtD68Uo/tTD6zVSMpxdWb0J1SA7sVHumDI3LZRDGEM=\n-----END ED25519 PRIVATE KEY-----\n"
+	BobPublicKey  = `-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAPAtD68Uo/tTD6zVSMpxdWb0J1SA7sVHumDI3LZRDGEM=\n-----END ED25519 PUBLIC KEY-----\n`
 )
 
 // ValidAuctionJSONPKIConfig is a valid PKI schema for the auction process.

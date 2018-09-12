@@ -16,7 +16,6 @@ package batchfossilizer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -25,11 +24,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
 	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/testutil"
 	"github.com/stratumn/go-indigocore/types"
 	mktypes "github.com/stratumn/merkle/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fossilizeTest struct {
@@ -51,22 +52,22 @@ func testFossilizeMultiple(t *testing.T, a *Fossilizer, tests []fossilizeTest, s
 	if start {
 		var ctx context.Context
 		ctx, cancel = context.WithCancel(context.Background())
+
 		go func() {
 			if err := a.Start(ctx); err != nil {
-				if errors.Cause(err) != context.Canceled {
-					t.Errorf("a.Start(): err: %s", err)
-				}
+				assert.EqualError(t, errors.Cause(err), context.Canceled.Error())
 				c <- struct{}{}
 			}
 		}()
+
 		<-a.Started()
 	}
 
 	if fossilize {
 		for _, test := range tests {
-			if err := a.Fossilize(ctx, test.data, test.meta); err != nil {
-				t.Errorf("a.Fossilize(): err: %s", err)
-			}
+			err := a.Fossilize(ctx, test.data, test.meta)
+			assert.NoError(t, err, "a.Fossilize()")
+
 			if test.sleep > 0 {
 				time.Sleep(test.sleep)
 			}
@@ -86,30 +87,29 @@ RESULT_LOOP:
 					want := fmt.Sprintf("%x", test.data)
 					t.Errorf("test#%d: Data = %q want %q", i, got, want)
 				}
-				evidence := r.Evidence.Proof.(*evidences.BatchProof)
-				if !reflect.DeepEqual(evidence.Path, test.path) {
-					got, _ := json.MarshalIndent(evidence.Path, "", "  ")
-					want, _ := json.MarshalIndent(test.path, "", "  ")
-					t.Errorf("test#%d: Path = %s\nwant %s", i, got, want)
-				}
+
+				proof, err := evidences.UnmarshalProof(&r.Evidence)
+				require.NoError(t, err)
+				assert.Equal(t, test.path, proof.Path)
+
 				results = append(results, r)
 				continue RESULT_LOOP
 			}
 		}
+
 		a := fmt.Sprintf("%x", r.Meta)
-		t.Errorf("unexpected Meta %q", a)
+		assert.Fail(t, "unexpected Meta %q", a)
 	}
 
 	for i, test := range tests {
-		if !test.fossilized {
-			t.Errorf("test#%d: not fossilized", i)
-		}
+		assert.Truef(t, test.fossilized, "test#%d: not fossilized", i)
 	}
 
 	if cancel != nil {
 		cancel()
 		<-c
 	}
+
 	return
 }
 
@@ -133,7 +133,7 @@ func benchmarkFossilize(b *testing.B, config *Config) {
 
 	data := make([][]byte, n)
 	for i := 0; i < n; i++ {
-		data[i] = atos(*testutil.RandomHash())
+		data[i] = chainscripttest.RandomHash()
 	}
 
 	<-a.Started()

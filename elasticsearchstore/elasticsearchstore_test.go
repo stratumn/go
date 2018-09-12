@@ -25,11 +25,12 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/go-indigocore/cs"
-	"github.com/stratumn/go-indigocore/cs/cstesting"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/store/storetestcases"
 	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
+	"github.com/stratumn/go-indigocore/types"
 	"github.com/stratumn/go-indigocore/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -115,8 +116,8 @@ func TestElasticSearchTMPop(t *testing.T) {
 	}.RunTests(t)
 }
 
-func verifyResultsCount(t *testing.T, err error, segments *cs.PaginatedSegments, expectedCount int) {
-	assert.NoError(t, err)
+func verifyResultsCount(t *testing.T, err error, segments *types.PaginatedSegments, expectedCount int) {
+	require.NoError(t, err)
 	require.NotNil(t, segments)
 	assert.Len(t, segments.Segments, expectedCount, "Invalid number of results")
 	assert.Condition(t, func() bool { return len(segments.Segments) <= segments.TotalCount }, "Invalid total count of results")
@@ -124,37 +125,37 @@ func verifyResultsCount(t *testing.T, err error, segments *cs.PaginatedSegments,
 
 func TestElasticSearchStoreSearch(t *testing.T) {
 	a, err := newTestElasticSearchStore()
-	assert.NoError(t, err, "newTestElasticSearchStore()")
-	assert.NotNil(t, a, "ES adapter")
+	require.NoError(t, err, "newTestElasticSearchStore()")
+	require.NotNil(t, a, "ES adapter")
 	defer freeTestElasticSearchStore(a)
 
-	state1 := map[string]interface{}{"nested": map[string]interface{}{
+	data1 := map[string]interface{}{"nested": map[string]interface{}{
 		"first":  "hector",
 		"last":   "salazar",
 		"common": "stratumn",
 	}}
-	link1 := cstesting.NewLinkBuilder().
+	link1 := chainscripttest.NewLinkBuilder(t).
 		WithProcess("something crazy").
 		WithTags("one", "two", "three").
 		WithMapID("foo bar").
-		WithState(state1).
+		WithData(t, data1).
 		Build()
 	a.CreateLink(context.Background(), link1)
-	hash1, _ := link1.HashString()
+	hash1, _ := link1.Hash()
 
-	state2 := map[string]interface{}{"nested": map[string]interface{}{
+	data2 := map[string]interface{}{"nested": map[string]interface{}{
 		"first":  "james",
 		"last":   "daniel",
 		"common": "stratumn",
 	}}
-	link2 := cstesting.NewLinkBuilder().
+	link2 := chainscripttest.NewLinkBuilder(t).
 		WithProcess("fly emirates").
 		WithTags("urban", "paranoia", "city").
 		WithMapID("stupid madness").
-		WithState(state2).
+		WithData(t, data2).
 		Build()
 	a.CreateLink(context.Background(), link2)
-	hash2, _ := link2.HashString()
+	hash2, _ := link2.Hash()
 
 	t.Run("Simple Search Query", func(t *testing.T) {
 
@@ -168,7 +169,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "sala*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash1, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash1, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should find segment based on mapId", func(t *testing.T) {
@@ -181,7 +182,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "emirates",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash2, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash2, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on Process", func(t *testing.T) {
@@ -195,7 +196,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash2, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash2, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on one MapId", func(t *testing.T) {
@@ -209,7 +210,7 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 1)
-			assert.Equal(t, hash1, slice.Segments[0].GetLinkHashString(), "Wrong link was found")
+			assert.Equal(t, hash1, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on multiple MapIds", func(t *testing.T) {
@@ -223,9 +224,9 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "stratu*",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			h1, h2 := slice.Segments[0].GetLinkHashString(), slice.Segments[1].GetLinkHashString()
-			assert.Contains(t, []string{hash1, hash2}, h1, "Wrong link was found")
-			assert.Contains(t, []string{hash1, hash2}, h2, "Wrong link was found")
+			h1, h2 := slice.Segments[0].LinkHash(), slice.Segments[1].LinkHash()
+			assert.Contains(t, []chainscript.LinkHash{hash1, hash2}, h1, "Wrong link was found")
+			assert.Contains(t, []chainscript.LinkHash{hash1, hash2}, h2, "Wrong link was found")
 			assert.NotEqual(t, h1, h2, "The two results are the same")
 		})
 	})
@@ -241,16 +242,16 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				Query: "salazar daniel",
 			})
 			verifyResultsCount(t, err, slice, 2)
-			h1, h2 := slice.Segments[0].GetLinkHashString(), slice.Segments[1].GetLinkHashString()
-			assert.Contains(t, []string{hash1, hash2}, h1, "Wrong link was found")
-			assert.Contains(t, []string{hash1, hash2}, h2, "Wrong link was found")
+			h1, h2 := slice.Segments[0].LinkHash(), slice.Segments[1].LinkHash()
+			assert.Contains(t, []chainscript.LinkHash{hash1, hash2}, h1, "Wrong link was found")
+			assert.Contains(t, []chainscript.LinkHash{hash1, hash2}, h2, "Wrong link was found")
 			assert.NotEqual(t, h1, h2, "The two results are the same")
 		})
 	})
 
-	t.Run("Should extract all value tokens from state", func(t *testing.T) {
-		l := cstesting.RandomLink()
-		state := []byte(`{
+	t.Run("Should extract all value tokens", func(t *testing.T) {
+		l := chainscripttest.RandomLink(t)
+		data := []byte(`{
 			"string": "hello",
 			"bool": true,
 			"num": 0.54,
@@ -261,17 +262,22 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 				"num": 23
 			}
 		}`)
-		l.State = map[string]interface{}{}
-		json.Unmarshal(state, &l.State)
+
+		dataObj := map[string]interface{}{}
+		err := json.Unmarshal(data, &dataObj)
+		require.NoError(t, err)
+
+		err = l.SetData(dataObj)
+		require.NoError(t, err)
 
 		expectedTokens := []string{"hello", "abc", "james", "def", "world"}
 
 		doc, err := fromLink(l)
 		assert.NoError(t, err, "fromLink")
 		require.NotNil(t, doc, "fromLink")
-		assert.Equal(t, len(expectedTokens), len(doc.StateTokens), "Invalid number of tokens")
+		assert.Equal(t, len(expectedTokens), len(doc.DataTokens), "Invalid number of tokens")
 		for _, token := range expectedTokens {
-			assert.Contains(t, doc.StateTokens, token, "Invalid tokens extracted")
+			assert.Contains(t, doc.DataTokens, token, "Invalid tokens extracted")
 		}
 	})
 }
