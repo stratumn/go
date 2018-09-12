@@ -532,11 +532,13 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 			if err != nil {
 				log.Warnf("Evidence could not be created: %v", err)
 				span.Annotatef(nil, "Evidence for %x could not be created: %s", linkHash.String(), err.Error())
+				continue
 			}
 
 			if err := t.adapter.AddEvidence(ctx, linkHash, evidence); err != nil {
 				log.Warnf("Evidence could not be added to local store: %v", err)
 				span.Annotatef(nil, "Evidence for %x could not be added: %s", linkHash.String(), err.Error())
+				continue
 			}
 
 			if evidence != nil {
