@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
-	"encoding/json"
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
@@ -70,10 +69,11 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 	for rows.Next() {
 		var (
 			linkHash     chainscript.LinkHash
-			linkData     string
-			link         chainscript.Link
-			evidenceData sql.NullString
-			evidence     chainscript.Evidence
+			linkData     []byte
+			link         *chainscript.Link
+			evidenceData []byte
+			evidence     *chainscript.Evidence
+			err          error
 		)
 
 		if totalCount == nil {
@@ -87,7 +87,8 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 		}
 
 		if !bytes.Equal(currentHash, linkHash) {
-			if err := json.Unmarshal([]byte(linkData), &link); err != nil {
+			link, err = chainscript.UnmarshalLink(linkData)
+			if err != nil {
 				return err
 			}
 
@@ -105,12 +106,13 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 			*segments = append(*segments, currentSegment)
 		}
 
-		if evidenceData.Valid {
-			if err := json.Unmarshal([]byte(evidenceData.String), &evidence); err != nil {
+		if len(evidenceData) > 0 {
+			evidence, err = chainscript.UnmarshalEvidence(evidenceData)
+			if err != nil {
 				return err
 			}
 
-			if err := currentSegment.AddEvidence(&evidence); err != nil {
+			if err := currentSegment.AddEvidence(evidence); err != nil {
 				return err
 			}
 		}
@@ -166,18 +168,19 @@ func (a *reader) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash
 
 	for rows.Next() {
 		var (
-			data     string
-			evidence chainscript.Evidence
+			data     []byte
+			evidence *chainscript.Evidence
 		)
 
 		if err := rows.Scan(&data); err != nil {
 			return nil, err
 		}
 
-		if err := json.Unmarshal([]byte(data), &evidence); err != nil {
+		evidence, err = chainscript.UnmarshalEvidence(data)
+		if err != nil {
 			return nil, err
 		}
-		evidences = append(evidences, &evidence)
+		evidences = append(evidences, evidence)
 
 	}
 	return evidences, nil

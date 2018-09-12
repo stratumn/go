@@ -16,7 +16,6 @@ package postgresstore
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
@@ -61,15 +60,15 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 		return linkHash, err
 	}
 
-	data, err := json.Marshal(link)
+	data, err := chainscript.MarshalLink(link)
 	if err != nil {
 		return linkHash, err
 	}
 
 	if len(prevLinkHash) == 0 {
-		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, []byte{}, pq.Array(tags), string(data), process)
+		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, []byte{}, pq.Array(tags), data, process)
 	} else {
-		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), string(data), process)
+		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), data, process)
 	}
 
 	return linkHash, err
