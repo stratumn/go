@@ -260,10 +260,11 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	var prevLinkHash []byte
 	q := a.links
 
-	if filter.PrevLinkHash != nil {
-		if prevLinkHashBytes, err := types.NewBytes32FromString(*filter.PrevLinkHash); prevLinkHashBytes != nil && err == nil {
-			prevLinkHash = prevLinkHashBytes[:]
+	if filter.WithoutParent || filter.PrevLinkHash != nil {
+		if filter.PrevLinkHash != nil {
+			prevLinkHash = filter.PrevLinkHash
 		}
+
 		q = q.Between([]interface{}{
 			prevLinkHash,
 			rethink.MinVal,
@@ -278,18 +279,8 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		var linkHashes []chainscript.LinkHash
-		for _, lh := range filter.LinkHashes {
-			linkHash, err := chainscript.NewLinkHashFromString(lh)
-			if err != nil {
-				return nil, err
-			}
-
-			linkHashes = append(linkHashes, linkHash)
-		}
-
-		ids := make([]interface{}, len(linkHashes))
-		for i, v := range linkHashes {
+		ids := make([]interface{}, len(filter.LinkHashes))
+		for i, v := range filter.LinkHashes {
 			ids[i] = v
 		}
 		q = q.GetAll(ids...)
@@ -308,7 +299,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		q = q.Filter(func(row rethink.Term) interface{} {
 			return rethink.Expr(ids).Contains(row.Field("mapId"))
 		})
-	} else if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil {
+	} else if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil || filter.WithoutParent {
 		q = q.OrderBy(rethink.OrderByOpts{Index: "prevLinkHashOrder"})
 	} else if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
 		q = q.OrderBy(rethink.Asc("id"))
