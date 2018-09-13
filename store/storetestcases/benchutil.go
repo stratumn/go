@@ -23,7 +23,6 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 )
 
 // CreateLinkFunc is a type for a function that creates a link for benchmarks.
@@ -170,14 +169,14 @@ func RandomFilterOffsetMapIDs(b *testing.B, numLinks, i int) *store.SegmentFilte
 // random offset and previous link hash.
 // The previous link hash will be one of ten possible values.
 func RandomFilterOffsetPrevLinkHash(b *testing.B, numLinks, i int) *store.SegmentFilter {
-	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
-	prevLinkHashStr := prevLinkHash.String()
+	prevLinkHash, _ := chainscript.NewLinkHashFromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
+
 	return &store.SegmentFilter{
 		Pagination: store.Pagination{
 			Offset: rand.Int() % numLinks,
 			Limit:  store.DefaultLimit,
 		},
-		PrevLinkHash: &prevLinkHashStr,
+		PrevLinkHash: prevLinkHash,
 	}
 }
 
@@ -214,14 +213,14 @@ func RandomFilterOffsetMapIDTags(b *testing.B, numLinks, i int) *store.SegmentFi
 // The previous link hash will be one of ten possible values.
 // The tags will be one of fifty possible combinations.
 func RandomFilterOffsetPrevLinkHashTags(b *testing.B, numLinks, i int) *store.SegmentFilter {
-	prevLinkHash, _ := types.NewBytes32FromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
-	prevLinkHashStr := prevLinkHash.String()
+	prevLinkHash, _ := chainscript.NewLinkHashFromString(fmt.Sprintf("000000000000000000000000000000000000000000000000000000000000000%d", i%10))
+
 	return &store.SegmentFilter{
 		Pagination: store.Pagination{
 			Offset: rand.Int() % numLinks,
 			Limit:  store.DefaultLimit,
 		},
-		PrevLinkHash: &prevLinkHashStr,
+		PrevLinkHash: prevLinkHash,
 		Tags:         []string{fmt.Sprintf("%d", i%5), fmt.Sprintf("%d", i%10)},
 	}
 }

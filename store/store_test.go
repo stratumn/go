@@ -31,18 +31,16 @@ const (
 )
 
 var (
-	prevLinkHashTestingValue      string
-	linkHashTestingValue          string
-	badLinkHashTestingValue       string
-	emptyPrevLinkHashTestingValue = ""
+	prevLinkHashTestingValue chainscript.LinkHash
+	badLinkHashTestingValue  chainscript.LinkHash
 
 	paginatedSegments *types.PaginatedSegments
 	stringSlice       []string
 )
 
 func init() {
-	prevLinkHashTestingValue = chainscripttest.RandomHash().String()
-	badLinkHashTestingValue = chainscripttest.RandomHash().String()
+	prevLinkHashTestingValue = chainscripttest.RandomHash()
+	badLinkHashTestingValue = chainscripttest.RandomHash()
 
 	paginatedSegments = &types.PaginatedSegments{}
 	paginatedSegments.Segments = make(types.SegmentSlice, sliceSize)
@@ -59,11 +57,10 @@ func init() {
 }
 
 func defaultTestingSegment() *chainscript.Segment {
-	prevLinkHash, _ := chainscript.NewLinkHashFromString(prevLinkHashTestingValue)
 	link, _ := chainscript.NewLinkBuilder("TheProcess", "TheMapId").
 		WithPriority(42.).
 		WithTags("Foo", "Bar").
-		WithParent(prevLinkHash).
+		WithParent(prevLinkHashTestingValue).
 		Build()
 
 	segment, _ := link.Segmentify()
@@ -78,20 +75,21 @@ func emptyPrevLinkHashTestingSegment() *chainscript.Segment {
 
 func TestSegmentFilter_Match(t *testing.T) {
 	type fields struct {
-		Pagination   store.Pagination
-		MapIDs       []string
-		Process      string
-		PrevLinkHash *string
-		LinkHashes   []string
-		Tags         []string
+		Pagination    store.Pagination
+		MapIDs        []string
+		Process       string
+		WithoutParent bool
+		PrevLinkHash  chainscript.LinkHash
+		LinkHashes    []chainscript.LinkHash
+		Tags          []string
 	}
 
 	type args struct {
 		segment *chainscript.Segment
 	}
 
-	linkHashesSegment := defaultTestingSegment()
-	linkHashesSegmentHash := linkHashesSegment.LinkHash()
+	testSegment := defaultTestingSegment()
+	testSegmentHash := testSegment.LinkHash()
 
 	tests := []struct {
 		name   string
@@ -108,115 +106,121 @@ func TestSegmentFilter_Match(t *testing.T) {
 		{
 			name:   "Empty filter",
 			fields: fields{},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Good mapId",
 			fields: fields{MapIDs: []string{"TheMapId"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Bad mapId",
 			fields: fields{MapIDs: []string{"AMapId"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   false,
 		},
 		{
 			name:   "Good several mapIds",
 			fields: fields{MapIDs: []string{"TheMapId", "SecondMapId"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Good process",
 			fields: fields{Process: "TheProcess"},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Bad process",
 			fields: fields{Process: "AProcess"},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   false,
 		},
 		{
-			name:   "Empty prevLinkHash ko",
-			fields: fields{PrevLinkHash: &emptyPrevLinkHashTestingValue},
-			args:   args{segment: defaultTestingSegment()},
-			want:   false,
+			name: "Without parent no match",
+			fields: fields{
+				WithoutParent: true,
+				// WithoutParent takes precedence so PrevLinkHash should be ignored.
+				PrevLinkHash: prevLinkHashTestingValue,
+			},
+			args: args{segment: testSegment},
+			want: false,
 		},
 		{
-			name:   "Empty prevLinkHash ok",
-			fields: fields{PrevLinkHash: &emptyPrevLinkHashTestingValue},
+			name:   "Without parent match",
+			fields: fields{WithoutParent: true},
 			args:   args{emptyPrevLinkHashTestingSegment()},
 			want:   true,
 		},
 		{
 			name:   "Good prevLinkHash",
-			fields: fields{PrevLinkHash: &prevLinkHashTestingValue},
-			args:   args{segment: defaultTestingSegment()},
+			fields: fields{PrevLinkHash: prevLinkHashTestingValue},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Bad prevLinkHash",
-			fields: fields{PrevLinkHash: &badLinkHashTestingValue},
-			args:   args{segment: defaultTestingSegment()},
+			fields: fields{PrevLinkHash: badLinkHashTestingValue},
+			args:   args{segment: testSegment},
 			want:   false,
 		},
 		{
-			name: "LinkHashes ok",
+			name: "LinkHashes match",
 			fields: fields{
-				LinkHashes: []string{
-					chainscripttest.RandomHash().String(),
-					linkHashesSegmentHash.String(),
+				LinkHashes: []chainscript.LinkHash{
+					chainscripttest.RandomHash(),
+					testSegmentHash,
 				},
 			},
-			args: args{linkHashesSegment},
+			args: args{testSegment},
 			want: true,
 		},
 		{
-			name:   "LinkHashes ko",
-			fields: fields{LinkHashes: []string{chainscripttest.RandomHash().String()}},
-			args:   args{segment: defaultTestingSegment()},
+			name:   "LinkHashes no match",
+			fields: fields{LinkHashes: []chainscript.LinkHash{chainscripttest.RandomHash()}},
+			args:   args{segment: testSegment},
 			want:   false,
 		},
 		{
 			name:   "One tag",
 			fields: fields{Tags: []string{"Foo"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Two tags",
 			fields: fields{Tags: []string{"Foo", "Bar"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   true,
 		},
 		{
 			name:   "Only one good tag",
 			fields: fields{Tags: []string{"Foo", "Baz"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   false,
 		},
 		{
 			name:   "Bad tag",
 			fields: fields{Tags: []string{"Hello"}},
-			args:   args{segment: defaultTestingSegment()},
+			args:   args{segment: testSegment},
 			want:   false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filter := store.SegmentFilter{
-				Pagination:   tt.fields.Pagination,
-				MapIDs:       tt.fields.MapIDs,
-				Process:      tt.fields.Process,
-				LinkHashes:   tt.fields.LinkHashes,
-				PrevLinkHash: tt.fields.PrevLinkHash,
-				Tags:         tt.fields.Tags,
+				Pagination:    tt.fields.Pagination,
+				MapIDs:        tt.fields.MapIDs,
+				Process:       tt.fields.Process,
+				LinkHashes:    tt.fields.LinkHashes,
+				WithoutParent: tt.fields.WithoutParent,
+				PrevLinkHash:  tt.fields.PrevLinkHash,
+				Tags:          tt.fields.Tags,
 			}
+
 			got := filter.Match(tt.args.segment)
 			assert.Equal(t, tt.want, got)
 		})

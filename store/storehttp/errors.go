@@ -35,6 +35,13 @@ func newErrLimit(msg string) jsonhttp.ErrHTTP {
 	return jsonhttp.NewErrBadRequest(msg)
 }
 
+func newErrWithoutParent(msg string) jsonhttp.ErrHTTP {
+	if msg == "" {
+		msg = "withoutParent should be a boolean"
+	}
+	return jsonhttp.NewErrBadRequest(msg)
+}
+
 func newErrPrevLinkHash(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
 		msg = "prevLinkHash must be a 64 byte long hexadecimal string"

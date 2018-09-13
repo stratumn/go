@@ -18,7 +18,6 @@ package store
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"strings"
 
 	"github.com/stratumn/go-chainscript"
@@ -130,25 +129,23 @@ type Pagination struct {
 }
 
 // SegmentFilter contains filtering options for segments.
-// If PrevLinkHash is not nil, MapID is ignored because a previous link hash
-// implies the map ID of the previous segment.
 type SegmentFilter struct {
 	Pagination `json:"pagination"`
 
 	// Map IDs the segments must have.
 	MapIDs []string `json:"mapIds" url:"mapIds,brackets"`
 
-	// Process name is optionnal.
-	Process string `json:"process" url:"-"`
+	// Process name the segments must have.
+	Process string `json:"process" url:"process"`
+
+	// If true, selects only segments that don't have a parent.
+	WithoutParent bool `json:"withoutParent" url:"withoutParent"`
 
 	// A previous link hash the segments must have.
-	// nil makes this attribute as optional
-	// empty string is to search Segments without parent
-	PrevLinkHash *string `json:"prevLinkHash" url:"prevLinkHash"`
+	PrevLinkHash chainscript.LinkHash `json:"prevLinkHash" url:"-"`
 
 	// A slice of linkHashes to search Segments.
-	// This attribute is optional.
-	LinkHashes []string `json:"linkHashes" url:"linkHashes,brackets"`
+	LinkHashes []chainscript.LinkHash `json:"linkHashes" url:"-"`
 
 	// A slice of tags the segments must all contain.
 	Tags []string `json:"tags" url:"tags,brackets"`
@@ -167,8 +164,8 @@ type MapFilter struct {
 	// Filter to get maps with IDs ending with a given suffix.
 	Suffix string `json:"suffix" url:"suffix"`
 
-	// Process name is optionnal.
-	Process string `json:"process" url:"-"`
+	// Process name is optional.
+	Process string `json:"process" url:"process"`
 }
 
 // PaginateStrings paginates a list of strings.
@@ -222,31 +219,36 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 		return false
 	}
 
-	if filter.PrevLinkHash != nil {
-		prevLinkHash := link.Meta.PrevLinkHash
-		if *filter.PrevLinkHash == "" {
-			if len(prevLinkHash) > 0 {
-				return false
-			}
-		} else {
-			filterPrevLinkHash, err := hex.DecodeString(*filter.PrevLinkHash)
-			if err != nil || !bytes.Equal(filterPrevLinkHash, prevLinkHash) {
-				return false
-			}
+	if filter.WithoutParent {
+		if len(link.PrevLinkHash()) > 0 {
+			return false
+		}
+	} else if len(filter.PrevLinkHash) > 0 {
+		prevLinkHash := link.PrevLinkHash()
+
+		if len(prevLinkHash) == 0 {
+			return false
+		}
+
+		if !bytes.Equal(prevLinkHash, filter.PrevLinkHash) {
+			return false
 		}
 	}
 
 	if len(filter.LinkHashes) > 0 {
-		lh, _ := link.Hash()
-		lhs := lh.String()
+		lh, err := link.Hash()
+		if err != nil {
+			return false
+		}
 
 		var match bool
 		for _, linkHash := range filter.LinkHashes {
-			if linkHash == lhs {
+			if bytes.Equal(linkHash, lh) {
 				match = true
 				break
 			}
 		}
+
 		if !match {
 			return false
 		}
@@ -275,6 +277,7 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 			}
 		}
 	}
+
 	return true
 }
 
@@ -301,5 +304,6 @@ func (filter MapFilter) MatchLink(link *chainscript.Link) bool {
 	if filter.Suffix != "" && !strings.HasSuffix(link.Meta.MapId, filter.Suffix) {
 		return false
 	}
+
 	return true
 }

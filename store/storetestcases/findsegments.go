@@ -251,10 +251,10 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("Supports filtering on link hashes", func(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
-			LinkHashes: []string{
-				linkHash4.String(),
-				chainscripttest.RandomHash().String(),
-				linkHash6.String(),
+			LinkHashes: []chainscript.LinkHash{
+				linkHash4,
+				chainscripttest.RandomHash(),
+				linkHash6,
 			},
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
@@ -266,9 +266,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("Supports filtering on link hash and process at the same time", func(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
-			LinkHashes: []string{
-				linkHash4.String(),
-				linkHash6.String(),
+			LinkHashes: []chainscript.LinkHash{
+				linkHash4,
+				linkHash6,
 			},
 			Process: "Foo",
 			Pagination: store.Pagination{
@@ -281,9 +281,9 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	t.Run("Should return no results for unknown link hashes", func(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
-			LinkHashes: []string{
-				chainscripttest.RandomHash().String(),
-				chainscripttest.RandomHash().String(),
+			LinkHashes: []chainscript.LinkHash{
+				chainscripttest.RandomHash(),
+				chainscripttest.RandomHash(),
 			},
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
@@ -292,35 +292,33 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		verifyResultsCount(t, err, slice, 0)
 	})
 
-	t.Run("Supports filtering for segments with empty previous link hash", func(t *testing.T) {
+	t.Run("Supports filtering for segments without parents", func(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
-			Pagination:   store.Pagination{Limit: segmentsTotalCount},
-			PrevLinkHash: &emptyPrevLinkHash,
+			Pagination:    store.Pagination{Limit: segmentsTotalCount},
+			WithoutParent: true,
 		})
 		verifyResultsCount(t, err, slice, 2)
 	})
 
 	t.Run("Supports filtering by previous link hash", func(t *testing.T) {
 		ctx := context.Background()
-		prevLinkHash := linkHash4.String()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			PrevLinkHash: &prevLinkHash,
+			PrevLinkHash: linkHash4,
 		})
 		verifyResultsCount(t, err, slice, 2)
 	})
 
 	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
 		ctx := context.Background()
-		prevLinkHash := linkHash4.String()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			PrevLinkHash: &prevLinkHash,
+			PrevLinkHash: linkHash4,
 			Tags:         []string{"tag1"},
 		})
 		verifyResultsCount(t, err, slice, 1)
@@ -328,12 +326,11 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
 		ctx := context.Background()
-		prevLinkHash := linkHash4.String()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			PrevLinkHash: &prevLinkHash,
+			PrevLinkHash: linkHash4,
 			MapIDs:       []string{"map1", "map2"},
 		})
 		verifyResultsCount(t, err, slice, 1)
@@ -341,12 +338,11 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns no result when filtering on good previous link hash but invalid map ID", func(t *testing.T) {
 		ctx := context.Background()
-		prevLinkHash := linkHash4.String()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			PrevLinkHash: &prevLinkHash,
+			PrevLinkHash: linkHash4,
 			MapIDs:       []string{"map2"},
 		})
 		verifyResultsCount(t, err, slice, 0)
@@ -354,12 +350,12 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	t.Run("Returns no result for previous link hash not found", func(t *testing.T) {
 		ctx := context.Background()
-		notFoundPrevLinkHash := chainscripttest.RandomHash().String()
+		notFoundPrevLinkHash := chainscripttest.RandomHash()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			PrevLinkHash: &notFoundPrevLinkHash,
+			PrevLinkHash: notFoundPrevLinkHash,
 		})
 		verifyResultsCount(t, err, slice, 0)
 	})
@@ -403,9 +399,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			LinkHashes: []string{
-				linkHash4.String(),
-			},
+			LinkHashes: []chainscript.LinkHash{linkHash4},
 		})
 		verifyResultsCount(t, err, got, 1)
 		assert.True(t, len(got.Segments[0].Meta.Evidences) >= 4)
