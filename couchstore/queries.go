@@ -82,9 +82,13 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	linkSelector := LinkSelector{}
 	linkSelector.ObjectType = objectTypeLink
 
-	if filter.PrevLinkHash != nil {
+	if filter.WithoutParent {
 		linkSelector.PrevLinkHash = &PrevLinkHash{
-			Equals: *filter.PrevLinkHash,
+			Equals: "",
+		}
+	} else if len(filter.PrevLinkHash) > 0 {
+		linkSelector.PrevLinkHash = &PrevLinkHash{
+			Equals: filter.PrevLinkHash.String(),
 		}
 	}
 	if filter.Process != "" {
@@ -97,8 +101,9 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 		linkSelector.Tags = &TagsAll{Tags: filter.Tags}
 	}
 	if len(filter.LinkHashes) > 0 {
-		linkSelector.LinkHash = &LinkHashIn{
-			LinkHashes: filter.LinkHashes,
+		linkSelector.LinkHash = &LinkHashIn{}
+		for _, lh := range filter.LinkHashes {
+			linkSelector.LinkHash.LinkHashes = append(linkSelector.LinkHash.LinkHashes, lh.String())
 		}
 	}
 
