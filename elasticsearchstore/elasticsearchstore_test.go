@@ -158,71 +158,80 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 	hash2, _ := link2.Hash()
 
 	t.Run("Simple Search Query", func(t *testing.T) {
-
 		t.Run("Should find segment based on partial state match", func(t *testing.T) {
-			slice, err := a.SimpleSearchQuery(&SearchQuery{
-				SegmentFilter: store.SegmentFilter{
-					Pagination: store.Pagination{
-						Limit: 5,
+			slice, err := a.SimpleSearchQuery(
+				context.Background(),
+				&SearchQuery{
+					SegmentFilter: store.SegmentFilter{
+						Pagination: store.Pagination{
+							Limit: 5,
+						},
 					},
-				},
-				Query: "sala*",
-			})
+					Query: "sala*",
+				})
 			verifyResultsCount(t, err, slice, 1)
 			assert.Equal(t, hash1, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should find segment based on mapId", func(t *testing.T) {
-			slice, err := a.SimpleSearchQuery(&SearchQuery{
-				SegmentFilter: store.SegmentFilter{
-					Pagination: store.Pagination{
-						Limit: 5,
+			slice, err := a.SimpleSearchQuery(
+				context.Background(),
+				&SearchQuery{
+					SegmentFilter: store.SegmentFilter{
+						Pagination: store.Pagination{
+							Limit: 5,
+						},
 					},
-				},
-				Query: "emirates",
-			})
+					Query: "emirates",
+				})
 			verifyResultsCount(t, err, slice, 1)
 			assert.Equal(t, hash2, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on Process", func(t *testing.T) {
-			slice, err := a.SimpleSearchQuery(&SearchQuery{
-				SegmentFilter: store.SegmentFilter{
-					Pagination: store.Pagination{
-						Limit: 5,
+			slice, err := a.SimpleSearchQuery(
+				context.Background(),
+				&SearchQuery{
+					SegmentFilter: store.SegmentFilter{
+						Pagination: store.Pagination{
+							Limit: 5,
+						},
+						Process: "fly emirates",
 					},
-					Process: "fly emirates",
-				},
-				Query: "stratu*",
-			})
+					Query: "stratu*",
+				})
 			verifyResultsCount(t, err, slice, 1)
 			assert.Equal(t, hash2, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on one MapId", func(t *testing.T) {
-			slice, err := a.SimpleSearchQuery(&SearchQuery{
-				SegmentFilter: store.SegmentFilter{
-					Pagination: store.Pagination{
-						Limit: 5,
+			slice, err := a.SimpleSearchQuery(
+				context.Background(),
+				&SearchQuery{
+					SegmentFilter: store.SegmentFilter{
+						Pagination: store.Pagination{
+							Limit: 5,
+						},
+						MapIDs: []string{"foo bar"},
 					},
-					MapIDs: []string{"foo bar"},
-				},
-				Query: "stratu*",
-			})
+					Query: "stratu*",
+				})
 			verifyResultsCount(t, err, slice, 1)
 			assert.Equal(t, hash1, slice.Segments[0].LinkHash(), "Wrong link was found")
 		})
 
 		t.Run("Should filter on multiple MapIds", func(t *testing.T) {
-			slice, err := a.SimpleSearchQuery(&SearchQuery{
-				SegmentFilter: store.SegmentFilter{
-					Pagination: store.Pagination{
-						Limit: 5,
+			slice, err := a.SimpleSearchQuery(
+				context.Background(),
+				&SearchQuery{
+					SegmentFilter: store.SegmentFilter{
+						Pagination: store.Pagination{
+							Limit: 5,
+						},
+						MapIDs: []string{"foo bar", "stupid madness"},
 					},
-					MapIDs: []string{"foo bar", "stupid madness"},
-				},
-				Query: "stratu*",
-			})
+					Query: "stratu*",
+				})
 			verifyResultsCount(t, err, slice, 2)
 			h1, h2 := slice.Segments[0].LinkHash(), slice.Segments[1].LinkHash()
 			assert.Contains(t, []chainscript.LinkHash{hash1, hash2}, h1, "Wrong link was found")
@@ -233,14 +242,16 @@ func TestElasticSearchStoreSearch(t *testing.T) {
 
 	t.Run("Multi Match Query", func(t *testing.T) {
 		t.Run("Should find segments based on multiple words", func(t *testing.T) {
-			slice, err := a.MultiMatchQuery(&SearchQuery{
-				SegmentFilter: store.SegmentFilter{
-					Pagination: store.Pagination{
-						Limit: 5,
+			slice, err := a.MultiMatchQuery(
+				context.Background(),
+				&SearchQuery{
+					SegmentFilter: store.SegmentFilter{
+						Pagination: store.Pagination{
+							Limit: 5,
+						},
 					},
-				},
-				Query: "salazar daniel",
-			})
+					Query: "salazar daniel",
+				})
 			verifyResultsCount(t, err, slice, 2)
 			h1, h2 := slice.Segments[0].LinkHash(), slice.Segments[1].LinkHash()
 			assert.Contains(t, []chainscript.LinkHash{hash1, hash2}, h1, "Wrong link was found")
