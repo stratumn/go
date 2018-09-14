@@ -36,8 +36,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const zeros = "0000000000000000000000000000000000000000000000000000000000000000"
-
 func TestRoot(t *testing.T) {
 	s, a := createServer()
 	a.MockGetInfo.Fn = func() (interface{}, error) { return "test", nil }
@@ -157,10 +155,10 @@ func TestGetSegment(t *testing.T) {
 	a.MockGetSegment.Fn = func(chainscript.LinkHash) (*chainscript.Segment, error) { return s1, nil }
 
 	var s2 chainscript.Segment
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+s1.LinkHash().String(), nil, &s2)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, zeros, a.MockGetSegment.LastCalledWith.String())
+	assert.Equal(t, s1.LinkHash(), a.MockGetSegment.LastCalledWith)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
 	chainscripttest.SegmentsEqual(t, s1, &s2)
@@ -168,12 +166,13 @@ func TestGetSegment(t *testing.T) {
 
 func TestGetSegment_notFound(t *testing.T) {
 	s, a := createServer()
+	unknownHash := chainscripttest.RandomHash()
 
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &body)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+unknownHash.String(), nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, zeros, a.MockGetSegment.LastCalledWith.String())
+	assert.Equal(t, unknownHash, a.MockGetSegment.LastCalledWith)
 	assert.Equal(t, jsonhttp.NewErrNotFound("").Status(), w.Code)
 	assert.Equal(t, jsonhttp.NewErrNotFound("").Error(), body["error"].(string))
 	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
@@ -181,13 +180,14 @@ func TestGetSegment_notFound(t *testing.T) {
 
 func TestGetSegment_err(t *testing.T) {
 	s, a := createServer()
+	lh := chainscripttest.RandomHash()
 	a.MockGetSegment.Fn = func(chainscript.LinkHash) (*chainscript.Segment, error) { return nil, errors.New("error") }
 
 	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+zeros, nil, &body)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments/"+lh.String(), nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, zeros, a.MockGetSegment.LastCalledWith.String())
+	assert.Equal(t, lh, a.MockGetSegment.LastCalledWith)
 	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
 	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
 	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
@@ -202,7 +202,7 @@ func TestFindSegments(t *testing.T) {
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
 	s2 := &types.PaginatedSegments{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags%5B%5D=one&tags%5B%5D=two", nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds%5B%5D=123&tags%5B%5D=one&tags%5B%5D=two", nil, &s2)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -213,8 +213,10 @@ func TestFindSegments(t *testing.T) {
 	assert.Equal(t, 1, f.Offset)
 	assert.Equal(t, 2, f.Limit)
 	assert.Equal(t, []string{"123"}, f.MapIDs)
-	assert.Equal(t, zeros, *f.PrevLinkHash)
 	assert.Equal(t, []string{"one", "two"}, f.Tags)
+	assert.False(t, f.WithoutParent)
+	assert.Nil(t, f.PrevLinkHash)
+	assert.Nil(t, f.LinkHashes)
 }
 
 func TestFindSegments_multipleMapIDs(t *testing.T) {
@@ -226,7 +228,7 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
 	s2 := &types.PaginatedSegments{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds[]=123&mapIds[]=456&prevLinkHash="+zeros+"&tags[]=one&tags%5B%5D=two", nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&mapIds[]=123&mapIds[]=456&tags[]=one&tags%5B%5D=two", nil, &s2)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -237,20 +239,27 @@ func TestFindSegments_multipleMapIDs(t *testing.T) {
 	assert.Equal(t, 1, f.Offset)
 	assert.Equal(t, 2, f.Limit)
 	assert.Equal(t, []string{"123", "456"}, f.MapIDs)
-	assert.Equal(t, zeros, *f.PrevLinkHash)
 	assert.Equal(t, []string{"one", "two"}, f.Tags)
+	assert.False(t, f.WithoutParent)
+	assert.Nil(t, f.PrevLinkHash)
+	assert.Nil(t, f.LinkHashes)
 }
 
 func TestFindSegments_multipleLinkHashes(t *testing.T) {
 	s, a := createServer()
+
 	s1 := &types.PaginatedSegments{}
 	for i := 0; i < 10; i++ {
 		s1.Segments = append(s1.Segments, chainscripttest.RandomSegment(t))
 	}
+
+	linkHash1 := s1.Segments[0].LinkHash()
+	linkHash2 := s1.Segments[1].LinkHash()
+
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
 	s2 := &types.PaginatedSegments{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&linkHashes[]="+zeros+"&linkHashes%5B%5D="+zeros, nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&limit=2&linkHashes[]="+linkHash1.String()+"&linkHashes%5B%5D="+linkHash2.String(), nil, &s2)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
 	testutil.PaginatedSegmentsEqual(t, s1, s2)
@@ -260,8 +269,48 @@ func TestFindSegments_multipleLinkHashes(t *testing.T) {
 	assert.Equal(t, 1, f.Offset)
 	assert.Equal(t, 2, f.Limit)
 	assert.Equal(t, 2, len(f.LinkHashes))
-	assert.Equal(t, f.LinkHashes[0], zeros)
-	assert.Equal(t, f.LinkHashes[1], zeros)
+	assert.Equal(t, f.LinkHashes[0], linkHash1)
+	assert.Equal(t, f.LinkHashes[1], linkHash2)
+}
+
+func TestFindSegments_prevLinkHash(t *testing.T) {
+	s, a := createServer()
+	s1 := &types.PaginatedSegments{
+		Segments: []*chainscript.Segment{chainscripttest.RandomSegment(t)},
+	}
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
+
+	s2 := &types.PaginatedSegments{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?prevLinkHash="+s1.Segments[0].LinkHash().String(), nil, &s2)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
+
+	f := a.MockFindSegments.LastCalledWith
+	assert.False(t, f.WithoutParent)
+	assert.Equal(t, s1.Segments[0].LinkHash(), f.PrevLinkHash)
+}
+
+func TestFindSegments_withoutParent(t *testing.T) {
+	s, a := createServer()
+	s1 := &types.PaginatedSegments{
+		Segments: []*chainscript.Segment{chainscripttest.RandomSegment(t)},
+	}
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
+
+	s2 := &types.PaginatedSegments{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?withoutParent=true", nil, &s2)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
+
+	f := a.MockFindSegments.LastCalledWith
+	assert.True(t, f.WithoutParent)
+	assert.Nil(t, f.PrevLinkHash)
 }
 
 func TestFindSegments_defaultLimit(t *testing.T) {
@@ -273,7 +322,7 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
 
 	s2 := &types.PaginatedSegments{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds%5B%5D=123&prevLinkHash="+zeros+"&tags[]=one&tags[]=two", nil, &s2)
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?offset=1&&mapIds%5B%5D=123&tags[]=one&tags[]=two", nil, &s2)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -284,7 +333,6 @@ func TestFindSegments_defaultLimit(t *testing.T) {
 	assert.Equal(t, 1, f.Offset)
 	assert.Equal(t, store.DefaultLimit, f.Limit)
 	assert.Equal(t, []string{"123"}, f.MapIDs)
-	assert.Equal(t, zeros, *f.PrevLinkHash)
 	assert.Equal(t, []string{"one", "two"}, f.Tags)
 }
 

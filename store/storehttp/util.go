@@ -18,8 +18,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
 )
 
 func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
@@ -28,47 +28,49 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 		return nil, err
 	}
 
-	const prevLinkHashKey = "prevLinkHash"
-
 	var (
-		q               = r.URL.Query()
-		mapIDs          = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
-		linkHashesStr   = append(q["linkHashes[]"], q["linkHashes%5B%5D"]...)
-		process         = q.Get("process")
-		prevLinkHashStr = q.Get(prevLinkHashKey)
-		tags            = append(q["tags[]"], q["tags%5B%5D"]...)
-		prevLinkHash    *string
-		linkHashes      []string
+		q                = r.URL.Query()
+		mapIDs           = append(q["mapIds[]"], q["mapIds%5B%5D"]...)
+		linkHashesStr    = append(q["linkHashes[]"], q["linkHashes%5B%5D"]...)
+		process          = q.Get("process")
+		withoutParentStr = q.Get("withoutParent")
+		prevLinkHashStr  = q.Get("prevLinkHash")
+		tags             = append(q["tags[]"], q["tags%5B%5D"]...)
 	)
 
-	if _, exists := q[prevLinkHashKey]; exists {
-		prevLinkHash = &prevLinkHashStr
-		if *prevLinkHash != "" {
-			_, err := types.NewBytes32FromString(*prevLinkHash)
-			if err != nil {
-				return nil, newErrPrevLinkHash("")
-			}
+	filter := &store.SegmentFilter{
+		Pagination: *pagination,
+		MapIDs:     mapIDs,
+		Process:    process,
+		Tags:       tags,
+	}
+
+	if len(withoutParentStr) > 0 {
+		filter.WithoutParent, err = strconv.ParseBool(withoutParentStr)
+		if err != nil {
+			return nil, newErrWithoutParent("")
+		}
+	}
+
+	if len(prevLinkHashStr) > 0 {
+		filter.PrevLinkHash, err = chainscript.NewLinkHashFromString(prevLinkHashStr)
+		if err != nil {
+			return nil, newErrPrevLinkHash("")
 		}
 	}
 
 	if len(linkHashesStr) > 0 {
-		for _, lh := range linkHashesStr {
-			_, err := types.NewBytes32FromString(lh)
+		for _, lhStr := range linkHashesStr {
+			lh, err := chainscript.NewLinkHashFromString(lhStr)
 			if err != nil {
 				return nil, newErrLinkHashes("")
 			}
-			linkHashes = append(linkHashes, lh)
+
+			filter.LinkHashes = append(filter.LinkHashes, lh)
 		}
 	}
 
-	return &store.SegmentFilter{
-		Pagination:   *pagination,
-		MapIDs:       mapIDs,
-		Process:      process,
-		PrevLinkHash: prevLinkHash,
-		LinkHashes:   linkHashes,
-		Tags:         tags,
-	}, nil
+	return filter, nil
 }
 
 func parseMapFilter(r *http.Request) (*store.MapFilter, error) {

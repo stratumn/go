@@ -84,13 +84,12 @@ func (f Factory) TestQuery(t *testing.T) {
 	})
 
 	t.Run("FindSegments()", func(t *testing.T) {
-		wantedPrevLinkHashStr := link2.PrevLinkHash().String()
 		args := &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: store.DefaultLimit,
 			},
 			MapIDs:       []string{link2.Meta.MapId},
-			PrevLinkHash: &wantedPrevLinkHashStr,
+			PrevLinkHash: link2.PrevLinkHash(),
 			Tags:         link2.Meta.Tags,
 		}
 		gots := types.PaginatedSegments{}

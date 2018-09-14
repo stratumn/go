@@ -153,7 +153,7 @@ func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	linkHash, err := es.createLink(link)
+	linkHash, err := es.createLink(ctx, link)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chai
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
 func (es *ESStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
-	if err := es.addEvidence(linkHash.String(), evidence); err != nil {
+	if err := es.addEvidence(ctx, linkHash.String(), evidence); err != nil {
 		return err
 	}
 
@@ -183,7 +183,7 @@ func (es *ESStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHas
 
 // GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
 func (es *ESStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
-	link, err := es.getLink(linkHash.String())
+	link, err := es.getLink(ctx, linkHash.String())
 	if err != nil || link == nil {
 		return nil, err
 	}
@@ -192,17 +192,17 @@ func (es *ESStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash
 
 // FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
 func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
-	return es.findSegments(filter)
+	return es.findSegments(ctx, filter)
 }
 
 // GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
 func (es *ESStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
-	return es.getMapIDs(filter)
+	return es.getMapIDs(ctx, filter)
 }
 
 // GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
 func (es *ESStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
-	return es.getEvidences(linkHash.String())
+	return es.getEvidences(ctx, linkHash.String())
 }
 
 /********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
@@ -210,19 +210,19 @@ func (es *ESStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHa
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
 func (es *ESStore) SetValue(ctx context.Context, key, value []byte) error {
 	hexKey := hex.EncodeToString(key)
-	return es.setValue(hexKey, value)
+	return es.setValue(ctx, hexKey, value)
 }
 
 // GetValue implements github.com/stratumn/go-indigocore/store.Adapter.GetValue.
 func (es *ESStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
-	return es.getValue(hexKey)
+	return es.getValue(ctx, hexKey)
 }
 
 // DeleteValue implements github.com/stratumn/go-indigocore/store.Adapter.DeleteValue.
 func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
-	return es.deleteValue(hexKey)
+	return es.deleteValue(ctx, hexKey)
 
 }
 
@@ -230,12 +230,12 @@ func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) 
 
 // SimpleSearchQuery searches through the store for segments matching query criteria
 // using ES simple query string feature
-func (es *ESStore) SimpleSearchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
-	return es.simpleSearchQuery(query)
+func (es *ESStore) SimpleSearchQuery(ctx context.Context, query *SearchQuery) (*types.PaginatedSegments, error) {
+	return es.simpleSearchQuery(ctx, query)
 }
 
 // MultiMatchQuery searches through the store for segments matching query criteria
 // using ES multi match query
-func (es *ESStore) MultiMatchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
-	return es.multiMatchQuery(query)
+func (es *ESStore) MultiMatchQuery(ctx context.Context, query *SearchQuery) (*types.PaginatedSegments, error) {
+	return es.multiMatchQuery(ctx, query)
 }

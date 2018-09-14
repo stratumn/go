@@ -287,14 +287,14 @@ func fromLink(link *chainscript.Link) (*linkDoc, error) {
 	return &doc, nil
 }
 
-func (es *ESStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
+func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
 		return nil, err
 	}
 	linkHashStr := linkHash.String()
 
-	has, err := es.hasDocument(linksIndex, linkHashStr)
+	has, err := es.hasDocument(ctx, linksIndex, linkHashStr)
 	if err != nil {
 		return nil, err
 	}
@@ -308,29 +308,27 @@ func (es *ESStore) createLink(link *chainscript.Link) (chainscript.LinkHash, err
 		return nil, err
 	}
 
-	return linkHash, es.indexDocument(linksIndex, linkHashStr, linkDoc)
+	return linkHash, es.indexDocument(ctx, linksIndex, linkHashStr, linkDoc)
 }
 
-func (es *ESStore) hasDocument(indexName, id string) (bool, error) {
-	ctx := context.TODO()
+func (es *ESStore) hasDocument(ctx context.Context, indexName, id string) (bool, error) {
 	return es.client.Exists().Index(indexName).Type(docType).Id(id).Do(ctx)
 }
 
-func (es *ESStore) indexDocument(indexName, id string, doc interface{}) error {
-	ctx := context.TODO()
+func (es *ESStore) indexDocument(ctx context.Context, indexName, id string, doc interface{}) error {
 	_, err := es.client.Index().Index(indexName).Type(docType).Id(id).BodyJson(doc).Do(ctx)
 	return err
 }
 
-func (es *ESStore) getDocument(indexName, id string) (*json.RawMessage, error) {
-	has, err := es.hasDocument(indexName, id)
+func (es *ESStore) getDocument(ctx context.Context, indexName, id string) (*json.RawMessage, error) {
+	has, err := es.hasDocument(ctx, indexName, id)
 	if err != nil {
 		return nil, err
 	}
 	if !has {
 		return nil, nil
 	}
-	ctx := context.TODO()
+
 	get, err := es.client.Get().Index(indexName).Type(docType).Id(id).Do(ctx)
 	if err != nil {
 		return nil, err
@@ -342,15 +340,14 @@ func (es *ESStore) getDocument(indexName, id string) (*json.RawMessage, error) {
 	return get.Source, nil
 }
 
-func (es *ESStore) deleteDocument(indexName, id string) error {
-	ctx := context.TODO()
+func (es *ESStore) deleteDocument(ctx context.Context, indexName, id string) error {
 	_, err := es.client.Delete().Index(indexName).Type(docType).Id(id).Do(ctx)
 	return err
 }
 
-func (es *ESStore) getLink(id string) (*chainscript.Link, error) {
+func (es *ESStore) getLink(ctx context.Context, id string) (*chainscript.Link, error) {
 	var link linkDoc
-	jsn, err := es.getDocument(linksIndex, id)
+	jsn, err := es.getDocument(ctx, linksIndex, id)
 	if err != nil {
 		return nil, err
 	}
@@ -361,8 +358,8 @@ func (es *ESStore) getLink(id string) (*chainscript.Link, error) {
 	return &link.Link, err
 }
 
-func (es *ESStore) getEvidences(id string) (types.EvidenceSlice, error) {
-	jsn, err := es.getDocument(evidencesIndex, id)
+func (es *ESStore) getEvidences(ctx context.Context, id string) (types.EvidenceSlice, error) {
+	jsn, err := es.getDocument(ctx, evidencesIndex, id)
 	if err != nil {
 		return nil, err
 	}
@@ -373,8 +370,8 @@ func (es *ESStore) getEvidences(id string) (types.EvidenceSlice, error) {
 	return evidences.Evidences, err
 }
 
-func (es *ESStore) addEvidence(linkHash string, evidence *chainscript.Evidence) error {
-	currentDoc, err := es.getEvidences(linkHash)
+func (es *ESStore) addEvidence(ctx context.Context, linkHash string, evidence *chainscript.Evidence) error {
+	currentDoc, err := es.getEvidences(ctx, linkHash)
 	if err != nil {
 		return err
 	}
@@ -387,12 +384,12 @@ func (es *ESStore) addEvidence(linkHash string, evidence *chainscript.Evidence) 
 		Evidences: currentDoc,
 	}
 
-	return es.indexDocument(evidencesIndex, linkHash, &evidences)
+	return es.indexDocument(ctx, evidencesIndex, linkHash, &evidences)
 }
 
-func (es *ESStore) getValue(key string) ([]byte, error) {
+func (es *ESStore) getValue(ctx context.Context, key string) ([]byte, error) {
 	var value Value
-	jsn, err := es.getDocument(valuesIndex, key)
+	jsn, err := es.getDocument(ctx, valuesIndex, key)
 	if err != nil {
 		return nil, err
 	}
@@ -402,15 +399,15 @@ func (es *ESStore) getValue(key string) ([]byte, error) {
 	return value.Value, err
 }
 
-func (es *ESStore) setValue(key string, value []byte) error {
+func (es *ESStore) setValue(ctx context.Context, key string, value []byte) error {
 	v := Value{
 		Value: value,
 	}
-	return es.indexDocument(valuesIndex, key, v)
+	return es.indexDocument(ctx, valuesIndex, key, v)
 }
 
-func (es *ESStore) deleteValue(key string) ([]byte, error) {
-	value, err := es.getValue(key)
+func (es *ESStore) deleteValue(ctx context.Context, key string) ([]byte, error) {
+	value, err := es.getValue(ctx, key)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +416,7 @@ func (es *ESStore) deleteValue(key string) ([]byte, error) {
 		return nil, nil
 	}
 
-	return value, es.deleteDocument(valuesIndex, key)
+	return value, es.deleteDocument(ctx, valuesIndex, key)
 }
 
 func (es *ESStore) segmentify(ctx context.Context, link *chainscript.Link) *chainscript.Segment {
@@ -435,9 +432,8 @@ func (es *ESStore) segmentify(ctx context.Context, link *chainscript.Link) *chai
 	return segment
 }
 
-func (es *ESStore) getMapIDs(filter *store.MapFilter) ([]string, error) {
+func (es *ESStore) getMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	// Flush to make sure the documents got written.
-	ctx := context.TODO()
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
 		return nil, err
@@ -498,8 +494,11 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 	filterQueries := []elastic.Query{}
 
 	// prevLinkHash filter.
-	if filter.PrevLinkHash != nil {
-		q := elastic.NewTermQuery("prevLinkHash.keyword", *filter.PrevLinkHash)
+	if filter.WithoutParent {
+		q := elastic.NewTermQuery("prevLinkHash.keyword", "")
+		filterQueries = append(filterQueries, q)
+	} else if len(filter.PrevLinkHash) > 0 {
+		q := elastic.NewTermQuery("prevLinkHash.keyword", filter.PrevLinkHash.String())
 		filterQueries = append(filterQueries, q)
 	}
 
@@ -533,16 +532,20 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 
 	// linkHashes filter.
 	if len(filter.LinkHashes) > 0 {
-		q := elastic.NewIdsQuery(docType).Ids(filter.LinkHashes...)
+		lhs := make([]string, len(filter.LinkHashes))
+		for i, lh := range filter.LinkHashes {
+			lhs[i] = lh.String()
+		}
+
+		q := elastic.NewIdsQuery(docType).Ids(lhs...)
 		filterQueries = append(filterQueries, q)
 	}
 
 	return filterQueries
 }
 
-func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (*types.PaginatedSegments, error) {
+func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilter, q elastic.Query) (*types.PaginatedSegments, error) {
 	// Flush to make sure the documents got written.
-	ctx := context.TODO()
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
 		return nil, err
@@ -588,15 +591,15 @@ func (es *ESStore) genericSearch(filter *store.SegmentFilter, q elastic.Query) (
 	return res, nil
 }
 
-func (es *ESStore) findSegments(filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
+func (es *ESStore) findSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	// prepare query.
 	q := elastic.NewBoolQuery().Filter(makeFilterQueries(filter)...)
 
 	// run search.
-	return es.genericSearch(filter, q)
+	return es.genericSearch(ctx, filter, q)
 }
 
-func (es *ESStore) simpleSearchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
+func (es *ESStore) simpleSearchQuery(ctx context.Context, query *SearchQuery) (*types.PaginatedSegments, error) {
 	// prepare Query.
 	q := elastic.NewBoolQuery().
 		// add filter queries.
@@ -605,10 +608,10 @@ func (es *ESStore) simpleSearchQuery(query *SearchQuery) (*types.PaginatedSegmen
 		Must(elastic.NewSimpleQueryStringQuery(query.Query))
 
 	// run search.
-	return es.genericSearch(&query.SegmentFilter, q)
+	return es.genericSearch(ctx, &query.SegmentFilter, q)
 }
 
-func (es *ESStore) multiMatchQuery(query *SearchQuery) (*types.PaginatedSegments, error) {
+func (es *ESStore) multiMatchQuery(ctx context.Context, query *SearchQuery) (*types.PaginatedSegments, error) {
 	// fields to search through: all meta + dataTokens.
 	fields := []string{
 		"meta.mapId",
@@ -624,5 +627,5 @@ func (es *ESStore) multiMatchQuery(query *SearchQuery) (*types.PaginatedSegments
 	q := elastic.NewMultiMatchQuery(query.Query, fields...).Type("best_fields")
 
 	// run search.
-	return es.genericSearch(&query.SegmentFilter, q)
+	return es.genericSearch(ctx, &query.SegmentFilter, q)
 }
