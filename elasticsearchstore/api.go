@@ -497,7 +497,7 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 	if filter.WithoutParent {
 		q := elastic.NewTermQuery("prevLinkHash.keyword", "")
 		filterQueries = append(filterQueries, q)
-	} else if filter.PrevLinkHash != nil {
+	} else if len(filter.PrevLinkHash) > 0 {
 		q := elastic.NewTermQuery("prevLinkHash.keyword", filter.PrevLinkHash.String())
 		filterQueries = append(filterQueries, q)
 	}

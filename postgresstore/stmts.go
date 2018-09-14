@@ -349,7 +349,7 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 
 	if filter.WithoutParent {
 		filters = append(filters, "prev_link_hash = '\\x'")
-	} else if filter.PrevLinkHash != nil {
+	} else if len(filter.PrevLinkHash) > 0 {
 		filters = append(filters, fmt.Sprintf("prev_link_hash = $%d", cnt))
 		values = append(values, filter.PrevLinkHash)
 		cnt++

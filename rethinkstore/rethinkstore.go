@@ -209,7 +209,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 		Process:   link.Meta.Process.Name,
 	}
 
-	if prevLinkHash != nil {
+	if len(prevLinkHash) > 0 {
 		w.PrevLinkHash = prevLinkHash
 	}
 
@@ -260,8 +260,8 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	var prevLinkHash []byte
 	q := a.links
 
-	if filter.WithoutParent || filter.PrevLinkHash != nil {
-		if filter.PrevLinkHash != nil {
+	if filter.WithoutParent || len(filter.PrevLinkHash) > 0 {
+		if len(filter.PrevLinkHash) > 0 {
 			prevLinkHash = filter.PrevLinkHash
 		}
 
@@ -299,7 +299,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		q = q.Filter(func(row rethink.Term) interface{} {
 			return rethink.Expr(ids).Contains(row.Field("mapId"))
 		})
-	} else if prevLinkHash := filter.PrevLinkHash; prevLinkHash != nil || filter.WithoutParent {
+	} else if prevLinkHash := filter.PrevLinkHash; len(prevLinkHash) > 0 || filter.WithoutParent {
 		q = q.OrderBy(rethink.OrderByOpts{Index: "prevLinkHashOrder"})
 	} else if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
 		q = q.OrderBy(rethink.Asc("id"))
