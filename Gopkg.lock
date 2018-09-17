@@ -446,14 +446,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1328e52bfca4ede8a98833c800330c5f9f9fa45c05f346f67a35d6d4d260fe24"
+  digest = "1:c1bf7fac639f7a0e8a500ecebb876d101cc26abc05f629165d98bf6913a3b4e7"
   name = "github.com/stratumn/go-chainscript"
   packages = [
     ".",
     "chainscripttest",
   ]
   pruneopts = ""
-  revision = "5716ab1f80ac9d61e77963424c7866005c72c303"
+  revision = "59b667ac156e4715bfdde099c0448cb6e499136e"
 
 [[projects]]
   digest = "1:3536bd8a6bec567bdd0d79679c180f80bddaa8a0adf23d3dafd8e6661f9676cb"
