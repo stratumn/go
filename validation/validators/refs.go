@@ -75,7 +75,7 @@ func (v *RefsValidator) Validate(ctx context.Context, r store.SegmentReader, l *
 			return errors.WithStack(err)
 		}
 
-		if len(segments.Segments) == 0 {
+		if len(segments.Segments) != len(l.Meta.Refs) {
 			return ErrRefNotFound
 		}
 
