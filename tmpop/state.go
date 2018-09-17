@@ -103,16 +103,22 @@ func (s *State) Deliver(ctx context.Context, link *chainscript.Link) *ABCIError 
 
 // checkLinkAndAddToBatch validates the link's format and runs the validations (signatures, schema)
 func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *chainscript.Link, batch store.Batch) *ABCIError {
-	err := link.Validate(ctx, batch.GetSegment)
-	if err != nil {
+	if err := link.Validate(ctx); err != nil {
 		return &ABCIError{
 			Code: CodeTypeValidation,
 			Log:  fmt.Sprintf("Link validation failed %v: %v", link, err),
 		}
 	}
 
+	if err := validators.NewRefsValidator().Validate(ctx, batch, link); err != nil {
+		return &ABCIError{
+			Code: CodeTypeValidation,
+			Log:  fmt.Sprintf("Link references validation failed %v: %v", link, err),
+		}
+	}
+
 	if s.validator != nil {
-		err = s.validator.Validate(ctx, batch, link)
+		err := s.validator.Validate(ctx, batch, link)
 		if err != nil {
 			return &ABCIError{
 				Code: CodeTypeValidation,

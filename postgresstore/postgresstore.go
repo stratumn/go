@@ -23,6 +23,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
 const (
@@ -118,6 +119,14 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	if err := link.Validate(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := validators.NewRefsValidator().Validate(ctx, a, link); err != nil {
+		return nil, err
+	}
+
 	linkHash, err := a.writer.CreateLink(ctx, link)
 	if err != nil {
 		return nil, err

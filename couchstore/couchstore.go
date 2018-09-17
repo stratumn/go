@@ -24,6 +24,7 @@ import (
 	"github.com/stratumn/go-indigocore/bufferedbatch"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
 const (
@@ -141,6 +142,14 @@ func (c *CouchStore) notifyEvent(event *store.Event) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (c *CouchStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	if err := link.Validate(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := validators.NewRefsValidator().Validate(ctx, c, link); err != nil {
+		return nil, err
+	}
+
 	linkHash, err := c.createLink(link)
 	if err != nil {
 		return nil, err

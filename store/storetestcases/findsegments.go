@@ -104,7 +104,6 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.MapId = "map1"
-		l.Meta.PrevLinkHash = nil
 		l.Meta.Process.Name = "Foo"
 	})
 
@@ -122,13 +121,11 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	createLinkBranch(t, a, link4, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", chainscripttest.RandomString(5)}
-		l.Meta.MapId = "map1"
 	})
 
 	link6 := createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag2", "tag42"}
 		l.Meta.Process.Name = "Foo"
-		l.Meta.PrevLinkHash = nil
 	})
 	linkHash6, _ := link6.Hash()
 
@@ -211,7 +208,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			},
 			MapIDs: []string{"map1"},
 		})
-		verifyResultsCount(t, err, slice, 2)
+		verifyResultsCount(t, err, slice, 1)
 	})
 
 	t.Run("Supports filtering on multiple map IDs", func(t *testing.T) {
@@ -222,7 +219,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			},
 			MapIDs: []string{"map1", "map2"},
 		})
-		verifyResultsCount(t, err, slice, 4)
+		verifyResultsCount(t, err, slice, 3)
 	})
 
 	t.Run("Supports filtering on map ID and tag at the same time", func(t *testing.T) {
@@ -231,7 +228,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
-			MapIDs: []string{"map1"},
+			MapIDs: []string{"map2"},
 			Tags:   []string{"tag1"},
 		})
 		verifyResultsCount(t, err, slice, 1)
@@ -298,7 +295,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 			Pagination:    store.Pagination{Limit: segmentsTotalCount},
 			WithoutParent: true,
 		})
-		verifyResultsCount(t, err, slice, 2)
+		verifyResultsCount(t, err, slice, 6)
 	})
 
 	t.Run("Supports filtering by previous link hash", func(t *testing.T) {
@@ -324,16 +321,16 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		verifyResultsCount(t, err, slice, 1)
 	})
 
-	t.Run("Supports filtering by previous link hash and tags at the same time", func(t *testing.T) {
+	t.Run("Supports filtering by previous link hash and mapIDs at the same time", func(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Pagination: store.Pagination{
 				Limit: segmentsTotalCount,
 			},
 			PrevLinkHash: linkHash4,
-			MapIDs:       []string{"map1", "map2"},
+			MapIDs:       []string{link4.Meta.MapId, "map2"},
 		})
-		verifyResultsCount(t, err, slice, 1)
+		verifyResultsCount(t, err, slice, 2)
 	})
 
 	t.Run("Returns no result when filtering on good previous link hash but invalid map ID", func(t *testing.T) {
