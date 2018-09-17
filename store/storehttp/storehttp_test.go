@@ -90,21 +90,6 @@ func TestCreateLink_err(t *testing.T) {
 	assert.Equal(t, 1, a.MockCreateLink.CalledCount)
 }
 
-func TestCreateLink_invalidLink(t *testing.T) {
-	s, a := createServer()
-
-	l1 := chainscripttest.RandomLink(t)
-	l1.Meta.Process.Name = ""
-
-	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", l1, &body)
-	require.NoError(t, err, "testutil.RequestJSON()")
-
-	assert.Equal(t, jsonhttp.NewErrBadRequest("").Status(), w.Code)
-	assert.Equal(t, "link process is missing", body["error"].(string))
-	assert.Zero(t, a.MockCreateLink.CalledCount)
-}
-
 func TestCreateLink_invalidJSON(t *testing.T) {
 	s, a := createServer()
 

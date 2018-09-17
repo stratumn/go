@@ -38,6 +38,7 @@ import (
 	"github.com/stratumn/go-indigocore/monitoring"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-indigocore/validation/validators"
 )
 
 const (
@@ -123,6 +124,14 @@ func (a *FileStore) NewBatch(ctx context.Context) (store.Batch, error) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (a *FileStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	if err := link.Validate(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := validators.NewRefsValidator().Validate(ctx, a, link); err != nil {
+		return nil, err
+	}
+
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 
