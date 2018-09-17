@@ -195,10 +195,6 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 		return nil, jsonhttp.NewErrBadRequest(err.Error())
 	}
 
-	if err := link.Validate(ctx, s.adapter.GetSegment); err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
-		return nil, jsonhttp.NewErrBadRequest(err.Error())
-	}
 	if _, err := s.adapter.CreateLink(ctx, &link); err != nil {
 		span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: err.Error()})
 		return nil, err
