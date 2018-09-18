@@ -150,6 +150,10 @@ func (c *CouchStore) CreateLink(ctx context.Context, link *chainscript.Link) (ch
 		return nil, err
 	}
 
+	if link.Meta.OutDegree >= 0 {
+		return nil, store.ErrOutDegreeNotSupported
+	}
+
 	linkHash, err := c.createLink(link)
 	if err != nil {
 		return nil, err

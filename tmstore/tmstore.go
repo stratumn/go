@@ -215,6 +215,10 @@ func (t *TMStore) GetInfo(ctx context.Context) (interface{}, error) {
 
 // CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
 func (t *TMStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	if link.Meta.OutDegree >= 0 {
+		return nil, store.ErrOutDegreeNotSupported
+	}
+
 	linkHash, err := link.Hash()
 	if err != nil {
 		return linkHash, err
