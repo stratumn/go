@@ -21,6 +21,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-indigocore/store"
 	"github.com/stratumn/go-indigocore/validation/validators"
@@ -166,6 +167,11 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 func (a *Store) Create() error {
 	for _, query := range sqlCreate {
 		if _, err := a.db.Exec(query); err != nil {
+			pqErr := err.(*pq.Error)
+			if pqErr != nil && pqErr.Code.Name() == "duplicate_table" {
+				continue
+			}
+
 			return err
 		}
 	}
