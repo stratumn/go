@@ -30,14 +30,16 @@ func TestMockFindUnspent(t *testing.T) {
 
 	var addr1 types.ReversedBytes20
 	copy(addr1[:], chainscripttest.RandomHash())
-	_, _, err := a.FindUnspent(&addr1, 1000)
+	_, err := a.FindUnspent(&addr1, 1000)
 	require.NoError(t, err, "a.FindUnspent()")
 
-	a.MockFindUnspent.Fn = func(*types.ReversedBytes20, int64) ([]btc.Output, int64, error) { return nil, 10000, nil }
+	a.MockFindUnspent.Fn = func(*types.ReversedBytes20, int64) (btc.UnspentResult, error) {
+		return btc.UnspentResult{Sum: 10000}, nil
+	}
 
 	var addr2 types.ReversedBytes20
 	copy(addr2[:], chainscripttest.RandomHash())
-	_, _, err = a.FindUnspent(&addr2, 2000)
+	_, err = a.FindUnspent(&addr2, 2000)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 2, a.MockFindUnspent.CalledCount)

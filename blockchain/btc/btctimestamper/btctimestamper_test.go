@@ -54,14 +54,18 @@ func TestNetwork_NetworkMain(t *testing.T) {
 
 func TestTimestamperTimestampHash(t *testing.T) {
 	mock := &btctesting.Mock{}
-	mock.MockFindUnspent.Fn = func(*types.ReversedBytes20, int64) ([]btc.Output, int64, error) {
+	mock.MockFindUnspent.Fn = func(*types.ReversedBytes20, int64) (btc.UnspentResult, error) {
 		PKScriptHex := "76a914fc56f7f9f80cfba26f300c77b893c39ed89351ff88ac"
 		PKScript, _ := hex.DecodeString(PKScriptHex)
 		output := btc.Output{Index: 0, PKScript: PKScript}
 		if err := output.TXHash.Unstring("c805dd0fbf728e6b7e6c4e5d4ddfaba0089291145453aafb762bcff7a8afe2f5"); err != nil {
-			return nil, 0, err
+			return btc.UnspentResult{}, err
 		}
-		return []btc.Output{output}, 6241000, nil
+
+		return btc.UnspentResult{
+			Outputs: []btc.Output{output},
+			Sum:     6241000,
+		}, nil
 	}
 
 	ts, err := New(&Config{

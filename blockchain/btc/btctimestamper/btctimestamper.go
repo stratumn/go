@@ -30,6 +30,8 @@ import (
 	"github.com/stratumn/go-indigocore/blockchain"
 	"github.com/stratumn/go-indigocore/blockchain/btc"
 	"github.com/stratumn/go-indigocore/types"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -120,19 +122,19 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 	var prevPKScripts [][]byte
 
 	addr := (*types.ReversedBytes20)(ts.address.Hash160())
-	outputs, total, err := ts.config.UnspentFinder.FindUnspent(addr, ts.config.Fee)
+	res, err := ts.config.UnspentFinder.FindUnspent(addr, ts.config.Fee)
 	if err != nil {
 		return nil, err
 	}
 
 	tx := wire.NewMsgTx(wire.TxVersion)
-	for _, output := range outputs {
+	for _, output := range res.Outputs {
 		prevPKScripts = append(prevPKScripts, output.PKScript)
 		out := wire.NewOutPoint((*chainhash.Hash)(&output.TXHash), uint32(output.Index))
 		tx.AddTxIn(wire.NewTxIn(out, nil, nil))
 	}
 
-	payToAddrOut, err := ts.createPayToAddrTxOut(total - ts.config.Fee)
+	payToAddrOut, err := ts.createPayToAddrTxOut(res.Sum - ts.config.Fee)
 	if err != nil {
 		return nil, err
 	}
@@ -169,6 +171,13 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 	for i, b := range tx.TxHash() {
 		txHash32[types.Bytes32Size-i-1] = b
 	}
+
+	remaining := res.Total - ts.config.Fee
+
+	log.WithFields(log.Fields{
+		"txid":      txHash32,
+		"remaining": remaining,
+	}).Info("Broadcasted transaction")
 
 	return txHash32[:], nil
 }
