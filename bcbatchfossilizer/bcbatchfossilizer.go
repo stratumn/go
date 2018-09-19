@@ -126,7 +126,7 @@ func (a *Fossilizer) transform(evidence *chainscript.Evidence, data, meta []byte
 		log.WithFields(log.Fields{
 			"txid": txid,
 			"root": root,
-		}).Info("Broadcasted transaction")
+		}).Info("Timestamped hashes")
 
 		a.lastRoot = root
 		a.lastTransactionID = txid

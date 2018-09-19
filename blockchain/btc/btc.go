@@ -83,12 +83,23 @@ type Output struct {
 	Index    int
 }
 
-// UnspentFinder is find unspent outputs.
+// UnspentResult contains the result of a call to UnspentFinder.FindUnspent.
+type UnspentResult struct {
+	// Outputs contains enough outputs to cover the requested amount.
+	Outputs []Output
+
+	// Sum is the sum of the balance of the returned outputs.
+	Sum int64
+
+	// Total is the sum all of the outputs including the returned outputs.
+	Total int64
+}
+
+// UnspentFinder is used to find unspent outputs.
 type UnspentFinder interface {
 	// FindUnspent find unspent outputs for the given address and the
-	// required amount. It returns the outputs and the total amount of the
-	// outputs.
-	FindUnspent(address *types.ReversedBytes20, amount int64) (outputs []Output, total int64, err error)
+	// required amount.
+	FindUnspent(address *types.ReversedBytes20, amount int64) (UnspentResult, error)
 }
 
 // Broadcaster is able to broadcast raw Bitcoin transactions.
