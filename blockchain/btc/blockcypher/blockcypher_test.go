@@ -39,19 +39,22 @@ func TestFindUnspent(t *testing.T) {
 	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
-	outputs, total, err := bcy.FindUnspent(&addr20, 1000000)
+	res, err := bcy.FindUnspent(&addr20, 1000000)
 
 	if err != nil {
 		t.Errorf("bcy.FindUnspent(): err: %s", err)
 	}
-	if total < 1000000 {
-		t.Errorf("bcy.FindUnspent(): total = %d want %d", total, 1000000)
+	if res.Sum < 1000000 {
+		t.Errorf("bcy.FindUnspent(): sum = %d want %d", res.Sum, 1000000)
 	}
-	if l := len(outputs); l < 1 {
+	if res.Total < res.Sum {
+		t.Errorf("bcy.FindUnspent(): total = %d want %d", res.Total, res.Sum)
+	}
+	if l := len(res.Outputs); l < 1 {
 		t.Errorf("bcy.FindUnspent(): len(outputs) = %d want > 0", l)
 	}
 
-	for _, output := range outputs {
+	for _, output := range res.Outputs {
 		tx, err := bcy.api.GetTX(output.TXHash.String(), nil)
 		if err != nil {
 			t.Errorf("bcy.api.GetTX(): err: %s", err)
@@ -76,7 +79,7 @@ func TestFindUnspent_notEnough(t *testing.T) {
 	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
-	_, _, err = bcy.FindUnspent(&addr20, 1000000000000)
+	_, err = bcy.FindUnspent(&addr20, 1000000000000)
 	if err == nil {
 		t.Errorf("bcy.FindUnspent(): err = nil want Error")
 	}

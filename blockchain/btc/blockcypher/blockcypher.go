@@ -81,7 +81,7 @@ func New(c *Config) *Client {
 
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
-func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
+func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
 	for range c.limiter {
 		break
 	}
@@ -95,39 +95,40 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) ([]bt
 		"limit":         "50",
 	})
 	if err != nil {
-		return nil, 0, err
+		return
 	}
 
-	var (
-		outputs []btc.Output
-		total   int64
-	)
-
-TX_LOOP:
 	for _, TXRef := range addrInfo.TXRefs {
 		output := btc.Output{Index: TXRef.TXOutputN}
-		if err := output.TXHash.Unstring(TXRef.TXHash); err != nil {
-			return nil, 0, err
+
+		if err = output.TXHash.Unstring(TXRef.TXHash); err != nil {
+			return
 		}
 
 		output.PKScript, err = hex.DecodeString(TXRef.Script)
 		if err != nil {
-			return nil, 0, err
+			return
 		}
 
-		outputs = append(outputs, output)
+		res.Total += int64(TXRef.Value)
 
-		total += int64(TXRef.Value)
-		if total >= amount {
-			break TX_LOOP
+		if res.Sum < amount {
+			res.Outputs = append(res.Outputs, output)
+			res.Sum += int64(TXRef.Value)
+
 		}
 	}
 
-	if total < amount {
-		return nil, 0, fmt.Errorf("Not enough Bitcoins available on %s, expected at least %d satoshis got %d", addr, amount, total)
+	if res.Sum < amount {
+		err = fmt.Errorf(
+			"not enough Bitcoins available on %s, expected at least %d satoshis got %d",
+			addr,
+			amount,
+			res.Sum,
+		)
 	}
 
-	return outputs, total, nil
+	return
 }
 
 // Broadcast implements

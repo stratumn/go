@@ -49,7 +49,7 @@ type MockFindUnspent struct {
 	LastCalledWithAmount int64
 
 	// An optional implementation of the function.
-	Fn func(*types.ReversedBytes20, int64) ([]btc.Output, int64, error)
+	Fn func(*types.ReversedBytes20, int64) (btc.UnspentResult, error)
 }
 
 // MockBroadcast mocks the Broadcast function.
@@ -69,7 +69,7 @@ type MockBroadcast struct {
 
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
-func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.Output, int64, error) {
+func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) (btc.UnspentResult, error) {
 	a.MockFindUnspent.CalledCount++
 	a.MockFindUnspent.CalledWithAddress = append(a.MockFindUnspent.CalledWithAddress, address)
 	a.MockFindUnspent.LastCalledWithAddress = address
@@ -80,7 +80,7 @@ func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) ([]btc.
 		return a.MockFindUnspent.Fn(address, amount)
 	}
 
-	return nil, 0, nil
+	return btc.UnspentResult{}, nil
 }
 
 // Broadcast implements
