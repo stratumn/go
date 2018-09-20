@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"sync"
 
 	"github.com/stratumn/go-chainscript"
@@ -145,18 +146,31 @@ func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, er
 	}
 
 	if err = a.initDir(); err != nil {
-		return nil, err
+		return linkHash, err
 	}
 
 	js, err := json.MarshalIndent(link, "", "  ")
 	if err != nil {
-		return nil, err
+		return linkHash, err
 	}
 
 	linkPath := a.getLinkPath(linkHash)
+	if _, err := os.Stat(linkPath); err == nil {
+		return linkHash, nil
+	}
+
+	parentOk := a.canHaveNewChild(link.PrevLinkHash())
+	if !parentOk {
+		return linkHash, chainscript.ErrOutDegree
+	}
 
 	if err := ioutil.WriteFile(linkPath, js, 0644); err != nil {
-		return nil, err
+		return linkHash, err
+	}
+
+	err = a.incrementChildCount(link.PrevLinkHash())
+	if err != nil {
+		return linkHash, err
 	}
 
 	linkEvent := store.NewSavedLinks(link)
@@ -166,6 +180,64 @@ func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, er
 	}
 
 	return linkHash, nil
+}
+
+func (a *FileStore) canHaveNewChild(linkHash chainscript.LinkHash) bool {
+	if len(linkHash) == 0 {
+		return true
+	}
+
+	parent, err := a.getLink(linkHash)
+	if err != nil {
+		return false
+	}
+
+	if parent.Meta.OutDegree < 0 {
+		return true
+	}
+
+	if parent.Meta.OutDegree == 0 {
+		return false
+	}
+
+	childCount, err := a.getChildCount(linkHash)
+	if err != nil {
+		return false
+	}
+
+	return childCount < int(parent.Meta.OutDegree)
+}
+
+func (a *FileStore) incrementChildCount(linkHash chainscript.LinkHash) error {
+	if len(linkHash) == 0 {
+		return nil
+	}
+
+	childCount, err := a.getChildCount(linkHash)
+	if err != nil {
+		return err
+	}
+
+	path := a.getLinkChildCountPath(linkHash)
+	return ioutil.WriteFile(path, []byte(strconv.Itoa(childCount+1)), 0644)
+}
+
+func (a *FileStore) getChildCount(linkHash chainscript.LinkHash) (int, error) {
+	childCount := 0
+
+	b, err := ioutil.ReadFile(a.getLinkChildCountPath(linkHash))
+	if err != nil && !os.IsNotExist(err) {
+		return 0, err
+	}
+
+	if err == nil {
+		childCount, err = strconv.Atoi(string(b))
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return childCount, nil
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
@@ -346,6 +418,10 @@ func (a *FileStore) initDir() error {
 
 func (a *FileStore) getLinkPath(linkHash chainscript.LinkHash) string {
 	return path.Join(a.config.Path, linkHash.String()+".json")
+}
+
+func (a *FileStore) getLinkChildCountPath(linkHash chainscript.LinkHash) string {
+	return path.Join(a.config.Path, linkHash.String()+"_children.dat")
 }
 
 var linkFileRegex = regexp.MustCompile(`(.*)\.json$`)

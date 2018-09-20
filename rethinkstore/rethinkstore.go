@@ -199,6 +199,10 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 		return nil, err
 	}
 
+	if link.Meta.OutDegree >= 0 {
+		return nil, store.ErrOutDegreeNotSupported
+	}
+
 	prevLinkHash := link.Meta.GetPrevLinkHash()
 
 	formatLink(link)

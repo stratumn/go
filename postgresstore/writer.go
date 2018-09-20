@@ -16,13 +16,30 @@ package postgresstore
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 )
 
+// Errors used by the write statements.
+var (
+	ErrLinkAlreadyExists = errors.New("link already exists")
+)
+
 type writer struct {
-	stmts writeStmts
+	txFactory TxFactory
+	reader    *reader
+	stmts     writeStmts
+}
+
+func newWriter(txFactory TxFactory, r *reader, stmts writeStmts) *writer {
+	return &writer{
+		txFactory: txFactory,
+		reader:    r,
+		stmts:     stmts,
+	}
 }
 
 // SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
@@ -66,10 +83,153 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 	}
 
 	if len(prevLinkHash) == 0 {
-		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, []byte{}, pq.Array(tags), data, process)
-	} else {
-		_, err = a.stmts.CreateLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), data, process)
+		err = a.createLink(linkHash, priority, mapID, []byte{}, tags, data, process)
+		return linkHash, err
 	}
 
-	return linkHash, err
+	parent, err := a.reader.GetSegment(ctx, prevLinkHash)
+	if err != nil {
+		return linkHash, err
+	}
+
+	parentDegree := parent.Link.Meta.OutDegree
+	if parentDegree < 0 {
+		err = a.createLink(linkHash, priority, mapID, prevLinkHash, tags, data, process)
+		return linkHash, err
+	}
+
+	if parentDegree == 0 {
+		return linkHash, chainscript.ErrOutDegree
+	}
+
+	// Inserting the link and updating its parent's current degree needs to be
+	// done in a transaction to protect the DB from race conditions.
+
+	tx, err := a.txFactory.NewTx()
+	if err != nil {
+		return linkHash, err
+	}
+
+	currentDegree, err := a.getLinkDegree(tx, prevLinkHash)
+	if err != nil {
+		a.txFactory.RollbackTx(tx, err)
+		return linkHash, err
+	}
+
+	if int(parentDegree) <= currentDegree {
+		a.txFactory.RollbackTx(tx, chainscript.ErrOutDegree)
+		return linkHash, chainscript.ErrOutDegree
+	}
+
+	err = a.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process)
+	if err != nil {
+		a.txFactory.RollbackTx(tx, err)
+		return linkHash, err
+	}
+
+	err = a.incrementLinkDegree(tx, prevLinkHash, currentDegree)
+	if err != nil {
+		a.txFactory.RollbackTx(tx, err)
+		return linkHash, err
+	}
+
+	return linkHash, a.txFactory.CommitTx(tx)
+}
+
+// getLinkDegree reads the current degree of the given link.
+// It locks the associated row until the transaction completes.
+func (a *writer) getLinkDegree(tx *sql.Tx, linkHash chainscript.LinkHash) (int, error) {
+	degreeLock, err := tx.Prepare(SQLLockLinkDegree)
+	if err != nil {
+		return 0, err
+	}
+
+	row := degreeLock.QueryRow(linkHash)
+	currentDegree := 0
+	err = row.Scan(&currentDegree)
+
+	// If the link doesn't have children yet, no rows will be found.
+	// That should not be considered an error.
+	if err == sql.ErrNoRows {
+		return 0, nil
+	}
+
+	return currentDegree, err
+}
+
+// incrementLinkDegree increments the degree of the given link.
+// A lock should have been acquired previously by the transaction to ensure
+// consistency.
+func (a *writer) incrementLinkDegree(tx *sql.Tx, linkHash chainscript.LinkHash, currentDegree int) error {
+	updateDegree, err := tx.Prepare(SQLUpdateLinkDegree)
+	if err != nil {
+		return err
+	}
+
+	_, err = updateDegree.Exec(linkHash, currentDegree+1)
+	return err
+}
+
+// createLink adds the given link to the DB.
+func (a *writer) createLink(
+	linkHash chainscript.LinkHash,
+	priority float64,
+	mapID string,
+	prevLinkHash chainscript.LinkHash,
+	tags []string,
+	data []byte,
+	process string,
+) error {
+	tx, err := a.txFactory.NewTx()
+	if err != nil {
+		return err
+	}
+
+	err = a.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process)
+	if err != nil {
+		a.txFactory.RollbackTx(tx, err)
+		return err
+	}
+
+	return a.txFactory.CommitTx(tx)
+}
+
+// createLink inserts the given link in a transaction context.
+// If the link already exists it will return an error.
+func (a *writer) createLinkInTx(
+	tx *sql.Tx,
+	linkHash chainscript.LinkHash,
+	priority float64,
+	mapID string,
+	prevLinkHash chainscript.LinkHash,
+	tags []string,
+	data []byte,
+	process string,
+) error {
+	createLink, err := tx.Prepare(SQLCreateLink)
+	if err != nil {
+		return err
+	}
+
+	res, err := createLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), data, process)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrLinkAlreadyExists
+	}
+
+	initDegree, err := tx.Prepare(SQLCreateLinkDegree)
+	if err != nil {
+		return err
+	}
+
+	_, err = initDegree.Exec(linkHash)
+	return err
 }

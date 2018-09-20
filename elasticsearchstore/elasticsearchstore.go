@@ -162,6 +162,10 @@ func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chai
 		return nil, err
 	}
 
+	if link.Meta.OutDegree >= 0 {
+		return nil, store.ErrOutDegreeNotSupported
+	}
+
 	linkHash, err := es.createLink(ctx, link)
 	if err != nil {
 		return nil, err
