@@ -48,6 +48,10 @@ func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chain
 	_, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
+	if link.Meta.OutDegree >= 0 {
+		return nil, store.ErrOutDegreeNotSupported
+	}
+
 	b.Links = append(b.Links, link)
 	return link.Hash()
 }
