@@ -142,7 +142,7 @@ func (a *FileStore) CreateLink(ctx context.Context, link *chainscript.Link) (cha
 func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return linkHash, err
+		return nil, err
 	}
 
 	if err = a.initDir(); err != nil {
@@ -159,22 +159,18 @@ func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, er
 		return linkHash, nil
 	}
 
-	if len(link.PrevLinkHash()) > 0 {
-		parentOk := a.canHaveChild(link.PrevLinkHash())
-		if !parentOk {
-			return linkHash, chainscript.ErrOutDegree
-		}
+	parentOk := a.canHaveNewChild(link.PrevLinkHash())
+	if !parentOk {
+		return linkHash, chainscript.ErrOutDegree
 	}
 
 	if err := ioutil.WriteFile(linkPath, js, 0644); err != nil {
 		return linkHash, err
 	}
 
-	if len(link.PrevLinkHash()) > 0 {
-		err := a.incrementChildCount(link.PrevLinkHash())
-		if err != nil {
-			return linkHash, err
-		}
+	err = a.incrementChildCount(link.PrevLinkHash())
+	if err != nil {
+		return linkHash, err
 	}
 
 	linkEvent := store.NewSavedLinks(link)
@@ -186,7 +182,11 @@ func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, er
 	return linkHash, nil
 }
 
-func (a *FileStore) canHaveChild(linkHash chainscript.LinkHash) bool {
+func (a *FileStore) canHaveNewChild(linkHash chainscript.LinkHash) bool {
+	if len(linkHash) == 0 {
+		return true
+	}
+
 	parent, err := a.getLink(linkHash)
 	if err != nil {
 		return false
@@ -209,6 +209,10 @@ func (a *FileStore) canHaveChild(linkHash chainscript.LinkHash) bool {
 }
 
 func (a *FileStore) incrementChildCount(linkHash chainscript.LinkHash) error {
+	if len(linkHash) == 0 {
+		return nil
+	}
+
 	childCount, err := a.getChildCount(linkHash)
 	if err != nil {
 		return err

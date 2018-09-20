@@ -126,7 +126,7 @@ func (a *DummyStore) CreateLink(ctx context.Context, link *chainscript.Link) (ch
 func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return linkHash, err
+		return nil, err
 	}
 
 	linkHashStr := linkHash.String()
@@ -135,7 +135,7 @@ func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 		return linkHash, nil
 	}
 
-	parentOk := a.canHaveChild(link.PrevLinkHash())
+	parentOk := a.canHaveNewChild(link.PrevLinkHash())
 	if !parentOk {
 		return linkHash, chainscript.ErrOutDegree
 	}
@@ -160,7 +160,7 @@ func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 	return linkHash, nil
 }
 
-func (a *DummyStore) canHaveChild(linkHash chainscript.LinkHash) bool {
+func (a *DummyStore) canHaveNewChild(linkHash chainscript.LinkHash) bool {
 	if len(linkHash) == 0 {
 		return true
 	}
