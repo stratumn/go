@@ -72,7 +72,7 @@ func NewSingletonTxFactory(tx *sql.Tx) TxFactory {
 	return &SingletonTxFactory{tx: tx}
 }
 
-// NewTx return the DB transaction.
+// NewTx returns the DB transaction.
 // Clients should not directly call tx.Commit() or tx.Rollback().
 func (f *SingletonTxFactory) NewTx() (*sql.Tx, error) {
 	return f.tx, nil
