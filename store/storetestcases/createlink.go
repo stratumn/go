@@ -50,7 +50,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 		assert.NoError(t, err, "a.CreateLink()")
 	})
 
-	t.Run("update state should not produce an error", func(t *testing.T) {
+	t.Run("update data should not produce an error", func(t *testing.T) {
 		ctx := context.Background()
 		l := chainscripttest.RandomLink(t)
 		_, err := a.CreateLink(ctx, l)
@@ -104,7 +104,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			_, err = a.CreateLink(ctx, child)
 			assert.EqualError(t, err, chainscript.ErrOutDegree.Error())
 
-			found, err := a.GetSegment(ctx, childHash)
+			found, _ := a.GetSegment(ctx, childHash)
 			assert.Nil(t, found)
 		})
 
@@ -178,7 +178,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 			// Trying to add a duplicate link should not increment the children count.
 			// It should still be possible to add a second child after this call.
-			a.CreateLink(ctx, child1)
+			_, _ = a.CreateLink(ctx, child1)
 
 			lh2, err := a.CreateLink(ctx, child2)
 			require.NoError(t, err)
