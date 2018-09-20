@@ -59,16 +59,18 @@ type Info struct {
 
 // DummyStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
 type DummyStore struct {
-	config     *Config
-	eventChans []chan *store.Event
-	links      linkMap      // maps link hashes to segments
-	evidences  evidenceMap  // maps link hashes to evidences
-	values     valueMap     // maps keys to values
-	maps       hashSetMap   // maps chains IDs to sets of link hashes
-	mutex      sync.RWMutex // simple global mutex
+	config          *Config
+	eventChans      []chan *store.Event
+	links           linkMap           // maps link hashes to segments
+	linksChildCount linkChildCountMap // maps link hashes to their children count
+	evidences       evidenceMap       // maps link hashes to evidences
+	values          valueMap          // maps keys to values
+	maps            hashSetMap        // maps chains IDs to sets of link hashes
+	mutex           sync.RWMutex      // simple global mutex
 }
 
 type linkMap map[string]*chainscript.Link
+type linkChildCountMap map[string]int
 type evidenceMap map[string]types.EvidenceSlice
 type hashSet map[string]struct{}
 type hashSetMap map[string]hashSet
@@ -77,13 +79,14 @@ type valueMap map[string][]byte
 // New creates an instance of a DummyStore.
 func New(config *Config) *DummyStore {
 	return &DummyStore{
-		config:     config,
-		eventChans: nil,
-		links:      linkMap{},
-		evidences:  evidenceMap{},
-		values:     valueMap{},
-		maps:       hashSetMap{},
-		mutex:      sync.RWMutex{},
+		config:          config,
+		eventChans:      nil,
+		links:           linkMap{},
+		linksChildCount: linkChildCountMap{},
+		evidences:       evidenceMap{},
+		values:          valueMap{},
+		maps:            hashSetMap{},
+		mutex:           sync.RWMutex{},
 	}
 }
 
@@ -123,11 +126,22 @@ func (a *DummyStore) CreateLink(ctx context.Context, link *chainscript.Link) (ch
 func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, err
+		return linkHash, err
 	}
 
 	linkHashStr := linkHash.String()
+	_, ok := a.links[linkHashStr]
+	if ok {
+		return linkHash, nil
+	}
+
+	parentOk := a.canHaveChild(link.PrevLinkHash())
+	if !parentOk {
+		return linkHash, chainscript.ErrOutDegree
+	}
+
 	a.links[linkHashStr] = link
+	a.incrementChildCount(link.PrevLinkHash())
 
 	mapID := link.Meta.MapId
 	_, exists := a.maps[mapID]
@@ -144,6 +158,40 @@ func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 	}
 
 	return linkHash, nil
+}
+
+func (a *DummyStore) canHaveChild(linkHash chainscript.LinkHash) bool {
+	if len(linkHash) == 0 {
+		return true
+	}
+
+	linkHashStr := linkHash.String()
+	link := a.links[linkHashStr]
+
+	if link.Meta.OutDegree < 0 {
+		return true
+	}
+
+	if link.Meta.OutDegree == 0 {
+		return false
+	}
+
+	childCount, ok := a.linksChildCount[linkHashStr]
+	if !ok {
+		childCount = 0
+	}
+
+	return childCount < int(link.Meta.OutDegree)
+}
+
+func (a *DummyStore) incrementChildCount(linkHash chainscript.LinkHash) {
+	linkHashStr := linkHash.String()
+	_, ok := a.linksChildCount[linkHashStr]
+	if !ok {
+		a.linksChildCount[linkHashStr] = 0
+	}
+
+	a.linksChildCount[linkHashStr]++
 }
 
 // AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
