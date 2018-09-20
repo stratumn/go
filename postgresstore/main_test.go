@@ -77,7 +77,6 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(testResult)
-
 }
 
 func createDatabase(attempt int) (bool, error) {

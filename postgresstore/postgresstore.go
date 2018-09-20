@@ -187,8 +187,12 @@ func (a *Store) Prepare() error {
 		return err
 	}
 	a.stmts = stmts
-	a.reader = &reader{stmts: a.stmts.readStmts}
-	a.writer = &writer{stmts: a.stmts.writeStmts}
+	a.reader = newReader(a.stmts.readStmts)
+	a.writer = newWriter(
+		NewStandardTxFactory(a.db),
+		a.reader,
+		a.stmts.writeStmts,
+	)
 
 	return nil
 }

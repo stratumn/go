@@ -18,7 +18,9 @@ import (
 	"context"
 	"database/sql"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-indigocore/monitoring"
+
 	"go.opencensus.io/trace"
 )
 
@@ -26,8 +28,9 @@ import (
 type Batch struct {
 	*reader
 	*writer
-	done bool
-	tx   *sql.Tx
+	done      bool
+	tx        *sql.Tx
+	txFactory *SingletonTxFactory
 }
 
 // NewBatch creates a new instance of a Postgres Batch.
@@ -37,10 +40,15 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 		return nil, err
 	}
 
+	txFactory := NewSingletonTxFactory(tx).(*SingletonTxFactory)
+	r := newReader(readStmts(stmts.readStmts))
+	w := newWriter(txFactory, r, writeStmts(stmts.writeStmts))
+
 	return &Batch{
-		reader: &reader{stmts: readStmts(stmts.readStmts)},
-		writer: &writer{stmts: writeStmts(stmts.writeStmts)},
-		tx:     tx,
+		reader:    r,
+		writer:    w,
+		tx:        tx,
+		txFactory: txFactory,
 	}, nil
 }
 
@@ -50,5 +58,14 @@ func (b *Batch) Write(ctx context.Context) (err error) {
 	defer monitoring.SetSpanStatusAndEnd(span, err)
 
 	b.done = true
+	if b.txFactory.rollback {
+		err := b.tx.Rollback()
+		if err != nil {
+			log.Warnf("Error during transaction rollback: %s", err.Error())
+		}
+
+		return b.txFactory.err
+	}
+
 	return b.tx.Commit()
 }

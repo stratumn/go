@@ -28,6 +28,10 @@ type reader struct {
 	stmts readStmts
 }
 
+func newReader(stmts readStmts) *reader {
+	return &reader{stmts: stmts}
+}
+
 // GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
 func (a *reader) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	var segments = make(types.SegmentSlice, 0, 1)

@@ -81,6 +81,7 @@ func createAdapterTMPop() (store.Adapter, store.KeyValueStore, error) {
 	a, err := createStore()
 	return a, a, err
 }
+
 func freeAdapterTMPop(a store.Adapter, _ store.KeyValueStore) {
 	freeAdapter(a)
 }

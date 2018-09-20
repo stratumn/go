@@ -24,8 +24,10 @@ import (
 	"github.com/stratumn/go-indigocore/types"
 )
 
+// Plain SQL statements.
+// They need to be prepared before they can be used.
 const (
-	sqlCreateLink = `
+	SQLCreateLink = `
 		INSERT INTO links (
 			link_hash,
 			priority,
@@ -36,26 +38,33 @@ const (
 			process
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (link_hash)
-		DO UPDATE SET
-			priority = $2,
-			map_id = $3,
-			prev_link_hash = $4,
-			tags = $5,
-			data = $6,
-			process = $7
 	`
-	sqlGetSegment = `
+	SQLCreateLinkDegree = `
+		INSERT INTO links_degree (
+			link_hash,
+			out_degree
+		)
+		VALUES ($1, 0)
+	`
+	SQLLockLinkDegree = `
+		SELECT out_degree FROM links_degree 
+		WHERE link_hash = $1 FOR UPDATE
+	`
+	SQLUpdateLinkDegree = `
+		UPDATE links_degree SET out_degree = $2 
+		WHERE link_hash = $1
+	`
+	SQLGetSegment = `
 		SELECT l.link_hash, l.data, e.data FROM links l
 		LEFT JOIN evidences e ON l.link_hash = e.link_hash
 		WHERE l.link_hash = $1
 	`
-	sqlDeleteLink = `
+	SQLDeleteLink = `
 		DELETE FROM links
 		WHERE link_hash = $1
 		RETURNING data
 	`
-	sqlSaveValue = `
+	SQLSaveValue = `
 		INSERT INTO values (
 			key,
 			value
@@ -65,20 +74,20 @@ const (
 		DO UPDATE SET
 			value = $2
 	`
-	sqlGetValue = `
+	SQLGetValue = `
 		SELECT value FROM values
 		WHERE key = $1
 	`
-	sqlDeleteValue = `
+	SQLDeleteValue = `
 		DELETE FROM values
 		WHERE key = $1
 		RETURNING value
 	`
-	sqlGetEvidences = `
+	SQLGetEvidences = `
 		SELECT data FROM evidences
 		WHERE link_hash = $1
 	`
-	sqlAddEvidence = `
+	SQLAddEvidence = `
 		INSERT INTO evidences (
 			link_hash,
 			provider,
@@ -130,6 +139,17 @@ var sqlCreate = []string{
 		ON links USING gin(tags)
 	`,
 	`
+		CREATE TABLE links_degree (
+			id BIGSERIAL PRIMARY KEY,
+			link_hash bytea NOT NULL,
+			out_degree integer
+		)
+	`,
+	`
+		CREATE UNIQUE INDEX links_degree_link_hash_idx
+		ON links_degree (link_hash)
+	`,
+	`
 		CREATE TABLE evidences (
 			id BIGSERIAL PRIMARY KEY,
 			link_hash bytea NOT NULL,
@@ -137,7 +157,7 @@ var sqlCreate = []string{
 			data bytea NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-	)
+		)
 	`,
 	`
 		CREATE UNIQUE INDEX evidences_link_hash_provider_idx
@@ -163,15 +183,18 @@ var sqlCreate = []string{
 }
 
 var sqlDrop = []string{
-	"DROP TABLE links, evidences, values",
+	"DROP TABLE links, links_degree, evidences, values",
 }
 
 type writeStmts struct {
-	CreateLink  *sql.Stmt
-	DeleteLink  *sql.Stmt
-	SaveValue   *sql.Stmt
-	DeleteValue *sql.Stmt
-	AddEvidence *sql.Stmt
+	CreateLink       *sql.Stmt
+	CreateLinkDegree *sql.Stmt
+	LockLinkDegree   *sql.Stmt
+	UpdateLinkDegree *sql.Stmt
+	DeleteLink       *sql.Stmt
+	SaveValue        *sql.Stmt
+	DeleteValue      *sql.Stmt
+	AddEvidence      *sql.Stmt
 }
 
 type readStmts struct {
@@ -203,15 +226,18 @@ func newStmts(db *sql.DB) (*stmts, error) {
 		return
 	}
 
-	s.GetSegment = prepare(sqlGetSegment)
-	s.GetValue = prepare(sqlGetValue)
-	s.GetEvidences = prepare(sqlGetEvidences)
+	s.GetSegment = prepare(SQLGetSegment)
+	s.GetValue = prepare(SQLGetValue)
+	s.GetEvidences = prepare(SQLGetEvidences)
 
-	s.CreateLink = prepare(sqlCreateLink)
-	s.DeleteLink = prepare(sqlDeleteLink)
-	s.SaveValue = prepare(sqlSaveValue)
-	s.DeleteValue = prepare(sqlDeleteValue)
-	s.AddEvidence = prepare(sqlAddEvidence)
+	s.CreateLink = prepare(SQLCreateLink)
+	s.CreateLinkDegree = prepare(SQLCreateLinkDegree)
+	s.LockLinkDegree = prepare(SQLLockLinkDegree)
+	s.UpdateLinkDegree = prepare(SQLUpdateLinkDegree)
+	s.DeleteLink = prepare(SQLDeleteLink)
+	s.SaveValue = prepare(SQLSaveValue)
+	s.DeleteValue = prepare(SQLDeleteValue)
+	s.AddEvidence = prepare(SQLAddEvidence)
 
 	if err != nil {
 		return nil, err
@@ -235,13 +261,16 @@ func newBatchStmts(tx *sql.Tx) (*batchStmts, error) {
 		return
 	}
 
-	s.GetSegment = prepare(sqlGetSegment)
-	s.GetValue = prepare(sqlGetValue)
+	s.GetSegment = prepare(SQLGetSegment)
+	s.GetValue = prepare(SQLGetValue)
 
-	s.CreateLink = prepare(sqlCreateLink)
-	s.DeleteLink = prepare(sqlDeleteLink)
-	s.SaveValue = prepare(sqlSaveValue)
-	s.DeleteValue = prepare(sqlDeleteValue)
+	s.CreateLink = prepare(SQLCreateLink)
+	s.CreateLinkDegree = prepare(SQLCreateLinkDegree)
+	s.LockLinkDegree = prepare(SQLLockLinkDegree)
+	s.UpdateLinkDegree = prepare(SQLUpdateLinkDegree)
+	s.DeleteLink = prepare(SQLDeleteLink)
+	s.SaveValue = prepare(SQLSaveValue)
+	s.DeleteValue = prepare(SQLDeleteValue)
 
 	if err != nil {
 		return nil, err
