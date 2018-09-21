@@ -35,9 +35,10 @@ const (
 			prev_link_hash,
 			tags,
 			data,
-			process
+			process,
+			step
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	SQLCreateLinkDegree = `
 		INSERT INTO links_degree (
@@ -110,6 +111,7 @@ var sqlCreate = []string{
 			tags text[] DEFAULT NULL,
 			data bytea NOT NULL,
 			process text NOT NULL,
+			step text NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
@@ -373,6 +375,12 @@ func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.R
 	if filter.Process != "" {
 		filters = append(filters, fmt.Sprintf("process = $%d", cnt))
 		values = append(values, filter.Process)
+		cnt++
+	}
+
+	if filter.Step != "" {
+		filters = append(filters, fmt.Sprintf("step = $%d", cnt))
+		values = append(values, filter.Step)
 		cnt++
 	}
 

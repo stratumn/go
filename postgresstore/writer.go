@@ -70,6 +70,7 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 		prevLinkHash = link.Meta.GetPrevLinkHash()
 		tags         = link.Meta.Tags
 		process      = link.Meta.Process.Name
+		step         = link.Meta.Step
 	)
 
 	linkHash, err := link.Hash()
@@ -83,7 +84,7 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 	}
 
 	if len(prevLinkHash) == 0 {
-		err = a.createLink(linkHash, priority, mapID, []byte{}, tags, data, process)
+		err = a.createLink(linkHash, priority, mapID, []byte{}, tags, data, process, step)
 		return linkHash, err
 	}
 
@@ -94,7 +95,7 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 
 	parentDegree := parent.Link.Meta.OutDegree
 	if parentDegree < 0 {
-		err = a.createLink(linkHash, priority, mapID, prevLinkHash, tags, data, process)
+		err = a.createLink(linkHash, priority, mapID, prevLinkHash, tags, data, process, step)
 		return linkHash, err
 	}
 
@@ -121,7 +122,7 @@ func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chains
 		return linkHash, chainscript.ErrOutDegree
 	}
 
-	err = a.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process)
+	err = a.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process, step)
 	if err != nil {
 		a.txFactory.RollbackTx(tx, err)
 		return linkHash, err
@@ -179,13 +180,14 @@ func (a *writer) createLink(
 	tags []string,
 	data []byte,
 	process string,
+	step string,
 ) error {
 	tx, err := a.txFactory.NewTx()
 	if err != nil {
 		return err
 	}
 
-	err = a.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process)
+	err = a.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process, step)
 	if err != nil {
 		a.txFactory.RollbackTx(tx, err)
 		return err
@@ -205,13 +207,14 @@ func (a *writer) createLinkInTx(
 	tags []string,
 	data []byte,
 	process string,
+	step string,
 ) error {
 	createLink, err := tx.Prepare(SQLCreateLink)
 	if err != nil {
 		return err
 	}
 
-	res, err := createLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), data, process)
+	res, err := createLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), data, process, step)
 	if err != nil {
 		return err
 	}
