@@ -138,6 +138,9 @@ type SegmentFilter struct {
 	// Process name the segments must have.
 	Process string `json:"process" url:"process"`
 
+	// Step the segments must have.
+	Step string `json:"step" url:"step"`
+
 	// If true, selects only segments that don't have a parent.
 	WithoutParent bool `json:"withoutParent" url:"withoutParent"`
 
@@ -255,6 +258,10 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 	}
 
 	if filter.Process != "" && filter.Process != link.Meta.Process.Name {
+		return false
+	}
+
+	if filter.Step != "" && filter.Step != link.Meta.Step {
 		return false
 	}
 

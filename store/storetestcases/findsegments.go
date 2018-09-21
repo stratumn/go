@@ -105,6 +105,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.MapId = "map1"
 		l.Meta.Process.Name = "Foo"
+		l.Meta.Step = "propose"
 	})
 
 	createRandomLink(t, a, func(l *chainscript.Link) {
@@ -121,6 +122,7 @@ func (f Factory) TestFindSegments(t *testing.T) {
 
 	createLinkBranch(t, a, link4, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", chainscripttest.RandomString(5)}
+		l.Meta.Step = "propose"
 	})
 
 	link6 := createRandomLink(t, a, func(l *chainscript.Link) {
@@ -196,6 +198,30 @@ func (f Factory) TestFindSegments(t *testing.T) {
 				Limit: segmentsTotalCount,
 			},
 			Tags: []string{"tag2", "tag42"},
+		})
+		verifyResultsCount(t, err, slice, 1)
+	})
+
+	t.Run("Supports filtering on step", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Step: "propose",
+		})
+		verifyResultsCount(t, err, slice, 2)
+	})
+
+	t.Run("Supports filtering on step and map ID", func(t *testing.T) {
+		ctx := context.Background()
+		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
+			Process: link4.Meta.Process.Name,
+			MapIDs:  []string{link4.Meta.MapId},
+			Step:    "propose",
 		})
 		verifyResultsCount(t, err, slice, 1)
 	})
