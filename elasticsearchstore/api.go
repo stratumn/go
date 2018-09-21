@@ -508,6 +508,12 @@ func makeFilterQueries(filter *store.SegmentFilter) []elastic.Query {
 		filterQueries = append(filterQueries, q)
 	}
 
+	// step filter.
+	if filter.Step != "" {
+		q := elastic.NewTermQuery("meta.step.keyword", filter.Step)
+		filterQueries = append(filterQueries, q)
+	}
+
 	// mapIds filter.
 	if len(filter.MapIDs) > 0 {
 		termQueries := []elastic.Query{}
