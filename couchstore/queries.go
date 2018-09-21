@@ -27,6 +27,7 @@ type LinkSelector struct {
 	PrevLinkHash *PrevLinkHash `json:"linkWrapper.prevLinkHash,omitempty"`
 	Process      string        `json:"linkWrapper.link.meta.process.name,omitempty"`
 	MapIds       *MapIdsIn     `json:"linkWrapper.link.meta.mapId,omitempty"`
+	Step         string        `json:"linkWrapper.link.meta.step,omitempty"`
 	Tags         *TagsAll      `json:"linkWrapper.link.meta.tags,omitempty"`
 	LinkHash     *LinkHashIn   `json:"_id,omitempty"`
 }
@@ -93,6 +94,9 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 	}
 	if filter.Process != "" {
 		linkSelector.Process = filter.Process
+	}
+	if filter.Step != "" {
+		linkSelector.Step = filter.Step
 	}
 	if len(filter.MapIDs) > 0 {
 		linkSelector.MapIds = &MapIdsIn{MapIds: filter.MapIDs}
