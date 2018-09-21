@@ -59,6 +59,7 @@ func init() {
 func defaultTestingSegment() *chainscript.Segment {
 	link, _ := chainscript.NewLinkBuilder("TheProcess", "TheMapId").
 		WithPriority(42.).
+		WithStep("vote").
 		WithTags("Foo", "Bar").
 		WithParent(prevLinkHashTestingValue).
 		Build()
@@ -78,6 +79,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 		Pagination    store.Pagination
 		MapIDs        []string
 		Process       string
+		Step          string
 		WithoutParent bool
 		PrevLinkHash  chainscript.LinkHash
 		LinkHashes    []chainscript.LinkHash
@@ -208,6 +210,18 @@ func TestSegmentFilter_Match(t *testing.T) {
 			args:   args{segment: testSegment},
 			want:   false,
 		},
+		{
+			name:   "Invalid step",
+			fields: fields{Step: "propose"},
+			args:   args{segment: testSegment},
+			want:   false,
+		},
+		{
+			name:   "Step",
+			fields: fields{Step: "vote"},
+			args:   args{segment: testSegment},
+			want:   true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -215,6 +229,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 				Pagination:    tt.fields.Pagination,
 				MapIDs:        tt.fields.MapIDs,
 				Process:       tt.fields.Process,
+				Step:          tt.fields.Step,
 				LinkHashes:    tt.fields.LinkHashes,
 				WithoutParent: tt.fields.WithoutParent,
 				PrevLinkHash:  tt.fields.PrevLinkHash,
