@@ -106,6 +106,7 @@ type linkWrapper struct {
 	PrevLinkHash []byte            `json:"prevLinkHash"`
 	Tags         []string          `json:"tags,omitempty"`
 	Process      string            `json:"process"`
+	Step         string            `json:"step"`
 }
 
 type evidencesWrapper struct {
@@ -220,6 +221,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 		MapID:     link.Meta.MapId,
 		Tags:      link.Meta.Tags,
 		Process:   link.Meta.Process.Name,
+		Step:      link.Meta.Step,
 	}
 
 	if len(prevLinkHash) > 0 {
@@ -316,14 +318,16 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		q = q.OrderBy(rethink.OrderByOpts{Index: "prevLinkHashOrder"})
 	} else if linkHashes := filter.LinkHashes; len(linkHashes) > 0 {
 		q = q.OrderBy(rethink.Asc("id"))
-	} else if mapIDs := filter.MapIDs; len(mapIDs) > 0 {
-		q = q.OrderBy(rethink.OrderByOpts{Index: orderingFunction("mapIdOrder")})
 	} else {
 		q = q.OrderBy(rethink.OrderByOpts{Index: orderingFunction("order")})
 	}
 
 	if process := filter.Process; len(process) > 0 {
 		q = q.Filter(rethink.Row.Field("process").Eq(process))
+	}
+
+	if step := filter.Step; len(step) > 0 {
+		q = q.Filter(rethink.Row.Field("step").Eq(step))
 	}
 
 	if tags := filter.Tags; len(tags) > 0 {
