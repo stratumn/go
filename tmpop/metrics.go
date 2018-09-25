@@ -41,19 +41,19 @@ var (
 
 func init() {
 	blockCount = stats.Int64(
-		"stratumn/indigocore/tmpop/block_count",
+		"stratumn/core/tmpop/block_count",
 		"number of blocks created",
 		stats.UnitNone,
 	)
 
 	txCount = stats.Int64(
-		"stratumn/indigocore/tmpop/tx_count",
+		"stratumn/core/tmpop/tx_count",
 		"number of transactions received",
 		stats.UnitNone,
 	)
 
 	txPerBlock = stats.Int64(
-		"stratumn/indigocore/tmpop/tx_per_block",
+		"stratumn/core/tmpop/tx_per_block",
 		"number of transactions per block",
 		stats.UnitNone,
 	)
@@ -65,20 +65,20 @@ func init() {
 
 	if err = view.Register(
 		&view.View{
-			Name:        "stratumn_indigocore_tmpop_block_count",
+			Name:        "stratumn_core_tmpop_block_count",
 			Description: "number of blocks created",
 			Measure:     blockCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "stratumn_indigocore_tmpop_tx_count",
+			Name:        "stratumn_core_tmpop_tx_count",
 			Description: "number of transactions received",
 			Measure:     txCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{txStatus},
 		},
 		&view.View{
-			Name:        "stratumn_indigocore_tmpop_tx_per_block",
+			Name:        "stratumn_core_tmpop_tx_per_block",
 			Description: "number of transactions per block",
 			Measure:     txPerBlock,
 			Aggregation: view.Distribution(1, 5, 10, 50, 100),
@@ -98,7 +98,7 @@ func exposeMetrics(config *monitoring.Config) {
 		config.MetricsPort = DefaultMetricsPort
 	}
 
-	metricsExporter := monitoring.Configure(config, "indigo-tmpop")
+	metricsExporter := monitoring.Configure(config, "tmpop")
 	metricsAddr := fmt.Sprintf(":%d", config.MetricsPort)
 
 	log.Infof("Exposing metrics on %s", metricsAddr)

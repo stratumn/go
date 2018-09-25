@@ -23,7 +23,7 @@ import (
 
 // CreateTempFile creates a temporary file for tests with data as content.
 func CreateTempFile(t *testing.T, data string) string {
-	tmpfile, err := ioutil.TempFile("", "indigocore-tmpfile")
+	tmpfile, err := ioutil.TempFile("", "core-tmpfile")
 	require.NoError(t, err, "ioutil.TempFile()")
 
 	_, err = tmpfile.WriteString(data)

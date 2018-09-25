@@ -38,7 +38,7 @@ func (s *Server) exposeMetrics(config *monitoring.Config) {
 		return
 	}
 
-	metricsExporter := monitoring.Configure(config, "indigo-store")
+	metricsExporter := monitoring.Configure(config, "store")
 	s.GetRaw(
 		"/metrics",
 		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

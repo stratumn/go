@@ -32,7 +32,7 @@ const (
 
 // Config contains options for monitoring.
 type Config struct {
-	// Set to true to monitor Indigo components.
+	// Set to true to monitor Stratumn components.
 	Monitor bool
 	// Port used to expose prometheus metrics.
 	MetricsPort int

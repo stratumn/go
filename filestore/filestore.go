@@ -47,7 +47,7 @@ const (
 	Name = "file"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's File Store"
+	Description = "Stratumn's File Store"
 
 	// DefaultPath is the path where segments will be saved by default.
 	DefaultPath = "/var/stratumn/filestore"

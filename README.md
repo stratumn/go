@@ -1,4 +1,4 @@
-# Indigo Core
+# Stratumn Core Utilities
 
 [![GoDoc](https://godoc.org/github.com/stratumn/go-core?status.svg)](https://godoc.org/github.com/stratumn/go-core)
 [![Build Status](https://semaphoreci.com/api/v1/stratumn/go-core/branches/master/badge.svg)](https://semaphoreci.com/stratumn/go-core)
@@ -8,13 +8,13 @@
 
 [![Logo](logo.png)](https://indigocore.org)
 
-[Stratumn](https://stratumn.com)'s open-source SDK to create Indigo applications and networks.
+[Stratumn](https://stratumn.com)'s open-source utilities to create decentralized applications and networks.
 
 ---
 
-This repository includes tools to build [Proof of Process Networks](https://proofofprocess.org) using [Indigo Core](https://indigocore.org).
+This repository includes tools to build [Proof of Process Networks](https://proofofprocess.org) using [Stratumn Core](https://indigocore.org).
 
-To get started, visit the Indigo Core website: <https://indigocore.org>
+To get started, visit the Stratumn Core website: <https://indigocore.org>
 
 ## Run tests
 
@@ -58,14 +58,14 @@ make docker_images
 
 ## Releasing a new version
 
-If you want to release a new version of IndigoCore, here is what you need to do.
+If you want to release a new version of the library, here is what you need to do.
 You need to install:
 
 - [Docker](https://www.docker.com/)
 - [Keybase](https://keybase.io/)
 - [github-release](https://github.com/aktau/github-release/releases/)
 
-You'll need to add your PGP public key to the [Indigo CLI](https://github.com/stratumn/indigo-cli) in the pubkey.go file.
+You'll need to add your PGP public key to the [Stratumn CLI](https://github.com/stratumn/cli) in the pubkey.go file.
 
 Then at the root of the repo:
 

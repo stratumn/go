@@ -35,7 +35,7 @@ const (
 	Name = "bcbatch"
 
 	// Description is the description set in the fossilizer's information.
-	Description = "Indigo's Blockchain Batch Fossilizer"
+	Description = "Stratumn's Blockchain Batch Fossilizer"
 )
 
 // Config contains configuration options for the fossilizer.

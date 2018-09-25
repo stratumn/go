@@ -32,7 +32,7 @@ const (
 	Name = "elasticsearch"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's ElasticSearch Store"
+	Description = "Stratumn's ElasticSearch Store"
 
 	// DefaultURL is the default URL of the database.
 	DefaultURL = "http://elasticsearch:9200"

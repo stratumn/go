@@ -27,7 +27,7 @@ import (
 
 const (
 	// Description is the description set in the fossilizer's information.
-	Description = "Indigo's Dummy Fossilizer"
+	Description = "Stratumn's Dummy Fossilizer"
 )
 
 // Config contains configuration options for the store.

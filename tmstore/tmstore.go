@@ -45,7 +45,7 @@ const (
 	Name = "tm"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's Tendermint Store"
+	Description = "Stratumn's Tendermint Store"
 
 	// DefaultEndpoint is the default Tendermint endpoint.
 	DefaultEndpoint = "tcp://127.0.0.1:46657"

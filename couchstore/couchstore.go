@@ -32,7 +32,7 @@ const (
 	Name = "CouchDB"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's CouchDB Store"
+	Description = "Stratumn's CouchDB Store"
 )
 
 // CouchStore is the type that implements github.com/stratumn/go-core/store.Adapter.

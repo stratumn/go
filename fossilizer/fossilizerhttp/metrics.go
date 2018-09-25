@@ -38,7 +38,7 @@ func (s *Server) exposeMetrics(config *monitoring.Config) {
 		return
 	}
 
-	metricsExporter := monitoring.Configure(config, "indigo-fossilizer")
+	metricsExporter := monitoring.Configure(config, "fossilizer")
 	s.GetRaw(
 		"/metrics",
 		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

@@ -42,7 +42,7 @@ func TestGetInfo(t *testing.T) {
 	if !ok {
 		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
 	}
-	if got, want := info.Description, "Indigo's Blockchain Batch Fossilizer with Dummy Timestamper"; got != want {
+	if got, want := info.Description, "Stratumn's Blockchain Batch Fossilizer with Dummy Timestamper"; got != want {
 		t.Errorf("a.GetInfo(): Description = %s want %s", got, want)
 	}
 }

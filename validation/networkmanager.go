@@ -33,7 +33,7 @@ var (
 	ErrNoNetworkListener = errors.New("missing network listener")
 )
 
-// NetworkManager manages governance for validation rules management in an indigo network.
+// NetworkManager manages governance for validation rules management in a network.
 type NetworkManager struct {
 	*UpdateBroadcaster
 	store *Store

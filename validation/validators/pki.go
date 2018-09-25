@@ -66,7 +66,7 @@ func (p PKI) matchRequirement(requirement, publicKey string) bool {
 
 }
 
-// Identity represents an actor of an indigo network
+// Identity represents an actor of a network.
 type Identity struct {
 	Keys  []string
 	Roles []string

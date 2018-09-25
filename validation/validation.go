@@ -34,7 +34,7 @@ type Config struct {
 	PluginsPath string
 }
 
-// Manager defines the methods to implement to manage validations in an indigo network.
+// Manager defines the methods to implement to manage validations in a network.
 type Manager interface {
 	UpdateSubscriber
 

@@ -24,7 +24,7 @@ import (
 	"github.com/stratumn/go-core/validation/validators"
 )
 
-// LocalManager manages governance for validation rules management in an indigo network.
+// LocalManager manages governance for validation rules management in a network.
 type LocalManager struct {
 	*UpdateBroadcaster
 	store *Store

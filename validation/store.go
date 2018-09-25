@@ -66,7 +66,7 @@ var (
 	}
 )
 
-// Store stores validation rules in an indigo store.
+// Store stores validation rules in a store.
 type Store struct {
 	store store.Adapter
 
