@@ -23,8 +23,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -66,7 +66,7 @@ var (
 	}
 )
 
-// Store stores validation rules in an indigo store.
+// Store stores validation rules in a store.
 type Store struct {
 	store store.Adapter
 

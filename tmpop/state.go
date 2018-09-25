@@ -21,11 +21,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validation"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/validation"
+	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stratumn/merkle"
 )
 

@@ -22,7 +22,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/store"
 )
 
 // CreateLinkFunc is a type for a function that creates a link for benchmarks.

@@ -22,8 +22,8 @@ import (
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // PKI maps a public key to an identity.
@@ -66,7 +66,7 @@ func (p PKI) matchRequirement(requirement, publicKey string) bool {
 
 }
 
-// Identity represents an actor of an indigo network
+// Identity represents an actor of a network.
 type Identity struct {
 	Keys  []string
 	Roles []string
@@ -88,7 +88,7 @@ func NewPKIValidator(baseConfig *ValidatorBaseConfig, required []string, pki *PK
 	}
 }
 
-// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
+// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
 func (pv PKIValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(pv)
 	if err != nil {
@@ -98,12 +98,12 @@ func (pv PKIValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
+// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
 func (pv PKIValidator) ShouldValidate(link *chainscript.Link) bool {
 	return pv.Config.ShouldValidate(link)
 }
 
-// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
 // it checks that the provided signatures match the required ones.
 // a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
 func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {

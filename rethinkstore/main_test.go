@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-core/utils"
 )
 
 var (
@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 
 	// Rethinkdb container configuration.
 	imageName := "rethinkdb:2.3"
-	containerName := "indigo_rethinkstore_test"
+	containerName := "stratumn_rethinkstore_test"
 	p, _ := nat.NewPort("tcp", port)
 	pa, _ := nat.NewPort("tcp", adminPort)
 	exposedPorts := map[nat.Port]struct{}{p: {}, pa: {}}

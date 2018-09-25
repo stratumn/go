@@ -25,8 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/utils"
 )
 
 const (

@@ -19,7 +19,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/monitoring"
+	"github.com/stratumn/go-core/monitoring"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
@@ -38,7 +38,7 @@ func (s *Server) exposeMetrics(config *monitoring.Config) {
 		return
 	}
 
-	metricsExporter := monitoring.Configure(config, "indigo-store")
+	metricsExporter := monitoring.Configure(config, "store")
 	s.GetRaw(
 		"/metrics",
 		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

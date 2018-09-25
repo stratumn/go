@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stratumn/go-core/fossilizer"
 
 	"go.opencensus.io/trace"
 )

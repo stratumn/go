@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/types"
 )
 
 func TestNetworkString(t *testing.T) {

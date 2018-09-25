@@ -19,8 +19,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/batchfossilizer"
-	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
+	"github.com/stratumn/go-core/batchfossilizer"
+	"github.com/stratumn/go-core/blockchain/dummytimestamper"
 )
 
 func BenchmarkFossilize_MaxLeaves100(b *testing.B) {

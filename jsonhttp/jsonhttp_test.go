@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-core/testutil"
 )
 
 func TestGet(t *testing.T) {

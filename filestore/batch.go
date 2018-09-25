@@ -17,12 +17,12 @@ package filestore
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/monitoring"
+	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/monitoring"
 	"go.opencensus.io/trace"
 )
 
-// Batch is the type that implements github.com/stratumn/go-indigocore/store.Batch.
+// Batch is the type that implements github.com/stratumn/go-core/store.Batch.
 type Batch struct {
 	*bufferedbatch.Batch
 
@@ -37,7 +37,7 @@ func NewBatch(ctx context.Context, a *FileStore) *Batch {
 	}
 }
 
-// Write implements github.com/stratumn/go-indigocore/store.Batch.Write
+// Write implements github.com/stratumn/go-core/store.Batch.Write
 func (b *Batch) Write(ctx context.Context) (err error) {
 	_, span := trace.StartSpan(ctx, "filestore/batch/Write")
 	defer monitoring.SetSpanStatusAndEnd(span, err)

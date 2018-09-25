@@ -21,8 +21,8 @@ import (
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // TransitionValidator defines the source state where a transition can be applied and its destination state.
@@ -39,7 +39,7 @@ func NewTransitionValidator(baseConfig *ValidatorBaseConfig, transitions []strin
 	}
 }
 
-// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
+// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
 func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(tv)
 	if err != nil {
@@ -49,12 +49,12 @@ func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
+// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
 func (tv TransitionValidator) ShouldValidate(link *chainscript.Link) bool {
 	return tv.Config.ShouldValidate(link)
 }
 
-// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
 // It checks that the link follows a valid transition.
 // If there is no previous link, an empty link has to be allowed,
 // Otherwise the meta.type of the prevLink must exist in authorized previous statement.

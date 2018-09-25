@@ -19,9 +19,9 @@ import (
 	"flag"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/postgresstore"
-	"github.com/stratumn/go-indigocore/store/storehttp"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/postgresstore"
+	"github.com/stratumn/go-core/store/storehttp"
 )
 
 var (

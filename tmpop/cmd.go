@@ -19,8 +19,8 @@ import (
 	"runtime"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/tendermint"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/tendermint"
 	"github.com/tendermint/tendermint/rpc/client"
 )
 

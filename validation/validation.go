@@ -17,7 +17,7 @@ package validation
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -34,7 +34,7 @@ type Config struct {
 	PluginsPath string
 }
 
-// Manager defines the methods to implement to manage validations in an indigo network.
+// Manager defines the methods to implement to manage validations in a network.
 type Manager interface {
 	UpdateSubscriber
 

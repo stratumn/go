@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/dummyfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stratumn/go-core/dummyfossilizer/evidences"
+	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

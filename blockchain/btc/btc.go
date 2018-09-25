@@ -19,7 +19,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/types"
 )
 
 // Network represents a Bitcoin network.

@@ -19,8 +19,8 @@ import (
 	json "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/types"
+	batchevidences "github.com/stratumn/go-core/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/types"
 )
 
 const (

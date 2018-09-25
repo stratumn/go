@@ -22,7 +22,7 @@ import (
 	"github.com/tendermint/tmlibs/db"
 )
 
-// LevelDBStore implements github.com/stratumn/go-indigocore/store.KeyValueStore.
+// LevelDBStore implements github.com/stratumn/go-core/store.KeyValueStore.
 type LevelDBStore struct {
 	config *Config
 	kvDB   db.DB
@@ -44,18 +44,18 @@ func New(config *Config) (*LevelDBStore, error) {
 	return &LevelDBStore{config: config, kvDB: db}, nil
 }
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (a *LevelDBStore) SetValue(ctx context.Context, key []byte, value []byte) error {
 	a.kvDB.Set(key, value)
 	return nil
 }
 
-// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
 func (a *LevelDBStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	return a.kvDB.Get(key), nil
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
 func (a *LevelDBStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	v := a.kvDB.Get(key)
 

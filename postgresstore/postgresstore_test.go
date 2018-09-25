@@ -17,9 +17,9 @@ package postgresstore
 import (
 	"testing"
 
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/store/storetestcases"
-	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/store/storetestcases"
+	"github.com/stratumn/go-core/tmpop/tmpoptestcases"
 )
 
 func TestStore(t *testing.T) {

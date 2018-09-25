@@ -23,10 +23,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/jsonhttp"
-	"github.com/stratumn/go-indigocore/jsonws"
-	"github.com/stratumn/go-indigocore/monitoring"
+	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/jsonws"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 var (

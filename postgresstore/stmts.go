@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // Plain SQL statements.

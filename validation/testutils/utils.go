@@ -18,8 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/stratumn/go-indigocore/validation"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/validation"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 // These are the test key pairs of Alice and Bob.

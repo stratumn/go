@@ -31,19 +31,19 @@ var (
 
 func init() {
 	batchCount = stats.Int64(
-		"stratumn/indigocore/bufferedbatch/batch_count",
+		"stratumn/core/bufferedbatch/batch_count",
 		"number of batches created",
 		stats.UnitNone,
 	)
 
 	linksPerBatch = stats.Int64(
-		"stratumn/indigocore/bufferedbatch/links_per_batch",
+		"stratumn/core/bufferedbatch/links_per_batch",
 		"number of links per batch",
 		stats.UnitNone,
 	)
 
 	writeCount = stats.Int64(
-		"stratumn/indigocore/bufferedbatch/write_count",
+		"stratumn/core/bufferedbatch/write_count",
 		"number of batch writes",
 		stats.UnitNone,
 	)
@@ -55,20 +55,20 @@ func init() {
 
 	if err = view.Register(
 		&view.View{
-			Name:        "stratumn_indigocore_bufferedbatch_batch_count",
+			Name:        "stratumn_core_bufferedbatch_batch_count",
 			Description: "number of batches created",
 			Measure:     batchCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "stratumn_indigocore_bufferedbatch_write_count",
+			Name:        "stratumn_core_bufferedbatch_write_count",
 			Description: "number of batch writes",
 			Measure:     writeCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{writeStatus},
 		},
 		&view.View{
-			Name:        "stratumn_indigocore_bufferedbatch_links_per_batch",
+			Name:        "stratumn_core_bufferedbatch_links_per_batch",
 			Description: "number of links per batch",
 			Measure:     linksPerBatch,
 			Aggregation: view.Distribution(1, 5, 10, 50, 100),

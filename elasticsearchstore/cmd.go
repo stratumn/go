@@ -21,7 +21,7 @@ import (
 
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-core/utils"
 )
 
 var (

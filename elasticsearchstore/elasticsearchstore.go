@@ -21,10 +21,10 @@ import (
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 	Name = "elasticsearch"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's ElasticSearch Store"
+	Description = "Stratumn's ElasticSearch Store"
 
 	// DefaultURL is the default URL of the database.
 	DefaultURL = "http://elasticsearch:9200"
@@ -64,7 +64,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// ESStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
+// ESStore is the type that implements github.com/stratumn/go-core/store.Adapter.
 type ESStore struct {
 	config     *Config
 	eventChans []chan *store.Event
@@ -130,7 +130,7 @@ func New(config *Config) (*ESStore, error) {
 
 /********** Store adapter implementation **********/
 
-// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (es *ESStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -140,19 +140,19 @@ func (es *ESStore) GetInfo(ctx context.Context) (interface{}, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
+// AddStoreEventChannel implements github.com/stratumn/go-core/store.Adapter.AddStoreEventChannel.
 func (es *ESStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	es.eventChans = append(es.eventChans, eventChan)
 }
 
-// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-core/store.Adapter.NewBatch.
 func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 	return bufferedbatch.NewBatch(ctx, es), nil
 }
 
 /********** Store writer implementation **********/
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if err := link.Validate(ctx); err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chai
 	return linkHash, nil
 }
 
-// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (es *ESStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	if err := es.addEvidence(ctx, linkHash.String(), evidence); err != nil {
 		return err
@@ -194,7 +194,7 @@ func (es *ESStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHas
 
 /********** Store reader implementation **********/
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.Adapter.GetSegment.
 func (es *ESStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	link, err := es.getLink(ctx, linkHash.String())
 	if err != nil || link == nil {
@@ -203,36 +203,36 @@ func (es *ESStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash
 	return es.segmentify(ctx, link), nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/go-core/store.Adapter.FindSegments.
 func (es *ESStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	return es.findSegments(ctx, filter)
 }
 
-// GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-core/store.Adapter.GetMapIDs.
 func (es *ESStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	return es.getMapIDs(ctx, filter)
 }
 
-// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-core/store.EvidenceReader.GetEvidences.
 func (es *ESStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	return es.getEvidences(ctx, linkHash.String())
 }
 
-/********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
+/********** github.com/stratumn/go-core/store.KeyValueStore implementation **********/
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (es *ESStore) SetValue(ctx context.Context, key, value []byte) error {
 	hexKey := hex.EncodeToString(key)
 	return es.setValue(ctx, hexKey, value)
 }
 
-// GetValue implements github.com/stratumn/go-indigocore/store.Adapter.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.Adapter.GetValue.
 func (es *ESStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
 	return es.getValue(ctx, hexKey)
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.Adapter.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.Adapter.DeleteValue.
 func (es *ESStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	hexKey := hex.EncodeToString(key)
 	return es.deleteValue(ctx, hexKey)

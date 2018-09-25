@@ -17,9 +17,9 @@ package storehttp
 import (
 	"time"
 
-	"github.com/stratumn/go-indigocore/jsonhttp"
-	"github.com/stratumn/go-indigocore/jsonws"
-	"github.com/stratumn/go-indigocore/store/storetesting"
+	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/jsonws"
+	"github.com/stratumn/go-core/store/storetesting"
 )
 
 func createServer() (*Server, *storetesting.MockAdapter) {

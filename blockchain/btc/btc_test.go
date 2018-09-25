@@ -19,7 +19,7 @@ import (
 
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-indigocore/blockchain/btc"
+	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-core/utils"
 )
 
 func TestMain(m *testing.M) {
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 	// Postgres container configuration.
 	imageName := "postgres:10.1"
-	containerName := "indigo_postgresstore_test"
+	containerName := "stratumn_postgresstore_test"
 	p, _ := nat.NewPort("tcp", port)
 	exposedPorts := map[nat.Port]struct{}{p: {}}
 	portBindings := nat.PortMap{

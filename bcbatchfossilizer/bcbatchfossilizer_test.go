@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/batchfossilizer"
-	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
+	"github.com/stratumn/go-core/batchfossilizer"
+	"github.com/stratumn/go-core/bcbatchfossilizer/evidences"
+	"github.com/stratumn/go-core/blockchain/dummytimestamper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,7 +42,7 @@ func TestGetInfo(t *testing.T) {
 	if !ok {
 		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
 	}
-	if got, want := info.Description, "Indigo's Blockchain Batch Fossilizer with Dummy Timestamper"; got != want {
+	if got, want := info.Description, "Stratumn's Blockchain Batch Fossilizer with Dummy Timestamper"; got != want {
 		t.Errorf("a.GetInfo(): Description = %s want %s", got, want)
 	}
 }

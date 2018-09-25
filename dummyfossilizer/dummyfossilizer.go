@@ -21,13 +21,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratumn/go-indigocore/dummyfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/fossilizer"
+	"github.com/stratumn/go-core/dummyfossilizer/evidences"
+	"github.com/stratumn/go-core/fossilizer"
 )
 
 const (
 	// Description is the description set in the fossilizer's information.
-	Description = "Indigo's Dummy Fossilizer"
+	Description = "Stratumn's Dummy Fossilizer"
 )
 
 // Config contains configuration options for the store.
@@ -48,7 +48,7 @@ type Info struct {
 }
 
 // DummyFossilizer is the type that implements
-// github.com/stratumn/go-indigocore/fossilizer.Adapter.
+// github.com/stratumn/go-core/fossilizer.Adapter.
 type DummyFossilizer struct {
 	config               *Config
 	fossilizerEventChans []chan *fossilizer.Event
@@ -59,7 +59,7 @@ func New(config *Config) *DummyFossilizer {
 	return &DummyFossilizer{config: config, fossilizerEventChans: nil}
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/fossilizer.Adapter.GetInfo.
 func (a *DummyFossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        evidences.Name,
@@ -70,12 +70,12 @@ func (a *DummyFossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 }
 
 // AddFossilizerEventChan implements
-// github.com/stratumn/go-indigocore/fossilizer.Adapter.AddFossilizerEventChan.
+// github.com/stratumn/go-core/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
 	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
 }
 
-// Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
+// Fossilize implements github.com/stratumn/go-core/fossilizer.Adapter.Fossilize.
 func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
 	proof := &evidences.DummyProof{
 		Timestamp: uint64(time.Now().Unix()),

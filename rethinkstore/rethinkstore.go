@@ -26,11 +26,11 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/utils"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/validation/validators"
 
 	rethink "gopkg.in/dancannon/gorethink.v4"
 )
@@ -44,7 +44,7 @@ const (
 	Name = "rethink"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's RethinkDB Store"
+	Description = "Stratumn's RethinkDB Store"
 
 	// DefaultURL is the default URL of the database.
 	DefaultURL = "rethinkdb:28015"
@@ -86,7 +86,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// Store is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
+// Store is the type that implements github.com/stratumn/go-core/store.Adapter.
 type Store struct {
 	config     *Config
 	eventChans []chan *store.Event
@@ -162,12 +162,12 @@ func New(config *Config) (*Store, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
+// AddStoreEventChannel implements github.com/stratumn/go-core/store.Adapter.AddStoreEventChannel.
 func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -190,7 +190,7 @@ func formatLink(link *chainscript.Link) {
 	}
 }
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if err := link.Validate(ctx); err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 	return linkHash, nil
 }
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.SegmentReader.GetSegment.
 func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	cur, err := a.links.Get(linkHash).Run(a.session)
 
@@ -270,7 +270,7 @@ func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 	return segment, nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/go-core/store.SegmentReader.FindSegments.
 func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	var prevLinkHash []byte
 	q := a.links
@@ -383,7 +383,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	return segments, nil
 }
 
-// GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-core/store.SegmentReader.GetMapIDs.
 func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	q := a.links
 	if process := filter.Process; len(process) > 0 {
@@ -446,7 +446,7 @@ func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]strin
 	return mapIDs, nil
 }
 
-// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
@@ -488,7 +488,7 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 	return nil
 }
 
-// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-core/store.EvidenceReader.GetEvidences.
 func (a *Store) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
@@ -506,7 +506,7 @@ func (a *Store) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash)
 	return ew.Content, nil
 }
 
-// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
 func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	cur, err := a.values.Get(key).Run(a.session)
 	if err != nil {
@@ -525,7 +525,7 @@ func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	return w.Value, nil
 }
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (a *Store) SetValue(ctx context.Context, key, value []byte) error {
 	v := &valueWrapper{
 		ID:    key,
@@ -535,7 +535,7 @@ func (a *Store) SetValue(ctx context.Context, key, value []byte) error {
 	return a.values.Get(key).Replace(&v).Exec(a.session)
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
 func (a *Store) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	res, err := a.values.
 		Get(key).
@@ -564,13 +564,13 @@ type rethinkBufferedBatch struct {
 	*bufferedbatch.Batch
 }
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	formatLink(link)
 	return b.Batch.CreateLink(ctx, link)
 }
 
-// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-core/store.Adapter.NewBatch.
 func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	bbBatch := bufferedbatch.NewBatch(ctx, a)
 	if bbBatch == nil {

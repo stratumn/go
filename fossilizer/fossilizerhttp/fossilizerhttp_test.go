@@ -25,12 +25,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/fossilizer/fossilizertesting"
-	"github.com/stratumn/go-indigocore/jsonhttp"
-	"github.com/stratumn/go-indigocore/jsonws"
-	"github.com/stratumn/go-indigocore/jsonws/jsonwstesting"
-	"github.com/stratumn/go-indigocore/testutil"
+	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/fossilizer/fossilizertesting"
+	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/jsonws"
+	"github.com/stratumn/go-core/jsonws/jsonwstesting"
+	"github.com/stratumn/go-core/testutil"
 )
 
 func TestRoot(t *testing.T) {

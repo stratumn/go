@@ -20,8 +20,8 @@ import (
 	"database/sql"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 type reader struct {
@@ -32,7 +32,7 @@ func newReader(stmts readStmts) *reader {
 	return &reader{stmts: stmts}
 }
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.SegmentReader.GetSegment.
 func (a *reader) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	var segments = make(types.SegmentSlice, 0, 1)
 
@@ -52,7 +52,7 @@ func (a *reader) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) 
 	return segments[0], nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/go-core/store.SegmentReader.FindSegments.
 func (a *reader) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	rows, err := a.stmts.FindSegmentsWithFilters(filter)
 	if err != nil {
@@ -124,7 +124,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 	return rows.Err()
 }
 
-// GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-core/store.SegmentReader.GetMapIDs.
 func (a *reader) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	rows, err := a.stmts.GetMapIDsWithFilters(filter)
 	if err != nil {
@@ -147,7 +147,7 @@ func (a *reader) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]stri
 	return mapIDs, nil
 }
 
-// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
 func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
@@ -161,7 +161,7 @@ func (a *reader) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	return data, nil
 }
 
-// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-core/store.EvidenceReader.GetEvidences.
 func (a *reader) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	var evidences types.EvidenceSlice
 

@@ -19,9 +19,9 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/blockchain/btc"
-	"github.com/stratumn/go-indigocore/blockchain/btc/btctesting"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/blockchain/btc/btctesting"
+	"github.com/stratumn/go-core/types"
 )
 
 func TestNetwork_NetworkTest3(t *testing.T) {

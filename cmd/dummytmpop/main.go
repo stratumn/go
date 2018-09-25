@@ -18,11 +18,11 @@ package main
 import (
 	"flag"
 
-	"github.com/stratumn/go-indigocore/dummystore"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/tendermint"
-	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/tendermint"
+	"github.com/stratumn/go-core/tmpop"
+	"github.com/stratumn/go-core/validation"
 )
 
 var (

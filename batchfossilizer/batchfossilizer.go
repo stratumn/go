@@ -30,10 +30,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
 
 	"go.opencensus.io/stats"
@@ -159,7 +159,7 @@ type Adapter interface {
 }
 
 // Fossilizer is the type that
-// implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.
+// implements github.com/stratumn/go-core/batchfossilizer.Adapter.
 type Fossilizer struct {
 	config               *Config
 	startedChan          chan chan struct{}
@@ -207,7 +207,7 @@ func New(config *Config) (*Fossilizer, error) {
 	return a, nil
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -218,14 +218,14 @@ func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 }
 
 // AddFossilizerEventChan implements
-// github.com/stratumn/go-indigocore/fossilizer.Adapter.AddFossilizerEventChan.
+// github.com/stratumn/go-core/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
 	a.fossilizerEventMutex.Lock()
 	defer a.fossilizerEventMutex.Unlock()
 	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
 }
 
-// Fossilize implements github.com/stratumn/go-indigocore/fossilizer.Adapter.Fossilize.
+// Fossilize implements github.com/stratumn/go-core/fossilizer.Adapter.Fossilize.
 func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) error {
 	f := fossil{
 		Meta: meta,
@@ -235,7 +235,7 @@ func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) er
 	return <-a.resultChan
 }
 
-// Start implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.Start.
+// Start implements github.com/stratumn/go-core/batchfossilizer.Adapter.Start.
 func (a *Fossilizer) Start(ctx context.Context) error {
 	var (
 		interval = a.config.GetInterval()
@@ -270,14 +270,14 @@ func (a *Fossilizer) Start(ctx context.Context) error {
 	}
 }
 
-// Started implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.Started.
+// Started implements github.com/stratumn/go-core/batchfossilizer.Adapter.Started.
 func (a *Fossilizer) Started() <-chan struct{} {
 	c := make(chan struct{}, 1)
 	a.startedChan <- c
 	return c
 }
 
-// SetTransformer implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.SetTransformer.
+// SetTransformer implements github.com/stratumn/go-core/batchfossilizer.Adapter.SetTransformer.
 func (a *Fossilizer) SetTransformer(t Transformer) {
 	if t != nil {
 		a.transformer = t

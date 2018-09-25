@@ -19,7 +19,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/stratumn/go-indigocore/monitoring"
+	"github.com/stratumn/go-core/monitoring"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"
@@ -38,7 +38,7 @@ func (s *Server) exposeMetrics(config *monitoring.Config) {
 		return
 	}
 
-	metricsExporter := monitoring.Configure(config, "indigo-fossilizer")
+	metricsExporter := monitoring.Configure(config, "fossilizer")
 	s.GetRaw(
 		"/metrics",
 		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {

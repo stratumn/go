@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 )
 

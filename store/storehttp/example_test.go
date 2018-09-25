@@ -24,10 +24,10 @@ import (
 
 	"time"
 
-	"github.com/stratumn/go-indigocore/dummystore"
-	"github.com/stratumn/go-indigocore/jsonhttp"
-	"github.com/stratumn/go-indigocore/jsonws"
-	"github.com/stratumn/go-indigocore/store/storehttp"
+	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/jsonws"
+	"github.com/stratumn/go-core/store/storehttp"
 )
 
 // This example shows how to create a server from a dummystore.
@@ -74,5 +74,5 @@ func Example() {
 	}
 
 	fmt.Printf("%s", info)
-	// Output: {"adapter":{"name":"dummy","description":"Indigo's Dummy Store","version":"x.x.x","commit":"abc"}}
+	// Output: {"adapter":{"name":"dummy","description":"Stratumn's Dummy Store","version":"x.x.x","commit":"abc"}}
 }

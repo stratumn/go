@@ -23,8 +23,8 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 	Name = "postgres"
 
 	// Description is the description set in the store's information.
-	Description = "Indigo's PostgreSQL Store"
+	Description = "Stratumn's PostgreSQL Store"
 
 	// DefaultURL is the default URL of the database.
 	DefaultURL = "postgres://postgres@postgres/postgres?sslmode=disable"
@@ -61,7 +61,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// Store is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
+// Store is the type that implements github.com/stratumn/go-core/store.Adapter.
 type Store struct {
 	*reader
 	*writer
@@ -82,7 +82,7 @@ func New(config *Config) (*Store, error) {
 	return &Store{config: config, db: db, batches: make(map[*Batch]*sql.Tx)}, nil
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -92,7 +92,7 @@ func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 	}, nil
 }
 
-// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-core/store.Adapter.NewBatch.
 func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	for b := range a.batches {
 		if b.done {
@@ -113,12 +113,12 @@ func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	return b, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/go-core/store.Adapter.AddStoreEventChannel
 func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if err := link.Validate(ctx); err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 	return linkHash, nil
 }
 
-// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	data, err := chainscript.MarshalEvidence(evidence)
 	if err != nil {

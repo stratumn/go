@@ -19,9 +19,9 @@ import (
 	"context"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
@@ -29,7 +29,7 @@ import (
 )
 
 // Batch can be used as a base class for types
-// that want to implement github.com/stratumn/go-indigocore/store.Batch.
+// that want to implement github.com/stratumn/go-core/store.Batch.
 // All operations are stored in arrays and can be replayed.
 // Only the Write method must be implemented.
 type Batch struct {
@@ -43,7 +43,7 @@ func NewBatch(ctx context.Context, a store.Adapter) *Batch {
 	return &Batch{originalStore: a}
 }
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chainscript.LinkHash, err error) {
 	_, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
@@ -138,7 +138,7 @@ func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []str
 	return filter.Pagination.PaginateStrings(ids), err
 }
 
-// Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
+// Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/Write")
 	defer monitoring.SetSpanStatusAndEnd(span, err)
