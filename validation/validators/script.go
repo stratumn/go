@@ -25,8 +25,8 @@ import (
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 const (
@@ -102,7 +102,7 @@ func NewScriptValidator(baseConfig *ValidatorBaseConfig, scriptCfg *ScriptConfig
 	}, nil
 }
 
-// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
+// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
 func (sv ScriptValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(sv)
 	if err != nil {
@@ -112,12 +112,12 @@ func (sv ScriptValidator) Hash() (*types.Bytes32, error) {
 	return &validationsHash, nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
+// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
 func (sv ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
 	return sv.Config.ShouldValidate(link)
 }
 
-// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
 func (sv ScriptValidator) Validate(_ context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
 	return sv.script(storeReader, link)
 }

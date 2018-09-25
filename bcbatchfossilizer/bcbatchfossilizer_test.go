@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/batchfossilizer"
-	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
+	"github.com/stratumn/go-core/batchfossilizer"
+	"github.com/stratumn/go-core/bcbatchfossilizer/evidences"
+	"github.com/stratumn/go-core/blockchain/dummytimestamper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

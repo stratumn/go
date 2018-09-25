@@ -18,11 +18,11 @@ import (
 	"context"
 	"flag"
 
-	"github.com/stratumn/go-indigocore/bcbatchfossilizer"
-	"github.com/stratumn/go-indigocore/blockchain/dummytimestamper"
-	"github.com/stratumn/go-indigocore/fossilizer/fossilizerhttp"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-core/bcbatchfossilizer"
+	"github.com/stratumn/go-core/blockchain/dummytimestamper"
+	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/utils"
 )
 
 var (

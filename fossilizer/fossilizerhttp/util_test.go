@@ -21,9 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/fossilizer/fossilizertesting"
-	"github.com/stratumn/go-indigocore/jsonhttp"
-	"github.com/stratumn/go-indigocore/jsonws"
+	"github.com/stratumn/go-core/fossilizer/fossilizertesting"
+	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/jsonws"
 )
 
 func createServer() (*Server, *fossilizertesting.MockAdapter) {

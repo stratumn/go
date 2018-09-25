@@ -42,13 +42,13 @@ func newWriter(txFactory TxFactory, r *reader, stmts writeStmts) *writer {
 	}
 }
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (a *writer) SetValue(ctx context.Context, key []byte, value []byte) error {
 	_, err := a.stmts.SaveValue.Exec(key, value)
 	return err
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
 func (a *writer) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
@@ -62,7 +62,7 @@ func (a *writer) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	return data, nil
 }
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.Adapter.CreateLink.
 func (a *writer) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	var (
 		priority     = link.Meta.Priority

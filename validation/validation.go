@@ -17,7 +17,7 @@ package validation
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (

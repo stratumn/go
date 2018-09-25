@@ -21,9 +21,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/tmpop/tmpoptestcases/mocks"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/tmpop"
+	"github.com/stratumn/go-core/tmpop/tmpoptestcases/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

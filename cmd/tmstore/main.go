@@ -20,9 +20,9 @@ import (
 	"flag"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/store/storehttp"
-	"github.com/stratumn/go-indigocore/tmstore"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store/storehttp"
+	"github.com/stratumn/go-core/tmstore"
 	"github.com/tendermint/tendermint/rpc/client"
 )
 

@@ -20,8 +20,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // MultiValidator uses its internal validators to validate a link.
@@ -37,12 +37,12 @@ func NewMultiValidator(validators ProcessesValidators) Validator {
 	return &MultiValidator{validators: validators}
 }
 
-// ShouldValidate implements github.com/stratumn/go-indigocore/validation/validators.Validator.ShouldValidate.
+// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
 func (v MultiValidator) ShouldValidate(link *chainscript.Link) bool {
 	return true
 }
 
-// Hash implements github.com/stratumn/go-indigocore/validation/validators.Validator.Hash.
+// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
 // It concatenates the hashes from its sub-validators and hashes the result.
 func (v MultiValidator) Hash() (*types.Bytes32, error) {
 	b := make([]byte, 0)
@@ -73,7 +73,7 @@ func (v MultiValidator) matchValidators(l *chainscript.Link) (linkValidators []V
 	return
 }
 
-// Validate implements github.com/stratumn/go-indigocore/validation/validators.Validator.Validate.
+// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
 // It runs the validation on every child validator matching the provided link.
 // It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
 func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {

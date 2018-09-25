@@ -18,7 +18,7 @@ import (
 	"sync"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/store"
 )
 
 // Tendermint doesn't allow us to fire arbitrary events to notify TMStore.

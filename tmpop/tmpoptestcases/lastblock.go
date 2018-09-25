@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-core/tmpop"
+	"github.com/stratumn/go-core/validation"
 )
 
 // TestLastBlock tests if tmpop correctly stores information

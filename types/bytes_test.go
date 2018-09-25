@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 )
 

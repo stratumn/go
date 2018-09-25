@@ -18,7 +18,7 @@ package storetestcases
 import (
 	"testing"
 
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/store"
 	"github.com/stretchr/testify/require"
 )
 

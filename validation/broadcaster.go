@@ -17,7 +17,7 @@ package validation
 import (
 	"sync"
 
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 // UpdateSubscriber provides a way to be notified of validation updates.
@@ -32,7 +32,7 @@ type UpdateNotifier interface {
 	Close()
 }
 
-// UpdateBroadcaster implements github.com/go-indigocore/validation.UpdateSubscriber and github.com/go-indigocore/validation.UpdateNotifier.
+// UpdateBroadcaster implements github.com/go-core/validation.UpdateSubscriber and github.com/go-core/validation.UpdateNotifier.
 // It provides subscription to a Manager to be notified of validation updates.
 type UpdateBroadcaster struct {
 	current validators.Validator
@@ -46,7 +46,7 @@ func NewUpdateBroadcaster() *UpdateBroadcaster {
 	return &UpdateBroadcaster{}
 }
 
-// Subscribe implements github.com/go-indigocore/validation.UpdateSubscriber.Subscribe.
+// Subscribe implements github.com/go-core/validation.UpdateSubscriber.Subscribe.
 // It return a listener that will be notified when the validator changes.
 func (b *UpdateBroadcaster) Subscribe() <-chan validators.Validator {
 	b.listenersMutex.Lock()
@@ -63,7 +63,7 @@ func (b *UpdateBroadcaster) Subscribe() <-chan validators.Validator {
 	return subscribeChan
 }
 
-// Unsubscribe implements github.com/go-indigocore/validation.UpdateSubscriber.Unsubscribe.
+// Unsubscribe implements github.com/go-core/validation.UpdateSubscriber.Unsubscribe.
 // It removes a listener.
 func (b *UpdateBroadcaster) Unsubscribe(c <-chan validators.Validator) {
 	b.listenersMutex.Lock()
@@ -84,7 +84,7 @@ func (b *UpdateBroadcaster) Unsubscribe(c <-chan validators.Validator) {
 	}
 }
 
-// Broadcast implements github.com/go-indigocore/validation.UpdateNotifier.Broadcast.
+// Broadcast implements github.com/go-core/validation.UpdateNotifier.Broadcast.
 func (b *UpdateBroadcaster) Broadcast(validator validators.Validator) {
 	b.listenersMutex.RLock()
 	defer b.listenersMutex.RUnlock()
@@ -97,7 +97,7 @@ func (b *UpdateBroadcaster) Broadcast(validator validators.Validator) {
 	}
 }
 
-// Close implements github.com/go-indigocore/validation.UpdateNotifier.Close.
+// Close implements github.com/go-core/validation.UpdateNotifier.Close.
 func (b *UpdateBroadcaster) Close() {
 	b.listenersMutex.Lock()
 	defer b.listenersMutex.Unlock()

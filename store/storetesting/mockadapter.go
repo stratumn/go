@@ -18,12 +18,12 @@ import (
 	"context"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // MockAdapter is used to mock a store.
-// It implements github.com/stratumn/go-indigocore/store.Adapter.
+// It implements github.com/stratumn/go-core/store.Adapter.
 type MockAdapter struct {
 	// The mock for the GetInfo function.
 	MockGetInfo MockGetInfo
@@ -54,7 +54,7 @@ type MockAdapter struct {
 }
 
 // MockKeyValueStore is used to mock a key-value store.
-// It implements github.com/stratumn/go-indigocore/store.KeyValueStore.
+// It implements github.com/stratumn/go-core/store.KeyValueStore.
 type MockKeyValueStore struct {
 	// The mock for the SetValue function.
 	MockSetValue MockSetValue
@@ -234,7 +234,7 @@ type MockDeleteValue struct {
 	Fn func([]byte) ([]byte, error)
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (a *MockAdapter) GetInfo(ctx context.Context) (interface{}, error) {
 	a.MockGetInfo.CalledCount++
 
@@ -246,7 +246,7 @@ func (a *MockAdapter) GetInfo(ctx context.Context) (interface{}, error) {
 }
 
 // AddStoreEventChannel implements
-// github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel.
+// github.com/stratumn/go-core/store.Adapter.AddStoreEventChannel.
 func (a *MockAdapter) AddStoreEventChannel(storeChan chan *store.Event) {
 	a.MockAddStoreEventChannel.CalledCount++
 	a.MockAddStoreEventChannel.CalledWith = append(a.MockAddStoreEventChannel.CalledWith, storeChan)
@@ -257,7 +257,7 @@ func (a *MockAdapter) AddStoreEventChannel(storeChan chan *store.Event) {
 	}
 }
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.Adapter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.Adapter.CreateLink.
 func (a *MockAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	a.MockCreateLink.CalledCount++
 	a.MockCreateLink.CalledWith = append(a.MockCreateLink.CalledWith, link)
@@ -270,7 +270,7 @@ func (a *MockAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (c
 	return nil, nil
 }
 
-// AddEvidence implements github.com/stratumn/go-indigocore/store.Adapter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-core/store.Adapter.AddEvidence.
 func (a *MockAdapter) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	a.MockAddEvidence.CalledCount++
 	a.MockAddEvidence.CalledWith = append(a.MockAddEvidence.CalledWith, evidence)
@@ -283,7 +283,7 @@ func (a *MockAdapter) AddEvidence(ctx context.Context, linkHash chainscript.Link
 	return nil
 }
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.Adapter.GetSegment.
 func (a *MockAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	a.MockGetSegment.CalledCount++
 	a.MockGetSegment.CalledWith = append(a.MockGetSegment.CalledWith, linkHash)
@@ -296,7 +296,7 @@ func (a *MockAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkH
 	return nil, nil
 }
 
-// GetEvidences implements github.com/stratumn/go-indigocore/store.Adapter.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-core/store.Adapter.GetEvidences.
 func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	a.MockGetEvidences.CalledCount++
 	a.MockGetEvidences.CalledWith = append(a.MockGetEvidences.CalledWith, linkHash)
@@ -309,7 +309,7 @@ func (a *MockAdapter) GetEvidences(ctx context.Context, linkHash chainscript.Lin
 	return nil, nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/go-core/store.Adapter.FindSegments.
 func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	a.MockFindSegments.CalledCount++
 	a.MockFindSegments.CalledWith = append(a.MockFindSegments.CalledWith, filter)
@@ -322,7 +322,7 @@ func (a *MockAdapter) FindSegments(ctx context.Context, filter *store.SegmentFil
 	return &types.PaginatedSegments{}, nil
 }
 
-// GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-core/store.Adapter.GetMapIDs.
 func (a *MockAdapter) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	a.MockGetMapIDs.CalledCount++
 	a.MockGetMapIDs.CalledWith = append(a.MockGetMapIDs.CalledWith, filter)
@@ -335,7 +335,7 @@ func (a *MockAdapter) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([
 	return nil, nil
 }
 
-// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-core/store.Adapter.NewBatch.
 func (a *MockAdapter) NewBatch(ctx context.Context) (store.Batch, error) {
 	a.MockNewBatch.CalledCount++
 
@@ -346,7 +346,7 @@ func (a *MockAdapter) NewBatch(ctx context.Context) (store.Batch, error) {
 	return &MockBatch{}, nil
 }
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (a *MockKeyValueStore) SetValue(ctx context.Context, key, value []byte) error {
 	a.MockSetValue.CalledCount++
 	calledWith := [][]byte{key, value}
@@ -360,7 +360,7 @@ func (a *MockKeyValueStore) SetValue(ctx context.Context, key, value []byte) err
 	return nil
 }
 
-// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
 func (a *MockKeyValueStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	a.MockGetValue.CalledCount++
 	a.MockGetValue.CalledWith = append(a.MockGetValue.CalledWith, key)
@@ -373,7 +373,7 @@ func (a *MockKeyValueStore) GetValue(ctx context.Context, key []byte) ([]byte, e
 	return nil, nil
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
 func (a *MockKeyValueStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	a.MockDeleteValue.CalledCount++
 	a.MockDeleteValue.CalledWith = append(a.MockDeleteValue.CalledWith, key)

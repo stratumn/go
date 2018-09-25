@@ -35,11 +35,11 @@ import (
 	"sync"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/leveldbstore"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/leveldbstore"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -53,7 +53,7 @@ const (
 	DefaultPath = "/var/stratumn/filestore"
 )
 
-// FileStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
+// FileStore is the type that implements github.com/stratumn/go-core/store.Adapter.
 type FileStore struct {
 	config     *Config
 	eventChans []chan *store.Event
@@ -101,7 +101,7 @@ func New(config *Config) (*FileStore, error) {
 
 /********** Store adapter implementation **********/
 
-// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (a *FileStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -111,19 +111,19 @@ func (a *FileStore) GetInfo(ctx context.Context) (interface{}, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/go-core/store.Adapter.AddStoreEventChannel
 func (a *FileStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
-// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-core/store.Adapter.NewBatch.
 func (a *FileStore) NewBatch(ctx context.Context) (store.Batch, error) {
 	return NewBatch(ctx, a), nil
 }
 
 /********** Store writer implementation **********/
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *FileStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if err := link.Validate(ctx); err != nil {
 		return nil, err
@@ -240,7 +240,7 @@ func (a *FileStore) getChildCount(linkHash chainscript.LinkHash) (int, error) {
 	return childCount, nil
 }
 
-// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (a *FileStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	currentEvidences, err := a.GetEvidences(ctx, linkHash)
 	if err != nil {
@@ -273,7 +273,7 @@ func (a *FileStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHa
 
 /********** Store reader implementation **********/
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.SegmentReader.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.SegmentReader.GetSegment.
 func (a *FileStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -301,7 +301,7 @@ func (a *FileStore) getSegment(ctx context.Context, linkHash chainscript.LinkHas
 	return segment, nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.SegmentReader.FindSegments.
+// FindSegments implements github.com/stratumn/go-core/store.SegmentReader.FindSegments.
 func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	segments := &types.PaginatedSegments{}
 
@@ -323,7 +323,7 @@ func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilte
 	return filter.Pagination.PaginateSegments(segments), nil
 }
 
-// GetMapIDs implements github.com/stratumn/go-indigocore/store.SegmentReader.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-core/store.SegmentReader.GetMapIDs.
 func (a *FileStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	set := map[string]struct{}{}
 	err := a.forEach(ctx, func(segment *chainscript.Segment) error {
@@ -347,7 +347,7 @@ func (a *FileStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]s
 	return filter.Pagination.PaginateStrings(mapIDs), nil
 }
 
-// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-core/store.EvidenceReader.GetEvidences.
 func (a *FileStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	key := getEvidenceKey(linkHash)
 	evidencesData, err := a.GetValue(ctx, key)
@@ -388,19 +388,19 @@ func (a *FileStore) getLink(linkHash chainscript.LinkHash) (*chainscript.Link, e
 	return &link, nil
 }
 
-/********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
+/********** github.com/stratumn/go-core/store.KeyValueStore implementation **********/
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (a *FileStore) SetValue(ctx context.Context, key []byte, value []byte) error {
 	return a.kvDB.SetValue(ctx, key, value)
 }
 
-// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
 func (a *FileStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	return a.kvDB.GetValue(ctx, key)
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
 func (a *FileStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	return a.kvDB.DeleteValue(ctx, key)
 }

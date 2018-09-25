@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/store"
 )
 
 // LinkSelector used in LinkQuery.

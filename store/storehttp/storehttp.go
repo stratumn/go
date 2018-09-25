@@ -49,10 +49,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/jsonhttp"
-	"github.com/stratumn/go-indigocore/jsonws"
-	"github.com/stratumn/go-indigocore/monitoring"
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/jsonws"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
 
 	"go.opencensus.io/trace"
 )

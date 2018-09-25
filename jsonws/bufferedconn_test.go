@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/jsonws/jsonwstesting"
+	"github.com/stratumn/go-core/jsonws/jsonwstesting"
 )
 
 func TestBufferedConnWriteJSON(t *testing.T) {

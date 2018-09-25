@@ -23,8 +23,8 @@ of tests in various packages.
 import (
 	"context"
 
-	"github.com/stratumn/go-indigocore/dummystore"
-	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/tmpop"
 	node "github.com/tendermint/tendermint/node"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpctest "github.com/tendermint/tendermint/rpc/test"

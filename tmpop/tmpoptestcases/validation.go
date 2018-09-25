@@ -19,9 +19,9 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/tmpop"
-	"github.com/stratumn/go-indigocore/utils"
-	"github.com/stratumn/go-indigocore/validation"
+	"github.com/stratumn/go-core/tmpop"
+	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/validation"
 	"github.com/stretchr/testify/assert"
 )
 

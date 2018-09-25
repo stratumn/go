@@ -19,7 +19,7 @@ import (
 	"strconv"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/store"
 )
 
 func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {

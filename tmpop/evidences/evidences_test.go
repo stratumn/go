@@ -22,8 +22,8 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/tmpop/evidences"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/tmpop/evidences"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"

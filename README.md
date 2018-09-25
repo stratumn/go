@@ -1,9 +1,9 @@
 # Indigo Core
 
-[![GoDoc](https://godoc.org/github.com/stratumn/go-indigocore?status.svg)](https://godoc.org/github.com/stratumn/go-indigocore)
-[![Build Status](https://semaphoreci.com/api/v1/stratumn/go-indigocore/branches/master/badge.svg)](https://semaphoreci.com/stratumn/go-indigocore)
-[![codecov](https://codecov.io/gh/stratumn/go-indigocore/branch/master/graph/badge.svg)](https://codecov.io/gh/stratumn/go-indigocore)
-[![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/go-indigocore)](https://goreportcard.com/report/github.com/stratumn/go-indigocore)
+[![GoDoc](https://godoc.org/github.com/stratumn/go-core?status.svg)](https://godoc.org/github.com/stratumn/go-core)
+[![Build Status](https://semaphoreci.com/api/v1/stratumn/go-core/branches/master/badge.svg)](https://semaphoreci.com/stratumn/go-core)
+[![codecov](https://codecov.io/gh/stratumn/go-core/branch/master/graph/badge.svg)](https://codecov.io/gh/stratumn/go-core)
+[![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/go-core)](https://goreportcard.com/report/github.com/stratumn/go-core)
 [![Join the chat at https://gitter.im/stratumn/sdk](https://badges.gitter.im/stratumn/sdk.svg)](https://gitter.im/stratumn/sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [![Logo](logo.png)](https://indigocore.org)

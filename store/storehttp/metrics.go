@@ -19,7 +19,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/monitoring"
+	"github.com/stratumn/go-core/monitoring"
 
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/stats/view"

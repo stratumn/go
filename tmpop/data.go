@@ -21,8 +21,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	abci "github.com/tendermint/abci/types"
 	wire "github.com/tendermint/go-wire"
 )

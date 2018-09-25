@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

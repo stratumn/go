@@ -25,9 +25,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/types"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

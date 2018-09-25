@@ -24,7 +24,7 @@ import (
 	json "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/types"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/tendermint/go-crypto"
 	tmtypes "github.com/tendermint/tendermint/types"

@@ -21,8 +21,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 var (
@@ -65,7 +65,7 @@ func NewNetworkManager(ctx context.Context, a store.Adapter, networkListener <-c
 	return &govMgr, nil
 }
 
-// ListenAndUpdate implements github.com/go-indigocore/validation.Manager.ListenAndUpdate.
+// ListenAndUpdate implements github.com/go-core/validation.Manager.ListenAndUpdate.
 // It will update the current validators whenever the provided rule file is updated.
 // This method must be run in a goroutine as it will wait for write events on the file.
 func (m *NetworkManager) ListenAndUpdate(ctx context.Context) error {
@@ -130,7 +130,7 @@ func (m *NetworkManager) GetValidators(ctx context.Context, link *chainscript.Li
 	return m.store.GetValidators(ctx)
 }
 
-// Current implements github.com/go-indigocore/validation.Manager.Current.
+// Current implements github.com/go-core/validation.Manager.Current.
 // It returns the current validator set
 func (m *NetworkManager) Current() validators.Validator {
 	return m.current

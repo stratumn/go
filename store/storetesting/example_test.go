@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/stratumn/go-indigocore/store/storetesting"
+	"github.com/stratumn/go-core/store/storetesting"
 )
 
 // This example shows how to use a mock adapter.

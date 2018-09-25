@@ -23,7 +23,7 @@ import (
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/stratumn/go-indigocore/utils"
+	"github.com/stratumn/go-core/utils"
 )
 
 const (

@@ -19,7 +19,7 @@ import (
 	"errors"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/store"
+	"github.com/stratumn/go-core/store"
 )
 
 // Init validates the transition towards the "init" state

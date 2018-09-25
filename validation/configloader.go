@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-crypto/keys"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 var (

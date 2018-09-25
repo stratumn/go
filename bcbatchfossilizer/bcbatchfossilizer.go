@@ -22,12 +22,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/batchfossilizer"
-	batchevidences "github.com/stratumn/go-indigocore/batchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/bcbatchfossilizer/evidences"
-	"github.com/stratumn/go-indigocore/blockchain"
-	"github.com/stratumn/go-indigocore/fossilizer"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/batchfossilizer"
+	batchevidences "github.com/stratumn/go-core/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/bcbatchfossilizer/evidences"
+	"github.com/stratumn/go-core/blockchain"
+	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/types"
 )
 
 const (
@@ -53,7 +53,7 @@ type Info struct {
 }
 
 // Fossilizer is the type that
-// implements github.com/stratumn/go-indigocore/batchfossilizer.Adapter.
+// implements github.com/stratumn/go-core/batchfossilizer.Adapter.
 type Fossilizer struct {
 	batchfossilizer.Adapter
 	config            *Config
@@ -82,7 +82,7 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 	return &f, err
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/fossilizer.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/fossilizer.Adapter.GetInfo.
 func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 	batchInfo, err := a.Adapter.GetInfo(ctx)
 	if err != nil {

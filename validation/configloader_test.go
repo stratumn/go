@@ -19,11 +19,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/go-indigocore/testutil"
-	"github.com/stratumn/go-indigocore/utils"
-	"github.com/stratumn/go-indigocore/validation"
-	"github.com/stratumn/go-indigocore/validation/testutils"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/validation"
+	"github.com/stratumn/go-core/validation/testutils"
+	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

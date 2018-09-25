@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratumn/go-indigocore/jsonws/jsonwstesting"
+	"github.com/stratumn/go-core/jsonws/jsonwstesting"
 )
 
 func testUpgradeHandle(w http.ResponseWriter, r *http.Request, h http.Header) (PingableConn, error) {

@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/types"
+	"github.com/stratumn/go-core/types"
 )
 
 const (

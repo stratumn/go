@@ -20,8 +20,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 // LocalManager manages governance for validation rules management in an indigo network.

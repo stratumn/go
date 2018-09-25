@@ -23,7 +23,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-core/jsonhttp"
 )
 
 // This example shows how to create a server and add a route with a named param.

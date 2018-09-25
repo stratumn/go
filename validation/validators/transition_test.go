@@ -20,9 +20,9 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/dummystore"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

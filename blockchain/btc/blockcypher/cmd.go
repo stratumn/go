@@ -20,7 +20,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/blockchain/btc"
+	"github.com/stratumn/go-core/blockchain/btc"
 )
 
 var (

@@ -19,12 +19,12 @@ import (
 	"database/sql"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-indigocore/monitoring"
+	"github.com/stratumn/go-core/monitoring"
 
 	"go.opencensus.io/trace"
 )
 
-// Batch is the type that implements github.com/stratumn/go-indigocore/store.Batch.
+// Batch is the type that implements github.com/stratumn/go-core/store.Batch.
 type Batch struct {
 	*reader
 	*writer
@@ -52,7 +52,7 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 	}, nil
 }
 
-// Write implements github.com/stratumn/go-indigocore/store.Batch.Write.
+// Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
 	_, span := trace.StartSpan(ctx, "postgresstore/batch/Write")
 	defer monitoring.SetSpanStatusAndEnd(span, err)

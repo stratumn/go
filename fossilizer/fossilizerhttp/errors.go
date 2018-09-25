@@ -15,7 +15,7 @@
 package fossilizerhttp
 
 import (
-	"github.com/stratumn/go-indigocore/jsonhttp"
+	"github.com/stratumn/go-core/jsonhttp"
 )
 
 func newErrData(msg string) jsonhttp.ErrHTTP {

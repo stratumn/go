@@ -21,8 +21,8 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/tmpop"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/tmpop"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/abci/types"
 )

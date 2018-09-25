@@ -26,10 +26,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-indigocore/bufferedbatch"
-	"github.com/stratumn/go-indigocore/store"
-	"github.com/stratumn/go-indigocore/types"
-	"github.com/stratumn/go-indigocore/validation/validators"
+	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -57,7 +57,7 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
-// DummyStore is the type that implements github.com/stratumn/go-indigocore/store.Adapter.
+// DummyStore is the type that implements github.com/stratumn/go-core/store.Adapter.
 type DummyStore struct {
 	config          *Config
 	eventChans      []chan *store.Event
@@ -90,7 +90,7 @@ func New(config *Config) *DummyStore {
 	}
 }
 
-// GetInfo implements github.com/stratumn/go-indigocore/store.Adapter.GetInfo.
+// GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (a *DummyStore) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{
 		Name:        Name,
@@ -100,14 +100,14 @@ func (a *DummyStore) GetInfo(ctx context.Context) (interface{}, error) {
 	}, nil
 }
 
-// AddStoreEventChannel implements github.com/stratumn/go-indigocore/store.Adapter.AddStoreEventChannel
+// AddStoreEventChannel implements github.com/stratumn/go-core/store.Adapter.AddStoreEventChannel
 func (a *DummyStore) AddStoreEventChannel(eventChan chan *store.Event) {
 	a.eventChans = append(a.eventChans, eventChan)
 }
 
 /********** Store writer implementation **********/
 
-// CreateLink implements github.com/stratumn/go-indigocore/store.LinkWriter.CreateLink.
+// CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *DummyStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if err := link.Validate(ctx); err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (a *DummyStore) incrementChildCount(linkHash chainscript.LinkHash) {
 	a.linksChildCount[linkHashStr]++
 }
 
-// AddEvidence implements github.com/stratumn/go-indigocore/store.EvidenceWriter.AddEvidence.
+// AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (a *DummyStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -230,7 +230,7 @@ func (a *DummyStore) addEvidence(linkHash string, evidence *chainscript.Evidence
 
 /********** Store reader implementation **********/
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.Adapter.GetSegment.
 func (a *DummyStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -238,7 +238,7 @@ func (a *DummyStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHa
 	return a.getSegment(linkHash.String())
 }
 
-// GetSegment implements github.com/stratumn/go-indigocore/store.Adapter.GetSegment.
+// GetSegment implements github.com/stratumn/go-core/store.Adapter.GetSegment.
 func (a *DummyStore) getSegment(linkHash string) (*chainscript.Segment, error) {
 	link, exists := a.links[linkHash]
 	if !exists {
@@ -258,7 +258,7 @@ func (a *DummyStore) getSegment(linkHash string) (*chainscript.Segment, error) {
 	return segment, nil
 }
 
-// FindSegments implements github.com/stratumn/go-indigocore/store.Adapter.FindSegments.
+// FindSegments implements github.com/stratumn/go-core/store.Adapter.FindSegments.
 func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -283,7 +283,7 @@ func (a *DummyStore) FindSegments(ctx context.Context, filter *store.SegmentFilt
 	return a.findHashesSegments(linkHashes, filter)
 }
 
-// GetMapIDs implements github.com/stratumn/go-indigocore/store.Adapter.GetMapIDs.
+// GetMapIDs implements github.com/stratumn/go-core/store.Adapter.GetMapIDs.
 func (a *DummyStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -302,7 +302,7 @@ func (a *DummyStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]
 	return filter.Pagination.PaginateStrings(mapIDs), nil
 }
 
-// GetEvidences implements github.com/stratumn/go-indigocore/store.EvidenceReader.GetEvidences.
+// GetEvidences implements github.com/stratumn/go-core/store.EvidenceReader.GetEvidences.
 func (a *DummyStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -311,9 +311,9 @@ func (a *DummyStore) GetEvidences(ctx context.Context, linkHash chainscript.Link
 	return evidences, nil
 }
 
-/********** github.com/stratumn/go-indigocore/store.KeyValueStore implementation **********/
+/********** github.com/stratumn/go-core/store.KeyValueStore implementation **********/
 
-// GetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.GetValue.
+// GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
 func (a *DummyStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
@@ -321,7 +321,7 @@ func (a *DummyStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	return a.values[createKey(key)], nil
 }
 
-// SetValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.SetValue.
+// SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (a *DummyStore) SetValue(ctx context.Context, key, value []byte) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -336,7 +336,7 @@ func (a *DummyStore) setValue(key, value []byte) error {
 	return nil
 }
 
-// DeleteValue implements github.com/stratumn/go-indigocore/store.KeyValueStore.DeleteValue.
+// DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
 func (a *DummyStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -357,9 +357,9 @@ func (a *DummyStore) deleteValue(key []byte) ([]byte, error) {
 	return value, nil
 }
 
-/********** github.com/stratumn/go-indigocore/store.Batch implementation **********/
+/********** github.com/stratumn/go-core/store.Batch implementation **********/
 
-// NewBatch implements github.com/stratumn/go-indigocore/store.Adapter.NewBatch.
+// NewBatch implements github.com/stratumn/go-core/store.Adapter.NewBatch.
 func (a *DummyStore) NewBatch(ctx context.Context) (store.Batch, error) {
 	return bufferedbatch.NewBatch(ctx, a), nil
 }
