@@ -38,8 +38,6 @@ const (
 	DefaultURL = "postgres://postgres@postgres/postgres?sslmode=disable"
 )
 
-const notFoundError = "sql: no rows in result set"
-
 // Config contains configuration options for the store.
 type Config struct {
 	// A version string that will be set in the store's information.
@@ -61,15 +59,28 @@ type Info struct {
 	Commit      string `json:"commit"`
 }
 
+// scopedStore implements store read and write operations on a database
+// abstraction.
+// It allows scoping to a transaction for batches.
+type scopedStore struct {
+	stmts     *stmts
+	txFactory TxFactory
+}
+
+func newScopedStore(stmts *stmts, txFactory TxFactory) *scopedStore {
+	return &scopedStore{
+		stmts:     stmts,
+		txFactory: txFactory,
+	}
+}
+
 // Store is the type that implements github.com/stratumn/go-core/store.Adapter.
 type Store struct {
-	*reader
-	*writer
 	config     *Config
 	eventChans []chan *store.Event
 	db         *sql.DB
-	stmts      *stmts
 
+	*scopedStore
 	batches map[*Batch]*sql.Tx
 }
 
@@ -79,7 +90,12 @@ func New(config *Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{config: config, db: db, batches: make(map[*Batch]*sql.Tx)}, nil
+
+	return &Store{
+		config:  config,
+		db:      db,
+		batches: make(map[*Batch]*sql.Tx),
+	}, nil
 }
 
 // EnforceUniqueMapEntry makes sure each process map contains a single link
@@ -110,12 +126,13 @@ func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	b, err := NewBatch(tx)
 	if err != nil {
 		return nil, err
 	}
-	a.batches[b] = tx
 
+	a.batches[b] = tx
 	return b, nil
 }
 
@@ -134,7 +151,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 		return nil, err
 	}
 
-	linkHash, err := a.writer.CreateLink(ctx, link)
+	linkHash, err := a.scopedStore.CreateLink(ctx, link)
 	if err != nil {
 		return nil, err
 	}
@@ -149,12 +166,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 
 // AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
-	data, err := chainscript.MarshalEvidence(evidence)
-	if err != nil {
-		return err
-	}
-
-	_, err = a.stmts.AddEvidence.Exec(linkHash, evidence.Provider, data)
+	err := a.scopedStore.AddEvidence(ctx, linkHash, evidence)
 	if err != nil {
 		return err
 	}
@@ -192,14 +204,8 @@ func (a *Store) Prepare() error {
 	if err != nil {
 		return err
 	}
-	a.stmts = stmts
-	a.reader = newReader(a.stmts.readStmts)
-	a.writer = newWriter(
-		NewStandardTxFactory(a.db),
-		a.reader,
-		a.stmts.writeStmts,
-	)
 
+	a.scopedStore = newScopedStore(stmts, NewStandardTxFactory(a.db))
 	return nil
 }
 

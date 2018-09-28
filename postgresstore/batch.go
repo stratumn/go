@@ -26,8 +26,7 @@ import (
 
 // Batch is the type that implements github.com/stratumn/go-core/store.Batch.
 type Batch struct {
-	*reader
-	*writer
+	*scopedStore
 	done      bool
 	tx        *sql.Tx
 	txFactory *SingletonTxFactory
@@ -35,20 +34,16 @@ type Batch struct {
 
 // NewBatch creates a new instance of a Postgres Batch.
 func NewBatch(tx *sql.Tx) (*Batch, error) {
-	stmts, err := newBatchStmts(tx)
+	stmts, err := newStmts(tx)
 	if err != nil {
 		return nil, err
 	}
 
 	txFactory := NewSingletonTxFactory(tx).(*SingletonTxFactory)
-	r := newReader(readStmts(stmts.readStmts))
-	w := newWriter(txFactory, r, writeStmts(stmts.writeStmts))
-
 	return &Batch{
-		reader:    r,
-		writer:    w,
-		tx:        tx,
-		txFactory: txFactory,
+		scopedStore: newScopedStore(stmts, txFactory),
+		tx:          tx,
+		txFactory:   txFactory,
 	}, nil
 }
 
