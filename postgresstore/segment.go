@@ -191,6 +191,18 @@ func (s *scopedStore) createLinkInTx(
 		return ErrLinkAlreadyExists
 	}
 
+	if s.enforceUniqueMapEntry && len(prevLinkHash) == 0 {
+		initMap, err := tx.Prepare(SQLInitMap)
+		if err != nil {
+			return store.ErrUniqueMapEntry
+		}
+
+		_, err = initMap.Exec(process, mapID)
+		if err != nil {
+			return store.ErrUniqueMapEntry
+		}
+	}
+
 	initDegree, err := tx.Prepare(SQLCreateLinkDegree)
 	if err != nil {
 		return err

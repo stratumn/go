@@ -55,6 +55,13 @@ const (
 		UPDATE links_degree SET out_degree = $2 
 		WHERE link_hash = $1
 	`
+	SQLInitMap = `
+		INSERT INTO process_maps (
+			process,
+			map_id
+		)
+		VALUES ($1, $2)
+	`
 	SQLGetSegment = `
 		SELECT l.link_hash, l.data, e.data FROM links l
 		LEFT JOIN evidences e ON l.link_hash = e.link_hash
@@ -177,10 +184,22 @@ var sqlCreate = []string{
 		CREATE UNIQUE INDEX values_key_idx
 		ON values (key)
 	`,
+	`
+		CREATE TABLE process_maps (
+			id BIGSERIAL PRIMARY KEY,
+			process text NOT NULL,
+			map_id text NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`,
+	`
+		CREATE UNIQUE INDEX process_map_idx
+		ON process_maps (process, map_id)
+	`,
 }
 
 var sqlDrop = []string{
-	"DROP TABLE links, links_degree, evidences, values",
+	"DROP TABLE links, links_degree, evidences, values, process_maps",
 }
 
 // SQLPreparer prepares statements.

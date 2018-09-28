@@ -20,6 +20,7 @@ import (
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/store"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,8 +67,12 @@ func (f Factory) TestAdapterConfig(t *testing.T) {
 			WithAction("init1").
 			Build()
 
-		_, err = a.CreateLink(ctx, ll1)
+		llh1, err := a.CreateLink(ctx, ll1)
 		require.NoError(t, err)
+
+		s1, err := a.GetSegment(ctx, llh1)
+		require.NoError(t, err)
+		chainscripttest.LinksEqual(t, ll1, s1.Link)
 
 		ll2 := chainscripttest.NewLinkBuilder(t).
 			WithProcess("test_process").
@@ -76,7 +81,11 @@ func (f Factory) TestAdapterConfig(t *testing.T) {
 			WithAction("init2").
 			Build()
 
-		_, err = a.CreateLink(ctx, ll2)
+		llh2, err := a.CreateLink(ctx, ll2)
 		require.EqualError(t, err, store.ErrUniqueMapEntry.Error())
+
+		s2, err := a.GetSegment(ctx, llh2)
+		require.NoError(t, err)
+		assert.Nil(t, s2)
 	})
 }

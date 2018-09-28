@@ -63,8 +63,9 @@ type Info struct {
 // abstraction.
 // It allows scoping to a transaction for batches.
 type scopedStore struct {
-	stmts     *stmts
-	txFactory TxFactory
+	stmts                 *stmts
+	txFactory             TxFactory
+	enforceUniqueMapEntry bool
 }
 
 func newScopedStore(stmts *stmts, txFactory TxFactory) *scopedStore {
@@ -101,6 +102,7 @@ func New(config *Config) (*Store, error) {
 // EnforceUniqueMapEntry makes sure each process map contains a single link
 // without parent.
 func (a *Store) EnforceUniqueMapEntry() error {
+	a.scopedStore.enforceUniqueMapEntry = true
 	return nil
 }
 
