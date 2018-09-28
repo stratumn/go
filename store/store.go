@@ -84,6 +84,22 @@ type Batch interface {
 	Write(ctx context.Context) error
 }
 
+// AdapterConfig lets users configure advanced store adapter settings.
+// Some stores can't offer these advanced features, so you'll have to
+// test if the store you're using supports it by type-casting it to this
+// interface.
+type AdapterConfig interface {
+	// EnforceUniqueMapEntry prevents multiple "first" links from being added
+	// to the same map.
+	// By default maps can have any number of "first" links (links without a
+	// parent).
+	// In some cases that doesn't reflect the reality of your process: each map
+	// should be started with a single link and other links should be children
+	// of the first link. If that's the case, you need to call this method when
+	// creating your store adapter.
+	EnforceUniqueMapEntry() error
+}
+
 // Adapter is the minimal interface that all stores should implement.
 // Then a store may optionally implement the KeyValueStore interface.
 type Adapter interface {

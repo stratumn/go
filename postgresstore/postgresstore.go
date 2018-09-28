@@ -82,6 +82,12 @@ func New(config *Config) (*Store, error) {
 	return &Store{config: config, db: db, batches: make(map[*Batch]*sql.Tx)}, nil
 }
 
+// EnforceUniqueMapEntry makes sure each process map contains a single link
+// without parent.
+func (a *Store) EnforceUniqueMapEntry() error {
+	return nil
+}
+
 // GetInfo implements github.com/stratumn/go-core/store.Adapter.GetInfo.
 func (a *Store) GetInfo(ctx context.Context) (interface{}, error) {
 	return &Info{

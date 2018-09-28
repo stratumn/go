@@ -23,6 +23,7 @@ import (
 	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/utils"
 )
 
@@ -33,13 +34,14 @@ const (
 )
 
 var (
-	create bool
-	drop   bool
-	url    string
+	create         bool
+	drop           bool
+	uniqueMapEntry bool
+	url            string
 )
 
-// Initialize initializes a postgres store adapter
-func Initialize(config *Config, create, drop bool) *Store {
+// Initialize a postgres store adapter.
+func Initialize(config *Config, create, drop, uniqueMapEntry bool) *Store {
 	a, err := New(config)
 	if err != nil {
 		log.WithField("error", err).Fatal("Failed to create PostgreSQL store")
@@ -84,6 +86,14 @@ func Initialize(config *Config, create, drop bool) *Store {
 	if err != nil {
 		log.WithField("max", connectAttempts).Fatal("Unable to connect to PostgreSQL")
 	}
+
+	if uniqueMapEntry {
+		err = store.AdapterConfig(a).EnforceUniqueMapEntry()
+		if err != nil {
+			log.WithField("uniqueMapEntry", err.Error()).Fatal("Unable to configure unique map entry")
+		}
+	}
+
 	return a
 }
 
@@ -91,6 +101,7 @@ func Initialize(config *Config, create, drop bool) *Store {
 func RegisterFlags() {
 	flag.BoolVar(&create, "create", false, "create tables and indexes then exit")
 	flag.BoolVar(&drop, "drop", false, "drop tables and indexes then exit")
+	flag.BoolVar(&uniqueMapEntry, "uniquemapentry", false, "enforce unicity of the first link in each process map")
 	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL), "URL of the PostgreSQL database")
 }
 
@@ -98,6 +109,5 @@ func RegisterFlags() {
 // a postgres adapter using flag values.
 func InitializeWithFlags(version, commit string) *Store {
 	config := &Config{URL: url, Version: version, Commit: commit}
-	return Initialize(config, create, drop)
-
+	return Initialize(config, create, drop, uniqueMapEntry)
 }
