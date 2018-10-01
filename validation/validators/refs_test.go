@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
 	"github.com/stratumn/go-core/validation/validators"
@@ -67,6 +68,24 @@ func TestRefsValidator(t *testing.T) {
 		assert.NoError(t, v.Validate(ctx, s, l))
 	})
 
+	t.Run("with parent valid out degree", func(t *testing.T) {
+		parent := chainscripttest.NewLinkBuilder(t).
+			WithRandomData().
+			WithDegree(3).
+			Build()
+		_, err := s.CreateLink(ctx, parent)
+		require.NoError(t, err)
+
+		child := chainscripttest.NewLinkBuilder(t).
+			WithParent(t, parent).
+			WithProcess(parent.Meta.Process.Name).
+			WithMapID(parent.Meta.MapId).
+			Build()
+
+		assert.True(t, v.ShouldValidate(child))
+		assert.NoError(t, v.Validate(ctx, s, child))
+	})
+
 	t.Run("with missing parent", func(t *testing.T) {
 		l := chainscripttest.NewLinkBuilder(t).
 			WithParentHash(chainscripttest.RandomHash()).
@@ -96,6 +115,51 @@ func TestRefsValidator(t *testing.T) {
 
 		assert.True(t, v.ShouldValidate(l))
 		assert.EqualError(t, v.Validate(ctx, s, l), validators.ErrProcessMismatch.Error())
+	})
+
+	t.Run("with parent that wants no children", func(t *testing.T) {
+		parent := chainscripttest.NewLinkBuilder(t).
+			WithRandomData().
+			WithDegree(0).
+			Build()
+		_, err := s.CreateLink(ctx, parent)
+		require.NoError(t, err)
+
+		child := chainscripttest.NewLinkBuilder(t).
+			WithParent(t, parent).
+			WithProcess(parent.Meta.Process.Name).
+			WithMapID(parent.Meta.MapId).
+			Build()
+
+		assert.True(t, v.ShouldValidate(child))
+		assert.EqualError(t, v.Validate(ctx, s, child), chainscript.ErrOutDegree.Error())
+	})
+
+	t.Run("with parent that has too many children", func(t *testing.T) {
+		parent := chainscripttest.NewLinkBuilder(t).
+			WithRandomData().
+			WithDegree(1).
+			Build()
+		_, err := s.CreateLink(ctx, parent)
+		require.NoError(t, err)
+
+		child1 := chainscripttest.NewLinkBuilder(t).
+			WithParent(t, parent).
+			WithProcess(parent.Meta.Process.Name).
+			WithMapID(parent.Meta.MapId).
+			Build()
+		_, err = s.CreateLink(ctx, child1)
+		require.NoError(t, err)
+
+		child2 := chainscripttest.NewLinkBuilder(t).
+			WithRandomData().
+			WithParent(t, parent).
+			WithProcess(parent.Meta.Process.Name).
+			WithMapID(parent.Meta.MapId).
+			Build()
+
+		assert.True(t, v.ShouldValidate(child2))
+		assert.EqualError(t, v.Validate(ctx, s, child2), chainscript.ErrOutDegree.Error())
 	})
 
 	t.Run("with references", func(t *testing.T) {
