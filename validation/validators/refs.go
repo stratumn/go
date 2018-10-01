@@ -54,28 +54,28 @@ func (v *RefsValidator) validateParent(ctx context.Context, r store.SegmentReade
 		return nil
 	}
 
-	s, err := r.GetSegment(ctx, l.PrevLinkHash())
+	parent, err := r.GetSegment(ctx, l.PrevLinkHash())
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if s == nil || s.Link == nil {
+	if parent == nil || parent.Link == nil {
 		return ErrParentNotFound
 	}
 
-	if s.Link.Meta.Process.Name != l.Meta.Process.Name {
+	if parent.Link.Meta.Process.Name != l.Meta.Process.Name {
 		return ErrProcessMismatch
 	}
 
-	if s.Link.Meta.MapId != l.Meta.MapId {
+	if parent.Link.Meta.MapId != l.Meta.MapId {
 		return ErrMapIDMismatch
 	}
 
-	if s.Link.Meta.OutDegree == 0 {
+	if parent.Link.Meta.OutDegree == 0 {
 		return chainscript.ErrOutDegree
 	}
 
-	if s.Link.Meta.OutDegree > 0 {
+	if parent.Link.Meta.OutDegree > 0 {
 		children, err := r.FindSegments(ctx, &store.SegmentFilter{
 			Pagination:   store.Pagination{Limit: 1},
 			PrevLinkHash: l.PrevLinkHash(),
@@ -84,7 +84,7 @@ func (v *RefsValidator) validateParent(ctx context.Context, r store.SegmentReade
 			return errors.WithStack(err)
 		}
 
-		if int(s.Link.Meta.OutDegree) <= children.TotalCount {
+		if int(parent.Link.Meta.OutDegree) <= children.TotalCount {
 			return chainscript.ErrOutDegree
 		}
 	}
