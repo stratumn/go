@@ -55,15 +55,17 @@ const (
 		UPDATE links_degree SET out_degree = $2 
 		WHERE link_hash = $1
 	`
+	SQLInitMap = `
+		INSERT INTO process_maps (
+			process,
+			map_id
+		)
+		VALUES ($1, $2)
+	`
 	SQLGetSegment = `
 		SELECT l.link_hash, l.data, e.data FROM links l
 		LEFT JOIN evidences e ON l.link_hash = e.link_hash
 		WHERE l.link_hash = $1
-	`
-	SQLDeleteLink = `
-		DELETE FROM links
-		WHERE link_hash = $1
-		RETURNING data
 	`
 	SQLSaveValue = `
 		INSERT INTO values (
@@ -182,40 +184,60 @@ var sqlCreate = []string{
 		CREATE UNIQUE INDEX values_key_idx
 		ON values (key)
 	`,
+	`
+		CREATE TABLE process_maps (
+			id BIGSERIAL PRIMARY KEY,
+			process text NOT NULL,
+			map_id text NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)
+	`,
+	`
+		CREATE UNIQUE INDEX process_map_idx
+		ON process_maps (process, map_id)
+	`,
 }
 
 var sqlDrop = []string{
-	"DROP TABLE links, links_degree, evidences, values",
+	"DROP TABLE links, links_degree, evidences, values, process_maps",
 }
 
-type writeStmts struct {
+// SQLPreparer prepares statements.
+type SQLPreparer interface {
+	Prepare(query string) (*sql.Stmt, error)
+}
+
+// SQLQuerier executes queries.
+type SQLQuerier interface {
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+}
+
+// SQLPreparerQuerier prepares statements and executes queries.
+type SQLPreparerQuerier interface {
+	SQLPreparer
+	SQLQuerier
+}
+
+// stmts exposes prepared SQL queries in a DB or Tx scope.
+type stmts struct {
 	CreateLink       *sql.Stmt
 	CreateLinkDegree *sql.Stmt
+	GetSegment       *sql.Stmt
 	LockLinkDegree   *sql.Stmt
 	UpdateLinkDegree *sql.Stmt
-	DeleteLink       *sql.Stmt
-	SaveValue        *sql.Stmt
-	DeleteValue      *sql.Stmt
-	AddEvidence      *sql.Stmt
-}
 
-type readStmts struct {
+	DeleteValue *sql.Stmt
+	GetValue    *sql.Stmt
+	SaveValue   *sql.Stmt
+
+	AddEvidence  *sql.Stmt
+	GetEvidences *sql.Stmt
+
 	// DB.Query or Tx.Query depending on if we are in batch.
 	query func(query string, args ...interface{}) (*sql.Rows, error)
-
-	GetSegment   *sql.Stmt
-	GetValue     *sql.Stmt
-	GetEvidences *sql.Stmt
 }
 
-type stmts struct {
-	readStmts
-	writeStmts
-}
-
-type batchStmts stmts
-
-func newStmts(db *sql.DB) (*stmts, error) {
+func newStmts(db SQLPreparerQuerier) (*stmts, error) {
 	var (
 		s   stmts
 		err error
@@ -225,21 +247,22 @@ func newStmts(db *sql.DB) (*stmts, error) {
 		if err == nil {
 			stmt, err = db.Prepare(str)
 		}
+
 		return
 	}
 
-	s.GetSegment = prepare(SQLGetSegment)
-	s.GetValue = prepare(SQLGetValue)
-	s.GetEvidences = prepare(SQLGetEvidences)
-
 	s.CreateLink = prepare(SQLCreateLink)
 	s.CreateLinkDegree = prepare(SQLCreateLinkDegree)
+	s.GetSegment = prepare(SQLGetSegment)
 	s.LockLinkDegree = prepare(SQLLockLinkDegree)
 	s.UpdateLinkDegree = prepare(SQLUpdateLinkDegree)
-	s.DeleteLink = prepare(SQLDeleteLink)
-	s.SaveValue = prepare(SQLSaveValue)
+
 	s.DeleteValue = prepare(SQLDeleteValue)
+	s.GetValue = prepare(SQLGetValue)
+	s.SaveValue = prepare(SQLSaveValue)
+
 	s.AddEvidence = prepare(SQLAddEvidence)
+	s.GetEvidences = prepare(SQLGetEvidences)
 
 	if err != nil {
 		return nil, err
@@ -250,41 +273,8 @@ func newStmts(db *sql.DB) (*stmts, error) {
 	return &s, nil
 }
 
-func newBatchStmts(tx *sql.Tx) (*batchStmts, error) {
-	var (
-		s   batchStmts
-		err error
-	)
-
-	prepare := func(str string) (stmt *sql.Stmt) {
-		if err == nil {
-			stmt, err = tx.Prepare(str)
-		}
-		return
-	}
-
-	s.GetSegment = prepare(SQLGetSegment)
-	s.GetValue = prepare(SQLGetValue)
-
-	s.CreateLink = prepare(SQLCreateLink)
-	s.CreateLinkDegree = prepare(SQLCreateLinkDegree)
-	s.LockLinkDegree = prepare(SQLLockLinkDegree)
-	s.UpdateLinkDegree = prepare(SQLUpdateLinkDegree)
-	s.DeleteLink = prepare(SQLDeleteLink)
-	s.SaveValue = prepare(SQLSaveValue)
-	s.DeleteValue = prepare(SQLDeleteValue)
-
-	if err != nil {
-		return nil, err
-	}
-
-	s.query = tx.Query
-
-	return &s, nil
-}
-
 // GetMapIDsWithFilters retrieves maps ids from the store given some filters.
-func (s *readStmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, error) {
+func (s *stmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, error) {
 	sqlHead := `
 		SELECT l.map_id FROM links l
 	`
@@ -337,7 +327,7 @@ func getOrderingWay(reverse bool) string {
 }
 
 // FindSegments formats a read query and retrieves segments according to the filter.
-func (s *readStmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows, error) {
+func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows, error) {
 	// Method to count distinct over: https://www.sqlservercentral.com/Forums/FindPost1824788.aspx
 	sqlTotalCount := `DENSE_RANK() OVER (ORDER BY l.link_hash ASC) +
 	DENSE_RANK() OVER (ORDER BY l.link_hash DESC) - 1 AS total_count

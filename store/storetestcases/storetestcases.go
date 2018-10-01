@@ -50,6 +50,7 @@ func (f Factory) RunKeyValueStoreTests(t *testing.T) {
 func (f Factory) RunStoreTests(t *testing.T) {
 	t.Run("Test store events", f.TestStoreEvents)
 	t.Run("Test store info", f.TestGetInfo)
+	t.Run("Test adapter config", f.TestAdapterConfig)
 	t.Run("Test finding segments", f.TestFindSegments)
 	t.Run("Test getting map IDs", f.TestGetMapIDs)
 	t.Run("Test getting segments", f.TestGetSegment)

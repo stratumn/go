@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package postgresstore
 
-import (
-	"github.com/pkg/errors"
-)
+import "github.com/pkg/errors"
 
-// Common errors that can be used by store implementations.
+// Errors used by the PostgresStore.
 var (
-	ErrOutDegreeNotSupported = errors.New("out degree is not supported by the current implementation")
-	ErrUniqueMapEntry        = errors.New("unique map entry is set and map already has an initial link")
+	ErrLinkAlreadyExists = errors.New("link already exists")
 )
