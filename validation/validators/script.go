@@ -15,109 +15,105 @@
 package validators
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"path"
 	"plugin"
-	"strings"
 
-	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
 
-const (
-	golang = "go"
-
-	// ErrLoadingPlugin is the error returned in case the plugin could not be loaded
-	ErrLoadingPlugin = "Error while loading validation script for process %s and type %s"
-
-	// ErrBadPlugin is the error returned in case the plugin is missing exported symbols
-	ErrBadPlugin = "script does not implement the ScriptValidatorFunc type"
-
-	// ErrBadScriptType is the error returned when the type of script does not match the supported ones
-	ErrBadScriptType = "Validation engine does not handle script of type %s, valid types are %v"
-)
-
+// Errors returned by the script validator.
 var (
-	// ValidScriptTypes contains the handled languages for validation scripts
-	ValidScriptTypes = []string{golang}
+	ErrLoadingPlugin     = errors.New("could not load validation script")
+	ErrInvalidPlugin     = errors.New("script does not expose a 'Validate' ScriptValidatorFunc")
+	ErrInvalidPluginHash = errors.New("script digest doesn't match received file")
 )
 
 // ScriptConfig defines the configuration of the go validation plugin.
 type ScriptConfig struct {
-	File string `json:"file"`
-	Type string `json:"type"`
+	Hash []byte `json:"hash"`
 }
 
-// ScriptValidatorFunc is the function called when enforcing a custom validation rule
-type ScriptValidatorFunc = func(store.SegmentReader, *chainscript.Link) error
+// Link simply wraps a link because directly using a chainscript.Link doesn't
+// work in plugins (because the plugin compilation uses GOPATH instead of the
+// vendor directory).
+// Even if your GOPATH and vendor directory have the same version of
+// go-chainscript the runtime will treat them as different types so the cast
+// to a ScriptValidatorFunc will fail.
+type Link struct {
+	Link *chainscript.Link
+}
 
-// ScriptValidator validates a link according to custom rules written as a go plugin.
+// ScriptValidatorFunc is the function called when enforcing a custom
+// validation rule.
+type ScriptValidatorFunc = func(context.Context, store.SegmentReader, *Link) error
+
+// ScriptValidator validates a link according to custom rules written as a go
+// plugin. The plugin should expose a `Validate` method.
 type ScriptValidator struct {
+	process    string
 	script     ScriptValidatorFunc
-	ScriptHash types.Bytes32
-	Config     *ValidatorBaseConfig
+	scriptHash []byte
 }
 
-func checkScriptType(cfg *ScriptConfig) error {
-	switch cfg.Type {
-	case golang:
-		return nil
-	default:
-		return errors.Errorf(ErrBadScriptType, cfg.Type, ValidScriptTypes)
+// NewScriptValidator creates a new validator for the given process.
+// It expects a plugin named `{hash}.so` to be found in the pluginsPath
+// directory (where {hash} is hex-encoded).
+// The plugin should expose a `Validate` ScriptValidatorFunc.
+func NewScriptValidator(process string, pluginsPath string, scriptCfg *ScriptConfig) (Validator, error) {
+	pluginFile := path.Join(pluginsPath, fmt.Sprintf("%s.so", hex.EncodeToString(scriptCfg.Hash)))
+	pluginBytes, err := ioutil.ReadFile(pluginFile)
+	if err != nil {
+		return nil, errors.Wrap(err, ErrLoadingPlugin.Error())
 	}
-}
 
-// NewScriptValidator instanciates a new go plugin and returns a new ScriptValidator.
-func NewScriptValidator(baseConfig *ValidatorBaseConfig, scriptCfg *ScriptConfig, pluginsPath string) (Validator, error) {
-	if err := checkScriptType(scriptCfg); err != nil {
-		return nil, err
+	fileHash := sha256.Sum256(pluginBytes)
+	if !bytes.Equal(scriptCfg.Hash, fileHash[:]) {
+		return nil, errors.Wrap(ErrInvalidPlugin, ErrInvalidPluginHash.Error())
 	}
-	pluginFile := path.Join(pluginsPath, scriptCfg.File)
+
 	p, err := plugin.Open(pluginFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkStep)
+		return nil, errors.Wrap(err, ErrLoadingPlugin.Error())
 	}
 
-	symbol, err := p.Lookup(strings.Title(baseConfig.LinkStep))
+	validateSymbol, err := p.Lookup("Validate")
 	if err != nil {
-		return nil, errors.Wrapf(err, ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkStep)
+		return nil, errors.Wrap(err, ErrInvalidPlugin.Error())
 	}
 
-	customValidator, ok := symbol.(ScriptValidatorFunc)
+	validate, ok := validateSymbol.(ScriptValidatorFunc)
 	if !ok {
-		return nil, errors.Wrapf(errors.New(ErrBadPlugin), ErrLoadingPlugin, baseConfig.Process, baseConfig.LinkStep)
+		return nil, errors.Wrap(ErrInvalidPlugin, ErrInvalidPlugin.Error())
 	}
 
-	// here we ignore the error since there is no way we cannot read the file if the plugin has been loaded successfully
-	b, _ := ioutil.ReadFile(pluginFile)
 	return &ScriptValidator{
-		Config:     baseConfig,
-		script:     customValidator,
-		ScriptHash: sha256.Sum256(b),
+		process:    process,
+		script:     validate,
+		scriptHash: fileHash[:],
 	}, nil
 }
 
-// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
-func (sv ScriptValidator) Hash() (*types.Bytes32, error) {
-	b, err := cj.Marshal(sv)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	validationsHash := types.Bytes32(sha256.Sum256(b))
-	return &validationsHash, nil
+// Hash of the script validator.
+func (sv *ScriptValidator) Hash() (*types.Bytes32, error) {
+	validatorHash := types.Bytes32(sha256.Sum256(append([]byte(sv.process), sv.scriptHash...)))
+	return &validatorHash, nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
-func (sv ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
-	return sv.Config.ShouldValidate(link)
+// ShouldValidate checks that the process matches.
+func (sv *ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
+	return sv.process == link.Meta.Process.Name
 }
 
-// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
-func (sv ScriptValidator) Validate(_ context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
-	return sv.script(storeReader, link)
+// Validate the link.
+func (sv *ScriptValidator) Validate(ctx context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
+	return sv.script(ctx, storeReader, &Link{Link: link})
 }

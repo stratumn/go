@@ -16,6 +16,7 @@ package validationtesting
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,7 +29,7 @@ import (
 )
 
 // Sample validation plugins.
-const (
+var (
 	// Plugin missing the required Validate func.
 	PluginMissingValidate = []byte(`
 		package main
@@ -36,11 +37,11 @@ const (
 		import (
 			"context"
 		
-			"github.com/stratumn/go-chainscript"
 			"github.com/stratumn/go-core/store"
+			"github.com/stratumn/go-core/validation/validators"
 		)
 
-		func NotValidate(_ context.Context, _ store.SegmentReader, _ *chainscript.Link) error {
+		func NotValidate(_ context.Context, _ store.SegmentReader, _ *validators.Link) error {
 			return nil
 		}
 
@@ -52,13 +53,11 @@ const (
 		package main
 
 		import (
-			"context"
-		
-			"github.com/stratumn/go-chainscript"
 			"github.com/stratumn/go-core/store"
+			"github.com/stratumn/go-core/validation/validators"
 		)
 
-		func Validate(_ store.SegmentReader, _ *chainscript.Link) error {
+		func Validate(_ store.SegmentReader, _ *validators.Link) error {
 			return nil
 		}
 
@@ -73,11 +72,11 @@ const (
 			"context"
 			"errors"
 		
-			"github.com/stratumn/go-chainscript"
 			"github.com/stratumn/go-core/store"
+			"github.com/stratumn/go-core/validation/validators"
 		)
 
-		func Validate(_ context.Context, _ store.SegmentReader, _ *chainscript.Link) error {
+		func Validate(_ context.Context, _ store.SegmentReader, _ *validators.Link) error {
 			return errors.New("invalid link")
 		}
 
@@ -90,12 +89,17 @@ const (
 
 		import (
 			"context"
+			"errors"
 		
-			"github.com/stratumn/go-chainscript"
 			"github.com/stratumn/go-core/store"
+			"github.com/stratumn/go-core/validation/validators"
 		)
 
-		func Validate(_ context.Context, _ store.SegmentReader, _ *chainscript.Link) error {
+		func Validate(_ context.Context, _ store.SegmentReader, l *validators.Link) error {
+			if l.Link.Meta.Process == nil {
+				return errors.New("link is missing process")
+			}
+
 			return nil
 		}
 
@@ -104,9 +108,9 @@ const (
 )
 
 // CompilePlugin compiles the given plugin and stores it in a temporary folder.
-// The name of the file will be its hash.
-// It returns the path to the compiled file.
-func CompilePlugin(t *testing.T, pluginContent []byte) string {
+// The name of the file will be its hex-encoded hash.
+// It returns the path to the directory and the compiled file hash.
+func CompilePlugin(t *testing.T, pluginContent []byte) (string, []byte) {
 	tmpDir, err := ioutil.TempDir("", "plugins-test")
 	require.NoError(t, err)
 
@@ -119,19 +123,21 @@ func CompilePlugin(t *testing.T, pluginContent []byte) string {
 	err = sourceFile.Close()
 	require.NoError(t, err)
 
-	err = os.Rename(sourceFile, sourceFile+".go")
+	sourceFileName := fmt.Sprintf("%s.go", sourceFile.Name())
+	err = os.Rename(sourceFile.Name(), sourceFileName)
 	require.NoError(t, err)
 
-	pluginFile := strings.Replace(sourceFile, ".go", ".so", 1)
-	err := exec.Command("go", "build", "-o", sourceFile, "-buildmode=plugin", pluginFile).Run()
+	pluginFile := strings.Replace(sourceFileName, ".go", ".so", 1)
+	err = exec.Command("go", "build", "-o", pluginFile, "-buildmode=plugin", sourceFileName).Run()
+	require.NoError(t, err)
 
 	b, err := ioutil.ReadFile(pluginFile)
 	require.NoError(t, err)
 
 	pluginHash := sha256.Sum256(b)
-	pluginFinalPath := filepath.Join(tmpDir, fmt.Sprintf("%s.so", pluginHash))
-	err = os.Rename(pluginFile, pluginFinalPath)
+	pluginFinalName := fmt.Sprintf("%s.so", hex.EncodeToString(pluginHash[:]))
+	err = os.Rename(pluginFile, filepath.Join(tmpDir, pluginFinalName))
 	require.NoError(t, err)
 
-	return pluginFinalPath
+	return tmpDir, pluginHash[:]
 }
