@@ -19,45 +19,20 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
-	"github.com/stratumn/go-core/validation/testutils"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var pluginFile string
-
-const (
-	pluginsPath      = "testutils/plugins"
-	pluginSourceFile = "custom_validator.go"
-)
-
-func TestMain(m *testing.M) {
-	var res int
-	defer os.Exit(res)
-
-	var err error
-	pluginFile, err = testutil.CompileGoPlugin(pluginsPath, pluginSourceFile)
-	if err != nil {
-		fmt.Println("could not launch validator tests: error while compiling validation plugin")
-		os.Exit(2)
-	}
-	defer os.Remove(pluginFile)
-
-	res = m.Run()
-}
-
 func TestLoadConfig_Success(t *testing.T) {
-
 	t.Run("schema & signatures & transitions & plugins", func(T *testing.T) {
-		testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
+		testFile := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
 		defer os.Remove(testFile)
 		validatorMap, err := validation.LoadConfig(&validation.Config{
-			RulesPath:   testFile,
-			PluginsPath: pluginsPath,
+			RulesPath: testFile,
 		}, nil)
 
 		assert.NoError(t, err, "LoadConfig()")
@@ -81,13 +56,12 @@ func TestLoadConfig_Success(t *testing.T) {
 	})
 
 	t.Run("schema & signatures & transitions & plugins with listener", func(T *testing.T) {
-		testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
+		testFile := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
 		defer os.Remove(testFile)
 		validatorProcessCount := 0
 		validatorCount := 0
 		validators, err := validation.LoadConfig(&validation.Config{
-			RulesPath:   testFile,
-			PluginsPath: pluginsPath,
+			RulesPath: testFile,
 		}, func(process string, schema *validation.RulesSchema, processValidators validators.Validators) {
 			validatorProcessCount++
 			validatorCount = validatorCount + len(processValidators)
@@ -95,10 +69,10 @@ func TestLoadConfig_Success(t *testing.T) {
 		assert.NoError(t, err, "LoadConfig()")
 		assert.NotNil(t, validators)
 		assert.Equal(t, 2, validatorProcessCount)
-		assert.Equal(t, 10, validatorCount)
+		assert.Equal(t, 9, validatorCount)
 		assert.Len(t, validators, validatorProcessCount)
 		assert.Len(t, validators["chat"], 4)
-		assert.Len(t, validators["auction"], 6)
+		assert.Len(t, validators["auction"], 5)
 	})
 
 	t.Run("Null signatures", func(T *testing.T) {
@@ -120,7 +94,7 @@ func TestLoadConfig_Success(t *testing.T) {
 					}
 			  	}
 			}
-		}`, testutils.AlicePublicKey)
+		}`, validationtesting.AlicePublicKey)
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)
@@ -155,7 +129,7 @@ func TestLoadConfig_Success(t *testing.T) {
 					}
 			    }
 			}
-		}`, testutils.AlicePublicKey)
+		}`, validationtesting.AlicePublicKey)
 
 		testFile := utils.CreateTempFile(t, validJSONSig)
 		defer os.Remove(testFile)

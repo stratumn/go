@@ -30,7 +30,7 @@ import (
 	"github.com/stratumn/go-core/store/storetesting"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation"
-	"github.com/stratumn/go-core/validation/testutils"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -137,9 +137,7 @@ func TestStore(t *testing.T) {
 			a := dummystore.New(nil)
 			populateStoreWithValidData(t, a)
 
-			s := validation.NewStore(a, &validation.Config{
-				PluginsPath: pluginsPath,
-			})
+			s := validation.NewStore(a, &validation.Config{})
 			validators, err := s.GetValidators(ctx)
 			assert.NoError(t, err)
 			require.Len(t, validators, 2)
@@ -148,8 +146,8 @@ func TestStore(t *testing.T) {
 
 	t.Run("TestLinkFromSchema", func(t *testing.T) {
 		process := "auction"
-		auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
-		auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
+		auctionPKI, _ := validationtesting.LoadPKI([]byte(validationtesting.ValidAuctionJSONPKIConfig))
+		auctionTypes, _ := validationtesting.LoadTypes([]byte(validationtesting.ValidAuctionJSONTypesConfig))
 
 		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
@@ -225,9 +223,9 @@ func TestStore(t *testing.T) {
 
 	t.Run("TestUpdateValidator", func(t *testing.T) {
 		process := "auction"
-		auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
-		auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
-		updatedAuctionPKI, _ := testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "jérome", -1)))
+		auctionPKI, _ := validationtesting.LoadPKI([]byte(validationtesting.ValidAuctionJSONPKIConfig))
+		auctionTypes, _ := validationtesting.LoadTypes([]byte(validationtesting.ValidAuctionJSONTypesConfig))
+		updatedAuctionPKI, _ := validationtesting.LoadPKI([]byte(strings.Replace(validationtesting.ValidAuctionJSONPKIConfig, "alice", "jérome", -1)))
 
 		t.Run("Fails to fetch segments", func(t *testing.T) {
 			a := new(storetesting.MockAdapter)
@@ -336,9 +334,7 @@ func TestStore(t *testing.T) {
 		t.Run("Creates new validator", func(t *testing.T) {
 			a := dummystore.New(nil)
 
-			s := validation.NewStore(a, &validation.Config{
-				PluginsPath: pluginsPath,
-			})
+			s := validation.NewStore(a, &validation.Config{})
 			link, _ := s.LinkFromSchema(ctx, process, &validation.RulesSchema{
 				Types: auctionTypes,
 				PKI:   auctionPKI,
@@ -348,7 +344,7 @@ func TestStore(t *testing.T) {
 			validators, err := s.GetValidators(ctx)
 			assert.NoError(t, err)
 			require.Len(t, validators, 1)
-			assert.Len(t, validators["auction"], 6)
+			assert.Len(t, validators["auction"], 5)
 
 			segments, err := a.FindSegments(ctx, &store.SegmentFilter{
 				Pagination: store.Pagination{Limit: 1},
@@ -406,7 +402,7 @@ func TestStore(t *testing.T) {
 		})
 
 		t.Run("Fails to update an existing validator", func(t *testing.T) {
-			chatPKI := json.RawMessage(testutils.ValidChatJSONPKIConfig)
+			chatPKI := json.RawMessage(validationtesting.ValidChatJSONPKIConfig)
 			parent := chainscripttest.NewLinkBuilder(t).
 				WithData(t, map[string]interface{}{"types": auctionTypes, "pki": chatPKI}).
 				WithMetadata(t, map[string]string{validation.ProcessMetaKey: process}).
@@ -483,22 +479,22 @@ func getLastValidator(t *testing.T, a store.Adapter, process string) *chainscrip
 }
 
 func populateStoreWithValidData(t *testing.T, a store.LinkWriter) {
-	auctionPKI, _ := testutils.LoadPKI([]byte(testutils.ValidAuctionJSONPKIConfig))
-	auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidAuctionJSONTypesConfig))
+	auctionPKI, _ := validationtesting.LoadPKI([]byte(validationtesting.ValidAuctionJSONPKIConfig))
+	auctionTypes, _ := validationtesting.LoadTypes([]byte(validationtesting.ValidAuctionJSONTypesConfig))
 	link := createGovernanceLink(t, "auction", 0., auctionPKI, auctionTypes)
 	hash, err := a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 	assert.NotNil(t, hash, "LinkHash should not be nil")
 
-	auctionPKI, _ = testutils.LoadPKI([]byte(strings.Replace(testutils.ValidAuctionJSONPKIConfig, "alice", "charlie", -1)))
+	auctionPKI, _ = validationtesting.LoadPKI([]byte(strings.Replace(validationtesting.ValidAuctionJSONPKIConfig, "alice", "charlie", -1)))
 	link = createGovernanceLink(t, "auction", 0., auctionPKI, auctionTypes)
 	link.Meta.PrevLinkHash = hash
 	link.Meta.Priority = 1.
 	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
 
-	chatPKI, _ := testutils.LoadPKI([]byte(testutils.ValidChatJSONPKIConfig))
-	chatTypes, _ := testutils.LoadTypes([]byte(testutils.ValidChatJSONTypesConfig))
+	chatPKI, _ := validationtesting.LoadPKI([]byte(validationtesting.ValidChatJSONPKIConfig))
+	chatTypes, _ := validationtesting.LoadTypes([]byte(validationtesting.ValidChatJSONTypesConfig))
 	link = createGovernanceLink(t, "chat", 0., chatPKI, chatTypes)
 	_, err = a.CreateLink(context.Background(), link)
 	assert.NoErrorf(t, err, "Cannot insert link %+v", link)
