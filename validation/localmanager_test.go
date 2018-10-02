@@ -26,7 +26,7 @@ import (
 	"github.com/stratumn/go-core/store/storetesting"
 	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
-	"github.com/stratumn/go-core/validation/testutils"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,9 +50,7 @@ func TestLocalManager(t *testing.T) {
 			var v validators.Validator
 			a := dummystore.New(nil)
 			populateStoreWithValidData(t, a)
-			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{
-				PluginsPath: pluginsPath,
-			})
+			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{})
 			assert.NoError(t, err, "Governance is initialized by store")
 			require.NotNil(t, gov, "Governance is initialized by store")
 
@@ -63,12 +61,11 @@ func TestLocalManager(t *testing.T) {
 		t.Run("Governance with valid file", func(t *testing.T) {
 			var v validators.Validator
 			a := dummystore.New(nil)
-			testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
+			testFile := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
 			defer os.Remove(testFile)
 
 			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{
-				RulesPath:   testFile,
-				PluginsPath: pluginsPath,
+				RulesPath: testFile,
 			})
 			assert.NoError(t, err, "Governance is initialized by file and store")
 			assert.NotNil(t, gov, "Governance is initialized by file and store")
@@ -102,11 +99,10 @@ func TestLocalManager(t *testing.T) {
 			populateStoreWithValidData(t, a)
 			l := getLastValidator(t, a, "auction")
 			assert.Equal(t, 1., l.Meta.Priority)
-			testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
+			testFile := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
 			defer os.Remove(testFile)
 			gov, err := validation.NewLocalManager(context.Background(), a, &validation.Config{
-				RulesPath:   testFile,
-				PluginsPath: pluginsPath,
+				RulesPath: testFile,
 			})
 			require.NotNil(t, gov, "Governance is initialized by file and store")
 			assert.NoError(t, err, "Validator updated")
@@ -122,7 +118,7 @@ func TestLocalManager(t *testing.T) {
 		t.Run("Update rules in store on file update", func(t *testing.T) {
 			var v validators.Validator
 			ctx := context.Background()
-			validJSON := fmt.Sprintf(`{%s}`, testutils.ValidChatJSONConfig)
+			validJSON := fmt.Sprintf(`{%s}`, validationtesting.ValidChatJSONConfig)
 			a := dummystore.New(nil)
 			testFile := utils.CreateTempFile(t, validJSON)
 			defer os.Remove(testFile)
@@ -138,9 +134,9 @@ func TestLocalManager(t *testing.T) {
 			l := getLastValidator(t, a, "chat")
 			assert.Equal(t, 0., l.Meta.Priority)
 
-			chatJSON := testutils.CreateValidatorJSON("chat",
-				strings.Replace(testutils.ValidChatJSONPKIConfig, "Bob", "Dave", -1),
-				testutils.ValidChatJSONTypesConfig)
+			chatJSON := validationtesting.CreateValidatorJSON("chat",
+				strings.Replace(validationtesting.ValidChatJSONPKIConfig, "Bob", "Dave", -1),
+				validationtesting.ValidChatJSONTypesConfig)
 			validJSON = fmt.Sprintf(`{%s}`, chatJSON)
 			f, err := os.OpenFile(testFile, os.O_WRONLY, 0)
 			require.NoErrorf(t, err, "cannot modify file %s", &validation.Config{
@@ -160,11 +156,10 @@ func TestLocalManager(t *testing.T) {
 		t.Run("closes subscribing channels on context cancel", func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 
-			testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
+			testFile := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
 			defer os.Remove(testFile)
 			gov, err := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{
-				RulesPath:   testFile,
-				PluginsPath: pluginsPath,
+				RulesPath: testFile,
 			})
 			require.NoError(t, err)
 
@@ -199,15 +194,14 @@ func TestLocalManager(t *testing.T) {
 			testFile := utils.CreateTempFile(t, "{}")
 			defer os.Remove(testFile)
 			gov, err := validation.NewLocalManager(ctx, dummystore.New(nil), &validation.Config{
-				RulesPath:   testFile,
-				PluginsPath: pluginsPath,
+				RulesPath: testFile,
 			})
 			require.NoError(t, err)
 
 			go gov.ListenAndUpdate(ctx)
 			assert.Nil(t, gov.Current())
 
-			ioutil.WriteFile(testFile, []byte(testutils.ValidJSONConfig), os.ModeTemporary)
+			ioutil.WriteFile(testFile, []byte(validationtesting.ValidJSONConfig), os.ModeTemporary)
 			newValidator := <-gov.Subscribe()
 			assert.Equal(t, newValidator, gov.Current())
 		})
