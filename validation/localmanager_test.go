@@ -201,7 +201,9 @@ func TestLocalManager(t *testing.T) {
 			go gov.ListenAndUpdate(ctx)
 			assert.Nil(t, gov.Current())
 
-			ioutil.WriteFile(testFile, []byte(validationtesting.ValidJSONConfig), os.ModeTemporary)
+			err = ioutil.WriteFile(testFile, []byte(validationtesting.ValidJSONConfig), os.ModeTemporary)
+			require.NoError(t, err)
+
 			newValidator := <-gov.Subscribe()
 			assert.Equal(t, newValidator, gov.Current())
 		})
