@@ -17,55 +17,55 @@ package validators
 import (
 	"context"
 	"crypto/sha256"
-	"fmt"
 
-	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// SchemaValidator validates the json schema of a link's state.
+// Errors used by the schema validator.
+var (
+	ErrInvalidLinkSchema = errors.New("invalid link schema")
+)
+
+// SchemaValidator validates the json schema of a link's data.
 type SchemaValidator struct {
-	Config     *ValidatorBaseConfig
+	*ProcessStepValidator
+
 	schema     *gojsonschema.Schema
-	SchemaHash types.Bytes32
+	schemaHash []byte
 }
 
 // NewSchemaValidator returns a new SchemaValidator.
-func NewSchemaValidator(baseConfig *ValidatorBaseConfig, schemaData []byte) (Validator, error) {
+func NewSchemaValidator(processStepValidator *ProcessStepValidator, schemaData []byte) (Validator, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
+	schemaHash := sha256.Sum256(schemaData)
 	return &SchemaValidator{
-		Config:     baseConfig,
-		schema:     schema,
-		SchemaHash: types.Bytes32(sha256.Sum256(schemaData)),
+		ProcessStepValidator: processStepValidator,
+		schema:               schema,
+		schemaHash:           schemaHash[:],
 	}, nil
 }
 
-// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
+// Hash the process, step and expected schema.
 func (sv SchemaValidator) Hash() (*types.Bytes32, error) {
-	b, err := cj.Marshal(sv)
+	psh, err := sv.ProcessStepValidator.Hash()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
-	validationsHash := types.Bytes32(sha256.Sum256(b))
-	return &validationsHash, nil
+
+	h := sha256.Sum256(append(psh[:], sv.schemaHash...))
+	vh := types.Bytes32(h)
+	return &vh, nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
-func (sv SchemaValidator) ShouldValidate(link *chainscript.Link) bool {
-	return sv.Config.ShouldValidate(link)
-}
-
-// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
-// It validates the schema of a link's data.
+// Validate the schema of a link's data.
 func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	linkData := gojsonschema.NewBytesLoader(link.Data)
 	result, err := sv.schema.Validate(linkData)
@@ -74,7 +74,7 @@ func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, lin
 	}
 
 	if !result.Valid() {
-		return fmt.Errorf("link validation failed: %s", result.Errors())
+		return errors.Wrapf(ErrInvalidLinkSchema, "%s", result.Errors())
 	}
 
 	return nil
