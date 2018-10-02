@@ -18,229 +18,168 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
-	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	process = "test"
-
-	stateCreatedProduct     = "createdProduct"
-	stateSignedProduct      = "signedProduct"
-	stateFinalProduct       = "finalProduct"
-	stateFinalSignedProduct = "finalSignedProduct"
-	stateHackedProduct      = "hackedProduct"
-)
-
-var (
-	// Allowed transitions
-	createdProductTransitions     = []string{""}
-	signedProductTransitions      = []string{stateCreatedProduct}
-	finalProductTransitions       = []string{stateSignedProduct}
-	hackedProductTransitions      = []string{stateCreatedProduct, stateHackedProduct}
-	finalSignedProductTransitions = []string{stateFinalProduct, stateCreatedProduct, stateHackedProduct}
-)
-
-type stateMachineLinks struct {
-	createdProduct *chainscript.Link
-
-	// Complete workflow
-	signedProduct      *chainscript.Link
-	finalProduct       *chainscript.Link
-	finalSignedProduct *chainscript.Link
-
-	// Hacked workflow
-	hacked1Product     *chainscript.Link
-	hacked2Product     *chainscript.Link
-	hackedFinalProduct *chainscript.Link
-
-	// Bypass workflow
-	approvedProduct *chainscript.Link
-}
-
-func populateStore(t *testing.T) (store.Adapter, stateMachineLinks) {
-	store := dummystore.New(nil)
-	require.NotNil(t, store)
-
-	var links stateMachineLinks
-
-	links.createdProduct = chainscripttest.NewLinkBuilder(t).
-		WithProcess(process).
-		WithStep(stateCreatedProduct).
-		WithoutParent().
-		Build()
-	_, err := store.CreateLink(context.Background(), links.createdProduct)
-	require.NoError(t, err)
-
-	appendLink := func(prevLink *chainscript.Link, linkStep string) *chainscript.Link {
-		l := chainscripttest.NewLinkBuilder(t).
-			Branch(t, prevLink).
-			WithStep(linkStep).
-			Build()
-		_, err := store.CreateLink(context.Background(), l)
-		require.NoError(t, err)
-		return l
-	}
-
-	links.signedProduct = appendLink(links.createdProduct, stateSignedProduct)
-	links.finalProduct = appendLink(links.signedProduct, stateFinalProduct)
-	links.finalSignedProduct = appendLink(links.finalProduct, stateFinalSignedProduct)
-
-	links.approvedProduct = appendLink(links.createdProduct, stateFinalSignedProduct)
-
-	links.hacked1Product = appendLink(links.createdProduct, stateHackedProduct)
-	links.hacked2Product = appendLink(links.hacked1Product, stateHackedProduct)
-	links.hackedFinalProduct = appendLink(links.hacked2Product, stateFinalSignedProduct)
-	return store, links
-}
-
 func TestTransitionValidator(t *testing.T) {
-	t.Parallel()
-	store, links := populateStore(t)
+	t.Run("Validate()", func(t *testing.T) {
+		ctx := context.Background()
+		store := dummystore.New(nil)
+		require.NotNil(t, store)
 
-	type testCase struct {
-		name        string
-		valid       bool
-		err         string
-		link        *chainscript.Link
-		transitions []string
-	}
-
-	testCases := []testCase{
-		{
-			name:        "good init",
-			valid:       true,
-			link:        links.createdProduct,
-			transitions: createdProductTransitions,
-		},
-		{
-			name:        "bad init",
-			valid:       false,
-			err:         `no transition found \(\) --> createdProduct`,
-			link:        links.createdProduct,
-			transitions: []string{"src1", "src2"},
-		},
-		{
-			name:        "good final transition",
-			valid:       true,
-			link:        links.finalSignedProduct,
-			transitions: finalSignedProductTransitions,
-		},
-		{
-			name:        "good fast final transition",
-			valid:       true,
-			link:        links.approvedProduct,
-			transitions: finalSignedProductTransitions,
-		},
-		{
-			name:        "good hacked final transition",
-			valid:       true,
-			link:        links.hackedFinalProduct,
-			transitions: finalSignedProductTransitions,
-		},
-		{
-			name:        "invalid transition",
-			valid:       false,
-			err:         "no transition found finalProduct --> finalSignedProduct",
-			link:        links.finalSignedProduct,
-			transitions: []string{stateCreatedProduct},
-		},
-		{
-			name:  "prevLink not found",
-			valid: false,
-			err:   "previous segment not found.*",
-			link: func() *chainscript.Link {
-				l, _ := links.finalProduct.Clone()
-				l.Meta.PrevLinkHash = chainscripttest.RandomHash()
-				return l
-			}(),
-			transitions: []string{stateCreatedProduct},
-		},
-	}
-
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			baseCfg, err := validators.NewValidatorBaseConfig(process, tt.link.Meta.Step)
+		appendLink := func(parent *chainscript.Link, step string) *chainscript.Link {
+			l := chainscripttest.NewLinkBuilder(t).
+				Branch(t, parent).
+				WithStep(step).
+				Build()
+			_, err := store.CreateLink(ctx, l)
 			require.NoError(t, err)
-			v := validators.NewTransitionValidator(baseCfg, tt.transitions)
+			return l
+		}
 
-			err = v.Validate(context.Background(), store, tt.link)
-			if tt.valid {
-				assert.NoError(t, err)
-			} else {
-				assert.Regexp(t, tt.err, err.Error())
-			}
-		})
-	}
+		testProcess := "product"
+		initStep := "init"
+		updateStep := "update"
+		signStep := "sign"
 
-}
-
-func TestTransitionShouldValidate(t *testing.T) {
-	t.Parallel()
-	_, links := populateStore(t)
-
-	type testCase struct {
-		name string
-		ret  bool
-		conf *validators.ValidatorBaseConfig
-		link *chainscript.Link
-	}
-
-	NewConf := func(process, linkType string) *validators.ValidatorBaseConfig {
-		cfg, err := validators.NewValidatorBaseConfig(process, linkType)
+		initLink := chainscripttest.NewLinkBuilder(t).
+			WithProcess(testProcess).
+			WithStep(initStep).
+			WithoutParent().
+			Build()
+		_, err := store.CreateLink(ctx, initLink)
 		require.NoError(t, err)
-		return cfg
-	}
 
-	testCases := []testCase{
-		{
-			name: "has to validate",
-			ret:  true,
-			conf: NewConf(links.createdProduct.Meta.Process.Name, links.createdProduct.Meta.Step),
-			link: links.createdProduct,
-		},
-		{
-			name: "bad process",
-			ret:  false,
-			conf: NewConf("foo", links.createdProduct.Meta.Step),
-			link: links.createdProduct,
-		},
-		{
-			name: "bad state",
-			ret:  false,
-			conf: NewConf(links.createdProduct.Meta.Process.Name, "bar"),
-			link: links.createdProduct,
-		},
-	}
+		updateLink := appendLink(initLink, updateStep)
+		signLink := appendLink(updateLink, signStep)
 
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			v := validators.NewTransitionValidator(tt.conf, nil)
-			assert.Equal(t, tt.ret, v.ShouldValidate(tt.link))
-		})
-	}
+		testCases := []struct {
+			name        string
+			link        *chainscript.Link
+			transitions []string
+			valid       bool
+			err         error
+		}{{
+			name:        "valid init",
+			link:        initLink,
+			transitions: []string{""},
+			valid:       true,
+		}, {
+			name:        "invalid init",
+			link:        initLink,
+			transitions: nil,
+			valid:       false,
+			err:         validators.ErrInvalidTransition,
+		}, {
+			name:        "no possible transition",
+			link:        updateLink,
+			transitions: nil,
+			valid:       false,
+			err:         validators.ErrInvalidTransition,
+		}, {
+			name:        "valid update transition",
+			link:        updateLink,
+			transitions: []string{updateStep, initStep},
+			valid:       true,
+		}, {
+			name:        "valid sign transition",
+			link:        signLink,
+			transitions: []string{updateStep},
+			valid:       true,
+		}, {
+			name:        "invalid sign transition",
+			link:        signLink,
+			transitions: []string{initStep},
+			valid:       false,
+			err:         validators.ErrInvalidTransition,
+		}, {
+			name:        "missing parent",
+			link:        chainscripttest.NewLinkBuilder(t).From(t, updateLink).WithParentHash(chainscripttest.RandomHash()).Build(),
+			transitions: []string{initStep},
+			valid:       false,
+		}}
 
-}
+		for _, tt := range testCases {
+			t.Run(tt.name, func(t *testing.T) {
+				psv, err := validators.NewProcessStepValidator(testProcess, tt.link.Meta.Step)
+				require.NoError(t, err)
 
-func TestTransitionHash(t *testing.T) {
-	t.Parallel()
-	_, links := populateStore(t)
+				v := validators.NewTransitionValidator(psv, tt.transitions)
+				err = v.Validate(context.Background(), store, tt.link)
 
-	baseCfg, err := validators.NewValidatorBaseConfig(process, links.finalProduct.Meta.Step)
-	require.NoError(t, err)
-	v1 := validators.NewTransitionValidator(baseCfg, finalProductTransitions)
-	v2 := validators.NewTransitionValidator(baseCfg, createdProductTransitions)
+				if tt.valid {
+					assert.NoError(t, err)
+				} else {
+					if tt.err != nil {
+						assert.EqualError(t, errors.Cause(err), tt.err.Error())
+					} else {
+						assert.Error(t, err)
+					}
+				}
+			})
+		}
+	})
 
-	hash1, err1 := v1.Hash()
-	hash2, err2 := v2.Hash()
-	assert.NoError(t, err1)
-	assert.NoError(t, err2)
-	assert.NotNil(t, hash1)
-	assert.NotNil(t, hash2)
-	assert.NotEqual(t, hash1.String(), hash2.String())
+	t.Run("ShouldValidate()", func(t *testing.T) {
+		psv, err := validators.NewProcessStepValidator("p", "s")
+		require.NoError(t, err)
+
+		tv := validators.NewTransitionValidator(psv, nil)
+
+		testCases := []struct {
+			name  string
+			link  *chainscript.Link
+			match bool
+		}{{
+			"process mismatch",
+			chainscripttest.NewLinkBuilder(t).WithProcess("some_process").WithStep("s").Build(),
+			false,
+		}, {
+			"step mismatch",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p").WithStep("some_step").Build(),
+			false,
+		}, {
+			"match",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p").WithStep("s").Build(),
+			true,
+		}}
+
+		for _, tt := range testCases {
+			t.Run(tt.name, func(t *testing.T) {
+				match := tv.ShouldValidate(tt.link)
+				assert.Equal(t, tt.match, match)
+			})
+		}
+	})
+
+	t.Run("Hash()", func(t *testing.T) {
+		psv1, err := validators.NewProcessStepValidator("p1", "s1")
+		require.NoError(t, err)
+
+		psv2, err := validators.NewProcessStepValidator("p2", "s2")
+		require.NoError(t, err)
+
+		v1 := validators.NewTransitionValidator(psv1, []string{"a", "b"})
+		v2 := validators.NewTransitionValidator(psv1, []string{"a", "c"})
+		v3 := validators.NewTransitionValidator(psv2, []string{"a", "b"})
+
+		h1, err := v1.Hash()
+		require.NoError(t, err)
+
+		h2, err := v2.Hash()
+		require.NoError(t, err)
+
+		h3, err := v3.Hash()
+		require.NoError(t, err)
+
+		assert.NotEqual(t, h1.String(), h2.String())
+		assert.NotEqual(t, h1.String(), h3.String())
+		assert.NotEqual(t, h2.String(), h3.String())
+	})
 }
