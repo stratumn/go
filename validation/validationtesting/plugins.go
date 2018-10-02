@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -111,24 +112,21 @@ var (
 // The name of the file will be its hex-encoded hash.
 // It returns the path to the directory and the compiled file hash.
 func CompilePlugin(t *testing.T, pluginContent []byte) (string, []byte) {
-	tmpDir, err := ioutil.TempDir("", "plugins-test")
+	// To get reproducible builds we need the path to the plugin to be stable.
+	// There is some effort ongoing to get reproducible builds in Go regardless
+	// of the path but it's not yet working.
+	pluginsDir := path.Join(os.TempDir(), "go-core-test-plugins")
+	err := os.MkdirAll(pluginsDir, os.ModePerm)
 	require.NoError(t, err)
 
-	sourceFile, err := ioutil.TempFile(tmpDir, "")
+	sourceHash := sha256.Sum256(pluginContent)
+	sourceFile := path.Join(pluginsDir, fmt.Sprintf("%s.go", hex.EncodeToString(sourceHash[:])))
+	err = ioutil.WriteFile(sourceFile, pluginContent, os.ModePerm)
 	require.NoError(t, err)
 
-	_, err = sourceFile.Write(pluginContent)
-	require.NoError(t, err)
-
-	err = sourceFile.Close()
-	require.NoError(t, err)
-
-	sourceFileName := fmt.Sprintf("%s.go", sourceFile.Name())
-	err = os.Rename(sourceFile.Name(), sourceFileName)
-	require.NoError(t, err)
-
-	pluginFile := strings.Replace(sourceFileName, ".go", ".so", 1)
-	err = exec.Command("go", "build", "-o", pluginFile, "-buildmode=plugin", sourceFileName).Run()
+	pluginFile := strings.Replace(sourceFile, ".go", ".so", 1)
+	buildCmd := exec.Command("go", "build", "-o", pluginFile, "-buildmode=plugin", sourceFile)
+	err = buildCmd.Run()
 	require.NoError(t, err)
 
 	b, err := ioutil.ReadFile(pluginFile)
@@ -136,8 +134,8 @@ func CompilePlugin(t *testing.T, pluginContent []byte) (string, []byte) {
 
 	pluginHash := sha256.Sum256(b)
 	pluginFinalName := fmt.Sprintf("%s.so", hex.EncodeToString(pluginHash[:]))
-	err = os.Rename(pluginFile, filepath.Join(tmpDir, pluginFinalName))
+	err = os.Rename(pluginFile, filepath.Join(pluginsDir, pluginFinalName))
 	require.NoError(t, err)
 
-	return tmpDir, pluginHash[:]
+	return pluginsDir, pluginHash[:]
 }
