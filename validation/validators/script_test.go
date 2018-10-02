@@ -16,254 +16,206 @@ package validators_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/dummystore"
-	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestScriptValidator(t *testing.T) {
-	testLink := chainscripttest.NewLinkBuilder(t).WithProcess("test").WithStep("init").Build()
+	testLink := chainscripttest.NewLinkBuilder(t).
+		WithProcess("test").
+		WithStep("init").
+		Build()
 
 	t.Run("New", func(t *testing.T) {
+		t.Run("missing plugin file", func(t *testing.T) {
+			_, err := validators.NewScriptValidator(
+				"test_process",
+				"/var/tmp/",
+				&validators.ScriptConfig{Hash: "42"},
+			)
 
-		type testCase struct {
-			name      string
-			baseCfg   *validators.ValidatorBaseConfig
-			scriptCfg *validators.ScriptConfig
-			valid     bool
-			err       string
-		}
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
+		})
 
-		testCases := []testCase{
-			{
-				name: "valid-config",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "init",
-				},
-				scriptCfg: &validators.ScriptConfig{
-					File: pluginFile,
-					Type: "go",
-				},
-				valid: true,
-			},
-			{
-				name: "bad-script-type",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "invalid",
-				},
-				scriptCfg: &validators.ScriptConfig{
-					File: pluginFile,
-					Type: "bad",
-				},
-				valid: false,
-				err:   errors.Errorf(validators.ErrBadScriptType, "bad", validators.ValidScriptTypes).Error(),
-			},
-			{
-				name: "script-not-found",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "invalid",
-				},
-				scriptCfg: &validators.ScriptConfig{
-					File: "test",
-					Type: "go",
-				},
-				valid: false,
-				err:   errors.Wrapf(errors.New("plugin.Open(\"test\"): realpath failed"), validators.ErrLoadingPlugin, "test", "invalid").Error(),
-			},
-			{
-				name: "unknown-script-validator-for-linkType",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "unknown",
-				},
-				scriptCfg: &validators.ScriptConfig{
-					File: pluginFile,
-					Type: "go",
-				},
-				valid: false,
-			},
-			{
-				name: "bad-script-function-signature",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "badSignature",
-				},
-				scriptCfg: &validators.ScriptConfig{
-					File: pluginFile,
-					Type: "go",
-				},
-				valid: false,
-				err:   errors.Wrapf(errors.New(validators.ErrBadPlugin), validators.ErrLoadingPlugin, "test", "badSignature").Error(),
-			},
-		}
+		t.Run("invalid plugin hash", func(t *testing.T) {
+			pluginsDir, _ := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
 
-		for _, tt := range testCases {
-			t.Run(tt.name, func(t *testing.T) {
-				_, err := validators.NewScriptValidator(tt.baseCfg, tt.scriptCfg, "")
-				if tt.valid {
-					assert.NoError(t, err)
-				} else {
-					if tt.err != "" {
-						assert.EqualError(t, err, tt.err)
-					} else {
-						assert.Error(t, err)
-					}
-				}
-			})
-		}
+			_, err := validators.NewScriptValidator(
+				"test_process",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: "not 42"},
+			)
+
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
+		})
+
+		t.Run("invalid plugin file format", func(t *testing.T) {
+			pluginsDir, err := ioutil.TempDir("", "plugins")
+			require.NoError(t, err)
+
+			pluginHash := sha256.Sum256([]byte("this is not a valid go plugin's compiled content"))
+			err = ioutil.WriteFile(
+				filepath.Join(pluginsDir, fmt.Sprintf("%s.so", pluginHash)),
+				[]byte("this is not a valid go plugin's compiled content"),
+				os.ModePerm,
+			)
+			require.NoError(t, err)
+
+			_, err = validators.NewScriptValidator(
+				"test_process",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash[:])},
+			)
+
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
+		})
+
+		t.Run("invalid plugin entry point", func(t *testing.T) {
+			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginMissingValidate)
+
+			_, err := validators.NewScriptValidator(
+				"test_process",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidPlugin.Error()))
+		})
+
+		t.Run("invalid plugin signature", func(t *testing.T) {
+			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginInvalidValidate)
+
+			_, err := validators.NewScriptValidator(
+				"test_process",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidPlugin.Error()))
+		})
+
+		t.Run("valid plugin", func(t *testing.T) {
+			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
+
+			v, err := validators.NewScriptValidator(
+				"test_process",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+
+			require.NoError(t, err)
+			assert.NotNil(t, v)
+		})
 	})
 
 	t.Run("Hash", func(t *testing.T) {
-		// in this test, we try to load the same symbol from different files to check that the hash are different
-		baseCfg, err := validators.NewValidatorBaseConfig("test", "init")
-		require.NoError(t, err)
+		t.Run("depends on process", func(t *testing.T) {
+			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
+			v1, err := validators.NewScriptValidator(
+				"p1",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+			require.NoError(t, err)
+			h1, _ := v1.Hash()
 
-		byzantinePluginFile, err := testutil.CompileGoPlugin(pluginsPath, "byzantine_validator.go")
-		require.NoError(t, err)
-		defer os.Remove(byzantinePluginFile)
+			v2, err := validators.NewScriptValidator(
+				"p2",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+			require.NoError(t, err)
+			h2, _ := v2.Hash()
 
-		scriptCfg1 := &validators.ScriptConfig{
-			Type: "go",
-			File: pluginFile,
-		}
-		scriptCfg2 := &validators.ScriptConfig{
-			Type: "go",
-			File: byzantinePluginFile,
-		}
+			assert.NotEqual(t, h1, h2)
+		})
 
-		v1, err := validators.NewScriptValidator(baseCfg, scriptCfg1, "")
-		require.NoError(t, err)
-		v2, err := validators.NewScriptValidator(baseCfg, scriptCfg2, "")
-		require.NoError(t, err)
+		t.Run("depends on script", func(t *testing.T) {
+			pluginsDir1, pluginHash1 := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
+			v1, err := validators.NewScriptValidator(
+				"test_process",
+				pluginsDir1,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash1)},
+			)
+			require.NoError(t, err)
+			h1, _ := v1.Hash()
 
-		hash1, err1 := v1.Hash()
-		hash2, err2 := v2.Hash()
-		assert.NoError(t, err1)
-		assert.NoError(t, err2)
-		assert.NotNil(t, hash1)
-		assert.NotNil(t, hash2)
-		assert.NotEqual(t, hash1.String(), hash2.String())
+			pluginsDir2, pluginHash2 := validationtesting.CompilePlugin(t, validationtesting.PluginValidationError)
+			v2, err := validators.NewScriptValidator(
+				"test_process",
+				pluginsDir2,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash2)},
+			)
+			require.NoError(t, err)
+			h2, _ := v2.Hash()
+
+			assert.NotEqual(t, h1, h2)
+		})
 	})
 
 	t.Run("ShouldValidate", func(t *testing.T) {
+		pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
 
-		type testCase struct {
-			name      string
-			ret       bool
-			baseCfg   *validators.ValidatorBaseConfig
-			scriptCfg *validators.ScriptConfig
-			link      *chainscript.Link
-		}
+		t.Run("process mismatch", func(t *testing.T) {
+			v, err := validators.NewScriptValidator(
+				"some_random_process",
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
 
-		scriptConfig := &validators.ScriptConfig{
-			File: pluginFile,
-			Type: "go",
-		}
+			require.NoError(t, err)
+			assert.False(t, v.ShouldValidate(testLink))
+		})
 
-		testCases := []testCase{
-			{
-				name: "has to validate",
-				ret:  true,
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "init",
-				},
-				link: testLink,
-			},
-			{
-				name: "bad process",
-				ret:  false,
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "bad",
-					LinkStep: "init",
-				},
-				link: chainscripttest.NewLinkBuilder(t).WithProcess("test").Build(),
-			},
-			{
-				name: "bad type",
-				ret:  false,
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "invalid",
-				},
-				link: chainscripttest.NewLinkBuilder(t).WithStep("init").Build(),
-			},
-		}
+		t.Run("process match", func(t *testing.T) {
+			v, err := validators.NewScriptValidator(
+				testLink.Meta.Process.Name,
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
 
-		for _, tt := range testCases {
-			t.Run(tt.name, func(t *testing.T) {
-				v, err := validators.NewScriptValidator(tt.baseCfg, scriptConfig, "")
-				require.NoError(t, err)
-				assert.Equal(t, tt.ret, v.ShouldValidate(tt.link))
-			})
-		}
+			require.NoError(t, err)
+			assert.True(t, v.ShouldValidate(testLink))
+		})
 	})
 
 	t.Run("Validate", func(t *testing.T) {
-		type testCase struct {
-			name     string
-			testLink *chainscript.Link
-			baseCfg  *validators.ValidatorBaseConfig
-			valid    bool
-			err      string
-		}
+		t.Run("success", func(t *testing.T) {
+			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
+			v, err := validators.NewScriptValidator(
+				testLink.Meta.Process.Name,
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+			require.NoError(t, err)
 
-		scriptCfg := &validators.ScriptConfig{
-			File: pluginFile,
-			Type: "go",
-		}
-		testCases := []testCase{
-			{
-				name: "valid-link",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "init",
-				},
-				testLink: testLink,
-				valid:    true,
-			},
-			{
-				name: "fetch-link",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "fetchLink",
-				},
-				testLink: chainscripttest.NewLinkBuilder(t).WithStep("fetchLink").Build(),
-				valid:    true,
-			},
-			{
-				name: "validation-fails",
-				baseCfg: &validators.ValidatorBaseConfig{
-					Process:  "test",
-					LinkStep: "invalid",
-				},
-				testLink: chainscripttest.NewLinkBuilder(t).WithStep("invalid").Build(),
-				valid:    false,
-				err:      "error",
-			},
-		}
-		for _, tt := range testCases {
-			t.Run(tt.name, func(t *testing.T) {
-				sv, err := validators.NewScriptValidator(tt.baseCfg, scriptCfg, "")
-				require.NoError(t, err)
-				err = sv.Validate(context.Background(), dummystore.New(nil), tt.testLink)
-				if tt.valid {
-					assert.NoError(t, err)
-				} else {
-					assert.EqualError(t, err, tt.err)
-				}
-			})
-		}
+			err = v.Validate(context.Background(), nil, testLink)
+			assert.NoError(t, err)
+		})
+
+		t.Run("failure", func(t *testing.T) {
+			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationError)
+			v, err := validators.NewScriptValidator(
+				testLink.Meta.Process.Name,
+				pluginsDir,
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
+			)
+			require.NoError(t, err)
+
+			err = v.Validate(context.Background(), nil, testLink)
+			assert.Error(t, err)
+		})
 	})
 }

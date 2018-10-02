@@ -26,23 +26,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const validJSON = `
-{
-	"pki": {
-	},
-	"validators": {
-	}
-    }
-`
-
 func TestMultiValidator_New(t *testing.T) {
 	mv := validators.NewMultiValidator(validators.ProcessesValidators{})
 	assert.NotNil(t, mv)
 }
 
 func TestMultiValidator_Hash(t *testing.T) {
-	t.Parallel()
-
 	t.Run("Produces different hashes based on internal validators", func(t *testing.T) {
 		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
 		testHash1 := types.NewBytes32FromBytes(chainscripttest.RandomHash())
@@ -74,12 +63,6 @@ func TestMultiValidator_Hash(t *testing.T) {
 				v2:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"one"}},
 				v3:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"two"}},
 			},
-			{
-				name: "With script validator",
-				v1:   &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testHash1},
-				v2:   &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testHash1},
-				v3:   &validators.ScriptValidator{Config: baseConfig, ScriptHash: *testHash2},
-			},
 		}
 
 		for _, tt := range testCases {
@@ -110,9 +93,8 @@ func TestMultiValidator_Hash(t *testing.T) {
 		schemaValidator := &validators.SchemaValidator{Config: baseConfig, SchemaHash: *types.NewBytes32FromBytes(chainscripttest.RandomHash())}
 		transitionValidator := validators.NewTransitionValidator(baseConfig, []string{"king"})
 		pkiValidator := validators.NewPKIValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
-		scriptValidator := &validators.ScriptValidator{Config: baseConfig, ScriptHash: *types.NewBytes32FromBytes(chainscripttest.RandomHash())}
 
-		validatorList := []validators.Validator{schemaValidator, transitionValidator, pkiValidator, scriptValidator}
+		validatorList := []validators.Validator{schemaValidator, transitionValidator, pkiValidator}
 		mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
 		mvHash, err := mv.Hash()
 		assert.NoError(t, err)

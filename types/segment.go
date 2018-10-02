@@ -20,6 +20,18 @@ import (
 	"github.com/stratumn/go-chainscript"
 )
 
+// Link simply wraps a chainscript.Link.
+// It can be useful in scenario where you don't want to work directly with the
+// chainscript package.
+// For example directly using chainscript.Link doesn't work in plugins (because
+// the plugin compilation uses GOPATH instead of the vendor directory).
+// Even if your GOPATH and vendor directory have the same version of
+// go-chainscript the runtime will treat them as different types so the cast
+// to a ScriptValidatorFunc will fail.
+type Link struct {
+	Link *chainscript.Link
+}
+
 // SegmentSlice is a slice of segment pointers.
 type SegmentSlice []*chainscript.Segment
 

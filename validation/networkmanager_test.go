@@ -27,15 +27,15 @@ import (
 	"github.com/stratumn/go-core/store/storetesting"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation"
-	"github.com/stratumn/go-core/validation/testutils"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNetworkManager(t *testing.T) {
-	auctionPKI, _ := testutils.LoadPKI([]byte(strings.Replace(testutils.ValidChatJSONPKIConfig, "Bob", "Dave", -1)))
-	auctionTypes, _ := testutils.LoadTypes([]byte(testutils.ValidChatJSONTypesConfig))
+	auctionPKI, _ := validationtesting.LoadPKI([]byte(strings.Replace(validationtesting.ValidChatJSONPKIConfig, "Bob", "Dave", -1)))
+	auctionTypes, _ := validationtesting.LoadTypes([]byte(validationtesting.ValidChatJSONTypesConfig))
 
 	t.Run("New", func(t *testing.T) {
 		linkChan := make(chan *chainscript.Link)
@@ -54,9 +54,7 @@ func TestNetworkManager(t *testing.T) {
 			var v validators.Validator
 			a := dummystore.New(nil)
 			populateStoreWithValidData(t, a)
-			gov, err := validation.NewNetworkManager(context.Background(), a, linkChan, &validation.Config{
-				PluginsPath: pluginsPath,
-			})
+			gov, err := validation.NewNetworkManager(context.Background(), a, linkChan, &validation.Config{})
 			assert.NoError(t, err, "Governance is initialized by store")
 			require.NotNil(t, gov, "Governance is initialized by store")
 
@@ -99,9 +97,7 @@ func TestNetworkManager(t *testing.T) {
 			a := dummystore.New(nil)
 			populateStoreWithValidData(t, a)
 
-			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{
-				PluginsPath: pluginsPath,
-			})
+			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{})
 			assert.NoError(t, err)
 			require.NotNil(t, gov)
 
@@ -285,9 +281,7 @@ func TestNetworkManager(t *testing.T) {
 		t.Run("returns the current validator set", func(t *testing.T) {
 			ctx := context.Background()
 			a := dummystore.New(nil)
-			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{
-				PluginsPath: pluginsPath,
-			})
+			gov, err := validation.NewNetworkManager(ctx, a, linkChan, &validation.Config{})
 			require.NoError(t, err)
 
 			go gov.ListenAndUpdate(ctx)
