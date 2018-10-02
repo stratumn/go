@@ -16,7 +16,6 @@ package validators_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -24,10 +23,9 @@ import (
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
-	"github.com/stratumn/go-core/validation/testutils"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,28 +35,6 @@ type testCase struct {
 	name  string
 	link  *chainscript.Link
 	valid bool
-}
-
-var pluginFile string
-
-const (
-	pluginsPath      = "../testutils/plugins"
-	pluginSourceFile = "custom_validator.go"
-)
-
-func TestMain(m *testing.M) {
-	var res int
-	defer os.Exit(res)
-
-	var err error
-	pluginFile, err = testutil.CompileGoPlugin(pluginsPath, pluginSourceFile)
-	if err != nil {
-		fmt.Println("could not launch validator tests: error while compiling validation plugin")
-		os.Exit(2)
-	}
-	defer os.Remove(pluginFile)
-
-	res = m.Run()
 }
 
 func initTestCases(t *testing.T) (store.Adapter, []testCase) {
@@ -75,7 +51,7 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 		WithStep("init").
 		WithoutParent().
 		WithData(t, data).
-		WithSignatureFromKey(t, []byte(testutils.AlicePrivateKey), "").
+		WithSignatureFromKey(t, []byte(validationtesting.AlicePrivateKey), "").
 		Build()
 
 	initAuctionLinkHash, err := store.CreateLink(context.Background(), initAuctionLink)
@@ -127,12 +103,11 @@ func initTestCases(t *testing.T) (store.Adapter, []testCase) {
 }
 
 func TestValidator(t *testing.T) {
-	testFile := utils.CreateTempFile(t, testutils.ValidJSONConfig)
-	defer os.Remove(testFile)
+	testConf := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
+	defer os.Remove(testConf)
 
 	children, err := validation.LoadConfig(&validation.Config{
-		RulesPath:   testFile,
-		PluginsPath: pluginsPath,
+		RulesPath: testConf,
 	}, nil)
 	require.NoError(t, err, "LoadConfig()")
 

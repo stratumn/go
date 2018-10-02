@@ -17,6 +17,7 @@ package validators_test
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -32,21 +33,17 @@ import (
 )
 
 func TestScriptValidator(t *testing.T) {
-	t.Parallel()
-
 	testLink := chainscripttest.NewLinkBuilder(t).
 		WithProcess("test").
 		WithStep("init").
 		Build()
 
 	t.Run("New", func(t *testing.T) {
-		t.Parallel()
-
 		t.Run("missing plugin file", func(t *testing.T) {
 			_, err := validators.NewScriptValidator(
 				"test_process",
 				"/var/tmp/",
-				&validators.ScriptConfig{Hash: []byte("42")},
+				&validators.ScriptConfig{Hash: "42"},
 			)
 
 			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
@@ -58,7 +55,7 @@ func TestScriptValidator(t *testing.T) {
 			_, err := validators.NewScriptValidator(
 				"test_process",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: []byte("not 42")},
+				&validators.ScriptConfig{Hash: "not 42"},
 			)
 
 			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
@@ -79,7 +76,7 @@ func TestScriptValidator(t *testing.T) {
 			_, err = validators.NewScriptValidator(
 				"test_process",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash[:]},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash[:])},
 			)
 
 			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
@@ -91,7 +88,7 @@ func TestScriptValidator(t *testing.T) {
 			_, err := validators.NewScriptValidator(
 				"test_process",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
 			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidPlugin.Error()))
@@ -103,7 +100,7 @@ func TestScriptValidator(t *testing.T) {
 			_, err := validators.NewScriptValidator(
 				"test_process",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
 			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidPlugin.Error()))
@@ -115,7 +112,7 @@ func TestScriptValidator(t *testing.T) {
 			v, err := validators.NewScriptValidator(
 				"test_process",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
 			require.NoError(t, err)
@@ -124,14 +121,12 @@ func TestScriptValidator(t *testing.T) {
 	})
 
 	t.Run("Hash", func(t *testing.T) {
-		t.Parallel()
-
 		t.Run("depends on process", func(t *testing.T) {
 			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
 			v1, err := validators.NewScriptValidator(
 				"p1",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 			require.NoError(t, err)
 			h1, _ := v1.Hash()
@@ -139,7 +134,7 @@ func TestScriptValidator(t *testing.T) {
 			v2, err := validators.NewScriptValidator(
 				"p2",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 			require.NoError(t, err)
 			h2, _ := v2.Hash()
@@ -152,7 +147,7 @@ func TestScriptValidator(t *testing.T) {
 			v1, err := validators.NewScriptValidator(
 				"test_process",
 				pluginsDir1,
-				&validators.ScriptConfig{Hash: pluginHash1},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash1)},
 			)
 			require.NoError(t, err)
 			h1, _ := v1.Hash()
@@ -161,7 +156,7 @@ func TestScriptValidator(t *testing.T) {
 			v2, err := validators.NewScriptValidator(
 				"test_process",
 				pluginsDir2,
-				&validators.ScriptConfig{Hash: pluginHash2},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash2)},
 			)
 			require.NoError(t, err)
 			h2, _ := v2.Hash()
@@ -177,7 +172,7 @@ func TestScriptValidator(t *testing.T) {
 			v, err := validators.NewScriptValidator(
 				"some_random_process",
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
 			require.NoError(t, err)
@@ -188,7 +183,7 @@ func TestScriptValidator(t *testing.T) {
 			v, err := validators.NewScriptValidator(
 				testLink.Meta.Process.Name,
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
 			require.NoError(t, err)
@@ -197,14 +192,12 @@ func TestScriptValidator(t *testing.T) {
 	})
 
 	t.Run("Validate", func(t *testing.T) {
-		t.Parallel()
-
 		t.Run("success", func(t *testing.T) {
 			pluginsDir, pluginHash := validationtesting.CompilePlugin(t, validationtesting.PluginValidationSuccess)
 			v, err := validators.NewScriptValidator(
 				testLink.Meta.Process.Name,
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 			require.NoError(t, err)
 
@@ -217,7 +210,7 @@ func TestScriptValidator(t *testing.T) {
 			v, err := validators.NewScriptValidator(
 				testLink.Meta.Process.Name,
 				pluginsDir,
-				&validators.ScriptConfig{Hash: pluginHash},
+				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 			require.NoError(t, err)
 

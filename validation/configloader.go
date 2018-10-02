@@ -20,8 +20,8 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-crypto/keys"
 	"github.com/stratumn/go-core/validation/validators"
+	"github.com/stratumn/go-crypto/keys"
 )
 
 var (
@@ -158,7 +158,7 @@ func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]Typ
 		}
 
 		if val.Script != nil {
-			scriptValidator, err := validators.NewScriptValidator(baseConfig, val.Script, pluginsPath)
+			scriptValidator, err := validators.NewScriptValidator(baseConfig.Process, pluginsPath, val.Script)
 			if err != nil {
 				return nil, err
 			}

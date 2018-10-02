@@ -15,7 +15,6 @@
 package validators
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -39,7 +38,7 @@ var (
 
 // ScriptConfig defines the configuration of the go validation plugin.
 type ScriptConfig struct {
-	Hash []byte `json:"hash"`
+	Hash string `json:"hash"`
 }
 
 // Link simply wraps a link because directly using a chainscript.Link doesn't
@@ -69,14 +68,14 @@ type ScriptValidator struct {
 // directory (where {hash} is hex-encoded).
 // The plugin should expose a `Validate` ScriptValidatorFunc.
 func NewScriptValidator(process string, pluginsPath string, scriptCfg *ScriptConfig) (Validator, error) {
-	pluginFile := path.Join(pluginsPath, fmt.Sprintf("%s.so", hex.EncodeToString(scriptCfg.Hash)))
+	pluginFile := path.Join(pluginsPath, fmt.Sprintf("%s.so", scriptCfg.Hash))
 	pluginBytes, err := ioutil.ReadFile(pluginFile)
 	if err != nil {
 		return nil, errors.Wrap(err, ErrLoadingPlugin.Error())
 	}
 
 	fileHash := sha256.Sum256(pluginBytes)
-	if !bytes.Equal(scriptCfg.Hash, fileHash[:]) {
+	if scriptCfg.Hash != hex.EncodeToString(fileHash[:]) {
 		return nil, errors.Wrap(ErrInvalidPlugin, ErrInvalidPluginHash.Error())
 	}
 

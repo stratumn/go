@@ -67,10 +67,7 @@ const ValidAuctionJSONTypesConfig = `
 			},
 			"required": ["seller", "lot", "initialPrice"]
 		},
-		"transitions": [""],
-		"script": {
-			"file": "custom_validator.so",
-		}
+		"transitions": [""]
 	},
 	"bid": {
 		"schema": {
