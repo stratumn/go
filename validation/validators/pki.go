@@ -26,9 +26,14 @@ import (
 	"github.com/stratumn/go-core/types"
 )
 
+// Errors used by the PKI validator.
+var (
+	ErrMissingSignature = errors.New("missing mandatory signature")
+)
+
 // PKI maps a public key to an identity.
-// It lists all legimate keys, assign real names to public keys
-// and establishes n-to-n relationships between users and roles.
+// It lists all legimate keys, assigns real names to public keys and
+// establishes n-to-n relationships between users and roles.
 type PKI map[string]*Identity
 
 func (p PKI) getIdentityByPublicKey(publicKey string) *Identity {
@@ -39,6 +44,7 @@ func (p PKI) getIdentityByPublicKey(publicKey string) *Identity {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -63,49 +69,47 @@ func (p PKI) matchRequirement(requirement, publicKey string) bool {
 	}
 
 	return false
-
 }
 
-// Identity represents an actor of a network.
+// Identity represents an actor in a network.
 type Identity struct {
 	Keys  []string
 	Roles []string
 }
 
-// PKIValidator validates the json signature of a link's state.
+// PKIValidator validates the json signature requirements of a link's data.
 type PKIValidator struct {
-	Config             *ValidatorBaseConfig
+	*ProcessStepValidator
+
 	RequiredSignatures []string
 	PKI                *PKI
 }
 
-// NewPKIValidator returns a new PKIValidator
-func NewPKIValidator(baseConfig *ValidatorBaseConfig, required []string, pki *PKI) Validator {
+// NewPKIValidator returns a new PKIValidator.
+func NewPKIValidator(processStepValidator *ProcessStepValidator, required []string, pki *PKI) Validator {
 	return &PKIValidator{
-		Config:             baseConfig,
-		RequiredSignatures: required,
-		PKI:                pki,
+		ProcessStepValidator: processStepValidator,
+		RequiredSignatures:   required,
+		PKI:                  pki,
 	}
 }
 
-// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
+// Hash the signature requirements.
 func (pv PKIValidator) Hash() (*types.Bytes32, error) {
 	b, err := cj.Marshal(pv)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
+
 	validationsHash := types.Bytes32(sha256.Sum256(b))
 	return &validationsHash, nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
-func (pv PKIValidator) ShouldValidate(link *chainscript.Link) bool {
-	return pv.Config.ShouldValidate(link)
-}
-
-// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
-// it checks that the provided signatures match the required ones.
-// a requirement can either be: a public key, a name defined in PKI, a role defined in PKI.
+// Validate that the provided signatures match the required ones.
+// A requirement can be:
+//	* a public key
+//	* a name defined in PKI
+//	* a role defined in PKI
 func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	for _, required := range pv.RequiredSignatures {
 		fulfilled := false
@@ -117,7 +121,7 @@ func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *
 		}
 
 		if !fulfilled {
-			return errors.Errorf("Missing signatory for validator %s of process %s: signature from %s is required", pv.Config.LinkStep, pv.Config.Process, required)
+			return errors.Wrapf(ErrMissingSignature, "%s.%s requires a signature from %s", pv.process, pv.step, required)
 		}
 	}
 
