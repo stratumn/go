@@ -39,10 +39,10 @@ var (
 			"context"
 		
 			"github.com/stratumn/go-core/store"
-			"github.com/stratumn/go-core/validation/validators"
+			"github.com/stratumn/go-core/types"
 		)
 
-		func NotValidate(_ context.Context, _ store.SegmentReader, _ *validators.Link) error {
+		func NotValidate(_ context.Context, _ store.SegmentReader, _ *types.Link) error {
 			return nil
 		}
 
@@ -55,10 +55,10 @@ var (
 
 		import (
 			"github.com/stratumn/go-core/store"
-			"github.com/stratumn/go-core/validation/validators"
+			"github.com/stratumn/go-core/types"
 		)
 
-		func Validate(_ store.SegmentReader, _ *validators.Link) error {
+		func Validate(_ store.SegmentReader, _ *types.Link) error {
 			return nil
 		}
 
@@ -74,10 +74,10 @@ var (
 			"errors"
 		
 			"github.com/stratumn/go-core/store"
-			"github.com/stratumn/go-core/validation/validators"
+			"github.com/stratumn/go-core/types"
 		)
 
-		func Validate(_ context.Context, _ store.SegmentReader, _ *validators.Link) error {
+		func Validate(_ context.Context, _ store.SegmentReader, _ *types.Link) error {
 			return errors.New("invalid link")
 		}
 
@@ -93,10 +93,10 @@ var (
 			"errors"
 		
 			"github.com/stratumn/go-core/store"
-			"github.com/stratumn/go-core/validation/validators"
+			"github.com/stratumn/go-core/types"
 		)
 
-		func Validate(_ context.Context, _ store.SegmentReader, l *validators.Link) error {
+		func Validate(_ context.Context, _ store.SegmentReader, l *types.Link) error {
 			if l.Link.Meta.Process == nil {
 				return errors.New("link is missing process")
 			}

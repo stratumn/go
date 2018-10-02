@@ -41,19 +41,9 @@ type ScriptConfig struct {
 	Hash string `json:"hash"`
 }
 
-// Link simply wraps a link because directly using a chainscript.Link doesn't
-// work in plugins (because the plugin compilation uses GOPATH instead of the
-// vendor directory).
-// Even if your GOPATH and vendor directory have the same version of
-// go-chainscript the runtime will treat them as different types so the cast
-// to a ScriptValidatorFunc will fail.
-type Link struct {
-	Link *chainscript.Link
-}
-
 // ScriptValidatorFunc is the function called when enforcing a custom
 // validation rule.
-type ScriptValidatorFunc = func(context.Context, store.SegmentReader, *Link) error
+type ScriptValidatorFunc = func(context.Context, store.SegmentReader, *types.Link) error
 
 // ScriptValidator validates a link according to custom rules written as a go
 // plugin. The plugin should expose a `Validate` method.
@@ -114,5 +104,5 @@ func (sv *ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
 
 // Validate the link.
 func (sv *ScriptValidator) Validate(ctx context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
-	return sv.script(ctx, storeReader, &Link{Link: link})
+	return sv.script(ctx, storeReader, &types.Link{Link: link})
 }
