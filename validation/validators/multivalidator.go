@@ -21,72 +21,68 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
-// MultiValidator uses its internal validators to validate a link.
-// It should be the only validator to be called directly, since it will call other validators internally.
+// Errors used by the multi-validator.
+var (
+	ErrNoMatchingValidator = errors.New("link does not match any validator")
+)
+
+// MultiValidator is a collection of validators.
 type MultiValidator struct {
-	validators ProcessesValidators
+	validators Validators
 }
 
-// NewMultiValidator creates a validator that will simply be a collection
-// of single-purpose validators.
-// The slice of validators should be loaded from a JSON file via validation.LoadConfig().
-func NewMultiValidator(validators ProcessesValidators) Validator {
+// NewMultiValidator creates a validator that will simply be a collection of
+// single-purpose validators.
+func NewMultiValidator(validators Validators) Validator {
 	return &MultiValidator{validators: validators}
 }
 
-// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
+// ShouldValidate returns true if at least one of the children matches.
 func (v MultiValidator) ShouldValidate(link *chainscript.Link) bool {
-	return true
-}
-
-// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
-// It concatenates the hashes from its sub-validators and hashes the result.
-func (v MultiValidator) Hash() (*types.Bytes32, error) {
-	b := make([]byte, 0)
-	for _, processValidators := range v.validators {
-		for _, validator := range processValidators {
-			validatorHash, err := validator.Hash()
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-			b = append(b, validatorHash[:]...)
+	for _, child := range v.validators {
+		if child.ShouldValidate(link) {
+			return true
 		}
 	}
-	validationsHash := types.Bytes32(sha256.Sum256(b))
-	return &validationsHash, nil
+
+	return false
 }
 
-func (v MultiValidator) matchValidators(l *chainscript.Link) (linkValidators []Validator) {
-	processValidators, ok := v.validators[l.Meta.Process.Name]
-	if !ok {
-		return nil
-	}
-
-	for _, child := range processValidators {
-		if child.ShouldValidate(l) {
-			linkValidators = append(linkValidators, child)
-		}
-	}
-	return
-}
-
-// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
-// It runs the validation on every child validator matching the provided link.
-// It is the multiValidator's responsability to call child.ShouldValidate() before running the validation.
-func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
-	linkValidators := v.matchValidators(l)
-	if len(linkValidators) == 0 {
-		return errors.Errorf("Validation failed: link with process: [%s] and step: [%s] does not match any validator", l.Meta.Process.Name, l.Meta.Step)
-	}
-
-	for _, child := range linkValidators {
-		err := child.Validate(ctx, r, l)
+// Hash concatenates the hashes from its children and hashes the result.
+func (v MultiValidator) Hash() ([]byte, error) {
+	var toHash []byte
+	for _, child := range v.validators {
+		childHash, err := child.Hash()
 		if err != nil {
-			return err
+			return nil, err
+		}
+
+		toHash = append(toHash, childHash...)
+	}
+
+	h := sha256.Sum256(toHash)
+	return h[:], nil
+}
+
+// Validate forwards the link to every child validator that matches.
+func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
+	validated := false
+
+	for _, child := range v.validators {
+		if child.ShouldValidate(l) {
+			validated = true
+			err := child.Validate(ctx, r, l)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
+	if !validated {
+		return ErrNoMatchingValidator
+	}
+
 	return nil
 }
