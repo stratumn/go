@@ -18,10 +18,27 @@ import (
 	"flag"
 )
 
+const (
+	// DefaultFilename is the default filename for the file containing
+	// validation rules.
+	// This is used in non-blockchain scenario.
+	DefaultFilename = "/data/validation/rules.json"
+
+	// DefaultPluginsDirectory is the default directory where validation
+	// plugins should be stored.
+	DefaultPluginsDirectory = "/data/validation/plugins"
+)
+
 var (
 	rulesPath   string
 	pluginsPath string
 )
+
+// Config contains the path of the rules JSON file and the directory where the validator scripts are located.
+type Config struct {
+	RulesPath   string
+	PluginsPath string
+}
 
 // RegisterFlags registers the command-line monitoring flags.
 func RegisterFlags() {
@@ -29,8 +46,8 @@ func RegisterFlags() {
 	flag.StringVar(&pluginsPath, "plugins_path", DefaultPluginsDirectory, "Path to the directory containing validation plugins")
 }
 
-// ConfigurationFromFlags builds configuration from user-provided
-// command-line flags.
+// ConfigurationFromFlags builds configuration from user-provided command-line
+// flags.
 func ConfigurationFromFlags() *Config {
 	return &Config{
 		RulesPath:   rulesPath,

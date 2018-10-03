@@ -20,20 +20,6 @@ import (
 	"github.com/stratumn/go-core/validation/validators"
 )
 
-const (
-	// DefaultFilename is the default filename for the file with the rules of validation
-	DefaultFilename = "/data/validation/rules.json"
-
-	// DefaultPluginsDirectory is the default directory where validation plugins are located
-	DefaultPluginsDirectory = "/data/validation/"
-)
-
-// Config contains the path of the rules JSON file and the directory where the validator scripts are located.
-type Config struct {
-	RulesPath   string
-	PluginsPath string
-}
-
 // Manager defines the methods to implement to manage validations in a network.
 type Manager interface {
 	UpdateSubscriber
