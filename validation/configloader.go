@@ -133,16 +133,17 @@ func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]Typ
 			return nil, ErrInvalidValidator
 		}
 
-		baseConfig, err := validators.NewValidatorBaseConfig(process, linkStep)
+		processStepValidator, err := validators.NewProcessStepValidator(process, linkStep)
 		if err != nil {
 			return nil, err
 		}
+
 		if len(val.Signatures) > 0 {
 			// if no PKI was provided, one cannot require signatures.
 			if pki == nil {
 				return nil, ErrNoPKI
 			}
-			validatorList = append(validatorList, validators.NewPKIValidator(baseConfig, val.Signatures, pki))
+			validatorList = append(validatorList, validators.NewPKIValidator(processStepValidator, val.Signatures, pki))
 		}
 
 		if val.Schema != nil {
@@ -150,7 +151,7 @@ func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]Typ
 			if err != nil {
 				return nil, err
 			}
-			schemaValidator, err := validators.NewSchemaValidator(baseConfig, schemaData)
+			schemaValidator, err := validators.NewSchemaValidator(processStepValidator, schemaData)
 			if err != nil {
 				return nil, err
 			}
@@ -158,7 +159,7 @@ func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]Typ
 		}
 
 		if val.Script != nil {
-			scriptValidator, err := validators.NewScriptValidator(baseConfig.Process, pluginsPath, val.Script)
+			scriptValidator, err := validators.NewScriptValidator(process, pluginsPath, val.Script)
 			if err != nil {
 				return nil, err
 			}
@@ -166,7 +167,7 @@ func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]Typ
 		}
 
 		if len(val.Transitions) > 0 {
-			validatorList = append(validatorList, validators.NewTransitionValidator(baseConfig, val.Transitions))
+			validatorList = append(validatorList, validators.NewTransitionValidator(processStepValidator, val.Transitions))
 		} else {
 			missingTransitionValidation = append(missingTransitionValidation, linkStep)
 		}
