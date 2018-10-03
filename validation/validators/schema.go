@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -54,15 +53,14 @@ func NewSchemaValidator(processStepValidator *ProcessStepValidator, schemaData [
 }
 
 // Hash the process, step and expected schema.
-func (sv SchemaValidator) Hash() (*types.Bytes32, error) {
+func (sv SchemaValidator) Hash() ([]byte, error) {
 	psh, err := sv.ProcessStepValidator.Hash()
 	if err != nil {
 		return nil, err
 	}
 
 	h := sha256.Sum256(append(psh[:], sv.schemaHash...))
-	vh := types.Bytes32(h)
-	return &vh, nil
+	return h[:], nil
 }
 
 // Validate the schema of a link's data.

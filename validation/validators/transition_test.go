@@ -178,8 +178,8 @@ func TestTransitionValidator(t *testing.T) {
 		h3, err := v3.Hash()
 		require.NoError(t, err)
 
-		assert.NotEqual(t, h1.String(), h2.String())
-		assert.NotEqual(t, h1.String(), h3.String())
-		assert.NotEqual(t, h2.String(), h3.String())
+		assert.NotEqual(t, h1, h2)
+		assert.NotEqual(t, h1, h3)
+		assert.NotEqual(t, h2, h3)
 	})
 }

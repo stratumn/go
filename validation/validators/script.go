@@ -92,9 +92,9 @@ func NewScriptValidator(process string, pluginsPath string, scriptCfg *ScriptCon
 }
 
 // Hash of the script validator.
-func (sv *ScriptValidator) Hash() (*types.Bytes32, error) {
-	validatorHash := types.Bytes32(sha256.Sum256(append([]byte(sv.process), sv.scriptHash...)))
-	return &validatorHash, nil
+func (sv *ScriptValidator) Hash() ([]byte, error) {
+	h := sha256.Sum256(append([]byte(sv.process), sv.scriptHash...))
+	return h[:], nil
 }
 
 // ShouldValidate checks that the process matches.

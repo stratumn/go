@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
 // Errors returned by the RefsValidator.
@@ -143,6 +142,6 @@ func (v *RefsValidator) ShouldValidate(*chainscript.Link) bool {
 }
 
 // Hash returns an empty hash since RefsValidator doesn't have any state.
-func (v *RefsValidator) Hash() (*types.Bytes32, error) {
+func (v *RefsValidator) Hash() ([]byte, error) {
 	return nil, nil
 }

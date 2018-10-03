@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
 // Errors used by the ProcessStepValidator.
@@ -80,7 +79,7 @@ func (v *ProcessStepValidator) Validate(_ context.Context, _ store.SegmentReader
 }
 
 // Hash the process and step.
-func (v *ProcessStepValidator) Hash() (*types.Bytes32, error) {
-	vh := types.Bytes32(sha256.Sum256(append([]byte(v.process), []byte(v.step)...)))
-	return &vh, nil
+func (v *ProcessStepValidator) Hash() ([]byte, error) {
+	h := sha256.Sum256(append([]byte(v.process), []byte(v.step)...))
+	return h[:], nil
 }

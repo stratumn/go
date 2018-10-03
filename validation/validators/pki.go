@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
 // Errors used by the PKI validator.
@@ -95,14 +94,14 @@ func NewPKIValidator(processStepValidator *ProcessStepValidator, required []stri
 }
 
 // Hash the signature requirements.
-func (pv PKIValidator) Hash() (*types.Bytes32, error) {
+func (pv PKIValidator) Hash() ([]byte, error) {
 	b, err := cj.Marshal(pv)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	validationsHash := types.Bytes32(sha256.Sum256(b))
-	return &validationsHash, nil
+	h := sha256.Sum256(b)
+	return h[:], nil
 }
 
 // Validate that the provided signatures match the required ones.

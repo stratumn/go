@@ -22,7 +22,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
 // Errors used by the transition validator.
@@ -47,7 +46,7 @@ func NewTransitionValidator(processStepValidator *ProcessStepValidator, from []s
 }
 
 // Hash the process, step and allowed previous steps.
-func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
+func (tv TransitionValidator) Hash() ([]byte, error) {
 	psh, err := tv.ProcessStepValidator.Hash()
 	if err != nil {
 		return nil, err
@@ -58,8 +57,8 @@ func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
 		toHash = append(toHash, []byte(t)...)
 	}
 
-	vh := types.Bytes32(sha256.Sum256(toHash))
-	return &vh, nil
+	h := sha256.Sum256(toHash)
+	return h[:], nil
 }
 
 // Validate that the link's new step follows an authorized transition.
