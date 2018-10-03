@@ -128,6 +128,6 @@ func (m *LocalManager) GetValidators(ctx context.Context) (validators.ProcessesV
 }
 
 func (m *LocalManager) updateCurrent(validatorsMap validators.ProcessesValidators) {
-	m.current = validators.NewMultiValidator(validatorsMap)
+	m.current = validators.NewMultiValidator(validatorsMap.Flatten())
 	m.Broadcast(m.current)
 }

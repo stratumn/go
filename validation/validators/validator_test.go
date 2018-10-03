@@ -15,113 +15,26 @@
 package validators_test
 
 import (
-	"context"
-	"os"
 	"testing"
 
-	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/dummystore"
-	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/utils"
-	"github.com/stratumn/go-core/validation"
-	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type testCase struct {
-	name  string
-	link  *chainscript.Link
-	valid bool
-}
+func TestFlatten(t *testing.T) {
+	pv := make(validators.ProcessesValidators)
 
-func initTestCases(t *testing.T) (store.Adapter, []testCase) {
-	store := dummystore.New(nil)
-	data := map[string]interface{}{
-		"buyer":        "alice",
-		"seller":       "bob",
-		"lot":          "painting",
-		"initialPrice": 12,
-	}
+	v1, _ := validators.NewProcessStepValidator("p1", "s1")
+	pv["p1"] = []validators.Validator{v1}
 
-	initAuctionLink := chainscripttest.NewLinkBuilder(t).
-		WithProcess("auction").
-		WithStep("init").
-		WithoutParent().
-		WithData(t, data).
-		WithSignatureFromKey(t, []byte(validationtesting.AlicePrivateKey), "").
-		Build()
+	v2, _ := validators.NewProcessStepValidator("p2", "s2")
+	v3, _ := validators.NewProcessStepValidator("p3", "s3")
+	pv["p2"] = []validators.Validator{v2, v3}
 
-	initAuctionLinkHash, err := store.CreateLink(context.Background(), initAuctionLink)
-	require.NoError(t, err)
+	pv["p3"] = make(validators.Validators, 0)
 
-	var testCases = []testCase{{
-		name:  "valid-init-link",
-		link:  initAuctionLink,
-		valid: true,
-	}, {
-		name: "valid-link",
-		link: chainscripttest.NewLinkBuilder(t).
-			WithData(t, map[string]interface{}{
-				"buyer":    "alice",
-				"bidPrice": 42,
-			}).
-			WithParentHash(initAuctionLinkHash).
-			WithProcess("auction").
-			WithStep("bid").
-			Build(),
-		valid: true,
-	}, {
-		name:  "no-validator-match",
-		link:  chainscripttest.NewLinkBuilder(t).WithProcess("auction").WithStep("unknown").Build(),
-		valid: false,
-	}, {
-		name: "missing-required-field",
-		link: chainscripttest.NewLinkBuilder(t).
-			WithData(t, map[string]interface{}{
-				"to": "bob",
-			}).
-			WithProcess("chat").
-			WithStep("message").
-			Build(),
-		valid: false,
-	}, {
-		name: "invalid-field-value",
-		link: chainscripttest.NewLinkBuilder(t).
-			WithData(t, map[string]interface{}{
-				"buyer":    "alice",
-				"bidPrice": -10,
-			}).
-			WithProcess("auction").
-			WithStep("bid").
-			Build(),
-		valid: false,
-	}}
-	return store, testCases
-}
-
-func TestValidator(t *testing.T) {
-	testConf := utils.CreateTempFile(t, validationtesting.ValidJSONConfig)
-	defer os.Remove(testConf)
-
-	children, err := validation.LoadConfig(&validation.Config{
-		RulesPath: testConf,
-	}, nil)
-	require.NoError(t, err, "LoadConfig()")
-
-	v := validators.NewMultiValidator(children)
-
-	store, testCases := initTestCases(t)
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			err := v.Validate(context.Background(), store, tt.link)
-			if tt.valid {
-				assert.NoError(t, err, "v.Validate()")
-			} else {
-				assert.Error(t, err, "v.Validate()")
-			}
-		})
-	}
+	flattened := pv.Flatten()
+	require.Len(t, flattened, 3)
+	assert.ElementsMatch(t, flattened, []validators.Validator{v1, v2, v3})
 }

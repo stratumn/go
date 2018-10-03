@@ -137,7 +137,7 @@ func (m *NetworkManager) Current() validators.Validator {
 }
 
 func (m *NetworkManager) updateCurrent(validatorsMap validators.ProcessesValidators) {
-	m.current = validators.NewMultiValidator(validatorsMap)
+	m.current = validators.NewMultiValidator(validatorsMap.Flatten())
 	m.Broadcast(m.current)
 }
 

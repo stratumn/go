@@ -24,7 +24,6 @@ import (
 	json "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/types"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/tendermint/go-crypto"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -59,9 +58,9 @@ type TendermintVote struct {
 type TendermintProof struct {
 	BlockHeight int64 `json:"blockHeight"`
 
-	Root            *types.Bytes32 `json:"merkleRoot"`
-	Path            mktypes.Path   `json:"merklePath"`
-	ValidationsHash *types.Bytes32 `json:"validationsHash"`
+	Root            []byte       `json:"merkleRoot"`
+	Path            mktypes.Path `json:"merklePath"`
+	ValidationsHash []byte       `json:"validationsHash"`
 
 	// The header and its votes are needed to validate
 	// the previous app hash and metadata such as the height and time.
@@ -91,19 +90,13 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	// We first verify that the app hash is correct
 
 	hash := sha256.New()
-	if _, err := hash.Write(types.NewBytes32FromBytes(p.Header.AppHash)[:]); err != nil {
+	if _, err := hash.Write(p.Header.AppHash); err != nil {
 		return false
 	}
-
-	validationsHash := p.ValidationsHash
-	if validationsHash == nil {
-		validationsHash = &types.Bytes32{}
-	}
-
-	if _, err := hash.Write(validationsHash[:]); err != nil {
+	if _, err := hash.Write(p.ValidationsHash); err != nil {
 		return false
 	}
-	if _, err := hash.Write(p.Root[:]); err != nil {
+	if _, err := hash.Write(p.Root); err != nil {
 		return false
 	}
 
@@ -117,7 +110,7 @@ func (p *TendermintProof) Verify(linkHash interface{}) bool {
 	if len(p.Path) == 0 {
 		// If the tree contains a single element,
 		// it's valid only if it's the root.
-		if !bytes.Equal(lh, p.Root[:]) {
+		if !bytes.Equal(lh, p.Root) {
 			return false
 		}
 	} else {

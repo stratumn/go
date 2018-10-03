@@ -17,74 +17,82 @@ package validators
 import (
 	"context"
 	"crypto/sha256"
+	"fmt"
 
-	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
-// TransitionValidator defines the source state where a transition can be applied and its destination state.
+// Errors used by the transition validator.
+var (
+	ErrInvalidTransition = errors.New("unauthorized process step transition")
+)
+
+// TransitionValidator restricts the transitions from a step to another.
+// It checks that the parent step was in the list of authorized steps.
 type TransitionValidator struct {
-	Config      *ValidatorBaseConfig
-	Transitions []string
+	*ProcessStepValidator
+	from []string
 }
 
-// NewTransitionValidator returns a new TransitionValidator.
-func NewTransitionValidator(baseConfig *ValidatorBaseConfig, transitions []string) Validator {
+// NewTransitionValidator returns a new TransitionValidator for the given
+// process and step.
+func NewTransitionValidator(processStepValidator *ProcessStepValidator, from []string) Validator {
 	return &TransitionValidator{
-		Config:      baseConfig,
-		Transitions: transitions,
+		ProcessStepValidator: processStepValidator,
+		from:                 from,
 	}
 }
 
-// Hash implements github.com/stratumn/go-core/validation/validators.Validator.Hash.
-func (tv TransitionValidator) Hash() (*types.Bytes32, error) {
-	b, err := cj.Marshal(tv)
+// Hash the process, step and allowed previous steps.
+func (tv TransitionValidator) Hash() ([]byte, error) {
+	psh, err := tv.ProcessStepValidator.Hash()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
-	validationsHash := types.Bytes32(sha256.Sum256(b))
-	return &validationsHash, nil
+
+	toHash := psh[:]
+	for _, t := range tv.from {
+		toHash = append(toHash, []byte(t)...)
+	}
+
+	h := sha256.Sum256(toHash)
+	return h[:], nil
 }
 
-// ShouldValidate implements github.com/stratumn/go-core/validation/validators.Validator.ShouldValidate.
-func (tv TransitionValidator) ShouldValidate(link *chainscript.Link) bool {
-	return tv.Config.ShouldValidate(link)
-}
-
-// Validate implements github.com/stratumn/go-core/validation/validators.Validator.Validate.
-// It checks that the link follows a valid transition.
-// If there is no previous link, an empty link has to be allowed,
-// Otherwise the meta.type of the prevLink must exist in authorized previous statement.
+// Validate that the link's new step follows an authorized transition.
+// If there is no previous link the allowed transitions must explicitly contain
+// an empty string.
 func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *chainscript.Link) error {
 	error := func(src string) error {
-		return errors.Errorf("no transition found %s --> %s", src, tv.Config.LinkStep)
+		return errors.Wrapf(ErrInvalidTransition, "%s --> %s", src, tv.step)
 	}
 
-	prevLinkHash := chainscript.LinkHash(link.Meta.PrevLinkHash)
-	if prevLinkHash == nil {
-		for _, t := range tv.Transitions {
+	prevLinkHash := link.PrevLinkHash()
+	if len(prevLinkHash) == 0 {
+		for _, t := range tv.from {
 			if t == "" {
 				return nil
 			}
 		}
+
 		return error("()")
 	}
 
-	seg, err := store.GetSegment(ctx, prevLinkHash)
+	parent, err := store.GetSegment(ctx, prevLinkHash)
 	if err != nil {
 		return errors.Wrapf(err, "cannot retrieve previous segment %s", prevLinkHash.String())
 	}
-	if seg == nil {
-		return errors.Errorf("previous segment not found: %s", prevLinkHash.String())
+	if parent == nil {
+		return fmt.Errorf("previous segment not found: %s", prevLinkHash.String())
 	}
 
-	for _, t := range tv.Transitions {
-		if t == seg.Link.Meta.Step {
+	for _, t := range tv.from {
+		if t == parent.Link.Meta.Step {
 			return nil
 		}
 	}
-	return error(seg.Link.Meta.Step)
+
+	return error(parent.Link.Meta.Step)
 }

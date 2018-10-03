@@ -23,7 +23,6 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stratumn/merkle"
@@ -32,7 +31,7 @@ import (
 // State represents the app states, separating the committed state (for queries)
 // from the working state (for CheckTx and DeliverTx).
 type State struct {
-	previousAppHash *types.Bytes32
+	previousAppHash []byte
 	// The same validator is used for a whole commit
 	// When beginning a new block, the validator can
 	// be updated.
@@ -139,7 +138,7 @@ func (s *State) checkLinkAndAddToBatch(ctx context.Context, link *chainscript.Li
 
 // Commit commits the delivered links, resets delivered and checked state,
 // and returns the hash for the commit and the list of committed links.
-func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*chainscript.Link, error) {
+func (s *State) Commit(ctx context.Context) ([]byte, []*chainscript.Link, error) {
 	appHash, err := s.computeAppHash()
 	if err != nil {
 		return nil, nil, err
@@ -161,8 +160,8 @@ func (s *State) Commit(ctx context.Context) (*types.Bytes32, []*chainscript.Link
 	return appHash, committedLinks, nil
 }
 
-func (s *State) computeAppHash() (*types.Bytes32, error) {
-	var validatorHash *types.Bytes32
+func (s *State) computeAppHash() ([]byte, error) {
+	var validatorHash []byte
 	if s.validator != nil {
 		h, err := s.validator.Hash()
 		if err != nil {
@@ -171,7 +170,7 @@ func (s *State) computeAppHash() (*types.Bytes32, error) {
 		validatorHash = h
 	}
 
-	var merkleRoot *types.Bytes32
+	var merkleRoot []byte
 	if len(s.deliveredLinksList) > 0 {
 		var treeLeaves [][]byte
 		for _, link := range s.deliveredLinksList {
@@ -184,42 +183,28 @@ func (s *State) computeAppHash() (*types.Bytes32, error) {
 			return nil, err
 		}
 
-		merkleRoot = types.NewBytes32FromBytes(merkle.Root())
+		merkleRoot = merkle.Root()
 	}
 
 	return ComputeAppHash(s.previousAppHash, validatorHash, merkleRoot)
 }
 
-// ComputeAppHash computes the app hash from its required parts
-// If one of the parts is nil or empty, we'll pad with 0s so that
-// we always hash a 96-bytes array
-func ComputeAppHash(previous *types.Bytes32, validator *types.Bytes32, root *types.Bytes32) (*types.Bytes32, error) {
+// ComputeAppHash computes the app hash from its required parts.
+func ComputeAppHash(previous []byte, validator []byte, root []byte) ([]byte, error) {
 	hash := sha256.New()
 
-	if previous == nil {
-		previous = &types.Bytes32{}
-	}
-	if _, err := hash.Write(previous[:]); err != nil {
+	if _, err := hash.Write(previous); err != nil {
 		return nil, err
 	}
 
-	if validator == nil {
-		validator = &types.Bytes32{}
-	}
-	if _, err := hash.Write(validator[:]); err != nil {
+	if _, err := hash.Write(validator); err != nil {
 		return nil, err
 	}
 
-	if root == nil {
-		root = &types.Bytes32{}
-	}
-	if _, err := hash.Write(root[:]); err != nil {
+	if _, err := hash.Write(root); err != nil {
 		return nil, err
 	}
 
 	appHash := hash.Sum(nil)
-	var appHash32 types.Bytes32
-	copy(appHash32[:], appHash)
-
-	return &appHash32, nil
+	return appHash, nil
 }

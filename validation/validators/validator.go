@@ -19,7 +19,6 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 )
 
 // Validator defines a validator that has an internal state, identified by
@@ -35,7 +34,7 @@ type Validator interface {
 	// Hash returns the hash of the validator's state.
 	// It can be used to know which set of validations were applied
 	// to a block.
-	Hash() (*types.Bytes32, error)
+	Hash() ([]byte, error)
 }
 
 // Validators is an array of Validator.
@@ -43,3 +42,13 @@ type Validators []Validator
 
 // ProcessesValidators maps a process name to a list of validators.
 type ProcessesValidators map[string]Validators
+
+// Flatten processes validators to a single slice.
+func (pv ProcessesValidators) Flatten() Validators {
+	var vs Validators
+	for _, v := range pv {
+		vs = append(vs, v...)
+	}
+
+	return vs
+}

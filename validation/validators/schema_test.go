@@ -18,143 +18,152 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const testSellSchema = `
-{
-	"type": "object",
-	"properties": {
-		"seller": {
-			"type": "string"
-		},
-		"lot": {
-			"type": "string"
-		},
-		"initialPrice": {
-			"type": "integer",
-			"minimum": 0
-		}
-	},
-	"required": [
-		"seller",
-		"lot",
-		"initialPrice"
-	]
-}`
-
-func TestSchemaValidatorConfig(t *testing.T) {
-	t.Parallel()
-	validSchema := []byte(testSellSchema)
-	process := "p1"
-	linkType := "sell"
-
-	type testCase struct {
-		name          string
-		process       string
-		linkType      string
-		schema        []byte
-		valid         bool
-		expectedError error
-	}
-
-	testCases := []testCase{{
-		name:     "invalid-schema",
-		process:  process,
-		linkType: linkType,
-		schema:   []byte(`{"type": "object", "properties": {"malformed}}`),
-		valid:    false,
-	}, {
-		name:     "valid-config",
-		process:  process,
-		linkType: linkType,
-		schema:   validSchema,
-		valid:    true,
-	}}
-
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			baseCfg, _ := validators.NewValidatorBaseConfig(process, tt.linkType)
-			sv, err := validators.NewSchemaValidator(baseCfg, tt.schema)
-
-			if tt.valid {
-				assert.NotNil(t, sv)
-				assert.NoError(t, err)
-			} else {
-				assert.Nil(t, sv)
-				assert.Error(t, err)
-				if tt.expectedError != nil {
-					assert.EqualError(t, err, tt.expectedError.Error())
-				}
-
-			}
-		})
-	}
-}
-
 func TestSchemaValidator(t *testing.T) {
-	t.Parallel()
-	schema := []byte(testSellSchema)
-	baseCfg, err := validators.NewValidatorBaseConfig("p1", "sell")
-	require.NoError(t, err)
-	sv, err := validators.NewSchemaValidator(baseCfg, schema)
-	require.NoError(t, err)
-
-	rightData := map[string]interface{}{
-		"seller":       "Alice",
-		"lot":          "Secret key",
-		"initialPrice": 42,
-	}
-
-	badData := map[string]interface{}{
-		"lot":          "Secret key",
-		"initialPrice": 42,
-	}
-
-	type testCase struct {
-		name  string
-		link  *chainscript.Link
-		valid bool
-	}
-
-	testCases := []testCase{{
-		name:  "valid-link",
-		valid: true,
-		link:  chainscripttest.NewLinkBuilder(t).WithProcess("p1").WithStep("sell").WithData(t, rightData).Build(),
-	}, {
-		name:  "invalid-link",
-		valid: false,
-		link:  chainscripttest.NewLinkBuilder(t).WithProcess("p1").WithStep("sell").WithData(t, badData).Build(),
-	}}
-
-	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
-			err := sv.Validate(context.Background(), nil, tt.link)
-			if tt.valid {
-				assert.NoError(t, err)
-			} else {
-				assert.Error(t, err)
+	testSchema := []byte(`
+	{
+		"type": "object",
+		"properties": {
+			"seller": {
+				"type": "string"
+			},
+			"lot": {
+				"type": "string"
+			},
+			"initialPrice": {
+				"type": "integer",
+				"minimum": 0
 			}
-		})
-	}
-}
+		},
+		"required": [
+			"seller",
+			"lot",
+			"initialPrice"
+		]
+	}`)
 
-func TestSchemaHash(t *testing.T) {
-	t.Parallel()
-	baseCfg, err := validators.NewValidatorBaseConfig("foo", "bar")
+	process := "p1"
+	step := "sell"
+	psv, err := validators.NewProcessStepValidator(process, step)
 	require.NoError(t, err)
-	v1, err1 := validators.NewSchemaValidator(baseCfg, []byte(testSellSchema))
-	v2, err2 := validators.NewSchemaValidator(baseCfg, []byte(`{"type": "object","properties": {"seller": {"type": "string"}}, "required": ["seller"]}`))
 
-	hash1, err1 := v1.Hash()
-	hash2, err2 := v2.Hash()
-	assert.NoError(t, err1)
-	assert.NoError(t, err2)
-	assert.NotNil(t, hash1)
-	assert.NotNil(t, hash2)
-	assert.NotEqual(t, hash1.String(), hash2.String())
+	t.Run("New()", func(t *testing.T) {
+		testCases := []struct {
+			name   string
+			schema []byte
+			valid  bool
+		}{{
+			name:   "invalid-schema",
+			schema: []byte(`{"type": "object", "properties": {"malformed}}`),
+			valid:  false,
+		}, {
+			name:   "valid-schema",
+			schema: testSchema,
+			valid:  true,
+		}}
+
+		for _, tt := range testCases {
+			t.Run(tt.name, func(t *testing.T) {
+				sv, err := validators.NewSchemaValidator(psv, tt.schema)
+				if tt.valid {
+					assert.NotNil(t, sv)
+					assert.NoError(t, err)
+				} else {
+					assert.Nil(t, sv)
+					assert.Error(t, err)
+				}
+			})
+		}
+	})
+
+	t.Run("Validate()", func(t *testing.T) {
+		sv, err := validators.NewSchemaValidator(psv, testSchema)
+		require.NoError(t, err)
+
+		testCases := []struct {
+			name  string
+			data  map[string]interface{}
+			valid bool
+		}{{
+			name: "valid-data",
+			data: map[string]interface{}{
+				"seller":       "Alice",
+				"lot":          "Secret key",
+				"initialPrice": 42,
+			},
+			valid: true,
+		}, {
+			name: "missing-seller",
+			data: map[string]interface{}{
+				"lot":          "Secret key",
+				"initialPrice": 42,
+			},
+			valid: false,
+		}, {
+			name: "invalid-integer-constraint",
+			data: map[string]interface{}{
+				"seller":       "Alice",
+				"lot":          "Secret key",
+				"initialPrice": -10,
+			},
+			valid: false,
+		}, {
+			name: "invalid-field-type",
+			data: map[string]interface{}{
+				"seller":       "Alice",
+				"lot":          10,
+				"initialPrice": 42,
+			},
+			valid: false,
+		}}
+
+		for _, tt := range testCases {
+			t.Run(tt.name, func(t *testing.T) {
+				link := chainscripttest.NewLinkBuilder(t).
+					WithProcess(process).
+					WithStep(step).
+					WithData(t, tt.data).
+					Build()
+
+				err := sv.Validate(context.Background(), nil, link)
+				if tt.valid {
+					assert.NoError(t, err)
+				} else {
+					assert.Error(t, err)
+				}
+			})
+		}
+	})
+
+	t.Run("Hash()", func(t *testing.T) {
+		v1, err := validators.NewSchemaValidator(psv, testSchema)
+		require.NoError(t, err)
+
+		v2, err := validators.NewSchemaValidator(psv, []byte(`{"type": "object","properties": {"seller": {"type": "string"}}, "required": ["seller"]}`))
+		require.NoError(t, err)
+
+		psv2, err := validators.NewProcessStepValidator("test_process", "test_step")
+		require.NoError(t, err)
+
+		v3, err := validators.NewSchemaValidator(psv2, testSchema)
+		require.NoError(t, err)
+
+		h1, err := v1.Hash()
+		require.NoError(t, err)
+
+		h2, err := v2.Hash()
+		require.NoError(t, err)
+
+		h3, err := v3.Hash()
+		require.NoError(t, err)
+
+		assert.NotEqual(t, h1, h2)
+		assert.NotEqual(t, h1, h3)
+		assert.NotEqual(t, h2, h3)
+	})
 }

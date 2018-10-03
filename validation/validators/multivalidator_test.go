@@ -16,177 +16,117 @@ package validators_test
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMultiValidator_New(t *testing.T) {
-	mv := validators.NewMultiValidator(validators.ProcessesValidators{})
-	assert.NotNil(t, mv)
-}
+	t.Run("New()", func(t *testing.T) {
+		mv := validators.NewMultiValidator(validators.Validators{})
+		assert.NotNil(t, mv)
+	})
 
-func TestMultiValidator_Hash(t *testing.T) {
-	t.Run("Produces different hashes based on internal validators", func(t *testing.T) {
-		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
-		testHash1 := types.NewBytes32FromBytes(chainscripttest.RandomHash())
-		testHash2 := types.NewBytes32FromBytes(chainscripttest.RandomHash())
+	t.Run("ShouldValidate()", func(t *testing.T) {
+		psv1, _ := validators.NewProcessStepValidator("p1", "s1")
+		psv2, _ := validators.NewProcessStepValidator("p2", "s2")
+		mv := validators.NewMultiValidator(validators.Validators{psv1, psv2})
 
-		type testCase struct {
-			name string
-			v1   validators.Validator
-			v2   validators.Validator
-			v3   validators.Validator
-		}
-
-		testCases := []testCase{
-			{
-				name: "With schema validator",
-				v1:   &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testHash1},
-				v2:   &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testHash1},
-				v3:   &validators.SchemaValidator{Config: baseConfig, SchemaHash: *testHash2},
-			},
-			{
-				name: "With pki validator",
-				v1:   &validators.PKIValidator{Config: baseConfig, PKI: &validators.PKI{"a": &validators.Identity{}}},
-				v2:   &validators.PKIValidator{Config: baseConfig, PKI: &validators.PKI{"a": &validators.Identity{}}},
-				v3:   &validators.PKIValidator{Config: baseConfig, PKI: &validators.PKI{"b": &validators.Identity{}}},
-			},
-			{
-				name: "With transition validator",
-				v1:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"one"}},
-				v2:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"one"}},
-				v3:   &validators.TransitionValidator{Config: baseConfig, Transitions: []string{"two"}},
-			},
-		}
+		testCases := []struct {
+			name  string
+			link  *chainscript.Link
+			match bool
+		}{{
+			"no match",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p3").Build(),
+			false,
+		}, {
+			"match",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p2").WithStep("s2").Build(),
+			true,
+		}}
 
 		for _, tt := range testCases {
 			t.Run(tt.name, func(t *testing.T) {
-				mv1 := validators.NewMultiValidator(validators.ProcessesValidators{"p": []validators.Validator{tt.v1}})
-
-				h1, err := mv1.Hash()
-				assert.NoError(t, err)
-				assert.NotNil(t, h1)
-
-				mv2 := validators.NewMultiValidator(validators.ProcessesValidators{"p": []validators.Validator{tt.v2}})
-
-				h2, err := mv2.Hash()
-				assert.NoError(t, err)
-				assert.True(t, h1.Equals(h2))
-
-				mv3 := validators.NewMultiValidator(validators.ProcessesValidators{"p": []validators.Validator{tt.v3}})
-
-				h3, err := mv3.Hash()
-				assert.NoError(t, err)
-				assert.False(t, h1.Equals(h3))
+				match := mv.ShouldValidate(tt.link)
+				assert.Equal(t, tt.match, match)
 			})
 		}
 	})
 
-	t.Run("Uses child validators' Hash() function", func(t *testing.T) {
-		baseConfig := &validators.ValidatorBaseConfig{Process: "p"}
-		schemaValidator := &validators.SchemaValidator{Config: baseConfig, SchemaHash: *types.NewBytes32FromBytes(chainscripttest.RandomHash())}
-		transitionValidator := validators.NewTransitionValidator(baseConfig, []string{"king"})
-		pkiValidator := validators.NewPKIValidator(baseConfig, []string{"romeo"}, &validators.PKI{})
+	t.Run("Hash()", func(t *testing.T) {
+		psv1, _ := validators.NewProcessStepValidator("p1", "s1")
+		psv2, _ := validators.NewProcessStepValidator("p2", "s2")
 
-		validatorList := []validators.Validator{schemaValidator, transitionValidator, pkiValidator}
-		mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
-		mvHash, err := mv.Hash()
-		assert.NoError(t, err)
+		mv1 := validators.NewMultiValidator(validators.Validators{psv1})
+		mv2 := validators.NewMultiValidator(validators.Validators{psv2})
+		mv3 := validators.NewMultiValidator(validators.Validators{psv1, psv2})
 
-		b := make([]byte, 0)
-		for _, validator := range validatorList {
-			validatorHash, err := validator.Hash()
-			assert.NoError(t, err)
-			b = append(b, validatorHash[:]...)
+		h1, err := mv1.Hash()
+		require.NoError(t, err)
+
+		h2, err := mv2.Hash()
+		require.NoError(t, err)
+
+		h3, err := mv3.Hash()
+		require.NoError(t, err)
+
+		assert.NotEqual(t, h1, h2)
+		assert.NotEqual(t, h1, h3)
+		assert.NotEqual(t, h2, h3)
+	})
+
+	t.Run("Validate()", func(t *testing.T) {
+		testSchema := []byte(`{
+			"type": "object",
+			"properties": {
+				"seller": {
+					"type": "string"
+				}
+			}, 
+			"required": ["seller"]
+		}`)
+
+		psv1, _ := validators.NewProcessStepValidator("p1", "s1")
+		psv2, _ := validators.NewProcessStepValidator("p2", "s2")
+		sv, _ := validators.NewSchemaValidator(psv1, testSchema)
+
+		mv := validators.NewMultiValidator(validators.Validators{psv1, psv2, sv})
+
+		testCases := []struct {
+			name string
+			link *chainscript.Link
+			err  error
+		}{{
+			"success",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p2").WithStep("s2").Build(),
+			nil,
+		}, {
+			"no matching validator",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p3").Build(),
+			validators.ErrNoMatchingValidator,
+		}, {
+			"child validation failed",
+			chainscripttest.NewLinkBuilder(t).WithProcess("p1").WithStep("s1").WithData(t, map[string]string{
+				"buyer": "bob",
+			}).Build(),
+			validators.ErrInvalidLinkSchema,
+		}}
+
+		for _, tt := range testCases {
+			t.Run(tt.name, func(t *testing.T) {
+				err := mv.Validate(context.Background(), nil, tt.link)
+				if tt.err != nil {
+					assert.EqualError(t, errors.Cause(err), tt.err.Error())
+				} else {
+					assert.NoError(t, err)
+				}
+			})
 		}
-		sum := sha256.Sum256(b)
-		assert.True(t, mvHash.EqualsBytes(sum[:]))
-	})
-}
-
-const testMessageSchema = `
-{
-	"type": "object",
-	"properties": {
-		"message": {
-			"type": "string"
-		}
-	},
-	"required": [
-		"message"
-	]
-}`
-
-func TestMultiValidator_Validate(t *testing.T) {
-	t.Parallel()
-	baseConfig1, _ := validators.NewValidatorBaseConfig("p", "a1")
-	baseConfig2, _ := validators.NewValidatorBaseConfig("p", "a2")
-	baseConfig3, _ := validators.NewValidatorBaseConfig("p", "a1")
-	baseConfig4, _ := validators.NewValidatorBaseConfig("p", "a2")
-
-	svCfg1, _ := validators.NewSchemaValidator(baseConfig1, []byte(testMessageSchema))
-	svCfg2, _ := validators.NewSchemaValidator(baseConfig2, []byte(testMessageSchema))
-
-	sigVCfg1 := validators.NewPKIValidator(baseConfig3, []string{"alice"}, &validators.PKI{
-		"alice": &validators.Identity{
-			Keys: []string{"TESTKEY1"},
-		},
-	})
-	sigVCfg2 := validators.NewPKIValidator(baseConfig4, []string{}, &validators.PKI{})
-
-	validatorList := []validators.Validator{svCfg1, svCfg2, sigVCfg1, sigVCfg2}
-	mv := validators.NewMultiValidator(validators.ProcessesValidators{"p": validatorList})
-
-	testData := map[string]string{"message": "test"}
-
-	t.Run("Validate succeeds when all children succeed", func(t *testing.T) {
-		l := chainscripttest.NewLinkBuilder(t).
-			WithProcess("p").
-			WithStep("a1").
-			WithData(t, testData).
-			WithSignature(t, "").
-			Build()
-		l.Signatures[0].PublicKey = []byte("TESTKEY1")
-
-		err := mv.Validate(context.Background(), nil, l)
-		assert.NoError(t, err)
-	})
-
-	t.Run("Validate fails if no validator matches the given segment", func(t *testing.T) {
-		l := chainscripttest.NewLinkBuilder(t).
-			WithStep("nomatch").
-			Build()
-		process := l.Meta.Process.Name
-
-		err := mv.Validate(context.Background(), nil, l)
-		assert.EqualError(t, err, fmt.Sprintf("Validation failed: link with process: [%s] and step: [nomatch] does not match any validator", process))
-	})
-
-	t.Run("Validate fails if one of the children fails (schema)", func(t *testing.T) {
-		l := chainscripttest.NewLinkBuilder(t).
-			WithProcess("p").
-			WithStep("a2").
-			Build()
-
-		err := mv.Validate(context.Background(), nil, l)
-		assert.Error(t, err)
-	})
-
-	t.Run("Validate fails if one of the children fails (pki)", func(t *testing.T) {
-		l := chainscripttest.NewLinkBuilder(t).
-			WithProcess("p").
-			WithStep("a1").
-			WithData(t, testData).
-			WithSignature(t, "").
-			Build()
-
-		err := mv.Validate(context.Background(), nil, l)
-		assert.Error(t, err)
 	})
 }
