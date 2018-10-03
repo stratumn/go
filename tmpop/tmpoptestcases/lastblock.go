@@ -20,6 +20,8 @@ import (
 
 	"github.com/stratumn/go-core/tmpop"
 	"github.com/stratumn/go-core/validation"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestLastBlock tests if tmpop correctly stores information
@@ -34,26 +36,15 @@ func (f Factory) TestLastBlock(t *testing.T) {
 
 	t.Run("Commit stores last block information", func(t *testing.T) {
 		got, err := tmpop.ReadLastBlock(context.Background(), f.kv)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
-		if got.Height != 2 {
-			t.Errorf("a.Commit(): expected commit to save the last block height, got %v, expected %v",
-				got.Height, 2)
-		}
-
-		if !got.AppHash.EqualsBytes(lastAppHash) {
-			t.Errorf("a.Commit(): expected commit to save the last app hash, expected %v, got %v",
-				lastAppHash, got.AppHash)
-		}
+		assert.Equal(t, int64(2), got.Height)
+		assert.Equal(t, lastAppHash, got.AppHash)
 	})
 
 	t.Run("Restart with existing history", func(t *testing.T) {
 		h2, err := tmpop.New(context.Background(), f.adapter, f.kv, &tmpop.Config{Validation: &validation.Config{}})
-		if err != nil {
-			t.Fatalf("Couldn't start tmpop with existing store: %s", err)
-		}
+		require.NoError(t, err)
 
 		verifyLinkStored(t, h2, link1)
 		verifyLinkStored(t, h2, link2)

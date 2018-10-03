@@ -15,6 +15,7 @@
 package tmpop
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -40,7 +41,7 @@ var tmpopLastBlockKey = []byte("tmpop:lastblock")
 
 // LastBlock saves the information of the last block committed for Core/App Handshake on crash/restart.
 type LastBlock struct {
-	AppHash    *types.Bytes32
+	AppHash    []byte
 	Height     int64
 	LastHeader *abci.Header
 }
@@ -101,7 +102,7 @@ func New(ctx context.Context, a store.Adapter, kv store.KeyValueStore, config *C
 	if initialized == nil {
 		log.Debug("No existing db, creating new db")
 		saveLastBlock(ctx, kv, LastBlock{
-			AppHash: types.NewBytes32FromBytes(nil),
+			AppHash: nil,
 			Height:  0,
 		})
 	} else {
@@ -139,19 +140,11 @@ func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
 	_, span := trace.StartSpan(context.Background(), "tmpop/Info")
 	defer span.End()
 
-	// In case we don't have an app hash, Tendermint requires us to return
-	// an empty byte slice (instead of a 32-byte array of 0)
-	// Otherwise handshake will not work
-	lastAppHash := []byte{}
-	if !t.lastBlock.AppHash.Zero() {
-		lastAppHash = t.lastBlock.AppHash[:]
-	}
-
 	return abci.ResponseInfo{
 		Data:             Name,
 		Version:          t.config.Version,
 		LastBlockHeight:  t.lastBlock.Height,
-		LastBlockAppHash: lastAppHash,
+		LastBlockAppHash: t.lastBlock.AppHash,
 	}
 }
 
@@ -181,13 +174,13 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	// consensus has been formed around it.
 	// This AppHash will never be denied in a future block so we can add
 	// evidence to the links that were added in the previous blocks.
-	if t.lastBlock.AppHash.EqualsBytes(t.currentHeader.AppHash) {
+	if bytes.Equal(t.lastBlock.AppHash, t.currentHeader.AppHash) {
 		t.addTendermintEvidence(ctx, &req.Header)
 	} else {
 		errorMessage := fmt.Sprintf(
 			"Unexpected AppHash in BeginBlock, got %x, expected %x",
 			t.currentHeader.AppHash,
-			*t.lastBlock.AppHash,
+			t.lastBlock.AppHash,
 		)
 		log.Warn(errorMessage)
 		span.Annotate(nil, errorMessage)
@@ -195,7 +188,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
 	t.state.UpdateValidators(ctx)
 
-	t.state.previousAppHash = types.NewBytes32FromBytes(t.currentHeader.AppHash)
+	t.state.previousAppHash = t.currentHeader.AppHash
 
 	return abci.ResponseBeginBlock{}
 }
@@ -473,7 +466,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 		return
 	}
 
-	evidenceBlockAppHash := types.NewBytes32FromBytes(evidenceBlock.Header.AppHash)
+	evidenceBlockAppHash := evidenceBlock.Header.AppHash
 	leaves := make([][]byte, len(linkHashes))
 	for i, lh := range linkHashes {
 		leaves[i] = make([]byte, len(lh))
@@ -486,7 +479,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 		return
 	}
 
-	merkleRoot := types.NewBytes32FromBytes(merkle.Root())
+	merkleRoot := merkle.Root()
 
 	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 	if err != nil {
@@ -494,9 +487,9 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not compute app hash"})
 		return
 	}
-	if !appHash.EqualsBytes(evidenceNextBlock.Header.AppHash) {
+	if !bytes.Equal(appHash, evidenceNextBlock.Header.AppHash) {
 		log.Warnf("App hash %x of block %d doesn't match the header's: %x. Evidence will not be generated.",
-			*appHash,
+			appHash,
 			header.Height,
 			header.AppHash)
 		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition, Message: "AppHash mismatch"})

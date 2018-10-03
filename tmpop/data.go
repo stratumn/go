@@ -22,7 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/types"
 	abci "github.com/tendermint/abci/types"
 	wire "github.com/tendermint/go-wire"
 )
@@ -82,14 +81,14 @@ func (t *TMPop) saveValidatorHash(ctx context.Context) error {
 }
 
 // getValidatorHash gets the hash of the validator used for a block at a specific height
-func (t *TMPop) getValidatorHash(ctx context.Context, height int64) (*types.Bytes32, error) {
+func (t *TMPop) getValidatorHash(ctx context.Context, height int64) ([]byte, error) {
 	key := getValidatorHashKey(height)
 	value, err := t.kvDB.GetValue(ctx, key)
 	if err != nil || value == nil {
 		return nil, err
 	}
 
-	return types.NewBytes32FromBytes(value), nil
+	return value, nil
 }
 
 func getCommitLinkHashesKey(height int64) []byte {

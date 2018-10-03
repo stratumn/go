@@ -23,7 +23,6 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/tmpop/evidences"
-	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"
@@ -219,7 +218,7 @@ func TestTendermintProof(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 5)
 			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
-			e.ValidationsHash = types.NewBytes32FromBytes(chainscripttest.RandomHash())
+			e.ValidationsHash = chainscripttest.RandomHash()
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if validations hash changed")
 		},
 	}, {
@@ -228,7 +227,7 @@ func TestTendermintProof(t *testing.T) {
 			linkHash, e := CreateTendermintProof(t, 3)
 			assert.True(t, e.Verify(linkHash), "Proof should be valid before modification")
 
-			e.Root = types.NewBytes32FromBytes(linkHash)
+			e.Root = linkHash
 			assert.False(t, e.Verify(linkHash), "Proof should not be correct if merkle root changed")
 		},
 	}, {
@@ -393,9 +392,9 @@ func CreateTendermintProof(t *testing.T, linksCount int) (chainscript.LinkHash, 
 
 	e := &evidences.TendermintProof{
 		BlockHeight:            42,
-		Root:                   types.NewBytes32FromBytes(tree.Root()),
+		Root:                   tree.Root(),
 		Path:                   merklePath,
-		ValidationsHash:        types.NewBytes32FromBytes(validationsHash),
+		ValidationsHash:        validationsHash,
 		Header:                 header,
 		HeaderVotes:            vote(header),
 		HeaderValidatorSet:     validatorSet,
