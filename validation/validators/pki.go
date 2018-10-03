@@ -95,12 +95,17 @@ func NewPKIValidator(processStepValidator *ProcessStepValidator, required []stri
 
 // Hash the signature requirements.
 func (pv PKIValidator) Hash() ([]byte, error) {
+	psh, err := pv.ProcessStepValidator.Hash()
+	if err != nil {
+		return nil, err
+	}
+
 	b, err := cj.Marshal(pv)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	h := sha256.Sum256(b)
+	h := sha256.Sum256(append(psh, b...))
 	return h[:], nil
 }
 
