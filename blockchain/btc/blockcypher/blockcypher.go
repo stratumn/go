@@ -98,6 +98,8 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res 
 		return
 	}
 
+	res.Total = int64(addrInfo.Balance)
+
 	for _, TXRef := range addrInfo.TXRefs {
 		output := btc.Output{Index: TXRef.TXOutputN}
 
@@ -110,23 +112,20 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res 
 			return
 		}
 
-		res.Total += int64(TXRef.Value)
+		res.Outputs = append(res.Outputs, output)
+		res.Sum += int64(TXRef.Value)
 
-		if res.Sum < amount {
-			res.Outputs = append(res.Outputs, output)
-			res.Sum += int64(TXRef.Value)
-
+		if res.Sum >= amount {
+			return
 		}
 	}
 
-	if res.Sum < amount {
-		err = fmt.Errorf(
-			"not enough Bitcoins available on %s, expected at least %d satoshis got %d",
-			addr,
-			amount,
-			res.Sum,
-		)
-	}
+	err = fmt.Errorf(
+		"not enough Bitcoins available on %s, expected at least %d satoshis got %d",
+		addr,
+		amount,
+		res.Sum,
+	)
 
 	return
 }
