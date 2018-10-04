@@ -14,7 +14,7 @@
         "roles": ["manager", "it"]
       }
     },
-    "types": {
+    "steps": {
       "init": {
         "schema": {
           "type": "object",

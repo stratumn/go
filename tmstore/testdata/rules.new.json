@@ -14,7 +14,7 @@
         "roles": ["it"]
       }
     },
-    "types": {
+    "steps": {
       "init": {
         "schema": {
           "type": "object",

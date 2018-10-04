@@ -35,14 +35,13 @@ type State struct {
 	// The same validator is used for a whole commit
 	// When beginning a new block, the validator can
 	// be updated.
-	validator validators.Validator
+	validator     validators.Validator
+	validationCfg *validation.Config
 
 	adapter            store.Adapter
 	deliveredLinks     store.Batch
 	deliveredLinksList []*chainscript.Link
 	checkedLinks       store.Batch
-
-	governance validation.Manager
 }
 
 // NewState creates a new State.
@@ -60,30 +59,28 @@ func NewState(ctx context.Context, a store.Adapter, config *Config) (*State, err
 		adapter:        a,
 		deliveredLinks: deliveredLinks,
 		checkedLinks:   checkedLinks,
-	}
-
-	state.governance, err = validation.NewLocalManager(ctx, a, config.Validation)
-	if err != nil {
-		log.Warnf("Failed to load validation rules, validation will be bypassed: %s", err)
-	}
-
-	if state.governance != nil {
-		go func() {
-			err := state.governance.ListenAndUpdate(ctx)
-			if err != nil {
-				log.Warn(err)
-			}
-		}()
+		validationCfg:  config.Validation,
 	}
 
 	return state, nil
 }
 
-// UpdateValidators updates validators if a new version is available
+// UpdateValidators updates validators if a new version is available.
 func (s *State) UpdateValidators(ctx context.Context) {
-	if s.governance != nil {
-		s.validator = s.governance.Current()
+	if s.validationCfg == nil {
+		return
 	}
+
+	// We temporarily re-load validation rules for each block.
+	// This will change once the new governance flows are implemented.
+	v, err := validation.LoadFromFile(s.validationCfg)
+	if err != nil {
+		log.Warnf("could not load validation rules: %s", err.Error())
+		return
+	}
+
+	mv := validators.NewMultiValidator(v.Flatten())
+	s.validator = mv
 }
 
 // Check checks if creating this link is a valid operation
