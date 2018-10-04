@@ -16,15 +16,15 @@ package validationtesting
 
 import "fmt"
 
-// These are the validation configuration exported by this package.
+// Sample test validation rules exported by this package.
 var (
-	ValidAuctionJSONConfig = CreateValidatorJSON("auction", ValidAuctionJSONPKIConfig, ValidAuctionJSONTypesConfig)
-	ValidChatJSONConfig    = CreateValidatorJSON("chat", ValidChatJSONPKIConfig, ValidChatJSONTypesConfig)
-	ValidJSONConfig        = fmt.Sprintf(`{%s,%s}`, ValidAuctionJSONConfig, ValidChatJSONConfig)
+	AuctionJSONRules = CreateValidatorJSON("auction", AuctionJSONPKI, AuctionJSONStepsRules)
+	ChatJSONRules    = CreateValidatorJSON("chat", ChatJSONPKI, ChatJSONStepsRules)
+	TestJSONRules    = fmt.Sprintf(`{%s,%s}`, AuctionJSONRules, ChatJSONRules)
 )
 
-// CreateValidatorJSON formats a PKI and a types schema into a valid JSON
+// CreateValidatorJSON formats a PKI and steps rules into a valid JSON
 // configuration.
-func CreateValidatorJSON(name, pki, types string) string {
-	return fmt.Sprintf(`"%s": {"pki": %s,"types": %s}`, name, pki, types)
+func CreateValidatorJSON(name, pki, stepsRules string) string {
+	return fmt.Sprintf(`"%s": {"pki": %s,"steps": %s}`, name, pki, stepsRules)
 }

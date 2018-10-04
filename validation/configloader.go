@@ -21,33 +21,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-core/validation/validators"
-	"github.com/stratumn/go-crypto/keys"
 )
 
-var (
-	// ErrInvalidValidator is returned when the schema and the signatures are both missing in a validator.
-	ErrInvalidValidator = errors.New("a validator requires a JSON schema, a signature or a transition criteria to be valid")
-
-	// ErrBadPublicKey is returned when a public key is empty or not base64-encoded
-	ErrBadPublicKey = errors.New("public key must be a non null base64 encoded string")
-
-	// ErrNoPKI is returned when rules.json doesn't contain a `pki` field
-	ErrNoPKI = errors.New("rules.json needs a 'pki' field to list authorized public keys")
-)
-
-type processesRules map[string]RulesSchema
-
-// RulesSchema represents the structure of validation rules.
-type RulesSchema struct {
-	PKI   *validators.PKI       `json:"pki"`
-	Types map[string]TypeSchema `json:"types"`
-}
-
-type rulesListener func(process string, schema *RulesSchema, validators validators.Validators)
-
-// LoadConfig loads the validators configuration from a json file.
-// The configuration returned can then be used in NewMultiValidator().
-func LoadConfig(validationCfg *Config, listener rulesListener) (validators.ProcessesValidators, error) {
+// LoadFromFile loads the validation rules from a json file.
+func LoadFromFile(validationCfg *Config) (validators.ProcessesValidators, error) {
 	f, err := os.Open(validationCfg.RulesPath)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -58,124 +35,12 @@ func LoadConfig(validationCfg *Config, listener rulesListener) (validators.Proce
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	return LoadConfigContent(data, validationCfg.PluginsPath, listener)
-}
 
-// LoadConfigContent loads the validators configuration from json data.
-// The configuration returned can then be used in NewMultiValidator().
-func LoadConfigContent(data []byte, pluginsPath string, listener rulesListener) (validators.ProcessesValidators, error) {
-	var rules processesRules
-	err := json.Unmarshal(data, &rules)
+	var rules ProcessesRules
+	err = json.Unmarshal(data, &rules)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	validators := make(validators.ProcessesValidators)
-	for process, schema := range rules {
-		validators[process], err = LoadProcessRules(&schema, process, pluginsPath, listener)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return validators, nil
-}
-
-// LoadProcessRules loads the validators configuration for a single process.
-// The configuration returned can then be used in NewMultiValidator().
-func LoadProcessRules(schema *RulesSchema, process, pluginsPath string, listener rulesListener) (validators.Validators, error) {
-	if err := checkPKIConfig(schema.PKI); err != nil {
-		return nil, err
-	}
-
-	processValidators, err := loadValidatorsConfig(process, pluginsPath, schema.Types, schema.PKI)
-	if err != nil {
-		return nil, err
-	}
-	if listener != nil {
-		listener(process, schema, processValidators)
-	}
-	return processValidators, nil
-}
-
-// checkPKIConfig checks that public keys are base64 encoded.
-func checkPKIConfig(data *validators.PKI) error {
-	if data == nil {
-		return nil
-	}
-
-	for _, id := range *data {
-		for _, key := range id.Keys {
-			if _, _, err := keys.ParsePublicKey([]byte(key)); err != nil {
-				return errors.Wrapf(err, "error while parsing public key [%s]", key)
-			}
-		}
-	}
-	return nil
-}
-
-// TypeSchema represent the structure of validation rules.
-type TypeSchema struct {
-	Signatures  []string                 `json:"signatures"`
-	Schema      map[string]interface{}   `json:"schema"`
-	Transitions []string                 `json:"transitions"`
-	Script      *validators.ScriptConfig `json:"script"`
-}
-
-func loadValidatorsConfig(process, pluginsPath string, jsonStruct map[string]TypeSchema, pki *validators.PKI) (validators.Validators, error) {
-	missingTransitionValidation := make([]string, 0)
-	var validatorList validators.Validators
-	for linkStep, val := range jsonStruct {
-		if linkStep == "" {
-			return nil, validators.ErrMissingLinkStep
-		}
-		if len(val.Signatures) == 0 && val.Schema == nil && val.Transitions == nil {
-			return nil, ErrInvalidValidator
-		}
-
-		processStepValidator, err := validators.NewProcessStepValidator(process, linkStep)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(val.Signatures) > 0 {
-			// if no PKI was provided, one cannot require signatures.
-			if pki == nil {
-				return nil, ErrNoPKI
-			}
-			validatorList = append(validatorList, validators.NewPKIValidator(processStepValidator, val.Signatures, pki))
-		}
-
-		if val.Schema != nil {
-			schemaData, err := json.Marshal(val.Schema)
-			if err != nil {
-				return nil, err
-			}
-			schemaValidator, err := validators.NewSchemaValidator(processStepValidator, schemaData)
-			if err != nil {
-				return nil, err
-			}
-			validatorList = append(validatorList, schemaValidator)
-		}
-
-		if val.Script != nil {
-			scriptValidator, err := validators.NewScriptValidator(process, pluginsPath, val.Script)
-			if err != nil {
-				return nil, err
-			}
-			validatorList = append(validatorList, scriptValidator)
-		}
-
-		if len(val.Transitions) > 0 {
-			validatorList = append(validatorList, validators.NewTransitionValidator(processStepValidator, val.Transitions))
-		} else {
-			missingTransitionValidation = append(missingTransitionValidation, linkStep)
-		}
-	}
-
-	if len(missingTransitionValidation) > 0 && len(missingTransitionValidation) != len(jsonStruct) {
-		return nil, errors.Errorf("missing transition definition for process %s and linkTypes %v", process, missingTransitionValidation)
-	}
-
-	return validatorList, nil
+	return rules.Validators(validationCfg.PluginsPath)
 }
