@@ -29,12 +29,12 @@ const testValidationConfig = `
 {
 	"testProcess": {
 	    "pki": {
-		"alice.vandenbudenmayer@stratumn.com": {
-		    "keys": ["-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAO0U2B1DjM7k+AWLUBl9oK+ZhX/gpwrx5Z7RxCUgccDo=\n-----END ED25519 PUBLIC KEY-----\n"],
-		    "roles": ["employee"]
-		}
+			"alice.vandenbudenmayer@stratumn.com": {
+		    	"keys": ["-----BEGIN ED25519 PUBLIC KEY-----\nMCowBQYDK2VwAyEAO0U2B1DjM7k+AWLUBl9oK+ZhX/gpwrx5Z7RxCUgccDo=\n-----END ED25519 PUBLIC KEY-----\n"],
+		    	"roles": ["employee"]
+			}
 	    },
-	    "types": {
+	    "steps": {
 			"init": {
 				"schema": {
 					"type": "object",
@@ -45,11 +45,12 @@ const testValidationConfig = `
 					}
 				},
 				"transitions": [""]
+			},
+			"action": {
+				"signatures": ["employee"],
+				"transitions": ["init"]
 			}
-		},
-		"action": {
-		    "signatures": ["it"]
-	    }
+		}
 	}
 }
 `
