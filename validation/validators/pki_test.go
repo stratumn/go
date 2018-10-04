@@ -16,16 +16,62 @@ package validators_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stratumn/go-crypto/keys"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPKI(t *testing.T) {
+	t.Run("Validate()", func(t *testing.T) {
+		t.Run("empty PKI", func(t *testing.T) {
+			var pki validators.PKI
+			err := pki.Validate()
+			assert.NoError(t, err)
+		})
+
+		t.Run("missing public key", func(t *testing.T) {
+			pki := validators.PKI{
+				"alice": &validators.Identity{
+					Roles: []string{"bob's friend"},
+				},
+			}
+
+			err := pki.Validate()
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrMissingKeys.Error()))
+		})
+
+		t.Run("invalid public key", func(t *testing.T) {
+			pki := validators.PKI{
+				"alice": &validators.Identity{
+					Keys:  []string{validationtesting.AlicePublicKey, "-----BEGIN QUANTUM PUBLIC KEY-----\nOR NOT"},
+					Roles: []string{"crypto-nerd", "likes-bob"},
+				},
+			}
+
+			err := pki.Validate()
+			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidIdentity.Error()))
+		})
+
+		t.Run("valid pki", func(t *testing.T) {
+			pki := validators.PKI{
+				"alice": &validators.Identity{
+					Keys: []string{validationtesting.AlicePublicKey},
+				},
+			}
+
+			err := pki.Validate()
+			assert.NoError(t, err)
+		})
+	})
+}
 
 func TestPKIValidator(t *testing.T) {
 	process := "p1"
@@ -49,7 +95,7 @@ func TestPKIValidator(t *testing.T) {
 		WithSignatureFromKey(t, priv2Bytes, "").
 		Build()
 
-	pki := &validators.PKI{
+	pki := validators.PKI{
 		"Alice Van den Budenmayer": &validators.Identity{
 			Keys:  []string{string(link1.Signatures[0].PublicKey)},
 			Roles: []string{"employee"},
@@ -122,14 +168,14 @@ func TestPKIValidator(t *testing.T) {
 	})
 
 	t.Run("Hash()", func(t *testing.T) {
-		pki1 := &validators.PKI{
+		pki1 := validators.PKI{
 			"Alice": &validators.Identity{
 				Keys:  []string{string(link1.Signatures[0].PublicKey)},
 				Roles: []string{"employee"},
 			},
 		}
 
-		pki2 := &validators.PKI{
+		pki2 := validators.PKI{
 			"Alice": &validators.Identity{
 				Keys:  []string{string(link2.Signatures[0].PublicKey)},
 				Roles: []string{"employee"},
