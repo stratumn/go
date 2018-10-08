@@ -24,7 +24,7 @@
 
 [[constraint]]
   name = "github.com/stratumn/go-chainscript"
-  branch = "master"
+  version = "=1.0.0"
 
 [[constraint]]
   name = "github.com/fsnotify/fsnotify"
