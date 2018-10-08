@@ -30,7 +30,6 @@ import (
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/utils"
-	"github.com/stratumn/go-core/validation/validators"
 
 	rethink "gopkg.in/dancannon/gorethink.v4"
 )
@@ -192,14 +191,6 @@ func formatLink(link *chainscript.Link) {
 
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	if err := link.Validate(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := validators.NewRefsValidator().Validate(ctx, a, link); err != nil {
-		return nil, err
-	}
-
 	if link.Meta.OutDegree >= 0 {
 		return nil, store.ErrOutDegreeNotSupported
 	}

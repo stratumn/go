@@ -22,6 +22,7 @@ import (
 	"github.com/stratumn/go-core/dummystore"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store/storehttp"
+	"github.com/stratumn/go-core/validation"
 )
 
 var (
@@ -32,14 +33,20 @@ var (
 func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
+	validation.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", dummystore.Description, version, commit[:7])
-	a := monitoring.NewStoreAdapter(
+
+	a, err := validation.WrapStoreWithConfigFile(
 		dummystore.New(&dummystore.Config{Version: version, Commit: commit}),
-		"dummystore",
+		validation.ConfigurationFromFlags(),
 	)
-	storehttp.RunWithFlags(a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "dummystore"))
 }

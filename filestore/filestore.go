@@ -39,7 +39,6 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -125,14 +124,6 @@ func (a *FileStore) NewBatch(ctx context.Context) (store.Batch, error) {
 
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *FileStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	if err := link.Validate(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := validators.NewRefsValidator().Validate(ctx, a, link); err != nil {
-		return nil, err
-	}
-
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 

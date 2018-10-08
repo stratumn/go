@@ -23,8 +23,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/couchstore"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storehttp"
 	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/validation"
 )
 
 var (
@@ -36,13 +38,14 @@ var (
 func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
+	validation.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", couchstore.Description, version, commit[:7])
 
-	var a *couchstore.CouchStore
+	var a store.Adapter
 	var storeErr error
 
 	err := utils.Retry(func(attempt int) (retry bool, err error) {
@@ -67,6 +70,11 @@ func main() {
 
 	if err != nil {
 		log.Fatal(storeErr)
+	}
+
+	a, err = validation.WrapStoreWithConfigFile(a, validation.ConfigurationFromFlags())
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "couchstore"))

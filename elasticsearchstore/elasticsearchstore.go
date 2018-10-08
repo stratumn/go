@@ -24,7 +24,6 @@ import (
 	"github.com/stratumn/go-core/bufferedbatch"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -154,14 +153,6 @@ func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	if err := link.Validate(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := validators.NewRefsValidator().Validate(ctx, es, link); err != nil {
-		return nil, err
-	}
-
 	if link.Meta.OutDegree >= 0 {
 		return nil, store.ErrOutDegreeNotSupported
 	}

@@ -22,6 +22,7 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/rethinkstore"
 	"github.com/stratumn/go-core/store/storehttp"
+	"github.com/stratumn/go-core/validation"
 )
 
 var (
@@ -33,16 +34,20 @@ func init() {
 	storehttp.RegisterFlags()
 	rethinkstore.RegisterFlags()
 	monitoring.RegisterFlags()
+	validation.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
-
 	log.Infof("%s v%s@%s", rethinkstore.Description, version, commit[:7])
 
-	a := monitoring.NewStoreAdapter(
+	a, err := validation.WrapStoreWithConfigFile(
 		rethinkstore.InitializeWithFlags(version, commit),
-		"rethinkstore",
+		validation.ConfigurationFromFlags(),
 	)
-	storehttp.RunWithFlags(a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "rethinkstore"))
 }
