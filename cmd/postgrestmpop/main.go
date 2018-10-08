@@ -48,8 +48,8 @@ func main() {
 		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(
-		monitoring.NewStoreAdapter(a, "postgresstore"),
-		monitoring.NewKeyValueStoreAdapter(a, "postgresstore"),
+		monitoring.WrapStore(a, "postgresstore"),
+		monitoring.WrapKeyValueStore(a, "postgresstore"),
 		tmpopConfig,
 	)
 }

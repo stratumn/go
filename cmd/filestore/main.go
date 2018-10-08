@@ -21,7 +21,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/filestore"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storehttp"
+	"github.com/stratumn/go-core/validation"
 )
 
 var (
@@ -33,12 +35,17 @@ var (
 func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
+	validation.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
 	log.Infof("%s v%s@%s", filestore.Description, version, commit[:7])
-	a, err := filestore.New(&filestore.Config{
+
+	var err error
+	var a store.Adapter
+
+	a, err = filestore.New(&filestore.Config{
 		Path:    *path,
 		Version: version,
 		Commit:  commit,
@@ -46,5 +53,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "filestore"))
+
+	a, err = validation.WrapStoreWithConfigFile(a, validation.ConfigurationFromFlags())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	storehttp.RunWithFlags(monitoring.WrapStore(a, "filestore"))
 }

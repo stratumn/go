@@ -24,7 +24,6 @@ import (
 	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/validation/validators"
 )
 
 const (
@@ -145,14 +144,6 @@ func (a *Store) AddStoreEventChannel(eventChan chan *store.Event) {
 
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	if err := link.Validate(ctx); err != nil {
-		return nil, err
-	}
-
-	if err := validators.NewRefsValidator().Validate(ctx, a, link); err != nil {
-		return nil, err
-	}
-
 	linkHash, err := a.scopedStore.CreateLink(ctx, link)
 	if err != nil {
 		return nil, err

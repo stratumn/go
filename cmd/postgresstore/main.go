@@ -22,6 +22,7 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/postgresstore"
 	"github.com/stratumn/go-core/store/storehttp"
+	"github.com/stratumn/go-core/validation"
 )
 
 var (
@@ -33,16 +34,20 @@ func init() {
 	storehttp.RegisterFlags()
 	postgresstore.RegisterFlags()
 	monitoring.RegisterFlags()
+	validation.RegisterFlags()
 }
 
 func main() {
 	flag.Parse()
-
 	log.Infof("%s v%s@%s", postgresstore.Description, version, commit[:7])
 
-	a := monitoring.NewStoreAdapter(
+	a, err := validation.WrapStoreWithConfigFile(
 		postgresstore.InitializeWithFlags(version, commit),
-		"postgresstore",
+		validation.ConfigurationFromFlags(),
 	)
-	storehttp.RunWithFlags(a)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	storehttp.RunWithFlags(monitoring.WrapStore(a, "postgresstore"))
 }

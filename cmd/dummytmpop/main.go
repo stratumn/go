@@ -47,8 +47,8 @@ func main() {
 		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(
-		monitoring.NewStoreAdapter(a, "dummystore"),
-		monitoring.NewKeyValueStoreAdapter(a, "dummystore"),
+		monitoring.WrapStore(a, "dummystore"),
+		monitoring.WrapKeyValueStore(a, "dummystore"),
 		tmpopConfig,
 	)
 }

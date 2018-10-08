@@ -149,6 +149,14 @@
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
 
 [[projects]]
+  digest = "1:eb53021a8aa3f599d29c7102e65026242bdedce998a54837dc67f14b6a97c5fd"
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  pruneopts = ""
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   digest = "1:a75c13601b74702838bc8b149402caa5618e825e629b1192fb983834a0950206"
   name = "github.com/gibson042/canonicaljson-go"
   packages = ["."]
@@ -814,6 +822,7 @@
     "github.com/btcsuite/btcutil",
     "github.com/btcsuite/btcutil/base58",
     "github.com/docker/go-connections/nat",
+    "github.com/fsnotify/fsnotify",
     "github.com/gibson042/canonicaljson-go",
     "github.com/golang/mock/gomock",
     "github.com/gorilla/websocket",

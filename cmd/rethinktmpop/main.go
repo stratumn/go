@@ -48,8 +48,8 @@ func main() {
 		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(
-		monitoring.NewStoreAdapter(a, "rethinkstore"),
-		monitoring.NewKeyValueStoreAdapter(a, "rethinkstore"),
+		monitoring.WrapStore(a, "rethinkstore"),
+		monitoring.WrapKeyValueStore(a, "rethinkstore"),
 		tmpopConfig,
 	)
 }
