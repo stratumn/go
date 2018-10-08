@@ -23,17 +23,60 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-crypto/keys"
 )
 
 // Errors used by the PKI validator.
 var (
+	ErrInvalidIdentity  = errors.New("could not parse identity keys")
+	ErrMissingKeys      = errors.New("missing identity public keys")
 	ErrMissingSignature = errors.New("missing mandatory signature")
 )
+
+// Identity represents an actor in a network.
+type Identity struct {
+	Keys  []string
+	Roles []string
+}
+
+// Validate an identity's public keys.
+func (id *Identity) Validate() error {
+	if id == nil {
+		return nil
+	}
+
+	if len(id.Keys) == 0 {
+		return ErrMissingKeys
+	}
+
+	for _, key := range id.Keys {
+		if _, _, err := keys.ParsePublicKey([]byte(key)); err != nil {
+			return errors.Wrap(err, ErrInvalidIdentity.Error())
+		}
+	}
+
+	return nil
+}
 
 // PKI maps a public key to an identity.
 // It lists all legimate keys, assigns real names to public keys and
 // establishes n-to-n relationships between users and roles.
 type PKI map[string]*Identity
+
+// Validate the PKI contents.
+func (p PKI) Validate() error {
+	if p == nil {
+		return nil
+	}
+
+	for _, id := range p {
+		if err := id.Validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (p PKI) getIdentityByPublicKey(publicKey string) *Identity {
 	for _, identity := range p {
@@ -70,22 +113,16 @@ func (p PKI) matchRequirement(requirement, publicKey string) bool {
 	return false
 }
 
-// Identity represents an actor in a network.
-type Identity struct {
-	Keys  []string
-	Roles []string
-}
-
 // PKIValidator validates the json signature requirements of a link's data.
 type PKIValidator struct {
 	*ProcessStepValidator
 
 	RequiredSignatures []string
-	PKI                *PKI
+	PKI                PKI
 }
 
 // NewPKIValidator returns a new PKIValidator.
-func NewPKIValidator(processStepValidator *ProcessStepValidator, required []string, pki *PKI) Validator {
+func NewPKIValidator(processStepValidator *ProcessStepValidator, required []string, pki PKI) Validator {
 	return &PKIValidator{
 		ProcessStepValidator: processStepValidator,
 		RequiredSignatures:   required,

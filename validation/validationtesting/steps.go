@@ -20,8 +20,8 @@ import (
 	"github.com/stratumn/go-core/validation"
 )
 
-// ValidChatJSONTypesConfig is a valid types schema for the chat process.
-const ValidChatJSONTypesConfig = `
+// ChatJSONStepsRules is a set of steps validation rules for the chat process.
+const ChatJSONStepsRules = `
 {
 	"message": {
 		"signatures": null,
@@ -46,8 +46,9 @@ const ValidChatJSONTypesConfig = `
 }
 `
 
-// ValidAuctionJSONTypesConfig is a valid types schema for the auction process.
-const ValidAuctionJSONTypesConfig = `
+// AuctionJSONStepsRules is a set of steps validation rules for the auction
+// process.
+const AuctionJSONStepsRules = `
 {
 	"init": {
 		"signatures": ["alice.vandenbudenmayer@stratumn.com"],
@@ -88,12 +89,12 @@ const ValidAuctionJSONTypesConfig = `
 }
 `
 
-// LoadTypes unmarshals a JSON-formatted types schema into a TypeSchema struct.
-func LoadTypes(rawTypes []byte) (map[string]validation.TypeSchema, error) {
-	var types map[string]validation.TypeSchema
-	if err := json.Unmarshal(rawTypes, &types); err != nil {
+// UnmarshalStepsRules unmarshals JSON-formatted steps validation rules.
+func UnmarshalStepsRules(data []byte) (map[string]*validation.StepRules, error) {
+	var stepsRules map[string]*validation.StepRules
+	if err := json.Unmarshal(data, &stepsRules); err != nil {
 		return nil, err
 	}
 
-	return types, nil
+	return stepsRules, nil
 }
