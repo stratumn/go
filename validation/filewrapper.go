@@ -14,16 +14,62 @@
 
 package validation
 
-import "github.com/stratumn/go-core/store"
+import (
+	"context"
+	"os"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/validation/validators"
+)
 
 // StoreWithConfigFile wraps a store adapter with a layer of validations
 // based on a local configuration file.
 type StoreWithConfigFile struct {
 	store.Adapter
+
+	defaultValidator validators.Validator
 }
 
 // WrapStoreWithConfigFile wraps a store adapter with a layer of validations
 // based on a local configuration file.
 func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error) {
-	return &StoreWithConfigFile{Adapter: a}, nil
+	// The default validator validates the structure of links and that the
+	// chainscript graph stays coherent (no missing references for example).
+	// This validator applies to all links, regardless of custom rules.
+	defaultValidator := validators.NewMultiValidator([]validators.Validator{
+		validators.NewRefsValidator(),
+	})
+
+	if cfg == nil || len(cfg.RulesPath) == 0 {
+		log.Warn("No custom validation rules provided. Only default link validations will be applied.")
+		return &StoreWithConfigFile{
+			Adapter:          a,
+			defaultValidator: defaultValidator,
+		}, nil
+	}
+
+	if _, err := os.Stat(cfg.RulesPath); os.IsNotExist(err) {
+		log.Warnf("Invalid custom validation rules path: could not load rules at %s", cfg.RulesPath)
+		return &StoreWithConfigFile{
+			Adapter:          a,
+			defaultValidator: defaultValidator,
+		}, nil
+	}
+
+	return nil, nil
+}
+
+// CreateLink applies validations before creating the link.
+func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	if err := link.Validate(ctx); err != nil {
+		return nil, err
+	}
+
+	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {
+		return nil, err
+	}
+
+	return a.Adapter.CreateLink(ctx, link)
 }
