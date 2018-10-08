@@ -24,6 +24,6 @@ type StoreWithConfigFile struct {
 
 // WrapStoreWithConfigFile wraps a store adapter with a layer of validations
 // based on a local configuration file.
-func WrapStoreWithConfigFile(a store.Adapter) store.Adapter {
-	return &StoreWithConfigFile{Adapter: a}
+func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error) {
+	return &StoreWithConfigFile{Adapter: a}, nil
 }
