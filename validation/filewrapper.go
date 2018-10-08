@@ -16,7 +16,6 @@ package validation
 
 import (
 	"context"
-	"os"
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
@@ -55,11 +54,6 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 
 	if cfg == nil || len(cfg.RulesPath) == 0 {
 		log.Warn("No custom validation rules provided. Only default link validations will be applied.")
-		return wrapped, nil
-	}
-
-	if _, err := os.Stat(cfg.RulesPath); os.IsNotExist(err) {
-		log.Warnf("Invalid custom validation rules path: could not load rules at %s", cfg.RulesPath)
 		return wrapped, nil
 	}
 
