@@ -19,7 +19,9 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
@@ -103,7 +105,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err = testValidationStore.CreateLink(ctx, init2)
-			assert.EqualError(t, err, validators.ErrInvalidTransition.Error())
+			assert.EqualError(t, errors.Cause(err), validators.ErrInvalidTransition.Error())
 		})
 
 		t.Run("invalid signature", func(t *testing.T) {
@@ -114,7 +116,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err := testValidationStore.CreateLink(context.Background(), init)
-			assert.EqualError(t, err, validators.ErrMissingSignature.Error())
+			assert.EqualError(t, errors.Cause(err), validators.ErrMissingSignature.Error())
 		})
 
 		t.Run("invalid schema", func(t *testing.T) {
@@ -128,7 +130,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err := testValidationStore.CreateLink(context.Background(), init)
-			assert.EqualError(t, err, validators.ErrInvalidLinkSchema.Error())
+			assert.EqualError(t, errors.Cause(err), validators.ErrInvalidLinkSchema.Error())
 		})
 
 		t.Run("invalid configuration file", func(t *testing.T) {
@@ -161,7 +163,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 						  }
 						},
 						"required": ["name", "age"]
-					  },
+					  }
 					}
 				  }
 				}
@@ -185,7 +187,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err = v.CreateLink(ctx, link)
-			assert.EqualError(t, err, validators.ErrInvalidLinkSchema.Error())
+			assert.EqualError(t, errors.Cause(err), validators.ErrInvalidLinkSchema.Error())
 
 			err = ioutil.WriteFile(rules, []byte(`{
 				"drivers": {
@@ -198,16 +200,21 @@ func TestStoreWithConfigFile(t *testing.T) {
 							"type": "string"
 						  },
 						  "age": {
-							  "type": "number"
+							  "type": "integer"
 						  }
 						},
 						"required": ["name", "age"]
-					  },
+					  }
 					}
 				  }
 				}
 			  }`), os.ModePerm)
 			require.NoError(t, err)
+
+			// Since we don't control the filewatcher's signals, we have no
+			// other solution than waiting a bit for the write to be flushed
+			// properly to disk.
+			<-time.After(50 * time.Millisecond)
 
 			_, err = v.CreateLink(ctx, link)
 			assert.NoError(t, err)
