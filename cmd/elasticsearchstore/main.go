@@ -50,5 +50,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "elasticsearchstore"))
+	storehttp.RunWithFlags(monitoring.WrapStore(a, "elasticsearchstore"))
 }

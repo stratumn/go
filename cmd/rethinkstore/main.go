@@ -49,5 +49,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "rethinkstore"))
+	storehttp.RunWithFlags(monitoring.WrapStore(a, "rethinkstore"))
 }

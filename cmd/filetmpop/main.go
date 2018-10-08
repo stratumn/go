@@ -53,8 +53,8 @@ func main() {
 		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(
-		monitoring.NewStoreAdapter(a, "filestore"),
-		monitoring.NewKeyValueStoreAdapter(a, "filestore"),
+		monitoring.WrapStore(a, "filestore"),
+		monitoring.WrapKeyValueStore(a, "filestore"),
 		tmpopConfig,
 	)
 }

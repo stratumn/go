@@ -32,8 +32,8 @@ type StoreAdapter struct {
 	name string
 }
 
-// NewStoreAdapter decorates an existing store adapter.
-func NewStoreAdapter(s store.Adapter, name string) store.Adapter {
+// WrapStore wraps an existing store adapter to add monitoring.
+func WrapStore(s store.Adapter, name string) store.Adapter {
 	return &StoreAdapter{s: s, name: name}
 }
 
@@ -121,8 +121,9 @@ type KeyValueStoreAdapter struct {
 	name string
 }
 
-// NewKeyValueStoreAdapter decorates an existing key value store adapter.
-func NewKeyValueStoreAdapter(s store.KeyValueStore, name string) store.KeyValueStore {
+// WrapKeyValueStore wraps an existing key value store adapter to add
+// monitoring.
+func WrapKeyValueStore(s store.KeyValueStore, name string) store.KeyValueStore {
 	return &KeyValueStoreAdapter{s: s, name: name}
 }
 

@@ -94,7 +94,7 @@ func New(config *Config) (*FileStore, error) {
 		config:     config,
 		eventChans: nil,
 		mutex:      sync.RWMutex{},
-		kvDB:       monitoring.NewKeyValueStoreAdapter(db, "leveldbstore"),
+		kvDB:       monitoring.WrapKeyValueStore(db, "leveldbstore"),
 	}, nil
 }
 

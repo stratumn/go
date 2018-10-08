@@ -48,8 +48,8 @@ func main() {
 		Monitoring: monitoring.ConfigurationFromFlags(),
 	}
 	tmpop.Run(
-		monitoring.NewStoreAdapter(a, "elasticsearchstore"),
-		monitoring.NewKeyValueStoreAdapter(a, "elasticsearchstore"),
+		monitoring.WrapStore(a, "elasticsearchstore"),
+		monitoring.WrapKeyValueStore(a, "elasticsearchstore"),
 		tmpopConfig,
 	)
 }

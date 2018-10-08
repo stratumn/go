@@ -57,5 +57,5 @@ func main() {
 		}
 	}()
 
-	storehttp.RunWithFlags(monitoring.NewStoreAdapter(a, "tmstore"))
+	storehttp.RunWithFlags(monitoring.WrapStore(a, "tmstore"))
 }
