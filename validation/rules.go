@@ -86,6 +86,10 @@ func (r *ProcessRules) ValidateTransitions() error {
 			return errors.Wrapf(ErrMissingTransitions, "%s has no transitions", step)
 		}
 
+		if len(rules.Transitions) == 1 && rules.Transitions[0] == step {
+			return errors.Wrapf(ErrInvalidTransitions, "%s can only be reached from itself", step)
+		}
+
 		// Verify that transitions are defined on existing steps.
 		for _, transition := range rules.Transitions {
 			if len(transition) > 0 {

@@ -57,6 +57,20 @@ func TestProcessRules(t *testing.T) {
 			err := rules.ValidateTransitions()
 			assert.EqualError(t, errors.Cause(err), validation.ErrInvalidTransitions.Error())
 		})
+
+		t.Run("self-referencing step", func(t *testing.T) {
+			rules := &validation.ProcessRules{Steps: map[string]*validation.StepRules{
+				"init": &validation.StepRules{
+					Transitions: []string{""},
+				},
+				"update": &validation.StepRules{
+					Transitions: []string{"update"},
+				},
+			}}
+
+			err := rules.ValidateTransitions()
+			assert.EqualError(t, errors.Cause(err), validation.ErrInvalidTransitions.Error())
+		})
 	})
 }
 
