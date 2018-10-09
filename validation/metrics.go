@@ -34,7 +34,7 @@ func init() {
 
 	err := view.Register(
 		&view.View{
-			Name:        "stratumn_core_validation_links_count",
+			Name:        "stratumn/core/validation/links_count",
 			Description: "number of links validated",
 			Measure:     linksCount,
 			Aggregation: view.Count(),

@@ -59,26 +59,26 @@ func init() {
 	)
 
 	var err error
-	if txStatus, err = tag.NewKey("tx_status"); err != nil {
+	if txStatus, err = tag.NewKey("stratumn/core/tmpop/tx_status"); err != nil {
 		log.Fatal(err)
 	}
 
 	if err = view.Register(
 		&view.View{
-			Name:        "stratumn_core_tmpop_block_count",
+			Name:        "stratumn/core/tmpop/block_count",
 			Description: "number of blocks created",
 			Measure:     blockCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "stratumn_core_tmpop_tx_count",
+			Name:        "stratumn/core/tmpop/tx_count",
 			Description: "number of transactions received",
 			Measure:     txCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{txStatus},
 		},
 		&view.View{
-			Name:        "stratumn_core_tmpop_tx_per_block",
+			Name:        "stratumn/core/tmpop/tx_per_block",
 			Description: "number of transactions per block",
 			Measure:     txPerBlock,
 			Aggregation: view.Distribution(1, 5, 10, 50, 100),
