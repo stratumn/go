@@ -73,7 +73,7 @@ func (s *State) UpdateValidators(ctx context.Context) {
 
 	// We temporarily re-load validation rules for each block.
 	// This will change once the new governance flows are implemented.
-	v, err := validation.LoadFromFile(s.validationCfg)
+	v, err := validation.LoadFromFile(ctx, s.validationCfg)
 	if err != nil {
 		log.Warnf("could not load validation rules: %s", err.Error())
 		return

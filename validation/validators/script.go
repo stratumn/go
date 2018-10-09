@@ -27,6 +27,9 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 // Errors returned by the script validator.
@@ -104,5 +107,11 @@ func (sv *ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
 
 // Validate the link.
 func (sv *ScriptValidator) Validate(ctx context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
-	return sv.script(ctx, storeReader, &types.Link{Link: link})
+	err := sv.script(ctx, storeReader, &types.Link{Link: link})
+	if err != nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Script"))
+		stats.Record(ctx, linksErr.M(1))
+	}
+
+	return err
 }

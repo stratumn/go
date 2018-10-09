@@ -22,6 +22,9 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
 	"github.com/xeipuuv/gojsonschema"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 // Errors used by the schema validator.
@@ -64,14 +67,18 @@ func (sv SchemaValidator) Hash() ([]byte, error) {
 }
 
 // Validate the schema of a link's data.
-func (sv SchemaValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
+func (sv SchemaValidator) Validate(ctx context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	linkData := gojsonschema.NewBytesLoader(link.Data)
 	result, err := sv.schema.Validate(linkData)
 	if err != nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "SchemaJSON"))
+		stats.Record(ctx, linksErr.M(1))
 		return errors.WithStack(err)
 	}
 
 	if !result.Valid() {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Schema"))
+		stats.Record(ctx, linksErr.M(1))
 		return errors.Wrapf(ErrInvalidLinkSchema, "%s", result.Errors())
 	}
 

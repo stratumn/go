@@ -15,30 +15,40 @@
 package validation
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/validation/validators"
+
+	"go.opencensus.io/trace"
 )
 
 // LoadFromFile loads the validation rules from a json file.
-func LoadFromFile(validationCfg *Config) (validators.ProcessesValidators, error) {
+func LoadFromFile(ctx context.Context, validationCfg *Config) (validators.ProcessesValidators, error) {
+	_, span := trace.StartSpan(ctx, "validation/LoadFromFile")
+	defer span.End()
+
 	f, err := os.Open(validationCfg.RulesPath)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, errors.WithStack(err)
 	}
 	defer f.Close()
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, errors.WithStack(err)
 	}
 
 	var rules ProcessesRules
 	err = json.Unmarshal(data, &rules)
 	if err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, errors.WithStack(err)
 	}
 

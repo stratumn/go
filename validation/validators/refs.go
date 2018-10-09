@@ -21,6 +21,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 // Errors returned by the RefsValidator.
@@ -42,10 +45,18 @@ func NewRefsValidator() Validator {
 // Validate all references (parent and refs).
 func (v *RefsValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
 	if err := v.validateParent(ctx, r, l); err != nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Parent"))
+		stats.Record(ctx, linksErr.M(1))
 		return err
 	}
 
-	return v.validateReferences(ctx, r, l)
+	if err := v.validateReferences(ctx, r, l); err != nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Refs"))
+		stats.Record(ctx, linksErr.M(1))
+		return err
+	}
+
+	return nil
 }
 
 func (v *RefsValidator) validateParent(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {

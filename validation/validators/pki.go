@@ -24,6 +24,9 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-crypto/keys"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 // Errors used by the PKI validator.
@@ -151,7 +154,7 @@ func (pv PKIValidator) Hash() ([]byte, error) {
 //	* a public key
 //	* a name defined in PKI
 //	* a role defined in PKI
-func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
+func (pv PKIValidator) Validate(ctx context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	for _, required := range pv.RequiredSignatures {
 		fulfilled := false
 		for _, sig := range link.Signatures {
@@ -162,6 +165,8 @@ func (pv PKIValidator) Validate(_ context.Context, _ store.SegmentReader, link *
 		}
 
 		if !fulfilled {
+			ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "PKI"))
+			stats.Record(ctx, linksErr.M(1))
 			return errors.Wrapf(ErrMissingSignature, "%s.%s requires a signature from %s", pv.process, pv.step, required)
 		}
 	}
