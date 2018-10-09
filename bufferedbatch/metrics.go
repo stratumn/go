@@ -33,19 +33,19 @@ func init() {
 	batchCount = stats.Int64(
 		"stratumn/core/bufferedbatch/batch_count",
 		"number of batches created",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	linksPerBatch = stats.Int64(
 		"stratumn/core/bufferedbatch/links_per_batch",
 		"number of links per batch",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	writeCount = stats.Int64(
 		"stratumn/core/bufferedbatch/write_count",
 		"number of batch writes",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	var err error

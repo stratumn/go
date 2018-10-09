@@ -31,7 +31,7 @@ func init() {
 	linksErr = stats.Int64(
 		"stratumn/core/validation/links_error",
 		"number of invalid links",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	var err error

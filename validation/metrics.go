@@ -29,7 +29,7 @@ func init() {
 	linksCount = stats.Int64(
 		"stratumn/core/validation/links_count",
 		"number of links validated",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	err := view.Register(

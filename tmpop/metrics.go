@@ -43,19 +43,19 @@ func init() {
 	blockCount = stats.Int64(
 		"stratumn/core/tmpop/block_count",
 		"number of blocks created",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	txCount = stats.Int64(
 		"stratumn/core/tmpop/tx_count",
 		"number of transactions received",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	txPerBlock = stats.Int64(
 		"stratumn/core/tmpop/tx_per_block",
 		"number of transactions per block",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	var err error

@@ -30,13 +30,13 @@ func init() {
 	batchCount = stats.Int64(
 		"stratumn/core/batchfossilizer/batch_count",
 		"number of batches sent",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	fossilizedLinksCount = stats.Int64(
 		"stratumn/core/batchfossilizer/fossilized_links_count",
 		"number of links fossilized",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 	if err := view.Register(
 		&view.View{
