@@ -22,8 +22,12 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/validation/validators"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/trace"
 )
 
 // StoreWithConfigFile wraps a store adapter with a layer of validations
@@ -57,7 +61,7 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 		return wrapped, nil
 	}
 
-	v, err := LoadFromFile(cfg)
+	v, err := LoadFromFile(context.Background(), cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,15 +84,22 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 
 // CreateLink applies validations before creating the link.
 func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	stats.Record(ctx, linksCount.M(1))
+	ctx, span := trace.StartSpan(ctx, "validation/CreateLink")
+	defer span.End()
+
 	if err := link.Validate(ctx); err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 
 	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 
 	if err := a.validateCustom(ctx, link); err != nil {
+		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 
@@ -112,7 +123,7 @@ func (a *StoreWithConfigFile) watchRules(w *fsnotify.Watcher, cfg *Config) {
 			continue
 		}
 
-		newValidators, err := LoadFromFile(cfg)
+		newValidators, err := LoadFromFile(context.Background(), cfg)
 		if err != nil {
 			continue
 		}

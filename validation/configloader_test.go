@@ -15,6 +15,7 @@
 package validation_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -27,7 +28,7 @@ import (
 
 func TestLoadFromFile(t *testing.T) {
 	t.Run("missing file", func(t *testing.T) {
-		v, err := validation.LoadFromFile(&validation.Config{
+		v, err := validation.LoadFromFile(context.Background(), &validation.Config{
 			RulesPath: "/tmp/validation/missing-rules.json",
 		})
 
@@ -39,7 +40,7 @@ func TestLoadFromFile(t *testing.T) {
 		testFile := utils.CreateTempFile(t, "validatie-wixie kawaii rules-y")
 		defer os.Remove(testFile)
 
-		v, err := validation.LoadFromFile(&validation.Config{
+		v, err := validation.LoadFromFile(context.Background(), &validation.Config{
 			RulesPath: testFile,
 		})
 
@@ -51,7 +52,7 @@ func TestLoadFromFile(t *testing.T) {
 		testFile := utils.CreateTempFile(t, validationtesting.TestJSONRules)
 		defer os.Remove(testFile)
 
-		v, err := validation.LoadFromFile(&validation.Config{
+		v, err := validation.LoadFromFile(context.Background(), &validation.Config{
 			RulesPath: testFile,
 		})
 

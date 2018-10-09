@@ -22,6 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 // Errors used by the transition validator.
@@ -66,6 +69,8 @@ func (tv TransitionValidator) Hash() ([]byte, error) {
 // an empty string.
 func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *chainscript.Link) error {
 	error := func(src string) error {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Transition"))
+		stats.Record(ctx, linksErr.M(1))
 		return errors.Wrapf(ErrInvalidTransition, "%s --> %s", src, tv.step)
 	}
 
@@ -82,9 +87,13 @@ func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentR
 
 	parent, err := store.GetSegment(ctx, prevLinkHash)
 	if err != nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "TransitionParentErr"))
+		stats.Record(ctx, linksErr.M(1))
 		return errors.Wrapf(err, "cannot retrieve previous segment %s", prevLinkHash.String())
 	}
 	if parent == nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "TransitionParentNil"))
+		stats.Record(ctx, linksErr.M(1))
 		return fmt.Errorf("previous segment not found: %s", prevLinkHash.String())
 	}
 

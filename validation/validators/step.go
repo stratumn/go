@@ -21,6 +21,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/store"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 // Errors used by the ProcessStepValidator.
@@ -70,8 +73,10 @@ func (v *ProcessStepValidator) ShouldValidate(link *chainscript.Link) bool {
 }
 
 // Validate that the process and step match the configured values.
-func (v *ProcessStepValidator) Validate(_ context.Context, _ store.SegmentReader, link *chainscript.Link) error {
+func (v *ProcessStepValidator) Validate(ctx context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	if !v.ShouldValidate(link) {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "ProcessStep"))
+		stats.Record(ctx, linksErr.M(1))
 		return ErrInvalidProcessOrStep
 	}
 
