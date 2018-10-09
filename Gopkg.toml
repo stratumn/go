@@ -20,7 +20,7 @@
 
 [[constraint]]
   name = "go.opencensus.io"
-  branch = "master"
+  version = "^0.17.0"
 
 [[constraint]]
   name = "github.com/stratumn/go-chainscript"

@@ -630,8 +630,7 @@
   revision = "2c8e4be869c17540b336bab0ea18b8d73e6a28b7"
 
 [[projects]]
-  branch = "master"
-  digest = "1:46df7ce2052f348372ee81ad422994700b3a4af3c268064e2d9977701212914f"
+  digest = "1:8c8ec859c77fccd10a347b7219b597c4c21c448949e8bdf3fc3e6f4c78f952b4"
   name = "go.opencensus.io"
   packages = [
     ".",
@@ -649,9 +648,11 @@
     "trace",
     "trace/internal",
     "trace/propagation",
+    "trace/tracestate",
   ]
   pruneopts = ""
-  revision = "140879bf49cb17276aaf28b5f6a04e251ff98473"
+  revision = "79993219becaa7e29e3b60cb67f5b8e82dee11d6"
+  version = "v0.17.0"
 
 [[projects]]
   branch = "master"
