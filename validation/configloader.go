@@ -29,7 +29,7 @@ import (
 
 // LoadFromFile loads the validation rules from a json file.
 func LoadFromFile(ctx context.Context, validationCfg *Config) (validators.ProcessesValidators, error) {
-	ctx, span := trace.StartSpan(ctx, "validation/LoadFromFile")
+	_, span := trace.StartSpan(ctx, "validation/LoadFromFile")
 	defer span.End()
 
 	f, err := os.Open(validationCfg.RulesPath)
