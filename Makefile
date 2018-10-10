@@ -29,6 +29,7 @@ DOCKER_CMD=docker
 GITHUB_RELEASE_FLAGS=--user '$(GITHUB_USER)' --repo '$(GITHUB_REPO)' --tag '$(GIT_TAG)'
 GITHUB_RELEASE_RELEASE_FLAGS=$(GITHUB_RELEASE_FLAGS) --name '$(RELEASE_NAME)' --description "$$(cat $(RELEASE_NOTES_FILE))"
 
+CGO_ENABLED?=0
 GO_LIST=$(GO_CMD) list
 GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-extldflags "-static" -X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT)'
 GO_TEST=$(GO_CMD) test
@@ -129,7 +130,7 @@ BUILD_COMMAND=$(firstword $(word 1, $(subst ., ,$(lastword $(subst /, ,$@)))))
 BUILD_PACKAGE=$(shell $(GO_LIST) ./$(COMMAND_DIR)/$(BUILD_COMMAND))
 
 $(EXECS): $(BUILD_SOURCES)
-	GOOS=$(BUILD_OS) GOARCH=$(BUILD_ARCH) $(GO_BUILD) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(BUILD_OS) GOARCH=$(BUILD_ARCH) CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) -o $@ $(BUILD_PACKAGE)
 
 # == sign =====================================================================
 sign: $(SIGNATURES)
@@ -167,7 +168,7 @@ git_tag:
 
 # == github_draft =============================================================
 github_draft:
-	@if [[ $prerelease != "false" ]]; then \
+	@if [[ "$(PRERELEASE)" != "false" ]]; then \
 		echo $(GITHUB_RELEASE_RELEASE) --draft --pre-release; \
 		$(GITHUB_RELEASE_RELEASE) --draft --pre-release; \
 	else \
