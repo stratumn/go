@@ -198,6 +198,14 @@ var sqlCreate = []string{
 	`,
 }
 
+// We add SQL smart comments to disable GraphQL mutations.
+var sqlComment = []string{
+	`comment on table links is E'@omit create,update,delete'`,
+	`comment on table links_degree is E'@omit create,update,delete'`,
+	`comment on table evidences is E'@omit create,update,delete'`,
+	`comment on table process_maps is E'@omit create,update,delete'`,
+}
+
 var sqlDrop = []string{
 	"DROP TABLE links, links_degree, evidences, values, process_maps",
 }
