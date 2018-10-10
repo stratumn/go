@@ -43,8 +43,11 @@ func WrapStore(s store.Adapter, name string) store.Adapter {
 // GetInfo instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetInfo(ctx context.Context) (res interface{}, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "GetInfo").End(err)
+	tracker := newRequestTracker(ctx, "GetInfo")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	res, err = a.s.GetInfo(ctx)
 	return
@@ -58,7 +61,9 @@ func (a *StoreAdapter) AddStoreEventChannel(c chan *store.Event) {
 // NewBatch instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/NewBatch", a.name))
-	defer SetSpanStatusAndEnd(span, err)
+	defer func() {
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	b, err = a.s.NewBatch(ctx)
 	return
@@ -67,8 +72,11 @@ func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) 
 // AddEvidence instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) (err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/AddEvidence", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "AddEvidence").End(err)
+	tracker := newRequestTracker(ctx, "AddEvidence")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	err = a.s.AddEvidence(ctx, linkHash, evidence)
 	return
@@ -77,8 +85,11 @@ func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.Lin
 // GetEvidences instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (e types.EvidenceSlice, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetEvidences", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "GetEvidences").End(err)
+	tracker := newRequestTracker(ctx, "GetEvidences")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	e, err = a.s.GetEvidences(ctx, linkHash)
 	return
@@ -87,8 +98,11 @@ func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.Li
 // CreateLink instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (lh chainscript.LinkHash, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/CreateLink", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "CreateLink").End(err)
+	tracker := newRequestTracker(ctx, "CreateLink")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	lh, err = a.s.CreateLink(ctx, link)
 	return
@@ -97,8 +111,11 @@ func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (
 // GetSegment instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (s *chainscript.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetSegment", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "GetSegment").End(err)
+	tracker := newRequestTracker(ctx, "GetSegment")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	s, err = a.s.GetSegment(ctx, linkHash)
 	return
@@ -107,8 +124,11 @@ func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.Link
 // FindSegments instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss *types.PaginatedSegments, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "FindSegments").End(err)
+	tracker := newRequestTracker(ctx, "FindSegments")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	ss, err = a.s.FindSegments(ctx, filter)
 	return
@@ -117,8 +137,11 @@ func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFi
 // GetMapIDs instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetMapIDs(ctx context.Context, filter *store.MapFilter) (mids []string, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetMapIDs", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "GetMapIDs").End(err)
+	tracker := newRequestTracker(ctx, "GetMapIDs")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	mids, err = a.s.GetMapIDs(ctx, filter)
 	return
@@ -140,8 +163,11 @@ func WrapKeyValueStore(s store.KeyValueStore, name string) store.KeyValueStore {
 // GetValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) GetValue(ctx context.Context, key []byte) (v []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetValue", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "GetValue").End(err)
+	tracker := newRequestTracker(ctx, "GetValue")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	v, err = a.s.GetValue(ctx, key)
 	return
@@ -150,8 +176,11 @@ func (a *KeyValueStoreAdapter) GetValue(ctx context.Context, key []byte) (v []by
 // SetValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) SetValue(ctx context.Context, key []byte, value []byte) (err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/SetValue", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "SetValue").End(err)
+	tracker := newRequestTracker(ctx, "SetValue")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	err = a.s.SetValue(ctx, key, value)
 	return
@@ -160,8 +189,11 @@ func (a *KeyValueStoreAdapter) SetValue(ctx context.Context, key []byte, value [
 // DeleteValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) DeleteValue(ctx context.Context, key []byte) (v []byte, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/DeleteValue", a.name))
-	defer SetSpanStatusAndEnd(span, err)
-	defer newRequestTracker(ctx, "DeleteValue").End(err)
+	tracker := newRequestTracker(ctx, "DeleteValue")
+	defer func() {
+		tracker.End(err)
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	v, err = a.s.DeleteValue(ctx, key)
 	return

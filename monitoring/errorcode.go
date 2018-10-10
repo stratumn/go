@@ -174,8 +174,11 @@ const (
 )
 
 // SetSpanStatusAndEnd sets the status of the span depending on the error
-// and ends it. You should usually call defer SetSpanStatusAndEnd(span, err)
-// at the beginning of your function.
+// and ends it.
+// You should usually call:
+// defer func() {
+//     SetSpanStatusAndEnd(span, err)
+// }()
 func SetSpanStatusAndEnd(span *trace.Span, err error) {
 	if err != nil {
 		span.SetStatus(trace.Status{

@@ -94,7 +94,9 @@ func New(config *Config, tmClient client.Client) *TMStore {
 // StartWebsocket starts the websocket client and wait for New Block events.
 func (t *TMStore) StartWebsocket(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "tmstore/StartWebSocket")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	if !t.tmClient.IsRunning() {
 		if err = t.tmClient.Start(); err != nil && err != tmcommon.ErrAlreadyStarted {
@@ -141,7 +143,9 @@ func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duratio
 // StopWebsocket stops the websocket client.
 func (t *TMStore) StopWebsocket(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "tmstore/StopWebSocket")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	// Note: no need to close t.tmEventChan, unsubscribing handles it
 	if err = t.tmClient.UnsubscribeAll(ctx, Name); err != nil {
@@ -379,7 +383,9 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 
 func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) (res *abci.ResponseQuery, err error) {
 	_, span := trace.StartSpan(ctx, "tmstore/sendQuery")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	query, err := tmpop.BuildQueryBinary(args)
 	if err != nil {

@@ -38,7 +38,9 @@ func NewFossilizerAdapter(f fossilizer.Adapter, name string) fossilizer.Adapter 
 // GetInfo instruments the call and delegates to the underlying fossilizer.
 func (a *FossilizerAdapter) GetInfo(ctx context.Context) (res interface{}, err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name))
-	defer SetSpanStatusAndEnd(span, err)
+	defer func() {
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	res, err = a.f.GetInfo(ctx)
 	return
@@ -55,7 +57,9 @@ func (a *FossilizerAdapter) AddFossilizerEventChan(c chan *fossilizer.Event) {
 // Fossilize instruments the call and delegates to the underlying fossilizer.
 func (a *FossilizerAdapter) Fossilize(ctx context.Context, data []byte, meta []byte) (err error) {
 	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/Fossilize", a.name))
-	defer SetSpanStatusAndEnd(span, err)
+	defer func() {
+		SetSpanStatusAndEnd(span, err)
+	}()
 
 	err = a.f.Fossilize(ctx, data, meta)
 	return
