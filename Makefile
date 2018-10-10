@@ -127,9 +127,10 @@ BUILD_OS=$(firstword $(subst -, ,$(BUILD_OS_ARCH)))
 BUILD_ARCH=$(lastword $(subst -, ,$(BUILD_OS_ARCH)))
 BUILD_COMMAND=$(firstword $(word 1, $(subst ., ,$(lastword $(subst /, ,$@)))))
 BUILD_PACKAGE=$(shell $(GO_LIST) ./$(COMMAND_DIR)/$(BUILD_COMMAND))
+CGO_ENABLED=$(shell local_os=`uname -s | tr '[:upper:]' '[:lower:]'`; test $$local_os = darwin -o $$local_os != $(BUILD_OS); echo $$?)
 
 $(EXECS): $(BUILD_SOURCES)
-	GOOS=$(BUILD_OS) GOARCH=$(BUILD_ARCH) $(GO_BUILD) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(BUILD_OS) GOARCH=$(BUILD_ARCH) CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) -o $@ $(BUILD_PACKAGE)
 
 # == sign =====================================================================
 sign: $(SIGNATURES)
@@ -167,7 +168,7 @@ git_tag:
 
 # == github_draft =============================================================
 github_draft:
-	@if [[ $prerelease != "false" ]]; then \
+	@if [[ "$(PRERELEASE)" != "false" ]]; then \
 		echo $(GITHUB_RELEASE_RELEASE) --draft --pre-release; \
 		$(GITHUB_RELEASE_RELEASE) --draft --pre-release; \
 	else \
