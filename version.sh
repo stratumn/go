@@ -27,5 +27,5 @@ current_tag=`git describe --tags --exact-match 2> /dev/null`
 if [ $? -eq 0 ]; then
     echo $current_tag
 else
-    git branch | grep '^\*' | awk '{ print $2}'
+    git branch | grep '^\*' | awk '{ gsub(/\//, "-"); print $2 }'
 fi
