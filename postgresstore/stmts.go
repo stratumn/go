@@ -145,7 +145,7 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE links_degree (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea NOT NULL,
+			link_hash bytea references links(link_hash),
 			out_degree integer
 		)
 	`,
@@ -156,7 +156,7 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE evidences (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea NOT NULL,
+			link_hash bytea references links(link_hash),
 			provider text NOT NULL,
 			data bytea NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
