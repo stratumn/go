@@ -186,6 +186,13 @@ func (a *Store) Create() error {
 			return err
 		}
 	}
+
+	for _, query := range sqlComment {
+		if _, err := a.db.Exec(query); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

@@ -145,7 +145,7 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE links_degree (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea NOT NULL,
+			link_hash bytea references links(link_hash),
 			out_degree integer
 		)
 	`,
@@ -156,7 +156,7 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE evidences (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea NOT NULL,
+			link_hash bytea references links(link_hash),
 			provider text NOT NULL,
 			data bytea NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -196,6 +196,15 @@ var sqlCreate = []string{
 		CREATE UNIQUE INDEX process_map_idx
 		ON process_maps (process, map_id)
 	`,
+}
+
+// We add SQL smart comments to disable GraphQL mutations.
+var sqlComment = []string{
+	`comment on table links is E'@omit create,update,delete'`,
+	`comment on table evidences is E'@omit create,update,delete'`,
+	`comment on table links_degree is E'@omit'`,
+	`comment on table process_maps is E'@omit'`,
+	`comment on table values is E'@omit'`,
 }
 
 var sqlDrop = []string{
