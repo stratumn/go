@@ -178,7 +178,9 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 
 func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.Params) (_ interface{}, err error) {
 	ctx, span := trace.StartSpan(r.Context(), "fossilizerhttp/fossilize")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	data, process, err := s.parseFossilizeValues(r)
 	if err != nil {

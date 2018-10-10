@@ -46,7 +46,9 @@ func NewBatch(ctx context.Context, a store.Adapter) *Batch {
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chainscript.LinkHash, err error) {
 	_, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	if link.Meta.OutDegree >= 0 {
 		return nil, store.ErrOutDegreeNotSupported
@@ -59,7 +61,9 @@ func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chain
 // GetSegment returns a segment from the cache or delegates the call to the store.
 func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (segment *chainscript.Segment, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetSegment")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	for _, link := range b.Links {
 		lh, err := link.Hash()
@@ -87,7 +91,9 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 // FindSegments returns the union of segments in the store and not committed yet.
 func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ *types.PaginatedSegments, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/FindSegments")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	segments, err := b.originalStore.FindSegments(ctx, filter)
 	if err != nil {
@@ -112,7 +118,9 @@ func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 // GetMapIDs returns the union of mapIds in the store and not committed yet.
 func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetMapIDs")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	tmpMapIDs, err := b.originalStore.GetMapIDs(ctx, filter)
 	if err != nil {
@@ -141,7 +149,9 @@ func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []str
 // Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
 	ctx, span := trace.StartSpan(ctx, "bufferedbatch/Write")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	stats.Record(ctx, linksPerBatch.M(int64(len(b.Links))))
 

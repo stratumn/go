@@ -33,42 +33,42 @@ func init() {
 	batchCount = stats.Int64(
 		"stratumn/core/bufferedbatch/batch_count",
 		"number of batches created",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	linksPerBatch = stats.Int64(
 		"stratumn/core/bufferedbatch/links_per_batch",
 		"number of links per batch",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	writeCount = stats.Int64(
 		"stratumn/core/bufferedbatch/write_count",
 		"number of batch writes",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	var err error
-	if writeStatus, err = tag.NewKey("batch_write_status"); err != nil {
+	if writeStatus, err = tag.NewKey("stratumn/core/bufferedbatch/write_status"); err != nil {
 		log.Fatal(err)
 	}
 
 	if err = view.Register(
 		&view.View{
-			Name:        "stratumn_core_bufferedbatch_batch_count",
+			Name:        "stratumn/core/bufferedbatch/batch_count",
 			Description: "number of batches created",
 			Measure:     batchCount,
 			Aggregation: view.Count(),
 		},
 		&view.View{
-			Name:        "stratumn_core_bufferedbatch_write_count",
+			Name:        "stratumn/core/bufferedbatch/write_count",
 			Description: "number of batch writes",
 			Measure:     writeCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{writeStatus},
 		},
 		&view.View{
-			Name:        "stratumn_core_bufferedbatch_links_per_batch",
+			Name:        "stratumn/core/bufferedbatch/links_per_batch",
 			Description: "number of links per batch",
 			Measure:     linksPerBatch,
 			Aggregation: view.Distribution(1, 5, 10, 50, 100),

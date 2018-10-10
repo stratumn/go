@@ -40,7 +40,9 @@ func NewBatch(ctx context.Context, a *FileStore) *Batch {
 // Write implements github.com/stratumn/go-core/store.Batch.Write
 func (b *Batch) Write(ctx context.Context) (err error) {
 	_, span := trace.StartSpan(ctx, "filestore/batch/Write")
-	defer monitoring.SetSpanStatusAndEnd(span, err)
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	b.originalFileStore.mutex.Lock()
 	defer b.originalFileStore.mutex.Unlock()

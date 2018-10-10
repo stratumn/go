@@ -42,8 +42,8 @@ type Config struct {
 
 // RegisterFlags registers the command-line monitoring flags.
 func RegisterFlags() {
-	flag.StringVar(&rulesPath, "rules_path", DefaultFilename, "Path to the file containing validation rules")
-	flag.StringVar(&pluginsPath, "plugins_path", DefaultPluginsDirectory, "Path to the directory containing validation plugins")
+	flag.StringVar(&rulesPath, "rules_path", "", "Path to the file containing validation rules")
+	flag.StringVar(&pluginsPath, "plugins_path", "", "Path to the directory containing validation plugins")
 }
 
 // ConfigurationFromFlags builds configuration from user-provided command-line

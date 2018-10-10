@@ -31,17 +31,17 @@ func init() {
 	linksErr = stats.Int64(
 		"stratumn/core/validation/links_error",
 		"number of invalid links",
-		stats.UnitNone,
+		stats.UnitDimensionless,
 	)
 
 	var err error
-	if linkErr, err = tag.NewKey("link_error"); err != nil {
+	if linkErr, err = tag.NewKey("stratumn/core/validation/link_error"); err != nil {
 		log.Fatal(err)
 	}
 
 	err = view.Register(
 		&view.View{
-			Name:        "stratumn_core_validation_links_error",
+			Name:        "stratumn/core/validation/links_error",
 			Description: "number of invalid links",
 			Measure:     linksErr,
 			Aggregation: view.Count(),
