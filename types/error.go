@@ -94,10 +94,10 @@ func WrapErrorf(err error, code int, component string, format string, args ...in
 // Error returns a friendly error message.
 func (e *Error) Error() string {
 	if e.Wrapped != nil && e.Wrapped.Error() != "" {
-		return fmt.Sprintf("[%s] error %d: %s: %s", e.Component, e.Code, e.Message, e.Wrapped.Error())
+		return fmt.Sprintf("%s error %d: %s: %s", e.Component, e.Code, e.Message, e.Wrapped.Error())
 	}
 
-	return fmt.Sprintf("[%s] error %d: %s", e.Component, e.Code, e.Message)
+	return fmt.Sprintf("%s error %d: %s", e.Component, e.Code, e.Message)
 }
 
 // String returns a friendly error message.
@@ -112,7 +112,7 @@ func (e *Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			_, _ = io.WriteString(s, fmt.Sprintf("error %d: %s", e.Code, e.Message))
+			_, _ = io.WriteString(s, fmt.Sprintf("%s error %d: %s", e.Component, e.Code, e.Message))
 			if e.Wrapped != nil {
 				_, _ = io.WriteString(s, fmt.Sprintf("\n%+v", e.Wrapped))
 			}
