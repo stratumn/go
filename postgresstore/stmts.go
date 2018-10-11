@@ -198,12 +198,6 @@ var sqlCreate = []string{
 		CREATE UNIQUE INDEX process_map_idx
 		ON store_private.process_maps (process, map_id)
 	`,
-	// We add SQL smart comments to disable GraphQL mutations.
-	`comment on table store.links is E'@omit create,update,delete'`,
-	`comment on table store.evidences is E'@omit create,update,delete'`,
-	`comment on table store.values is E'@omit'`,
-	`comment on table store_private.links_degree is E'@omit'`,
-	`comment on table store_private.process_maps is E'@omit'`,
 }
 
 var sqlDrop = []string{
