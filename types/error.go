@@ -112,15 +112,15 @@ func (e *Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':
 		if s.Flag('+') {
-			io.WriteString(s, fmt.Sprintf("error %d: %s", e.Code, e.Message))
+			_, _ = io.WriteString(s, fmt.Sprintf("error %d: %s", e.Code, e.Message))
 			if e.Wrapped != nil {
-				io.WriteString(s, "\n")
-				io.WriteString(s, fmt.Sprintf("%+v", e.Wrapped))
+				_, _ = io.WriteString(s, "\n")
+				_, _ = io.WriteString(s, fmt.Sprintf("%+v", e.Wrapped))
 			}
 			return
 		}
 		fallthrough
 	case 's':
-		io.WriteString(s, e.Error())
+		_, _ = io.WriteString(s, e.Error())
 	}
 }
