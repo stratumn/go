@@ -17,6 +17,9 @@ package batchfossilizer
 import (
 	"encoding/gob"
 	"os"
+
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/types"
 )
 
 type batch struct {
@@ -38,19 +41,27 @@ func (b *batch) append(f *fossil) {
 	b.meta = append(b.meta, f.Meta)
 }
 
-func (b *batch) open(path string) (err error) {
+func (b *batch) open(path string) error {
+	var err error
 	flags := os.O_APPEND | os.O_WRONLY | os.O_EXCL | os.O_CREATE
 	if b.file, err = os.OpenFile(path, flags, FilePerm); err != nil {
-		return
+		return types.WrapError(err, monitoring.InvalidArgument, Name, "could not open file")
 	}
+
 	b.encoder = gob.NewEncoder(b.file)
-	return
+	return nil
 }
 
-func (b *batch) close() (err error) {
+func (b *batch) close() error {
+	var err error
 	if b.file != nil {
 		err = b.file.Close()
 		b.file = nil
 	}
-	return
+
+	if err != nil {
+		return types.WrapError(err, monitoring.InvalidArgument, Name, "could not close file")
+	}
+
+	return nil
 }

@@ -42,7 +42,7 @@ import (
 
 const (
 	// Name is the name set in the fossilizer's information.
-	Name = "batch"
+	Name = "batchfossilizer"
 
 	// Description is the description set in the fossilizer's information.
 	Description = "Stratumn Batch Fossilizer"
@@ -469,7 +469,7 @@ func (a *Fossilizer) stop(err error) error {
 	if a.pending.file != nil {
 		if e := a.pending.file.Close(); e != nil {
 			if err == nil {
-				err = e
+				err = types.WrapError(e, monitoring.InvalidArgument, Name, "failed to close file")
 			} else {
 				log.WithField("error", err).Error("Failed to close pending batch file")
 			}
@@ -481,21 +481,22 @@ func (a *Fossilizer) stop(err error) error {
 
 func (a *Fossilizer) ensurePath() error {
 	if err := os.MkdirAll(a.config.Path, DirPerm); err != nil && !os.IsExist(err) {
-		return err
+		return types.WrapError(err, monitoring.InvalidArgument, Name, "failed to create directory")
 	}
+
 	return nil
 }
 
 func (a *Fossilizer) recover() error {
 	matches, err := filepath.Glob(filepath.Join(a.config.Path, "*."+PendingExt))
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.InvalidArgument, Name, "failed to find matching files")
 	}
 
 	for _, path := range matches {
 		file, err := os.OpenFile(path, os.O_RDONLY|os.O_EXCL, FilePerm)
 		if err != nil {
-			return err
+			return types.WrapError(err, monitoring.InvalidArgument, Name, "failed to open file")
 		}
 		defer file.Close()
 
@@ -514,7 +515,7 @@ func (a *Fossilizer) recover() error {
 		a.waitGroup.Wait()
 
 		if err := os.Remove(path); err != nil {
-			return err
+			return types.WrapError(err, monitoring.InvalidArgument, Name, "failed to remove file")
 		}
 
 		log.WithField("file", filepath.Base(path)).Info("Recovered pending hashes file")
