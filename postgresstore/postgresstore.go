@@ -178,17 +178,11 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 func (a *Store) Create() error {
 	for _, query := range sqlCreate {
 		if _, err := a.db.Exec(query); err != nil {
-			pqErr := err.(*pq.Error)
-			if pqErr != nil && pqErr.Code.Name() == "duplicate_table" {
+			pqErr, ok := err.(*pq.Error)
+			if ok && pqErr != nil && pqErr.Code.Name() == "duplicate_table" {
 				continue
 			}
 
-			return err
-		}
-	}
-
-	for _, query := range sqlComment {
-		if _, err := a.db.Exec(query); err != nil {
 			return err
 		}
 	}
