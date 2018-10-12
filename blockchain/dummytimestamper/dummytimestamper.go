@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 
 	"github.com/stratumn/go-core/blockchain"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
 
@@ -52,7 +52,7 @@ func (Timestamper) Network() blockchain.Network {
 func (Timestamper) Timestamp(data interface{}) (types.TransactionID, error) {
 	js, err := json.Marshal(data)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Component, "json.Marshal")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "json.Marshal")
 	}
 	sum := sha256.Sum256(js)
 	return sum[:], nil

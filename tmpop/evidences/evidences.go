@@ -24,7 +24,7 @@ import (
 	json "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/tendermint/go-crypto"
@@ -208,12 +208,12 @@ func (p *TendermintProof) validateVotes(header *tmtypes.Header, votes []*Tenderm
 func (p *TendermintProof) Evidence(chainID string) (*chainscript.Evidence, error) {
 	proof, err := json.Marshal(p)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, TMPopName, "json.Marshal")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, TMPopName, "json.Marshal")
 	}
 
 	e, err := chainscript.NewEvidence(Version, TMPopName, chainID, proof)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, TMPopName, "could not create evidence")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, TMPopName, "could not create evidence")
 	}
 
 	return e, nil
@@ -222,11 +222,11 @@ func (p *TendermintProof) Evidence(chainID string) (*chainscript.Evidence, error
 // UnmarshalProof unmarshals the Tendermint proof contained in an evidence.
 func UnmarshalProof(e *chainscript.Evidence) (*TendermintProof, error) {
 	if e.Backend != TMPopName {
-		return nil, types.WrapError(ErrInvalidBackend, monitoring.InvalidArgument, TMPopName, "could not unmarshal proof")
+		return nil, types.WrapError(ErrInvalidBackend, errorcode.InvalidArgument, TMPopName, "could not unmarshal proof")
 	}
 
 	if len(e.Provider) == 0 {
-		return nil, types.WrapError(ErrMissingChainID, monitoring.InvalidArgument, TMPopName, "could not unmarshal proof")
+		return nil, types.WrapError(ErrMissingChainID, errorcode.InvalidArgument, TMPopName, "could not unmarshal proof")
 	}
 
 	switch e.Version {
@@ -234,11 +234,11 @@ func UnmarshalProof(e *chainscript.Evidence) (*TendermintProof, error) {
 		var proof TendermintProof
 		err := json.Unmarshal(e.Proof, &proof)
 		if err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, TMPopName, "json.Unmarshal")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, TMPopName, "json.Unmarshal")
 		}
 
 		return &proof, nil
 	default:
-		return nil, types.WrapError(ErrUnknownVersion, monitoring.InvalidArgument, TMPopName, "could not unmarshal proof")
+		return nil, types.WrapError(ErrUnknownVersion, errorcode.InvalidArgument, TMPopName, "could not unmarshal proof")
 	}
 }

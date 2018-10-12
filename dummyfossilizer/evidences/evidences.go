@@ -18,7 +18,7 @@ import (
 	json "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
 
@@ -58,12 +58,12 @@ func (p *DummyProof) Verify(interface{}) bool {
 func (p *DummyProof) Evidence(provider string) (*chainscript.Evidence, error) {
 	proof, err := json.Marshal(p)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Marshal")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Marshal")
 	}
 
 	e, err := chainscript.NewEvidence(Version, Name, provider, proof)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "failed to create evidence")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "failed to create evidence")
 	}
 
 	return e, nil
@@ -72,11 +72,11 @@ func (p *DummyProof) Evidence(provider string) (*chainscript.Evidence, error) {
 // UnmarshalProof unmarshals the dummy proof contained in an evidence.
 func UnmarshalProof(e *chainscript.Evidence) (*DummyProof, error) {
 	if e.Backend != Name {
-		return nil, types.WrapError(ErrInvalidBackend, monitoring.InvalidArgument, Name, "failed to unmarshal proof")
+		return nil, types.WrapError(ErrInvalidBackend, errorcode.InvalidArgument, Name, "failed to unmarshal proof")
 	}
 
 	if len(e.Provider) == 0 {
-		return nil, types.WrapError(chainscript.ErrMissingProvider, monitoring.InvalidArgument, Name, "failed to unmarshal proof")
+		return nil, types.WrapError(chainscript.ErrMissingProvider, errorcode.InvalidArgument, Name, "failed to unmarshal proof")
 	}
 
 	switch e.Version {
@@ -84,11 +84,11 @@ func UnmarshalProof(e *chainscript.Evidence) (*DummyProof, error) {
 		var proof DummyProof
 		err := json.Unmarshal(e.Proof, &proof)
 		if err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Unmarshal")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Unmarshal")
 		}
 
 		return &proof, nil
 	default:
-		return nil, types.WrapError(ErrUnknownVersion, monitoring.InvalidArgument, Name, "failed to unmarshal proof")
+		return nil, types.WrapError(ErrUnknownVersion, errorcode.InvalidArgument, Name, "failed to unmarshal proof")
 	}
 }

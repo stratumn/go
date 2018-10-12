@@ -21,7 +21,7 @@ import (
 
 	"github.com/olivere/elastic"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -179,18 +179,18 @@ func (es *ESStore) createIndex(indexName, mapping string) error {
 	ctx := context.TODO()
 	exists, err := es.client.IndexExists(indexName).Do(ctx)
 	if err != nil {
-		return types.WrapError(err, monitoring.FailedPrecondition, store.Component, "could not create index")
+		return types.WrapError(err, errorcode.FailedPrecondition, store.Component, "could not create index")
 	}
 
 	if !exists {
 		// TODO: pass mapping through BodyString.
 		createIndex, err := es.client.CreateIndex(indexName).BodyString(mapping).Do(ctx)
 		if err != nil {
-			return types.WrapError(err, monitoring.Unavailable, store.Component, "could not create index")
+			return types.WrapError(err, errorcode.Unavailable, store.Component, "could not create index")
 		}
 		if !createIndex.Acknowledged {
 			// Not acknowledged.
-			return types.NewErrorf(monitoring.Unavailable, store.Component, "error creating index %s", indexName)
+			return types.NewErrorf(errorcode.Unavailable, store.Component, "error creating index %s", indexName)
 		}
 	}
 
@@ -213,11 +213,11 @@ func (es *ESStore) deleteIndex(indexName string) error {
 	ctx := context.TODO()
 	del, err := es.client.DeleteIndex(indexName).Do(ctx)
 	if err != nil {
-		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not delete index")
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not delete index")
 	}
 
 	if !del.Acknowledged {
-		return types.NewErrorf(monitoring.Unavailable, store.Component, "index %s was not deleted", indexName)
+		return types.NewErrorf(errorcode.Unavailable, store.Component, "index %s was not deleted", indexName)
 	}
 
 	return nil
@@ -292,7 +292,7 @@ func fromLink(link *chainscript.Link) (*linkDoc, error) {
 func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
 	}
 	linkHashStr := linkHash.String()
 
@@ -302,7 +302,7 @@ func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chai
 	}
 
 	if has {
-		return nil, types.WrapError(store.ErrLinkAlreadyExists, monitoring.AlreadyExists, store.Component, "could not create link")
+		return nil, types.WrapError(store.ErrLinkAlreadyExists, errorcode.AlreadyExists, store.Component, "could not create link")
 	}
 
 	linkDoc, err := fromLink(link)
@@ -316,7 +316,7 @@ func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chai
 func (es *ESStore) hasDocument(ctx context.Context, indexName, id string) (bool, error) {
 	has, err := es.client.Exists().Index(indexName).Type(docType).Id(id).Do(ctx)
 	if err != nil {
-		return has, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get document")
+		return has, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get document")
 	}
 
 	return has, nil
@@ -325,7 +325,7 @@ func (es *ESStore) hasDocument(ctx context.Context, indexName, id string) (bool,
 func (es *ESStore) indexDocument(ctx context.Context, indexName, id string, doc interface{}) error {
 	_, err := es.client.Index().Index(indexName).Type(docType).Id(id).BodyJson(doc).Do(ctx)
 	if err != nil {
-		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not index document")
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not index document")
 	}
 
 	return nil
@@ -342,7 +342,7 @@ func (es *ESStore) getDocument(ctx context.Context, indexName, id string) (*json
 
 	get, err := es.client.Get().Index(indexName).Type(docType).Id(id).Do(ctx)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get document")
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get document")
 	}
 	if !get.Found {
 		return nil, nil
@@ -354,7 +354,7 @@ func (es *ESStore) getDocument(ctx context.Context, indexName, id string) (*json
 func (es *ESStore) deleteDocument(ctx context.Context, indexName, id string) error {
 	_, err := es.client.Delete().Index(indexName).Type(docType).Id(id).Do(ctx)
 	if err != nil {
-		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not delete document")
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not delete document")
 	}
 
 	return nil
@@ -372,7 +372,7 @@ func (es *ESStore) getLink(ctx context.Context, id string) (*chainscript.Link, e
 
 	err = json.Unmarshal(*jsn, &link)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Unmarshal")
 	}
 
 	return &link.Link, nil
@@ -388,7 +388,7 @@ func (es *ESStore) getEvidences(ctx context.Context, id string) (types.EvidenceS
 	if jsn != nil {
 		err = json.Unmarshal(*jsn, &evidences)
 		if err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Unmarshal")
 		}
 	}
 
@@ -422,7 +422,7 @@ func (es *ESStore) getValue(ctx context.Context, key string) ([]byte, error) {
 	if jsn != nil {
 		err = json.Unmarshal(*jsn, &value)
 		if err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Unmarshal")
 		}
 	}
 
@@ -468,7 +468,7 @@ func (es *ESStore) getMapIDs(ctx context.Context, filter *store.MapFilter) ([]st
 	// Flush to make sure the documents got written.
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get map ids")
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get map ids")
 	}
 
 	// prepare search service.
@@ -508,7 +508,7 @@ func (es *ESStore) getMapIDs(ctx context.Context, filter *store.MapFilter) ([]st
 	// run search.
 	sr, err := svc.Do(ctx)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get map ids")
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get map ids")
 	}
 
 	// construct result using pagination.
@@ -586,7 +586,7 @@ func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilte
 	// Flush to make sure the documents got written.
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not search")
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not search")
 	}
 
 	// prepare search service.
@@ -603,7 +603,7 @@ func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilte
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not search")
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not search")
 	}
 
 	// populate SegmentSlice.
@@ -619,7 +619,7 @@ func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilte
 	for _, hit := range sr.Hits.Hits {
 		var link chainscript.Link
 		if err := json.Unmarshal(*hit.Source, &link); err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Unmarshal")
 		}
 
 		res.Segments = append(res.Segments, es.segmentify(ctx, &link))

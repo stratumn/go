@@ -23,7 +23,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -90,7 +90,7 @@ type Store struct {
 func New(config *Config) (*Store, error) {
 	db, err := sql.Open("postgres", config.URL)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not create postgresstore")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not create postgresstore")
 	}
 
 	return &Store{
@@ -127,7 +127,7 @@ func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 
 	tx, err := a.db.Begin()
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Internal, store.Component, "could not create batch tx")
+		return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not create batch tx")
 	}
 
 	b, err := NewBatch(tx)
@@ -185,7 +185,7 @@ func (a *Store) Create() error {
 				continue
 			}
 
-			return types.WrapError(err, monitoring.Unavailable, store.Component, "could not create tables")
+			return types.WrapError(err, errorcode.Unavailable, store.Component, "could not create tables")
 		}
 	}
 
@@ -211,14 +211,14 @@ func (a *Store) Drop() error {
 		if !b.done {
 			err := tx.Rollback()
 			if err != nil {
-				return types.WrapError(err, monitoring.Internal, store.Component, "could not rollback tx")
+				return types.WrapError(err, errorcode.Internal, store.Component, "could not rollback tx")
 			}
 		}
 	}
 
 	for _, query := range sqlDrop {
 		if _, err := a.db.Exec(query); err != nil {
-			return types.WrapError(err, monitoring.Unavailable, store.Component, "could not drop tables")
+			return types.WrapError(err, errorcode.Unavailable, store.Component, "could not drop tables")
 		}
 	}
 	return nil
@@ -228,7 +228,7 @@ func (a *Store) Drop() error {
 func (a *Store) Close() error {
 	err := a.db.Close()
 	if err != nil {
-		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not close DB")
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not close DB")
 	}
 
 	return nil

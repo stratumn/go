@@ -28,7 +28,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/stratumn/go-core/blockchain"
 	"github.com/stratumn/go-core/blockchain/btc"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
 	log "github.com/sirupsen/logrus"
@@ -75,7 +75,7 @@ type Timestamper struct {
 func New(config *Config) (*Timestamper, error) {
 	WIF, err := btcutil.DecodeWIF(config.WIF)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Component, "could not create timestamper")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create timestamper")
 	}
 
 	ts := &Timestamper{
@@ -93,13 +93,13 @@ func New(config *Config) (*Timestamper, error) {
 	}
 
 	if ts.netParams == nil {
-		return nil, types.NewError(monitoring.InvalidArgument, Component, "unsupported network")
+		return nil, types.NewError(errorcode.InvalidArgument, Component, "unsupported network")
 	}
 
 	pubKeyHash := btcutil.Hash160(ts.pubKey.SerializeUncompressed())
 	ts.address, err = btcutil.NewAddressPubKeyHash(pubKeyHash, ts.netParams)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Component, "could not create new address")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create new address")
 	}
 
 	return ts, nil
@@ -162,7 +162,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 	}
 	raw, err := ioutil.ReadAll(buf)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Component, "could not read tx buffer")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not read tx buffer")
 	}
 	err = ts.config.Broadcaster.Broadcast(raw)
 	if err != nil {
@@ -188,7 +188,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
 	PKScript, err := txscript.PayToAddrScript(ts.address)
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unknown, Component, "could not create pay-to-addr tx")
+		return nil, types.WrapError(err, errorcode.Unknown, Component, "could not create pay-to-addr tx")
 	}
 
 	return wire.NewTxOut(amount, PKScript), nil
@@ -197,7 +197,7 @@ func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
 func (ts *Timestamper) createNullDataTxOut(hash *types.Bytes32) (*wire.TxOut, error) {
 	PKScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(hash[:]).Script()
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.Unknown, Component, "could not create null tx")
+		return nil, types.WrapError(err, errorcode.Unknown, Component, "could not create null tx")
 	}
 
 	return wire.NewTxOut(0, PKScript), nil
@@ -208,7 +208,7 @@ func (ts *Timestamper) signTx(tx *wire.MsgTx, prevPKScripts [][]byte) error {
 		sig, err := txscript.SignTxOutput(ts.netParams, tx, 0, PKScript,
 			txscript.SigHashAll, txscript.KeyClosure(ts.lookupKey), nil, nil)
 		if err != nil {
-			return types.WrapError(err, monitoring.InvalidArgument, Component, "could not sign tx")
+			return types.WrapError(err, errorcode.InvalidArgument, Component, "could not sign tx")
 		}
 
 		tx.TxIn[index].SignatureScript = sig
@@ -224,10 +224,10 @@ func (ts *Timestamper) validateTx(tx *wire.MsgTx, prevPKScripts [][]byte) error 
 	for _, PKScript := range prevPKScripts {
 		vm, err := txscript.NewEngine(PKScript, tx, 0, validateTxEngineFlags, nil, nil, 0)
 		if err != nil {
-			return types.WrapError(err, monitoring.InvalidArgument, Component, "could not create tx script engine")
+			return types.WrapError(err, errorcode.InvalidArgument, Component, "could not create tx script engine")
 		}
 		if err := vm.Execute(); err != nil {
-			return types.WrapError(err, monitoring.InvalidArgument, Component, "tx validation failed")
+			return types.WrapError(err, errorcode.InvalidArgument, Component, "tx validation failed")
 		}
 	}
 

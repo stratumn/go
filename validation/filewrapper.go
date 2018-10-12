@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/validation/validators"
 
@@ -89,17 +89,17 @@ func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.
 	defer span.End()
 
 	if err := link.Validate(ctx); err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 
 	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 
 	if err := a.validateCustom(ctx, link); err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		return nil, err
 	}
 

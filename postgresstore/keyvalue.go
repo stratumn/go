@@ -18,7 +18,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -32,7 +32,7 @@ func (s *scopedStore) GetValue(ctx context.Context, key []byte) ([]byte, error) 
 			return nil, nil
 		}
 
-		return nil, types.WrapError(err, monitoring.Internal, store.Component, "could not get value")
+		return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not get value")
 	}
 
 	return data, nil
@@ -42,7 +42,7 @@ func (s *scopedStore) GetValue(ctx context.Context, key []byte) ([]byte, error) 
 func (s *scopedStore) SetValue(ctx context.Context, key []byte, value []byte) error {
 	_, err := s.stmts.SaveValue.Exec(key, value)
 	if err != nil {
-		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not set value")
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not set value")
 	}
 
 	return nil
@@ -57,7 +57,7 @@ func (s *scopedStore) DeleteValue(ctx context.Context, key []byte) ([]byte, erro
 			return nil, nil
 		}
 
-		return nil, types.WrapError(err, monitoring.Internal, store.Component, "could not delete value")
+		return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not delete value")
 	}
 
 	return data, nil

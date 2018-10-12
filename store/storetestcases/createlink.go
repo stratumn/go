@@ -24,7 +24,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +93,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(0).Build()
 
 			_, err := a.CreateLink(ctx, l)
-			if err != nil && err.(*types.Error).Code == monitoring.Unimplemented {
+			if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -106,7 +106,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			_, err = a.CreateLink(ctx, child)
 			require.NotNil(t, err)
 			assert.IsType(t, &types.Error{}, err)
-			assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+			assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
 			assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 
 			found, _ := a.GetSegment(ctx, childHash)
@@ -118,7 +118,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(1).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err != nil && err.(*types.Error).Code == monitoring.Unimplemented {
+			if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -151,7 +151,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			case err := <-errChan:
 				require.NotNil(t, err)
 				assert.IsType(t, &types.Error{}, err)
-				assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+				assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
 				assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 			case <-time.After(100 * time.Millisecond):
 				assert.Fail(t, "timeout before link creation failure")
@@ -171,7 +171,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(2).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err != nil && err.(*types.Error).Code == monitoring.Unimplemented {
+			if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -194,7 +194,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			_, err = a.CreateLink(ctx, child3)
 			require.NotNil(t, err)
 			assert.IsType(t, &types.Error{}, err)
-			assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+			assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
 			assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 
 			children, err := a.FindSegments(ctx, &store.SegmentFilter{

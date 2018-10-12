@@ -26,7 +26,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -117,7 +117,7 @@ func (a *DummyStore) CreateLink(ctx context.Context, link *chainscript.Link) (ch
 func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
 	}
 
 	linkHashStr := linkHash.String()
@@ -128,7 +128,7 @@ func (a *DummyStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 
 	parentOk := a.canHaveNewChild(link.PrevLinkHash())
 	if !parentOk {
-		return linkHash, types.WrapError(chainscript.ErrOutDegree, monitoring.FailedPrecondition, store.Component, "could not create link")
+		return linkHash, types.WrapError(chainscript.ErrOutDegree, errorcode.FailedPrecondition, store.Component, "could not create link")
 	}
 
 	a.links[linkHashStr] = link
@@ -238,7 +238,7 @@ func (a *DummyStore) getSegment(linkHash string) (*chainscript.Segment, error) {
 
 	segment, err := link.Segmentify()
 	if err != nil {
-		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not segmentify")
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not segmentify")
 	}
 
 	evidences, exists := a.evidences[linkHash]

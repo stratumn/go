@@ -21,7 +21,7 @@ import (
 	"context"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/tmpop/evidences"
 	"github.com/stratumn/go-core/types"
 	"github.com/tendermint/tendermint/rpc/client"
@@ -67,8 +67,8 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 
 	tmBlock, err := c.tmClient.Block(&height)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: err.Error()})
-		return nil, types.WrapError(err, monitoring.Unavailable, Name, "could not get block from Tendermint Core")
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: err.Error()})
+		return nil, types.WrapError(err, errorcode.Unavailable, Name, "could not get block from Tendermint Core")
 	}
 
 	// The votes in block N are voting on block N-1.
@@ -80,8 +80,8 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 	}
 	validators, err := c.tmClient.Validators(&prevHeight)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: err.Error()})
-		return nil, types.WrapError(err, monitoring.Unavailable, Name, "could not get validators from Tendermint Core")
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: err.Error()})
+		return nil, types.WrapError(err, errorcode.Unavailable, Name, "could not get validators from Tendermint Core")
 	}
 
 	block := &Block{
@@ -125,5 +125,5 @@ func getVote(v *tmtypes.Vote, validators *ctypes.ResultValidators) (*evidences.T
 		}
 	}
 
-	return nil, types.NewErrorf(monitoring.InvalidArgument, Name, "could not find validator address %x", v.ValidatorAddress)
+	return nil, types.NewErrorf(errorcode.InvalidArgument, Name, "could not find validator address %x", v.ValidatorAddress)
 }
