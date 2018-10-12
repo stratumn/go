@@ -19,6 +19,9 @@ import (
 )
 
 const (
+	// Component name for monitoring.
+	Component = "validation"
+
 	// DefaultFilename is the default filename for the file containing
 	// validation rules.
 	// This is used in non-blockchain scenario.

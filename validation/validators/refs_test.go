@@ -21,6 +21,7 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,7 +93,7 @@ func TestRefsValidator(t *testing.T) {
 			Build()
 
 		assert.True(t, v.ShouldValidate(l))
-		assert.EqualError(t, v.Validate(ctx, s, l), validators.ErrParentNotFound.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, l), validators.ErrParentNotFound)
 	})
 
 	t.Run("with invalid parent mapID", func(t *testing.T) {
@@ -103,7 +104,7 @@ func TestRefsValidator(t *testing.T) {
 			Build()
 
 		assert.True(t, v.ShouldValidate(l))
-		assert.EqualError(t, v.Validate(ctx, s, l), validators.ErrMapIDMismatch.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, l), validators.ErrMapIDMismatch)
 	})
 
 	t.Run("with invalid parent process", func(t *testing.T) {
@@ -114,7 +115,7 @@ func TestRefsValidator(t *testing.T) {
 			Build()
 
 		assert.True(t, v.ShouldValidate(l))
-		assert.EqualError(t, v.Validate(ctx, s, l), validators.ErrProcessMismatch.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, l), validators.ErrProcessMismatch)
 	})
 
 	t.Run("with parent that wants no children", func(t *testing.T) {
@@ -132,7 +133,7 @@ func TestRefsValidator(t *testing.T) {
 			Build()
 
 		assert.True(t, v.ShouldValidate(child))
-		assert.EqualError(t, v.Validate(ctx, s, child), chainscript.ErrOutDegree.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, child), chainscript.ErrOutDegree)
 	})
 
 	t.Run("with parent that has too many children", func(t *testing.T) {
@@ -159,7 +160,7 @@ func TestRefsValidator(t *testing.T) {
 			Build()
 
 		assert.True(t, v.ShouldValidate(child2))
-		assert.EqualError(t, v.Validate(ctx, s, child2), chainscript.ErrOutDegree.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, child2), chainscript.ErrOutDegree)
 	})
 
 	t.Run("with references", func(t *testing.T) {
@@ -184,7 +185,7 @@ func TestRefsValidator(t *testing.T) {
 		l.Meta.Refs[0].Process = "other_process"
 
 		assert.True(t, v.ShouldValidate(l))
-		assert.EqualError(t, v.Validate(ctx, s, l), validators.ErrProcessMismatch.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, l), validators.ErrProcessMismatch)
 	})
 
 	t.Run("with missing ref", func(t *testing.T) {
@@ -197,6 +198,6 @@ func TestRefsValidator(t *testing.T) {
 		l.Meta.Refs[0].LinkHash = chainscripttest.RandomHash()
 
 		assert.True(t, v.ShouldValidate(l))
-		assert.EqualError(t, v.Validate(ctx, s, l), validators.ErrRefNotFound.Error())
+		testutil.AssertWrappedErrorEqual(t, v.Validate(ctx, s, l), validators.ErrRefNotFound)
 	})
 }

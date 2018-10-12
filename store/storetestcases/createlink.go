@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -105,9 +106,8 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 			_, err = a.CreateLink(ctx, child)
 			require.NotNil(t, err)
-			assert.IsType(t, &types.Error{}, err)
+			testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrOutDegree)
 			assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
-			assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 
 			found, _ := a.GetSegment(ctx, childHash)
 			assert.Nil(t, found)
@@ -149,10 +149,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 			select {
 			case err := <-errChan:
-				require.NotNil(t, err)
-				assert.IsType(t, &types.Error{}, err)
-				assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
-				assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
+				testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrOutDegree)
 			case <-time.After(100 * time.Millisecond):
 				assert.Fail(t, "timeout before link creation failure")
 			}
@@ -192,10 +189,8 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = a.CreateLink(ctx, child3)
-			require.NotNil(t, err)
-			assert.IsType(t, &types.Error{}, err)
+			testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrOutDegree)
 			assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
-			assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 
 			children, err := a.FindSegments(ctx, &store.SegmentFilter{
 				Pagination:   store.Pagination{Limit: 10},

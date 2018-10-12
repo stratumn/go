@@ -20,11 +20,18 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	"github.com/xeipuuv/gojsonschema"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+)
+
+const (
+	// SchemaValidatorName for monitoring.
+	SchemaValidatorName = "schema-validator"
 )
 
 // Errors used by the schema validator.
@@ -44,7 +51,7 @@ type SchemaValidator struct {
 func NewSchemaValidator(processStepValidator *ProcessStepValidator, schemaData []byte) (Validator, error) {
 	schema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(schemaData))
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, types.WrapError(err, errorcode.InvalidArgument, SchemaValidatorName, "could not create schema validator")
 	}
 
 	schemaHash := sha256.Sum256(schemaData)
@@ -71,15 +78,15 @@ func (sv SchemaValidator) Validate(ctx context.Context, _ store.SegmentReader, l
 	linkData := gojsonschema.NewBytesLoader(link.Data)
 	result, err := sv.schema.Validate(linkData)
 	if err != nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "SchemaJSON"))
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, SchemaValidatorName))
 		stats.Record(ctx, linksErr.M(1))
-		return errors.WithStack(err)
+		return types.WrapError(err, errorcode.InvalidArgument, SchemaValidatorName, "schema validation failed")
 	}
 
 	if !result.Valid() {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Schema"))
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, SchemaValidatorName))
 		stats.Record(ctx, linksErr.M(1))
-		return errors.Wrapf(ErrInvalidLinkSchema, "%s", result.Errors())
+		return types.WrapErrorf(ErrInvalidLinkSchema, errorcode.InvalidArgument, SchemaValidatorName, "schema validation failed: %v", result.Errors())
 	}
 
 	return nil

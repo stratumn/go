@@ -20,7 +20,14 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
+)
+
+const (
+	// MultiValidatorName for monitoring.
+	MultiValidatorName = "multivalidator"
 )
 
 // Errors used by the multi-validator.
@@ -81,7 +88,7 @@ func (v MultiValidator) Validate(ctx context.Context, r store.SegmentReader, l *
 	}
 
 	if !validated {
-		return ErrNoMatchingValidator
+		return types.WrapError(ErrNoMatchingValidator, errorcode.FailedPrecondition, MultiValidatorName, "could not validate link")
 	}
 
 	return nil
