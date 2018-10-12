@@ -18,6 +18,9 @@ import (
 	"database/sql"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // TxFactory creates and manages transactions.
@@ -39,12 +42,22 @@ func NewStandardTxFactory(db *sql.DB) TxFactory {
 
 // NewTx creates a new DB transaction.
 func (f *StandardTxFactory) NewTx() (*sql.Tx, error) {
-	return f.db.Begin()
+	tx, err := f.db.Begin()
+	if err != nil {
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not create tx")
+	}
+
+	return tx, nil
 }
 
 // CommitTx commits the transaction to the DB.
 func (f *StandardTxFactory) CommitTx(tx *sql.Tx) error {
-	return tx.Commit()
+	err := tx.Commit()
+	if err != nil {
+		return types.WrapError(err, monitoring.Internal, store.Component, "could not commit tx")
+	}
+
+	return nil
 }
 
 // RollbackTx rolls back the transaction and logs errors.
