@@ -24,7 +24,6 @@ package filestore
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -133,7 +132,7 @@ func (a *FileStore) CreateLink(ctx context.Context, link *chainscript.Link) (cha
 func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
 	}
 
 	if err = a.initDir(); err != nil {
@@ -142,7 +141,7 @@ func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, er
 
 	js, err := json.MarshalIndent(link, "", "  ")
 	if err != nil {
-		return linkHash, err
+		return linkHash, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	linkPath := a.getLinkPath(linkHash)
@@ -152,11 +151,11 @@ func (a *FileStore) createLink(link *chainscript.Link) (chainscript.LinkHash, er
 
 	parentOk := a.canHaveNewChild(link.PrevLinkHash())
 	if !parentOk {
-		return linkHash, chainscript.ErrOutDegree
+		return linkHash, types.WrapError(chainscript.ErrOutDegree, monitoring.FailedPrecondition, store.Component, "could not create link")
 	}
 
 	if err := ioutil.WriteFile(linkPath, js, 0644); err != nil {
-		return linkHash, err
+		return linkHash, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not write file")
 	}
 
 	err = a.incrementChildCount(link.PrevLinkHash())
@@ -210,7 +209,12 @@ func (a *FileStore) incrementChildCount(linkHash chainscript.LinkHash) error {
 	}
 
 	path := a.getLinkChildCountPath(linkHash)
-	return ioutil.WriteFile(path, []byte(strconv.Itoa(childCount+1)), 0644)
+	err = ioutil.WriteFile(path, []byte(strconv.Itoa(childCount+1)), 0644)
+	if err != nil {
+		return types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not increment child count")
+	}
+
+	return nil
 }
 
 func (a *FileStore) getChildCount(linkHash chainscript.LinkHash) (int, error) {
@@ -218,13 +222,13 @@ func (a *FileStore) getChildCount(linkHash chainscript.LinkHash) (int, error) {
 
 	b, err := ioutil.ReadFile(a.getLinkChildCountPath(linkHash))
 	if err != nil && !os.IsNotExist(err) {
-		return 0, err
+		return 0, types.WrapError(err, monitoring.Unavailable, store.Component, "could not read child count")
 	}
 
 	if err == nil {
 		childCount, err = strconv.Atoi(string(b))
 		if err != nil {
-			return 0, err
+			return 0, types.WrapError(err, monitoring.InvalidArgument, store.Component, "non-integer child count")
 		}
 	}
 
@@ -245,7 +249,7 @@ func (a *FileStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHa
 	key := getEvidenceKey(linkHash)
 	value, err := json.Marshal(currentEvidences)
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	if err = a.SetValue(ctx, key, value); err != nil {
@@ -285,7 +289,7 @@ func (a *FileStore) getSegment(ctx context.Context, linkHash chainscript.LinkHas
 
 	segment, err := link.Segmentify()
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not segmentify")
 	}
 
 	segment.Meta.Evidences = evidences
@@ -302,7 +306,6 @@ func (a *FileStore) FindSegments(ctx context.Context, filter *store.SegmentFilte
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +327,6 @@ func (a *FileStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]s
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +351,7 @@ func (a *FileStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkH
 	evidences := types.EvidenceSlice{}
 	if len(evidencesData) > 0 {
 		if err := json.Unmarshal(evidencesData, &evidences); err != nil {
-			return nil, err
+			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 		}
 	}
 
@@ -366,14 +368,14 @@ func (a *FileStore) getLink(linkHash chainscript.LinkHash) (*chainscript.Link, e
 		return nil, nil
 	}
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not read link file")
 	}
 
 	defer file.Close()
 
 	var link chainscript.Link
 	if err = json.NewDecoder(file).Decode(&link); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 	}
 
 	return &link, nil
@@ -401,7 +403,7 @@ func (a *FileStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error)
 func (a *FileStore) initDir() error {
 	if err := os.MkdirAll(a.config.Path, 0755); err != nil {
 		if !os.IsExist(err) {
-			return err
+			return types.WrapError(err, monitoring.Unavailable, store.Component, "could not init dir")
 		}
 	}
 	return nil
@@ -426,7 +428,7 @@ func (a *FileStore) forEach(ctx context.Context, fn func(*chainscript.Segment) e
 		return nil
 	}
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not list directory")
 	}
 
 	for _, file := range files {
@@ -435,7 +437,7 @@ func (a *FileStore) forEach(ctx context.Context, fn func(*chainscript.Segment) e
 			linkHashStr := name[:len(name)-5]
 			linkHash, err := chainscript.NewLinkHashFromString(linkHashStr)
 			if err != nil {
-				return err
+				return types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
 			}
 
 			segment, err := a.getSegment(ctx, linkHash)
@@ -443,7 +445,7 @@ func (a *FileStore) forEach(ctx context.Context, fn func(*chainscript.Segment) e
 				return err
 			}
 			if segment == nil {
-				return fmt.Errorf("could not find segment %q", filepath.Base(name))
+				return types.NewErrorf(monitoring.NotFound, store.Component, "could not find segment %q", filepath.Base(name))
 			}
 			if err = fn(segment); err != nil {
 				return err
