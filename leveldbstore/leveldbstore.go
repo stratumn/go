@@ -19,6 +19,9 @@ package leveldbstore
 import (
 	"context"
 
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	"github.com/tendermint/tmlibs/db"
 )
 
@@ -38,7 +41,7 @@ type Config struct {
 func New(config *Config) (*LevelDBStore, error) {
 	db, err := db.NewGoLevelDB("keyvalue-store", config.Path)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not create leveldb")
 	}
 
 	return &LevelDBStore{config: config, kvDB: db}, nil
