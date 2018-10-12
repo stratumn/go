@@ -93,7 +93,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(0).Build()
 
 			_, err := a.CreateLink(ctx, l)
-			if err.(*types.Error).Code == monitoring.Unimplemented {
+			if err != nil && err.(*types.Error).Code == monitoring.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -104,7 +104,10 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = a.CreateLink(ctx, child)
-			assert.EqualError(t, err, chainscript.ErrOutDegree.Error())
+			require.NotNil(t, err)
+			assert.IsType(t, &types.Error{}, err)
+			assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+			assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 
 			found, _ := a.GetSegment(ctx, childHash)
 			assert.Nil(t, found)
@@ -115,7 +118,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(1).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err.(*types.Error).Code == monitoring.Unimplemented {
+			if err != nil && err.(*types.Error).Code == monitoring.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -146,7 +149,10 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 			select {
 			case err := <-errChan:
-				assert.EqualError(t, err, chainscript.ErrOutDegree.Error())
+				require.NotNil(t, err)
+				assert.IsType(t, &types.Error{}, err)
+				assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+				assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 			case <-time.After(100 * time.Millisecond):
 				assert.Fail(t, "timeout before link creation failure")
 			}
@@ -165,7 +171,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(2).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err.(*types.Error).Code == monitoring.Unimplemented {
+			if err != nil && err.(*types.Error).Code == monitoring.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -186,7 +192,10 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = a.CreateLink(ctx, child3)
-			require.EqualError(t, err, chainscript.ErrOutDegree.Error())
+			require.NotNil(t, err)
+			assert.IsType(t, &types.Error{}, err)
+			assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+			assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrOutDegree.Error())
 
 			children, err := a.FindSegments(ctx, &store.SegmentFilter{
 				Pagination:   store.Pagination{Limit: 10},
