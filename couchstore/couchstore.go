@@ -18,10 +18,10 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -38,16 +38,6 @@ const (
 type CouchStore struct {
 	config     *Config
 	eventChans []chan *store.Event
-}
-
-// CouchNotReadyError is returned when couchdb is not ready.
-type CouchNotReadyError struct {
-	originalError error
-}
-
-// Error implements error interface.
-func (e *CouchNotReadyError) Error() string {
-	return fmt.Sprintf("CouchDB not available: %v", e.originalError.Error())
 }
 
 // Config contains configuration options for the store.
@@ -78,7 +68,7 @@ func New(config *Config) (*CouchStore, error) {
 
 	_, couchResponseStatus, err := couchstore.get("/")
 	if err != nil {
-		return nil, &CouchNotReadyError{originalError: err}
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not create couch store")
 	}
 
 	if !couchResponseStatus.Ok {
@@ -142,7 +132,7 @@ func (c *CouchStore) notifyEvent(event *store.Event) {
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (c *CouchStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if link.Meta.OutDegree >= 0 {
-		return nil, store.ErrOutDegreeNotSupported
+		return nil, types.WrapError(store.ErrOutDegreeNotSupported, monitoring.Unimplemented, store.Component, "could not create link")
 	}
 
 	linkHash, err := c.createLink(link)
@@ -200,7 +190,7 @@ func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.Segmen
 
 	couchFindResponse := &CouchFindResponse{}
 	if err := json.Unmarshal(body, couchFindResponse); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 	}
 
 	segments := types.SegmentSlice{}
@@ -259,7 +249,7 @@ func (c *CouchStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]
 
 	couchFindResponse := &CouchFindResponse{}
 	if err := json.Unmarshal(body, couchFindResponse); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 	}
 
 	mapIDs := []string{}

@@ -24,7 +24,9 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,7 +93,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(0).Build()
 
 			_, err := a.CreateLink(ctx, l)
-			if err == store.ErrOutDegreeNotSupported {
+			if err.(*types.Error).Code == monitoring.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -113,7 +115,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(1).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err == store.ErrOutDegreeNotSupported {
+			if err.(*types.Error).Code == monitoring.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -163,7 +165,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(2).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err == store.ErrOutDegreeNotSupported {
+			if err.(*types.Error).Code == monitoring.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 

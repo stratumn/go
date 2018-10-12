@@ -51,7 +51,7 @@ func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chain
 	}()
 
 	if link.Meta.OutDegree >= 0 {
-		return nil, types.WrapError(store.ErrOutDegreeNotSupported, monitoring.InvalidArgument, store.Component, "could not create link")
+		return nil, types.WrapError(store.ErrOutDegreeNotSupported, monitoring.Unimplemented, store.Component, "could not create link")
 	}
 
 	b.Links = append(b.Links, link)

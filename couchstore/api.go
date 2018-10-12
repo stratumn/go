@@ -25,6 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/utils"
 )
@@ -52,7 +54,18 @@ type CouchResponseStatus struct {
 }
 
 func (c *CouchResponseStatus) error() error {
-	return errors.Errorf("Status code: %v, error: %v, reason: %v", c.StatusCode, c.Error, c.Reason)
+	errorCode := monitoring.Unavailable
+	if c.StatusCode < 300 {
+		errorCode = monitoring.Ok
+	} else if c.StatusCode < 500 {
+		errorCode = monitoring.InvalidArgument
+	} else if c.StatusCode == 500 {
+		errorCode = monitoring.Internal
+	} else if c.StatusCode == 504 {
+		errorCode = monitoring.DeadlineExceeded
+	}
+
+	return types.NewErrorf(errorCode, store.Component, "couch error: %d: %s: %s", c.StatusCode, c.Error, c.Reason)
 }
 
 // LinkWrapper wraps a link before saving it to a CouchDB document.
@@ -114,8 +127,9 @@ func (c *CouchStore) GetDatabases() ([]string, error) {
 
 	databases := &[]string{}
 	if err := json.Unmarshal(body, databases); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 	}
+
 	return *databases, nil
 }
 
@@ -180,7 +194,7 @@ func (c *CouchStore) CreateIndex(dbName string, indexName string, fields []strin
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	_, couchResponseStatus, err := c.post(path, payloadBytes)
@@ -200,7 +214,7 @@ func (c *CouchStore) CreateIndex(dbName string, indexName string, fields []strin
 func (c *CouchStore) createLink(link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
 	}
 	linkHashStr := linkHash.String()
 
@@ -215,7 +229,7 @@ func (c *CouchStore) createLink(link *chainscript.Link) (chainscript.LinkHash, e
 		return nil, err
 	}
 	if currentLinkDoc != nil {
-		return nil, errors.Errorf("Link is immutable, %s already exists", linkHashStr)
+		return nil, types.WrapError(store.ErrLinkAlreadyExists, monitoring.AlreadyExists, store.Component, "could not create link")
 	}
 
 	docs := []*Document{
@@ -268,7 +282,7 @@ func (c *CouchStore) saveDocument(dbName string, key string, doc Document) error
 	path := fmt.Sprintf("/%v/%v", dbName, key)
 	docBytes, err := json.Marshal(doc)
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	_, couchResponseStatus, err := c.put(path, docBytes)
@@ -291,7 +305,7 @@ func (c *CouchStore) saveDocuments(dbName string, docs []*Document) error {
 
 	docsBytes, err := json.Marshal(bulkDocuments)
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	_, _, err = c.post(path, docsBytes)
@@ -315,7 +329,7 @@ func (c *CouchStore) getDocument(dbName string, key string) (*Document, error) {
 	}
 
 	if err := json.Unmarshal(docBytes, doc); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 	}
 
 	return doc, nil
@@ -351,7 +365,7 @@ func (c *CouchStore) get(path string) ([]byte, *CouchResponseStatus, error) {
 func (c *CouchStore) post(path string, data []byte) ([]byte, *CouchResponseStatus, error) {
 	resp, err := http.Post(c.config.Address+path, "application/json", bytes.NewBuffer(data))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not post request")
 	}
 
 	return getCouchResponseStatus(resp)
@@ -369,12 +383,12 @@ func (c *CouchStore) doHTTPRequest(method string, path string, data []byte) ([]b
 	client := &http.Client{}
 	req, err := http.NewRequest(method, c.config.Address+path, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not create http request")
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not do http request")
 	}
 
 	return getCouchResponseStatus(resp)
@@ -384,13 +398,13 @@ func (c *CouchStore) doHTTPRequest(method string, path string, data []byte) ([]b
 func getCouchResponseStatus(resp *http.Response) ([]byte, *CouchResponseStatus, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not read couch response")
 	}
 
 	couchResponseStatus := &CouchResponseStatus{}
 	if resp.StatusCode >= statusError {
 		if err := json.Unmarshal(body, couchResponseStatus); err != nil {
-			return nil, nil, err
+			return nil, nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 		}
 		couchResponseStatus.Ok = false
 	} else {
