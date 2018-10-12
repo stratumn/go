@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/validation/validators"
 
 	"go.opencensus.io/trace"
@@ -34,21 +34,21 @@ func LoadFromFile(ctx context.Context, validationCfg *Config) (validators.Proces
 
 	f, err := os.Open(validationCfg.RulesPath)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		return nil, errors.WithStack(err)
 	}
 	defer f.Close()
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		return nil, errors.WithStack(err)
 	}
 
 	var rules ProcessesRules
 	err = json.Unmarshal(data, &rules)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		return nil, errors.WithStack(err)
 	}
 

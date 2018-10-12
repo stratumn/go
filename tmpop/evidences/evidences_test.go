@@ -22,7 +22,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/tmpop/evidences"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
@@ -163,7 +163,7 @@ func TestTendermintProof(t *testing.T) {
 			assert.Nil(t, p)
 			require.NotNil(t, err)
 			require.IsType(t, &types.Error{}, err)
-			assert.Equal(t, monitoring.InvalidArgument, err.(*types.Error).Code)
+			assert.Equal(t, errorcode.InvalidArgument, err.(*types.Error).Code)
 			assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrInvalidBackend.Error())
 		},
 	}, {
@@ -178,7 +178,7 @@ func TestTendermintProof(t *testing.T) {
 			assert.Nil(t, p)
 			require.NotNil(t, err)
 			require.IsType(t, &types.Error{}, err)
-			assert.Equal(t, monitoring.InvalidArgument, err.(*types.Error).Code)
+			assert.Equal(t, errorcode.InvalidArgument, err.(*types.Error).Code)
 			assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrMissingChainID.Error())
 		},
 	}, {
@@ -194,7 +194,7 @@ func TestTendermintProof(t *testing.T) {
 			assert.Nil(t, p)
 			require.NotNil(t, err)
 			require.IsType(t, &types.Error{}, err)
-			assert.Equal(t, monitoring.InvalidArgument, err.(*types.Error).Code)
+			assert.Equal(t, errorcode.InvalidArgument, err.(*types.Error).Code)
 			assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrUnknownVersion.Error())
 		},
 	}, {

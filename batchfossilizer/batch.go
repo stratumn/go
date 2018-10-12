@@ -18,7 +18,7 @@ import (
 	"encoding/gob"
 	"os"
 
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
 
@@ -45,7 +45,7 @@ func (b *batch) open(path string) error {
 	var err error
 	flags := os.O_APPEND | os.O_WRONLY | os.O_EXCL | os.O_CREATE
 	if b.file, err = os.OpenFile(path, flags, FilePerm); err != nil {
-		return types.WrapError(err, monitoring.InvalidArgument, Name, "could not open file")
+		return types.WrapError(err, errorcode.InvalidArgument, Name, "could not open file")
 	}
 
 	b.encoder = gob.NewEncoder(b.file)
@@ -60,7 +60,7 @@ func (b *batch) close() error {
 	}
 
 	if err != nil {
-		return types.WrapError(err, monitoring.InvalidArgument, Name, "could not close file")
+		return types.WrapError(err, errorcode.InvalidArgument, Name, "could not close file")
 	}
 
 	return nil

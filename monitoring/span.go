@@ -12,33 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tmpop
+package monitoring
 
 import (
-	"encoding/json"
-
 	"github.com/stratumn/go-core/monitoring/errorcode"
-	"github.com/stratumn/go-core/types"
+
+	"go.opencensus.io/trace"
 )
 
-// Query types.
-const (
-	AddEvidence   = "AddEvidence"
-	FindSegments  = "FindSegments"
-	GetEvidences  = "GetEvidences"
-	GetInfo       = "GetInfo"
-	GetMapIDs     = "GetMapIDs"
-	GetSegment    = "GetSegment"
-	PendingEvents = "PendingEvents"
-)
-
-// BuildQueryBinary outputs the marshalled Query.
-func BuildQueryBinary(args interface{}) (argsBytes []byte, err error) {
-	if args != nil {
-		if argsBytes, err = json.Marshal(args); err != nil {
-			return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Marshal")
-		}
+// SetSpanStatusAndEnd sets the status of the span depending on the error
+// and ends it.
+// You should usually call:
+// defer func() {
+//     SetSpanStatusAndEnd(span, err)
+// }()
+func SetSpanStatusAndEnd(span *trace.Span, err error) {
+	if err != nil {
+		span.SetStatus(trace.Status{
+			Code:    errorcode.Unknown,
+			Message: err.Error(),
+		})
 	}
 
-	return
+	span.End()
 }

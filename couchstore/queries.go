@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -122,7 +122,7 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 
 	b, err := json.Marshal(linkQuery)
 	if err != nil {
-		return b, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
+		return b, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	return b, nil
@@ -186,7 +186,7 @@ func NewMapQuery(filter *store.MapFilter) ([]byte, error) {
 
 	b, err := json.Marshal(mapQuery)
 	if err != nil {
-		return b, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Marshal")
+		return b, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	return b, nil

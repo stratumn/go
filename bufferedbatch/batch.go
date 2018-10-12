@@ -20,6 +20,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 
@@ -51,7 +52,7 @@ func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chain
 	}()
 
 	if link.Meta.OutDegree >= 0 {
-		return nil, types.WrapError(store.ErrOutDegreeNotSupported, monitoring.Unimplemented, store.Component, "could not create link")
+		return nil, types.WrapError(store.ErrOutDegreeNotSupported, errorcode.Unimplemented, store.Component, "could not create link")
 	}
 
 	b.Links = append(b.Links, link)
@@ -68,13 +69,13 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 	for _, link := range b.Links {
 		lh, err := link.Hash()
 		if err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
 		}
 
 		if bytes.Equal(lh, linkHash) {
 			segment, err = link.Segmentify()
 			if err != nil {
-				return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not segmentify")
+				return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not segmentify")
 			}
 
 			break
@@ -104,7 +105,7 @@ func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		if filter.MatchLink(link) {
 			segment, err := link.Segmentify()
 			if err != nil {
-				return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not segmentify")
+				return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not segmentify")
 			}
 
 			segments.Segments = append(segments.Segments, segment)

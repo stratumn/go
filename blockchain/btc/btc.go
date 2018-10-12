@@ -19,7 +19,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
 
@@ -49,7 +49,7 @@ var (
 func GetNetworkFromWIF(key string) (Network, error) {
 	WIF, err := btcutil.DecodeWIF(key)
 	if err != nil {
-		return "", types.WrapError(err, monitoring.InvalidArgument, Component, ErrBadWIF.Error())
+		return "", types.WrapError(err, errorcode.InvalidArgument, Component, ErrBadWIF.Error())
 	}
 
 	var network Network
@@ -58,7 +58,7 @@ func GetNetworkFromWIF(key string) (Network, error) {
 	} else if WIF.IsForNet(&chaincfg.MainNetParams) {
 		network = NetworkMain
 	} else {
-		return "", types.WrapError(ErrUnknownBitcoinNetwork, monitoring.InvalidArgument, Component, "invalid network")
+		return "", types.WrapError(ErrUnknownBitcoinNetwork, errorcode.InvalidArgument, Component, "invalid network")
 	}
 
 	return network, nil

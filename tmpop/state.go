@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation"
@@ -179,7 +179,7 @@ func (s *State) computeAppHash() ([]byte, error) {
 
 		merkle, err := merkle.NewStaticTree(treeLeaves)
 		if err != nil {
-			return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "could not create merkle tree")
+			return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "could not create merkle tree")
 		}
 
 		merkleRoot = merkle.Root()

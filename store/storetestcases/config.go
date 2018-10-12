@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
@@ -86,7 +86,7 @@ func (f Factory) TestAdapterConfig(t *testing.T) {
 		llh2, err := a.CreateLink(ctx, ll2)
 		require.NotNil(t, err)
 		require.IsType(t, &types.Error{}, err)
-		assert.Equal(t, monitoring.FailedPrecondition, err.(*types.Error).Code)
+		assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
 		require.EqualError(t, err.(*types.Error).Wrapped, store.ErrUniqueMapEntry.Error())
 
 		s2, err := a.GetSegment(ctx, llh2)

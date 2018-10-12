@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -155,7 +155,7 @@ func (es *ESStore) NewBatch(ctx context.Context) (store.Batch, error) {
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (es *ESStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if link.Meta.OutDegree >= 0 {
-		return nil, types.WrapError(store.ErrOutDegreeNotSupported, monitoring.Unimplemented, store.Component, "could not create link")
+		return nil, types.WrapError(store.ErrOutDegreeNotSupported, errorcode.Unimplemented, store.Component, "could not create link")
 	}
 
 	linkHash, err := es.createLink(ctx, link)

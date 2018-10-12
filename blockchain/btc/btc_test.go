@@ -19,7 +19,7 @@ import (
 
 	"github.com/btcsuite/btcutil"
 	"github.com/stratumn/go-core/blockchain/btc"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,12 +46,12 @@ func TestGetNetworkFromWIF(t *testing.T) {
 		{
 			name: "invalid WIF",
 			wif:  "fakeWIF",
-			err:  types.WrapError(btcutil.ErrMalformedPrivateKey, monitoring.InvalidArgument, "btc", btc.ErrBadWIF.Error()),
+			err:  types.WrapError(btcutil.ErrMalformedPrivateKey, errorcode.InvalidArgument, "btc", btc.ErrBadWIF.Error()),
 		},
 		{
 			name: "unknown bitcoin network",
 			wif:  "5KrPNVvAhnRBNMYRJUq58YMfyUMyVMQrQhhfFtcbT9rK67poC3F",
-			err:  types.WrapError(btc.ErrUnknownBitcoinNetwork, monitoring.InvalidArgument, "btc", "invalid network"),
+			err:  types.WrapError(btc.ErrUnknownBitcoinNetwork, errorcode.InvalidArgument, "btc", "invalid network"),
 		},
 	}
 

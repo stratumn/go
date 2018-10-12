@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/go-core/bufferedbatch"
 	"github.com/stratumn/go-core/jsonhttp"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/tmpop"
 	"github.com/stratumn/go-core/types"
@@ -176,7 +177,7 @@ func (t *TMStore) notifyStoreChans(ctx context.Context) {
 	err = json.Unmarshal(response.Value, &pendingEvents)
 	if err != nil {
 		span.Annotatef(nil, "TMPoP pending events could not be unmarshalled: %s", err.Error())
-		span.SetStatus(trace.Status{Code: monitoring.Internal})
+		span.SetStatus(trace.Status{Code: errorcode.Internal})
 		log.Warn("TMPoP pending events could not be unmarshalled.")
 	}
 
@@ -219,12 +220,12 @@ func (t *TMStore) GetInfo(ctx context.Context) (interface{}, error) {
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (t *TMStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if link.Meta.OutDegree >= 0 {
-		return nil, types.WrapError(store.ErrOutDegreeNotSupported, monitoring.Unimplemented, Name, "could not create link")
+		return nil, types.WrapError(store.ErrOutDegreeNotSupported, errorcode.Unimplemented, Name, "could not create link")
 	}
 
 	linkHash, err := link.Hash()
 	if err != nil {
-		return linkHash, types.WrapError(err, monitoring.InvalidArgument, Name, "could not hash link")
+		return linkHash, types.WrapError(err, errorcode.InvalidArgument, Name, "could not hash link")
 	}
 
 	tx := &tmpop.Tx{
@@ -280,7 +281,7 @@ func (t *TMStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHas
 
 	err = json.Unmarshal(response.Value, &evidences)
 	if err != nil {
-		return evidences, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Unmarshal")
+		return evidences, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Unmarshal")
 	}
 
 	return
@@ -299,7 +300,7 @@ func (t *TMStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash)
 	segment = &chainscript.Segment{}
 	err = json.Unmarshal(response.Value, segment)
 	if err != nil {
-		return segment, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Unmarshal")
+		return segment, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Unmarshal")
 	}
 
 	if segment.Link == nil {
@@ -318,7 +319,7 @@ func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter)
 
 	err = json.Unmarshal(response.Value, &segments)
 	if err != nil {
-		return segments, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Unmarshal")
+		return segments, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Unmarshal")
 	}
 
 	return
@@ -333,7 +334,7 @@ func (t *TMStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) (ids [
 
 	err = json.Unmarshal(response.Value, &ids)
 	if err != nil {
-		return ids, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Unmarshal")
+		return ids, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Unmarshal")
 	}
 
 	return
@@ -350,31 +351,31 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 
 	txBytes, err := json.Marshal(tx)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
-		return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Marshal")
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Marshal")
 	}
 
 	result, err := t.tmClient.BroadcastTxCommit(txBytes)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: err.Error()})
-		return nil, types.WrapError(err, monitoring.Unavailable, Name, "json.Marshal")
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: err.Error()})
+		return nil, types.WrapError(err, errorcode.Unavailable, Name, "json.Marshal")
 	}
 
 	if result.CheckTx.IsErr() {
 		if result.CheckTx.Code == tmpop.CodeTypeValidation {
 			// TODO: this package should be HTTP unaware, so
 			// we need a better way to pass error types.
-			span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: result.CheckTx.Log})
+			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: result.CheckTx.Log})
 			return nil, jsonhttp.NewErrBadRequest(result.CheckTx.Log)
 		}
 
-		span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: result.CheckTx.Log})
-		return nil, types.NewError(monitoring.Unknown, Name, result.CheckTx.Log)
+		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: result.CheckTx.Log})
+		return nil, types.NewError(errorcode.Unknown, Name, result.CheckTx.Log)
 	}
 
 	if result.DeliverTx.IsErr() {
-		span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: result.DeliverTx.Log})
-		return nil, types.NewError(monitoring.Unknown, Name, result.DeliverTx.Log)
+		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: result.DeliverTx.Log})
+		return nil, types.NewError(errorcode.Unknown, Name, result.DeliverTx.Log)
 	}
 
 	return result, nil
@@ -393,11 +394,11 @@ func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) 
 
 	response, err := t.tmClient.ABCIQuery(name, query)
 	if err != nil {
-		return res, types.WrapError(err, monitoring.Unavailable, Name, "could not send query")
+		return res, types.WrapError(err, errorcode.Unavailable, Name, "could not send query")
 	}
 
 	if !response.Response.IsOK() {
-		return res, types.NewErrorf(monitoring.Unavailable, Name, "NOK Response from TMPop: %v", response.Response)
+		return res, types.NewErrorf(errorcode.Unavailable, Name, "NOK Response from TMPop: %v", response.Response)
 	}
 
 	return &response.Response, nil
