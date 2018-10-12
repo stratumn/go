@@ -22,7 +22,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stratumn/merkle"
@@ -177,31 +179,24 @@ func (s *State) computeAppHash() ([]byte, error) {
 
 		merkle, err := merkle.NewStaticTree(treeLeaves)
 		if err != nil {
-			return nil, err
+			return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "could not create merkle tree")
 		}
 
 		merkleRoot = merkle.Root()
 	}
 
-	return ComputeAppHash(s.previousAppHash, validatorHash, merkleRoot)
+	return ComputeAppHash(s.previousAppHash, validatorHash, merkleRoot), nil
 }
 
 // ComputeAppHash computes the app hash from its required parts.
-func ComputeAppHash(previous []byte, validator []byte, root []byte) ([]byte, error) {
-	hash := sha256.New()
+func ComputeAppHash(previous []byte, validator []byte, root []byte) []byte {
+	appHash := sha256.Sum256(append(
+		previous,
+		append(
+			validator,
+			root...,
+		)...,
+	))
 
-	if _, err := hash.Write(previous); err != nil {
-		return nil, err
-	}
-
-	if _, err := hash.Write(validator); err != nil {
-		return nil, err
-	}
-
-	if _, err := hash.Write(root); err != nil {
-		return nil, err
-	}
-
-	appHash := hash.Sum(nil)
-	return appHash, nil
+	return appHash[:]
 }

@@ -14,7 +14,12 @@
 
 package tmpop
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/types"
+)
 
 // Query types.
 const (
@@ -31,8 +36,9 @@ const (
 func BuildQueryBinary(args interface{}) (argsBytes []byte, err error) {
 	if args != nil {
 		if argsBytes, err = json.Marshal(args); err != nil {
-			return
+			return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Marshal")
 		}
 	}
+
 	return
 }

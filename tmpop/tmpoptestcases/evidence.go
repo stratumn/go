@@ -267,7 +267,7 @@ func (f Factory) TestTendermintEvidence(t *testing.T) {
 		assert.EqualValues(t, tree.Root(), proof.Root, "Invalid proof merkle root")
 		assert.EqualValues(t, tree.Path(0), proof.Path, "Invalid proof merkle path")
 
-		expectedAppHash, _ := tmpop.ComputeAppHash(
+		expectedAppHash := tmpop.ComputeAppHash(
 			appHashes[1],
 			nil,
 			tree.Root())
