@@ -16,21 +16,17 @@ package postgresstore
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"time"
 
-	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
-
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/utils"
 )
 
 const (
-	connectAttempts = 12
-	connectTimeout  = 10 * time.Second
-	noTableCode     = pq.ErrorCode("42P01")
+	connectAttempts = 15
+	connectTimeout  = 5 * time.Second
 )
 
 var (
@@ -47,54 +43,85 @@ func Initialize(config *Config, create, drop, uniqueMapEntry bool) *Store {
 		log.WithField("error", err).Fatal("Failed to create PostgreSQL store")
 	}
 
-	if create {
-		if err := a.Create(); err != nil {
-			log.WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes")
-		}
-		log.Info("Created tables and indexes")
-		os.Exit(0)
-	}
-
 	if drop {
-		if err := a.Drop(); err != nil {
-			log.WithField("error", err).Fatal("Failed to drop PostgreSQL tables and indexes")
-		}
-		log.Info("Dropped tables and indexes")
+		dropDB(a)
 		os.Exit(0)
 	}
 
-	for i := 1; i <= connectAttempts; i++ {
-		if err != nil {
-			time.Sleep(connectTimeout)
-		}
-		if err = a.Prepare(); err != nil {
-			if e, ok := err.(*pq.Error); ok && e.Code == noTableCode {
-				if err = a.Create(); err != nil {
-					log.WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes")
-				}
-				log.Info("Created tables and indexes")
-			} else {
-				log.WithFields(log.Fields{
-					"attempt": i,
-					"max":     connectAttempts,
-				}).Warn(fmt.Sprintf("Unable to connect to PostgreSQL, retrying in %v", connectTimeout))
-			}
-		} else {
-			break
-		}
+	// Ensure the DB tables are created.
+	createDB(a)
+
+	if create {
+		os.Exit(0)
 	}
-	if err != nil {
-		log.WithField("max", connectAttempts).Fatal("Unable to connect to PostgreSQL")
-	}
+
+	prepareDB(a)
 
 	if uniqueMapEntry {
 		err = store.AdapterConfig(a).EnforceUniqueMapEntry()
 		if err != nil {
-			log.WithField("uniqueMapEntry", err.Error()).Fatal("Unable to configure unique map entry")
+			log.WithField("uniqueMapEntry", err.Error()).Fatal("Unable to configure unique map entry.")
 		}
 	}
 
 	return a
+}
+
+// createDB creates schemas, tables and indexes.
+func createDB(a *Store) {
+	err := utils.Retry(func(attempt int) (bool, error) {
+		if err := a.Create(); err != nil {
+			log.WithField("error", err).Warn("Failed to create PostgreSQL tables and indexes. Retrying...")
+			time.Sleep(connectTimeout)
+			return true, err
+		}
+
+		return false, nil
+	}, connectAttempts)
+
+	if err != nil {
+		log.WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes.")
+	}
+
+	log.Info("Created tables and indexes.")
+}
+
+// prepareDB prepares statements.
+func prepareDB(a *Store) {
+	err := utils.Retry(func(attempt int) (bool, error) {
+		if err := a.Prepare(); err != nil {
+			log.WithField("error", err).Warn("Failed to prepare PostgreSQL statements. Retrying...")
+			time.Sleep(connectTimeout)
+			return true, err
+		}
+
+		return false, nil
+	}, connectAttempts)
+
+	if err != nil {
+		log.WithField("error", err).Fatal("Failed to prepare PostgreSQL statements.")
+	}
+
+	log.Info("Prepared PostgreSQL statements.")
+}
+
+// dropDB drops schemas, tables and indexes.
+func dropDB(a *Store) {
+	err := utils.Retry(func(attempt int) (bool, error) {
+		if err := a.Drop(); err != nil {
+			log.WithField("error", err).Warn("Failed to drop PostgreSQL tables and indexes. Retrying...")
+			time.Sleep(connectTimeout)
+			return true, err
+		}
+
+		return false, nil
+	}, connectAttempts)
+
+	if err != nil {
+		log.WithField("error", err).Fatal("Failed to drop PostgreSQL tables and indexes.")
+	}
+
+	log.Info("Dropped tables and indexes.")
 }
 
 // RegisterFlags registers the flags used by InitializeWithFlags.

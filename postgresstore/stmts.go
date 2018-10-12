@@ -28,7 +28,7 @@ import (
 // They need to be prepared before they can be used.
 const (
 	SQLCreateLink = `
-		INSERT INTO links (
+		INSERT INTO store.links (
 			link_hash,
 			priority,
 			map_id,
@@ -41,34 +41,34 @@ const (
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	SQLCreateLinkDegree = `
-		INSERT INTO links_degree (
+		INSERT INTO store_private.links_degree (
 			link_hash,
 			out_degree
 		)
 		VALUES ($1, 0)
 	`
 	SQLLockLinkDegree = `
-		SELECT out_degree FROM links_degree 
+		SELECT out_degree FROM store_private.links_degree 
 		WHERE link_hash = $1 FOR UPDATE
 	`
 	SQLUpdateLinkDegree = `
-		UPDATE links_degree SET out_degree = $2 
+		UPDATE store_private.links_degree SET out_degree = $2 
 		WHERE link_hash = $1
 	`
 	SQLInitMap = `
-		INSERT INTO process_maps (
+		INSERT INTO store_private.process_maps (
 			process,
 			map_id
 		)
 		VALUES ($1, $2)
 	`
 	SQLGetSegment = `
-		SELECT l.link_hash, l.data, e.data FROM links l
-		LEFT JOIN evidences e ON l.link_hash = e.link_hash
+		SELECT l.link_hash, l.data, e.data FROM store.links l
+		LEFT JOIN store.evidences e ON l.link_hash = e.link_hash
 		WHERE l.link_hash = $1
 	`
 	SQLSaveValue = `
-		INSERT INTO values (
+		INSERT INTO store.values (
 			key,
 			value
 		)
@@ -78,20 +78,20 @@ const (
 			value = $2
 	`
 	SQLGetValue = `
-		SELECT value FROM values
+		SELECT value FROM store.values
 		WHERE key = $1
 	`
 	SQLDeleteValue = `
-		DELETE FROM values
+		DELETE FROM store.values
 		WHERE key = $1
 		RETURNING value
 	`
 	SQLGetEvidences = `
-		SELECT data FROM evidences
+		SELECT data FROM store.evidences
 		WHERE link_hash = $1
 	`
 	SQLAddEvidence = `
-		INSERT INTO evidences (
+		INSERT INTO store.evidences (
 			link_hash,
 			provider,
 			data
@@ -103,8 +103,10 @@ const (
 )
 
 var sqlCreate = []string{
+	`CREATE SCHEMA store`,
+	`CREATE SCHEMA store_private`,
 	`
-		CREATE TABLE links (
+		CREATE TABLE store.links (
 			id BIGSERIAL PRIMARY KEY,
 			link_hash bytea NOT NULL,
 			priority double precision NOT NULL,
@@ -120,43 +122,43 @@ var sqlCreate = []string{
 	`,
 	`
 		CREATE UNIQUE INDEX links_link_hash_idx
-		ON links (link_hash)
+		ON store.links (link_hash)
 	`,
 	`
 		CREATE INDEX links_priority_created_at_idx
-		ON links (priority DESC, created_at DESC)
+		ON store.links (priority DESC, created_at DESC)
 	`,
 	`
 		CREATE INDEX links_map_id_idx
-		ON links (map_id text_pattern_ops)
+		ON store.links (map_id text_pattern_ops)
 	`,
 	`
 		CREATE INDEX links_map_id_priority_created_at_idx
-		ON links (map_id, priority DESC, created_at DESC)
+		ON store.links (map_id, priority DESC, created_at DESC)
 	`,
 	`
 		CREATE INDEX links_prev_link_hash_priority_created_at_idx
-		ON links (prev_link_hash, priority DESC, created_at DESC)
+		ON store.links (prev_link_hash, priority DESC, created_at DESC)
 	`,
 	`
 		CREATE INDEX links_tags_idx
-		ON links USING gin(tags)
+		ON store.links USING gin(tags)
 	`,
 	`
-		CREATE TABLE links_degree (
+		CREATE TABLE store_private.links_degree (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea references links(link_hash),
+			link_hash bytea references store.links(link_hash),
 			out_degree integer
 		)
 	`,
 	`
 		CREATE UNIQUE INDEX links_degree_link_hash_idx
-		ON links_degree (link_hash)
+		ON store_private.links_degree (link_hash)
 	`,
 	`
-		CREATE TABLE evidences (
+		CREATE TABLE store.evidences (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea references links(link_hash),
+			link_hash bytea references store.links(link_hash),
 			provider text NOT NULL,
 			data bytea NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -165,14 +167,14 @@ var sqlCreate = []string{
 	`,
 	`
 		CREATE UNIQUE INDEX evidences_link_hash_provider_idx
-		ON evidences (link_hash, provider)
+		ON store.evidences (link_hash, provider)
 	`,
 	`
 		CREATE INDEX evidences_link_hash_idx
-		ON evidences (link_hash)
+		ON store.evidences (link_hash)
 	`,
 	`
-		CREATE TABLE values (
+		CREATE TABLE store.values (
 			id BIGSERIAL PRIMARY KEY,
 			key bytea NOT NULL,
 			value bytea NOT NULL,
@@ -182,10 +184,10 @@ var sqlCreate = []string{
 	`,
 	`
 		CREATE UNIQUE INDEX values_key_idx
-		ON values (key)
+		ON store.values (key)
 	`,
 	`
-		CREATE TABLE process_maps (
+		CREATE TABLE store_private.process_maps (
 			id BIGSERIAL PRIMARY KEY,
 			process text NOT NULL,
 			map_id text NOT NULL,
@@ -194,21 +196,13 @@ var sqlCreate = []string{
 	`,
 	`
 		CREATE UNIQUE INDEX process_map_idx
-		ON process_maps (process, map_id)
+		ON store_private.process_maps (process, map_id)
 	`,
 }
 
-// We add SQL smart comments to disable GraphQL mutations.
-var sqlComment = []string{
-	`comment on table links is E'@omit create,update,delete'`,
-	`comment on table evidences is E'@omit create,update,delete'`,
-	`comment on table links_degree is E'@omit'`,
-	`comment on table process_maps is E'@omit'`,
-	`comment on table values is E'@omit'`,
-}
-
 var sqlDrop = []string{
-	"DROP TABLE links, links_degree, evidences, values, process_maps",
+	"DROP SCHEMA store CASCADE",
+	"DROP SCHEMA store_private CASCADE",
 }
 
 // SQLPreparer prepares statements.
@@ -285,7 +279,7 @@ func newStmts(db SQLPreparerQuerier) (*stmts, error) {
 // GetMapIDsWithFilters retrieves maps ids from the store given some filters.
 func (s *stmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, error) {
 	sqlHead := `
-		SELECT l.map_id FROM links l
+		SELECT l.map_id FROM store.links l
 	`
 	sqlTail := fmt.Sprintf(`
 		GROUP BY l.map_id
@@ -346,8 +340,8 @@ func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows,
 	l.data,
 	e.data,
 	%s
-	FROM links l
-	LEFT JOIN evidences e ON l.link_hash = e.link_hash
+	FROM store.links l
+	LEFT JOIN store.evidences e ON l.link_hash = e.link_hash
 	`,
 		sqlTotalCount,
 	)
