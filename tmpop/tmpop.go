@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
@@ -111,7 +110,7 @@ func New(ctx context.Context, a store.Adapter, kv store.KeyValueStore, config *C
 
 	lastBlock, err := ReadLastBlock(ctx, kv)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot read the last block")
+		return nil, err
 	}
 
 	s, err := NewState(ctx, a, config)
@@ -480,13 +479,8 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	}
 
 	merkleRoot := merkle.Root()
+	appHash := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 
-	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
-	if err != nil {
-		log.Warnf("Could not compute app hash for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not compute app hash"})
-		return
-	}
 	if !bytes.Equal(appHash, evidenceNextBlock.Header.AppHash) {
 		log.Warnf("App hash %x of block %d doesn't match the header's: %x. Evidence will not be generated.",
 			appHash,

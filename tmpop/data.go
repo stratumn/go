@@ -21,7 +21,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	abci "github.com/tendermint/abci/types"
 	wire "github.com/tendermint/go-wire"
 )
@@ -44,7 +46,7 @@ func ReadLastBlock(ctx context.Context, kv store.KeyValueReader) (*LastBlock, er
 	}
 	err = wire.ReadBinaryBytes(lBytes, &l)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "could not read last block")
 	}
 
 	return &l, nil
@@ -113,7 +115,7 @@ func (t *TMPop) saveCommitLinkHashes(ctx context.Context, links []*chainscript.L
 
 		value, err := json.Marshal(linkHashes)
 		if err != nil {
-			return err
+			return types.WrapError(err, monitoring.InvalidArgument, Name, "json.Marshal")
 		}
 
 		if err := t.kvDB.SetValue(ctx, key, value); err != nil {
@@ -135,7 +137,7 @@ func (t *TMPop) getCommitLinkHashes(ctx context.Context, height int64) ([]chains
 
 	var linkHashes []chainscript.LinkHash
 	if err := json.Unmarshal(value, &linkHashes); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, Name, "json.Unmarshal")
 	}
 
 	return linkHashes, nil

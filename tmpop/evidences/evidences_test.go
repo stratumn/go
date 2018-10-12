@@ -22,7 +22,9 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/tmpop/evidences"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
 	mktypes "github.com/stratumn/merkle/types"
 	"github.com/stretchr/testify/assert"
@@ -159,7 +161,10 @@ func TestTendermintProof(t *testing.T) {
 
 			p, err := evidences.UnmarshalProof(e)
 			assert.Nil(t, p)
-			assert.EqualError(t, err, evidences.ErrInvalidBackend.Error())
+			require.NotNil(t, err)
+			require.IsType(t, &types.Error{}, err)
+			assert.Equal(t, monitoring.InvalidArgument, err.(*types.Error).Code)
+			assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrInvalidBackend.Error())
 		},
 	}, {
 		"unmarshal-missing-chain-id",
@@ -171,7 +176,10 @@ func TestTendermintProof(t *testing.T) {
 
 			p, err := evidences.UnmarshalProof(e)
 			assert.Nil(t, p)
-			assert.EqualError(t, err, evidences.ErrMissingChainID.Error())
+			require.NotNil(t, err)
+			require.IsType(t, &types.Error{}, err)
+			assert.Equal(t, monitoring.InvalidArgument, err.(*types.Error).Code)
+			assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrMissingChainID.Error())
 		},
 	}, {
 		"unmarshal-invalid-version",
@@ -184,7 +192,10 @@ func TestTendermintProof(t *testing.T) {
 
 			p, err := evidences.UnmarshalProof(e)
 			assert.Nil(t, p)
-			assert.EqualError(t, err, evidences.ErrUnknownVersion.Error())
+			require.NotNil(t, err)
+			require.IsType(t, &types.Error{}, err)
+			assert.Equal(t, monitoring.InvalidArgument, err.(*types.Error).Code)
+			assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrUnknownVersion.Error())
 		},
 	}, {
 		"unmarshal-invalid-bytes",
