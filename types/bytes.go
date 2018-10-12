@@ -21,6 +21,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
+	"github.com/stratumn/go-core/monitoring/errorcode"
 )
 
 // Bytes20Size is the size of a 20-byte long byte array.
@@ -47,10 +49,11 @@ func (b *Bytes20) String() string {
 func (b *Bytes20) Unstring(src string) error {
 	buf, err := hex.DecodeString(src)
 	if err != nil {
-		return err
+		return WrapError(err, errorcode.InvalidArgument, Component, "could not unstring")
 	}
+
 	if n := len(buf); n != Bytes20Size {
-		return fmt.Errorf("invalid Bytes20 size got %d want %d", n, Bytes20Size)
+		return NewErrorf(errorcode.InvalidArgument, Component, "invalid Bytes20 size got %d want %d", n, Bytes20Size)
 	}
 
 	copy(b[:], buf)
@@ -68,6 +71,7 @@ func (b *Bytes20) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
+
 	return b.Unstring(s)
 }
 
@@ -91,6 +95,7 @@ func NewReversedBytes20FromString(src string) (*ReversedBytes20, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var rb ReversedBytes20
 	b.Reverse(&rb)
 	return &rb, nil
@@ -109,6 +114,7 @@ func (rb *ReversedBytes20) Unstring(src string) error {
 	if err != nil {
 		return err
 	}
+
 	b.Reverse(rb)
 	return nil
 }
@@ -126,6 +132,7 @@ func (rb *ReversedBytes20) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &b); err != nil {
 		return err
 	}
+
 	b.Reverse(rb)
 	return nil
 }
@@ -154,6 +161,7 @@ func NewBytes32FromString(src string) (*Bytes32, error) {
 	if err := b.Unstring(src); err != nil {
 		return nil, err
 	}
+
 	return &b, nil
 }
 
@@ -176,10 +184,11 @@ func (b *Bytes32) String() string {
 func (b *Bytes32) Unstring(src string) error {
 	buf, err := hex.DecodeString(src)
 	if err != nil {
-		return err
+		return WrapError(err, errorcode.InvalidArgument, Component, "could not unstring")
 	}
+
 	if n := len(buf); n != Bytes32Size {
-		return fmt.Errorf("invalid Bytes32 size got %d want %d", n, Bytes32Size)
+		return NewErrorf(errorcode.InvalidArgument, Component, "invalid Bytes32 size got %d want %d", n, Bytes32Size)
 	}
 
 	copy(b[:], buf)
@@ -260,6 +269,7 @@ func NewReversedBytes32FromString(src string) (*ReversedBytes32, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var rb ReversedBytes32
 	b.Reverse(&rb)
 	return &rb, nil
@@ -278,6 +288,7 @@ func (rb *ReversedBytes32) Unstring(src string) error {
 	if err != nil {
 		return err
 	}
+
 	b.Reverse(rb)
 	return nil
 }
@@ -295,6 +306,7 @@ func (rb *ReversedBytes32) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &b); err != nil {
 		return err
 	}
+
 	b.Reverse(rb)
 	return nil
 }

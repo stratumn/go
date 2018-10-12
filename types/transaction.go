@@ -38,6 +38,7 @@ func (txid *TransactionID) UnmarshalJSON(data []byte) (err error) {
 	if err = json.Unmarshal(data, &s); err != nil {
 		return
 	}
+
 	*txid, err = hex.DecodeString(s)
 	return
 }

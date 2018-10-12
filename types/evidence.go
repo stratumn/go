@@ -15,8 +15,8 @@
 package types
 
 import (
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 )
 
 // EvidenceSlice is a slice of evidences.
@@ -25,7 +25,7 @@ type EvidenceSlice []*chainscript.Evidence
 // AddEvidence adds an evidence to the slice.
 func (e *EvidenceSlice) AddEvidence(evidence *chainscript.Evidence) error {
 	if e.GetEvidence(evidence.Backend, evidence.Provider) != nil {
-		return errors.Errorf("evidence already exist for backend %s and provider %s", evidence.Backend, evidence.Provider)
+		return NewErrorf(errorcode.AlreadyExists, Component, "evidence already exists for backend %s and provider %s", evidence.Backend, evidence.Provider)
 	}
 
 	*e = append(*e, evidence)
