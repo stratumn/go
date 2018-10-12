@@ -21,6 +21,7 @@ import (
 
 	"github.com/olivere/elastic"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -178,17 +179,18 @@ func (es *ESStore) createIndex(indexName, mapping string) error {
 	ctx := context.TODO()
 	exists, err := es.client.IndexExists(indexName).Do(ctx)
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.FailedPrecondition, store.Component, "could not create index")
 	}
+
 	if !exists {
 		// TODO: pass mapping through BodyString.
 		createIndex, err := es.client.CreateIndex(indexName).BodyString(mapping).Do(ctx)
 		if err != nil {
-			return err
+			return types.WrapError(err, monitoring.Unavailable, store.Component, "could not create index")
 		}
 		if !createIndex.Acknowledged {
 			// Not acknowledged.
-			return fmt.Errorf("error creating %s index", indexName)
+			return types.NewErrorf(monitoring.Unavailable, store.Component, "error creating index %s", indexName)
 		}
 	}
 
@@ -211,11 +213,11 @@ func (es *ESStore) deleteIndex(indexName string) error {
 	ctx := context.TODO()
 	del, err := es.client.DeleteIndex(indexName).Do(ctx)
 	if err != nil {
-		return err
+		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not delete index")
 	}
 
 	if !del.Acknowledged {
-		return fmt.Errorf("index %s was not deleted", indexName)
+		return types.NewErrorf(monitoring.Unavailable, store.Component, "index %s was not deleted", indexName)
 	}
 
 	return nil
@@ -290,7 +292,7 @@ func fromLink(link *chainscript.Link) (*linkDoc, error) {
 func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "could not hash link")
 	}
 	linkHashStr := linkHash.String()
 
@@ -300,7 +302,7 @@ func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chai
 	}
 
 	if has {
-		return nil, fmt.Errorf("link is immutable, %s already exists", linkHashStr)
+		return nil, types.WrapError(store.ErrLinkAlreadyExists, monitoring.AlreadyExists, store.Component, "could not create link")
 	}
 
 	linkDoc, err := fromLink(link)
@@ -312,12 +314,21 @@ func (es *ESStore) createLink(ctx context.Context, link *chainscript.Link) (chai
 }
 
 func (es *ESStore) hasDocument(ctx context.Context, indexName, id string) (bool, error) {
-	return es.client.Exists().Index(indexName).Type(docType).Id(id).Do(ctx)
+	has, err := es.client.Exists().Index(indexName).Type(docType).Id(id).Do(ctx)
+	if err != nil {
+		return has, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get document")
+	}
+
+	return has, nil
 }
 
 func (es *ESStore) indexDocument(ctx context.Context, indexName, id string, doc interface{}) error {
 	_, err := es.client.Index().Index(indexName).Type(docType).Id(id).BodyJson(doc).Do(ctx)
-	return err
+	if err != nil {
+		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not index document")
+	}
+
+	return nil
 }
 
 func (es *ESStore) getDocument(ctx context.Context, indexName, id string) (*json.RawMessage, error) {
@@ -331,7 +342,7 @@ func (es *ESStore) getDocument(ctx context.Context, indexName, id string) (*json
 
 	get, err := es.client.Get().Index(indexName).Type(docType).Id(id).Do(ctx)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get document")
 	}
 	if !get.Found {
 		return nil, nil
@@ -342,7 +353,11 @@ func (es *ESStore) getDocument(ctx context.Context, indexName, id string) (*json
 
 func (es *ESStore) deleteDocument(ctx context.Context, indexName, id string) error {
 	_, err := es.client.Delete().Index(indexName).Type(docType).Id(id).Do(ctx)
-	return err
+	if err != nil {
+		return types.WrapError(err, monitoring.Unavailable, store.Component, "could not delete document")
+	}
+
+	return nil
 }
 
 func (es *ESStore) getLink(ctx context.Context, id string) (*chainscript.Link, error) {
@@ -354,8 +369,13 @@ func (es *ESStore) getLink(ctx context.Context, id string) (*chainscript.Link, e
 	if jsn == nil {
 		return nil, nil
 	}
+
 	err = json.Unmarshal(*jsn, &link)
-	return &link.Link, err
+	if err != nil {
+		return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+	}
+
+	return &link.Link, nil
 }
 
 func (es *ESStore) getEvidences(ctx context.Context, id string) (types.EvidenceSlice, error) {
@@ -363,11 +383,16 @@ func (es *ESStore) getEvidences(ctx context.Context, id string) (types.EvidenceS
 	if err != nil {
 		return nil, err
 	}
+
 	evidences := Evidences{Evidences: types.EvidenceSlice{}}
 	if jsn != nil {
 		err = json.Unmarshal(*jsn, &evidences)
+		if err != nil {
+			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+		}
 	}
-	return evidences.Evidences, err
+
+	return evidences.Evidences, nil
 }
 
 func (es *ESStore) addEvidence(ctx context.Context, linkHash string, evidence *chainscript.Evidence) error {
@@ -393,16 +418,22 @@ func (es *ESStore) getValue(ctx context.Context, key string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if jsn != nil {
 		err = json.Unmarshal(*jsn, &value)
+		if err != nil {
+			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
+		}
 	}
-	return value.Value, err
+
+	return value.Value, nil
 }
 
 func (es *ESStore) setValue(ctx context.Context, key string, value []byte) error {
 	v := Value{
 		Value: value,
 	}
+
 	return es.indexDocument(ctx, valuesIndex, key, v)
 }
 
@@ -429,6 +460,7 @@ func (es *ESStore) segmentify(ctx context.Context, link *chainscript.Link) *chai
 	if evidences != nil && err == nil {
 		segment.Meta.Evidences = evidences
 	}
+
 	return segment
 }
 
@@ -436,7 +468,7 @@ func (es *ESStore) getMapIDs(ctx context.Context, filter *store.MapFilter) ([]st
 	// Flush to make sure the documents got written.
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get map ids")
 	}
 
 	// prepare search service.
@@ -476,7 +508,7 @@ func (es *ESStore) getMapIDs(ctx context.Context, filter *store.MapFilter) ([]st
 	// run search.
 	sr, err := svc.Do(ctx)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not get map ids")
 	}
 
 	// construct result using pagination.
@@ -554,7 +586,7 @@ func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilte
 	// Flush to make sure the documents got written.
 	_, err := es.client.Flush().Index(linksIndex).Do(ctx)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not search")
 	}
 
 	// prepare search service.
@@ -571,7 +603,7 @@ func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilte
 	// run search.
 	sr, err := svc.Query(q).Do(ctx)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, monitoring.Unavailable, store.Component, "could not search")
 	}
 
 	// populate SegmentSlice.
@@ -587,8 +619,9 @@ func (es *ESStore) genericSearch(ctx context.Context, filter *store.SegmentFilte
 	for _, hit := range sr.Hits.Hits {
 		var link chainscript.Link
 		if err := json.Unmarshal(*hit.Source, &link); err != nil {
-			return nil, err
+			return nil, types.WrapError(err, monitoring.InvalidArgument, store.Component, "json.Unmarshal")
 		}
+
 		res.Segments = append(res.Segments, es.segmentify(ctx, &link))
 	}
 
