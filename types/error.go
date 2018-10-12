@@ -21,6 +21,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	// Component name for monitoring.
+	Component = "utils"
+)
+
 // Error structure to provide accurate metrics and logs.
 // Errors coming from external dependencies should always be wrapped inside an
 // instance of this structured error type (in particular to capture a stack
