@@ -23,6 +23,11 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc"
 )
 
+const (
+	// Component name for monitoring.
+	Component = "btc"
+)
+
 var (
 	bcyAPIKey       string
 	limiterInterval time.Duration

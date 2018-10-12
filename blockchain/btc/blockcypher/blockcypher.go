@@ -18,7 +18,6 @@ package blockcypher
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/types"
 )
 
@@ -109,7 +109,7 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res 
 
 		output.PKScript, err = hex.DecodeString(TXRef.Script)
 		if err != nil {
-			return
+			return res, types.WrapError(err, monitoring.InvalidArgument, Component, "invalid tx script")
 		}
 
 		res.Outputs = append(res.Outputs, output)
@@ -120,7 +120,8 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res 
 		}
 	}
 
-	err = fmt.Errorf(
+	err = types.NewErrorf(monitoring.FailedPrecondition,
+		Component,
 		"not enough Bitcoins available on %s, expected at least %d satoshis got %d",
 		addr,
 		amount,
