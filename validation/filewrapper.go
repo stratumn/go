@@ -19,11 +19,11 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
 
 	"go.opencensus.io/stats"
@@ -70,11 +70,11 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, types.WrapError(err, errorcode.Unavailable, Component, "could not start validation rules watcher")
 	}
 
 	if err := w.Add(cfg.RulesPath); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, types.WrapError(err, errorcode.Unavailable, Component, "could not watch validation rules updates")
 	}
 
 	go wrapped.watchRules(w, cfg)
@@ -90,7 +90,7 @@ func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.
 
 	if err := link.Validate(ctx); err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")
 	}
 
 	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {

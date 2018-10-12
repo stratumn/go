@@ -22,11 +22,18 @@ import (
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-crypto/keys"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+)
+
+const (
+	// PKIValidatorName for monitoring.
+	PKIValidatorName = "pki-validator"
 )
 
 // Errors used by the PKI validator.
@@ -49,12 +56,12 @@ func (id *Identity) Validate() error {
 	}
 
 	if len(id.Keys) == 0 {
-		return ErrMissingKeys
+		return types.WrapError(ErrMissingKeys, errorcode.InvalidArgument, PKIValidatorName, "could not validate identity")
 	}
 
 	for _, key := range id.Keys {
 		if _, _, err := keys.ParsePublicKey([]byte(key)); err != nil {
-			return errors.Wrap(err, ErrInvalidIdentity.Error())
+			return types.WrapError(err, errorcode.InvalidArgument, PKIValidatorName, ErrInvalidIdentity.Error())
 		}
 	}
 
@@ -142,7 +149,7 @@ func (pv PKIValidator) Hash() ([]byte, error) {
 
 	b, err := cj.Marshal(pv)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, types.WrapError(err, errorcode.InvalidArgument, PKIValidatorName, "json.Marshal")
 	}
 
 	h := sha256.Sum256(append(psh, b...))
@@ -165,9 +172,9 @@ func (pv PKIValidator) Validate(ctx context.Context, _ store.SegmentReader, link
 		}
 
 		if !fulfilled {
-			ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "PKI"))
+			ctx, _ = tag.New(ctx, tag.Upsert(linkErr, PKIValidatorName))
 			stats.Record(ctx, linksErr.M(1))
-			return errors.Wrapf(ErrMissingSignature, "%s.%s requires a signature from %s", pv.process, pv.step, required)
+			return types.WrapErrorf(ErrMissingSignature, errorcode.InvalidArgument, PKIValidatorName, "%s.%s requires a signature from %s", pv.process, pv.step, required)
 		}
 	}
 

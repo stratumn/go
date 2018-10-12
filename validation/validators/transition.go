@@ -17,14 +17,20 @@ package validators
 import (
 	"context"
 	"crypto/sha256"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+)
+
+const (
+	// TransitionValidatorName for monitoring.
+	TransitionValidatorName = "transition-validator"
 )
 
 // Errors used by the transition validator.
@@ -69,9 +75,9 @@ func (tv TransitionValidator) Hash() ([]byte, error) {
 // an empty string.
 func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *chainscript.Link) error {
 	error := func(src string) error {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Transition"))
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, TransitionValidatorName))
 		stats.Record(ctx, linksErr.M(1))
-		return errors.Wrapf(ErrInvalidTransition, "%s --> %s", src, tv.step)
+		return types.WrapErrorf(ErrInvalidTransition, errorcode.InvalidArgument, TransitionValidatorName, "%s --> %s", src, tv.step)
 	}
 
 	prevLinkHash := link.PrevLinkHash()
@@ -89,12 +95,12 @@ func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentR
 	if err != nil {
 		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "TransitionParentErr"))
 		stats.Record(ctx, linksErr.M(1))
-		return errors.Wrapf(err, "cannot retrieve previous segment %s", prevLinkHash.String())
+		return types.WrapError(err, errorcode.NotFound, TransitionValidatorName, prevLinkHash.String())
 	}
 	if parent == nil {
 		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "TransitionParentNil"))
 		stats.Record(ctx, linksErr.M(1))
-		return fmt.Errorf("previous segment not found: %s", prevLinkHash.String())
+		return types.NewError(errorcode.NotFound, TransitionValidatorName, prevLinkHash.String())
 	}
 
 	for _, t := range tv.from {

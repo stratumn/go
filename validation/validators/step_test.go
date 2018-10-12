@@ -20,6 +20,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -54,7 +55,7 @@ func TestProcessStepValidator(t *testing.T) {
 				v, err := validators.NewProcessStepValidator(tt.process, tt.step)
 				if tt.err != nil {
 					assert.Nil(t, v)
-					assert.EqualError(t, err, tt.err.Error())
+					testutil.AssertWrappedErrorEqual(t, err, tt.err)
 				} else {
 					assert.NoError(t, err)
 					assert.NotNil(t, v)
@@ -101,7 +102,7 @@ func TestProcessStepValidator(t *testing.T) {
 				if tt.match {
 					assert.NoError(t, err)
 				} else {
-					assert.EqualError(t, err, validators.ErrInvalidProcessOrStep.Error())
+					testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidProcessOrStep)
 				}
 			})
 		}

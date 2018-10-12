@@ -25,11 +25,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+)
+
+const (
+	// ScriptValidatorName for monitoring.
+	ScriptValidatorName = "script-validator"
 )
 
 // Errors returned by the script validator.
@@ -64,27 +70,27 @@ func NewScriptValidator(process string, pluginsPath string, scriptCfg *ScriptCon
 	pluginFile := path.Join(pluginsPath, fmt.Sprintf("%s.so", scriptCfg.Hash))
 	pluginBytes, err := ioutil.ReadFile(pluginFile)
 	if err != nil {
-		return nil, errors.Wrap(err, ErrLoadingPlugin.Error())
+		return nil, types.WrapError(err, errorcode.InvalidArgument, ScriptValidatorName, ErrLoadingPlugin.Error())
 	}
 
 	fileHash := sha256.Sum256(pluginBytes)
 	if scriptCfg.Hash != hex.EncodeToString(fileHash[:]) {
-		return nil, errors.Wrap(ErrInvalidPlugin, ErrInvalidPluginHash.Error())
+		return nil, types.WrapError(ErrInvalidPlugin, errorcode.InvalidArgument, ScriptValidatorName, ErrInvalidPluginHash.Error())
 	}
 
 	p, err := plugin.Open(pluginFile)
 	if err != nil {
-		return nil, errors.Wrap(err, ErrLoadingPlugin.Error())
+		return nil, types.WrapError(err, errorcode.InvalidArgument, ScriptValidatorName, ErrLoadingPlugin.Error())
 	}
 
 	validateSymbol, err := p.Lookup("Validate")
 	if err != nil {
-		return nil, errors.Wrap(err, ErrInvalidPlugin.Error())
+		return nil, types.WrapError(err, errorcode.InvalidArgument, ScriptValidatorName, ErrInvalidPlugin.Error())
 	}
 
 	validate, ok := validateSymbol.(ScriptValidatorFunc)
 	if !ok {
-		return nil, errors.Wrap(ErrInvalidPlugin, ErrInvalidPlugin.Error())
+		return nil, types.WrapError(ErrInvalidPlugin, errorcode.InvalidArgument, ScriptValidatorName, "invalid method signature")
 	}
 
 	return &ScriptValidator{
@@ -109,9 +115,10 @@ func (sv *ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
 func (sv *ScriptValidator) Validate(ctx context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
 	err := sv.script(ctx, storeReader, &types.Link{Link: link})
 	if err != nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "Script"))
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, ScriptValidatorName))
 		stats.Record(ctx, linksErr.M(1))
+		return types.WrapError(err, errorcode.InvalidArgument, ScriptValidatorName, "script validation failed")
 	}
 
-	return err
+	return nil
 }

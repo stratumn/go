@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
@@ -39,7 +39,7 @@ func TestProcessRules(t *testing.T) {
 			}}
 
 			err := rules.ValidateTransitions()
-			assert.EqualError(t, errors.Cause(err), validation.ErrMissingTransitions.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validation.ErrMissingTransitions)
 		})
 
 		t.Run("orphaned step", func(t *testing.T) {
@@ -55,7 +55,7 @@ func TestProcessRules(t *testing.T) {
 			}}
 
 			err := rules.ValidateTransitions()
-			assert.EqualError(t, errors.Cause(err), validation.ErrInvalidTransitions.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validation.ErrInvalidTransitions)
 		})
 
 		t.Run("self-referencing step", func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestProcessRules(t *testing.T) {
 			}}
 
 			err := rules.ValidateTransitions()
-			assert.EqualError(t, errors.Cause(err), validation.ErrInvalidTransitions.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validation.ErrInvalidTransitions)
 		})
 	})
 }

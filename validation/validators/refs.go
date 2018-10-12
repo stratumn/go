@@ -20,10 +20,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+)
+
+const (
+	// RefsValidatorName for monitoring.
+	RefsValidatorName = "refs-validator"
 )
 
 // Errors returned by the RefsValidator.
@@ -66,23 +73,23 @@ func (v *RefsValidator) validateParent(ctx context.Context, r store.SegmentReade
 
 	parent, err := r.GetSegment(ctx, l.PrevLinkHash())
 	if err != nil {
-		return errors.WithStack(err)
+		return types.WrapError(err, errorcode.NotFound, RefsValidatorName, "parent validation failed")
 	}
 
 	if parent == nil || parent.Link == nil {
-		return ErrParentNotFound
+		return types.WrapError(ErrParentNotFound, errorcode.NotFound, RefsValidatorName, "parent validation failed")
 	}
 
 	if parent.Link.Meta.Process.Name != l.Meta.Process.Name {
-		return ErrProcessMismatch
+		return types.WrapError(ErrProcessMismatch, errorcode.InvalidArgument, RefsValidatorName, "parent validation failed")
 	}
 
 	if parent.Link.Meta.MapId != l.Meta.MapId {
-		return ErrMapIDMismatch
+		return types.WrapError(ErrMapIDMismatch, errorcode.InvalidArgument, RefsValidatorName, "parent validation failed")
 	}
 
 	if parent.Link.Meta.OutDegree == 0 {
-		return chainscript.ErrOutDegree
+		return types.WrapError(chainscript.ErrOutDegree, errorcode.FailedPrecondition, RefsValidatorName, "parent validation failed")
 	}
 
 	if parent.Link.Meta.OutDegree > 0 {
@@ -91,11 +98,11 @@ func (v *RefsValidator) validateParent(ctx context.Context, r store.SegmentReade
 			PrevLinkHash: l.PrevLinkHash(),
 		})
 		if err != nil {
-			return errors.WithStack(err)
+			return types.WrapError(err, errorcode.NotFound, RefsValidatorName, "parent validation failed")
 		}
 
 		if int(parent.Link.Meta.OutDegree) <= children.TotalCount {
-			return chainscript.ErrOutDegree
+			return types.WrapError(chainscript.ErrOutDegree, errorcode.FailedPrecondition, RefsValidatorName, "parent validation failed")
 		}
 	}
 
@@ -117,11 +124,11 @@ func (v *RefsValidator) validateReferences(ctx context.Context, r store.SegmentR
 		LinkHashes: lhs,
 	})
 	if err != nil {
-		return errors.WithStack(err)
+		return types.WrapError(err, errorcode.NotFound, RefsValidatorName, "refs validation failed")
 	}
 
 	if len(segments.Segments) != len(l.Meta.Refs) {
-		return ErrRefNotFound
+		return types.WrapError(ErrRefNotFound, errorcode.NotFound, RefsValidatorName, "refs validation failed")
 	}
 
 	for _, ref := range l.Meta.Refs {
@@ -131,7 +138,7 @@ func (v *RefsValidator) validateReferences(ctx context.Context, r store.SegmentR
 			if bytes.Equal(ref.LinkHash, s.LinkHash()) {
 				found = true
 				if ref.Process != s.Link.Meta.Process.Name {
-					return ErrProcessMismatch
+					return types.WrapError(ErrProcessMismatch, errorcode.InvalidArgument, RefsValidatorName, "refs validation failed")
 				}
 
 				break
@@ -139,7 +146,7 @@ func (v *RefsValidator) validateReferences(ctx context.Context, r store.SegmentR
 		}
 
 		if !found {
-			return ErrRefNotFound
+			return types.WrapError(ErrRefNotFound, errorcode.NotFound, RefsValidatorName, "refs validation failed")
 		}
 	}
 

@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/go-core/validation/validationtesting"
@@ -43,7 +43,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 
 			link := chainscripttest.NewLinkBuilder(t).WithProcess("").Build()
 			_, err = va.CreateLink(context.Background(), link)
-			assert.EqualError(t, err, chainscript.ErrMissingProcess.Error())
+			testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrMissingProcess)
 		})
 
 		t.Run("valid link", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err := testValidationStore.CreateLink(context.Background(), link)
-			assert.EqualError(t, err, chainscript.ErrMissingProcess.Error())
+			testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrMissingProcess)
 		})
 
 		t.Run("missing parent", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err := testValidationStore.CreateLink(context.Background(), link)
-			assert.EqualError(t, err, validators.ErrParentNotFound.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrParentNotFound)
 		})
 
 		t.Run("invalid transition", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err = testValidationStore.CreateLink(ctx, init2)
-			assert.EqualError(t, errors.Cause(err), validators.ErrInvalidTransition.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidTransition)
 		})
 
 		t.Run("invalid signature", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err := testValidationStore.CreateLink(context.Background(), init)
-			assert.EqualError(t, errors.Cause(err), validators.ErrMissingSignature.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrMissingSignature)
 		})
 
 		t.Run("invalid schema", func(t *testing.T) {
@@ -130,7 +130,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err := testValidationStore.CreateLink(context.Background(), init)
-			assert.EqualError(t, errors.Cause(err), validators.ErrInvalidLinkSchema.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidLinkSchema)
 		})
 
 		t.Run("invalid configuration file", func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 				Build()
 
 			_, err = v.CreateLink(ctx, link)
-			assert.EqualError(t, errors.Cause(err), validators.ErrInvalidLinkSchema.Error())
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidLinkSchema)
 
 			err = ioutil.WriteFile(rules, []byte(`{
 				"drivers": {

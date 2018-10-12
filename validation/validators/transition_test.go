@@ -18,10 +18,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -117,7 +117,7 @@ func TestTransitionValidator(t *testing.T) {
 					assert.NoError(t, err)
 				} else {
 					if tt.err != nil {
-						assert.EqualError(t, errors.Cause(err), tt.err.Error())
+						testutil.AssertWrappedErrorEqual(t, err, tt.err)
 					} else {
 						assert.Error(t, err)
 					}

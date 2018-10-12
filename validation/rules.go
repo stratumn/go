@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
 )
 
@@ -83,11 +85,11 @@ func (r *ProcessRules) ValidateTransitions() error {
 
 	for step, rules := range r.Steps {
 		if len(rules.Transitions) == 0 {
-			return errors.Wrapf(ErrMissingTransitions, "%s has no transitions", step)
+			return types.WrapErrorf(ErrMissingTransitions, errorcode.InvalidArgument, Component, "%s has no transitions", step)
 		}
 
 		if len(rules.Transitions) == 1 && rules.Transitions[0] == step {
-			return errors.Wrapf(ErrInvalidTransitions, "%s can only be reached from itself", step)
+			return types.WrapErrorf(ErrInvalidTransitions, errorcode.InvalidArgument, Component, "%s can only be reached from itself", step)
 		}
 
 		// Verify that transitions are defined on existing steps.
@@ -95,7 +97,7 @@ func (r *ProcessRules) ValidateTransitions() error {
 			if len(transition) > 0 {
 				_, ok := stepsMap[transition]
 				if !ok {
-					return errors.Wrapf(ErrInvalidTransitions, "%s -> %s is invalid: %s doesn't exist in the process", transition, step, transition)
+					return types.WrapErrorf(ErrInvalidTransitions, errorcode.InvalidArgument, Component, "%s -> %s is invalid: %s doesn't exist in the process", transition, step, transition)
 				}
 			}
 		}
@@ -143,7 +145,7 @@ func (r *ProcessRules) Validators(process string, pluginsPath string) (validator
 // Validators creates the validators corresponding to the configured step's rules.
 func (r *StepRules) Validators(process, step string, pki validators.PKI) (validators.Validators, error) {
 	if len(r.Signatures) == 0 && len(r.Transitions) == 0 && r.Schema == nil {
-		return nil, ErrInvalidStepValidationRules
+		return nil, types.WrapError(ErrInvalidStepValidationRules, errorcode.InvalidArgument, Component, "could not create validators")
 	}
 
 	processStepValidator, err := validators.NewProcessStepValidator(process, step)
@@ -156,7 +158,7 @@ func (r *StepRules) Validators(process, step string, pki validators.PKI) (valida
 	if r.Schema != nil {
 		jsonSchema, err := json.Marshal(r.Schema)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "json.Marshal")
 		}
 
 		schemaValidator, err := validators.NewSchemaValidator(processStepValidator, jsonSchema)
@@ -169,7 +171,7 @@ func (r *StepRules) Validators(process, step string, pki validators.PKI) (valida
 
 	if len(r.Signatures) > 0 {
 		if pki == nil {
-			return nil, ErrMissingPKI
+			return nil, types.WrapError(ErrMissingPKI, errorcode.InvalidArgument, Component, "could not create validators")
 		}
 
 		pkiValidator := validators.NewPKIValidator(processStepValidator, r.Signatures, pki)

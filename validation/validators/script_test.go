@@ -22,10 +22,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
@@ -46,7 +46,7 @@ func TestScriptValidator(t *testing.T) {
 				&validators.ScriptConfig{Hash: "42"},
 			)
 
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
+			testutil.AssertErrorContains(t, err, validators.ErrLoadingPlugin)
 		})
 
 		t.Run("invalid plugin hash", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestScriptValidator(t *testing.T) {
 				&validators.ScriptConfig{Hash: "not 42"},
 			)
 
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
+			testutil.AssertErrorContains(t, err, validators.ErrLoadingPlugin)
 		})
 
 		t.Run("invalid plugin file format", func(t *testing.T) {
@@ -79,7 +79,7 @@ func TestScriptValidator(t *testing.T) {
 				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash[:])},
 			)
 
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrLoadingPlugin.Error()))
+			testutil.AssertErrorContains(t, err, validators.ErrLoadingPlugin)
 		})
 
 		t.Run("invalid plugin entry point", func(t *testing.T) {
@@ -91,7 +91,7 @@ func TestScriptValidator(t *testing.T) {
 				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidPlugin.Error()))
+			testutil.AssertErrorContains(t, err, validators.ErrInvalidPlugin)
 		})
 
 		t.Run("invalid plugin signature", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestScriptValidator(t *testing.T) {
 				&validators.ScriptConfig{Hash: hex.EncodeToString(pluginHash)},
 			)
 
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidPlugin.Error()))
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidPlugin)
 		})
 
 		t.Run("valid plugin", func(t *testing.T) {
