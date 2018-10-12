@@ -98,13 +98,15 @@ func exposeMetrics(config *monitoring.Config) {
 		config.MetricsPort = DefaultMetricsPort
 	}
 
-	metricsExporter := monitoring.Configure(config, "tmpop")
-	metricsAddr := fmt.Sprintf(":%d", config.MetricsPort)
+	metricsHandler := monitoring.Configure(config, "tmpop")
+	if metricsHandler != nil {
+		metricsAddr := fmt.Sprintf(":%d", config.MetricsPort)
 
-	log.Infof("Exposing metrics on %s", metricsAddr)
-	http.Handle("/metrics", metricsExporter)
-	err := http.ListenAndServe(metricsAddr, nil)
-	if err != nil {
-		panic(err)
+		log.Infof("Exposing metrics on %s", metricsAddr)
+		http.Handle("/metrics", metricsHandler)
+		err := http.ListenAndServe(metricsAddr, nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 }

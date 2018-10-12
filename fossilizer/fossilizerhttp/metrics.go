@@ -38,11 +38,13 @@ func (s *Server) exposeMetrics(config *monitoring.Config) {
 		return
 	}
 
-	metricsExporter := monitoring.Configure(config, "fossilizer")
-	s.GetRaw(
-		"/metrics",
-		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			metricsExporter.ServeHTTP(w, r)
-		},
-	)
+	metricsHandler := monitoring.Configure(config, "fossilizer")
+	if metricsHandler != nil {
+		s.GetRaw(
+			"/metrics",
+			func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+				metricsHandler.ServeHTTP(w, r)
+			},
+		)
+	}
 }
