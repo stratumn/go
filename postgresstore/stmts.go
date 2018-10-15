@@ -109,7 +109,7 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE IF NOT EXISTS store.links (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea NOT NULL,
+			link_hash bytea NOT NULL UNIQUE,
 			priority double precision NOT NULL,
 			map_id text NOT NULL,
 			prev_link_hash bytea DEFAULT NULL,
@@ -120,10 +120,6 @@ var sqlCreate = []string{
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
-	`,
-	`
-		CREATE UNIQUE INDEX IF NOT EXISTS links_link_hash_idx
-		ON store.links (link_hash)
 	`,
 	`
 		CREATE INDEX IF NOT EXISTS links_priority_created_at_idx
@@ -148,13 +144,9 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE IF NOT EXISTS store_private.links_degree (
 			id BIGSERIAL PRIMARY KEY,
-			link_hash bytea references store.links(link_hash),
+			link_hash bytea references store.links(link_hash) UNIQUE,
 			out_degree integer
 		)
-	`,
-	`
-		CREATE UNIQUE INDEX IF NOT EXISTS links_degree_link_hash_idx
-		ON store_private.links_degree (link_hash)
 	`,
 	`
 		CREATE TABLE IF NOT EXISTS store.evidences (
@@ -163,12 +155,9 @@ var sqlCreate = []string{
 			provider text NOT NULL,
 			data bytea NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(link_hash, provider)
 		)
-	`,
-	`
-		CREATE UNIQUE INDEX IF NOT EXISTS evidences_link_hash_provider_idx
-		ON store.evidences (link_hash, provider)
 	`,
 	`
 		CREATE INDEX IF NOT EXISTS evidences_link_hash_idx
@@ -177,27 +166,20 @@ var sqlCreate = []string{
 	`
 		CREATE TABLE IF NOT EXISTS store.values (
 			id BIGSERIAL PRIMARY KEY,
-			key bytea NOT NULL,
+			key bytea NOT NULL UNIQUE,
 			value bytea NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX IF NOT EXISTS values_key_idx
-		ON store.values (key)
-	`,
-	`
 		CREATE TABLE IF NOT EXISTS store_private.process_maps (
 			id BIGSERIAL PRIMARY KEY,
 			process text NOT NULL,
 			map_id text NOT NULL,
-			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(process, map_id)
 		)
-	`,
-	`
-		CREATE UNIQUE INDEX IF NOT EXISTS process_map_idx
-		ON store_private.process_maps (process, map_id)
 	`,
 }
 
