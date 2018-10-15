@@ -179,7 +179,7 @@ func (a *Store) Create() error {
 	for _, query := range sqlCreate {
 		if _, err := a.db.Exec(query); err != nil {
 			pqErr, ok := err.(*pq.Error)
-			if ok && pqErr != nil && pqErr.Code.Name() == "duplicate_table" {
+			if ok && pqErr != nil {
 				continue
 			}
 
