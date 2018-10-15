@@ -23,7 +23,7 @@ import (
 
 const (
 	// Component name for monitoring.
-	Component = "utils"
+	Component = "types"
 )
 
 // Error structure to provide accurate metrics and logs.

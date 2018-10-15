@@ -20,6 +20,7 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -35,7 +36,7 @@ func TestBcBatchFossilizerEvidence(t *testing.T) {
 		_, err = evidences.UnmarshalProof(e)
 
 		assert.Equal(t, errorcode.InvalidArgument, err.(*types.Error).Code)
-		assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrInvalidBackend.Error())
+		testutil.AssertWrappedErrorEqual(t, err, evidences.ErrInvalidBackend)
 	})
 
 	t.Run("unmarshal-missing-provider", func(t *testing.T) {
@@ -47,7 +48,7 @@ func TestBcBatchFossilizerEvidence(t *testing.T) {
 		_, err = evidences.UnmarshalProof(e)
 
 		assert.Equal(t, errorcode.InvalidArgument, err.(*types.Error).Code)
-		assert.EqualError(t, err.(*types.Error).Wrapped, chainscript.ErrMissingProvider.Error())
+		testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrMissingProvider)
 	})
 
 	t.Run("unmarshal-invalid-version", func(t *testing.T) {
@@ -59,7 +60,7 @@ func TestBcBatchFossilizerEvidence(t *testing.T) {
 		_, err = evidences.UnmarshalProof(e)
 
 		assert.Equal(t, errorcode.InvalidArgument, err.(*types.Error).Code)
-		assert.EqualError(t, err.(*types.Error).Wrapped, evidences.ErrUnknownVersion.Error())
+		testutil.AssertWrappedErrorEqual(t, err, evidences.ErrUnknownVersion)
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {

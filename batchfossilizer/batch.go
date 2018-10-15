@@ -53,14 +53,12 @@ func (b *batch) open(path string) error {
 }
 
 func (b *batch) close() error {
-	var err error
 	if b.file != nil {
-		err = b.file.Close()
+		err := b.file.Close()
 		b.file = nil
-	}
-
-	if err != nil {
-		return types.WrapError(err, errorcode.InvalidArgument, Name, "could not close file")
+		if err != nil {
+			return types.WrapError(err, errorcode.InvalidArgument, Name, "could not close file")
+		}
 	}
 
 	return nil

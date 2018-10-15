@@ -27,7 +27,7 @@ import (
 func (s *scopedStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	data, err := chainscript.MarshalEvidence(evidence)
 	if err != nil {
-		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not add evidence")
+		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not marshal evidence")
 	}
 
 	_, err = s.stmts.AddEvidence.Exec(linkHash, evidence.Provider, data)

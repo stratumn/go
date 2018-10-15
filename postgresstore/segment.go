@@ -193,7 +193,7 @@ func (s *scopedStore) createLinkInTx(
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return types.WrapError(err, errorcode.Internal, store.Component, "could not create link")
+		return types.WrapError(err, errorcode.Internal, store.Component, "could not check created link")
 	}
 
 	if rowsAffected == 0 {
@@ -203,23 +203,23 @@ func (s *scopedStore) createLinkInTx(
 	if s.enforceUniqueMapEntry && len(prevLinkHash) == 0 {
 		initMap, err := tx.Prepare(SQLInitMap)
 		if err != nil {
-			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not create link")
+			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not initialize map")
 		}
 
 		_, err = initMap.Exec(process, mapID)
 		if err != nil {
-			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not create link")
+			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not initialize map")
 		}
 	}
 
 	initDegree, err := tx.Prepare(SQLCreateLinkDegree)
 	if err != nil {
-		return types.WrapError(err, errorcode.Internal, store.Component, "could not create link")
+		return types.WrapError(err, errorcode.Internal, store.Component, "could not update link degree")
 	}
 
 	_, err = initDegree.Exec(linkHash)
 	if err != nil {
-		return types.WrapError(err, errorcode.Internal, store.Component, "could not create link")
+		return types.WrapError(err, errorcode.Internal, store.Component, "could not update link degree")
 	}
 
 	return nil
