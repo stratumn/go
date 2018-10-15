@@ -154,7 +154,6 @@ func (s *Basic) AddMsgChannel(c chan BasicConnMsg) {
 // route of the HTTP server should pass the writer and request to this function.
 func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 	conn, err := s.upgradeHandle(w, r, nil)
-
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error":   err,
