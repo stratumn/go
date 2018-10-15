@@ -12,15 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package util
 
-import "testing"
+import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
-func TestOrStrings(t *testing.T) {
-	want := "test"
-	got := OrStrings("", want)
+	log "github.com/sirupsen/logrus"
+)
 
-	if got != want {
-		t.Errorf("Expected %s to equal %s", got, want)
-	}
+// CancelOnInterrupt creates a context and calls the context cancel function when an interrupt signal is caught
+func CancelOnInterrupt(ctx context.Context) context.Context {
+	ctx, cancel := context.WithCancel(ctx)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		defer func() {
+			signal.Stop(c)
+			cancel()
+		}()
+		select {
+		case sig := <-c:
+			log.WithField("signal", sig).Info("Got exit signal")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	return ctx
 }

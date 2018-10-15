@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package util
 
-// OrStrings returns the first non empty string in its arguments
-func OrStrings(strs ...string) string {
-	for _, s := range strs {
-		if s != "" {
-			return s
-		}
+import "testing"
+
+func TestOrStrings(t *testing.T) {
+	want := "test"
+	got := OrStrings("", want)
+
+	if got != want {
+		t.Errorf("Expected %s to equal %s", got, want)
 	}
-	return ""
 }
