@@ -20,6 +20,7 @@ import (
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storetestcases"
 	"github.com/stratumn/go-core/tmpop/tmpoptestcases"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStore(t *testing.T) {
@@ -84,4 +85,13 @@ func createAdapterTMPop() (store.Adapter, store.KeyValueStore, error) {
 
 func freeAdapterTMPop(a store.Adapter, _ store.KeyValueStore) {
 	freeAdapter(a)
+}
+
+func TestCreatePrepare(t *testing.T) {
+	// If create and prepare have already been called, we should not fail.
+	_, err := createStore()
+	require.NoError(t, err)
+
+	_, err = createStore()
+	require.NoError(t, err)
 }
