@@ -33,16 +33,22 @@ func init() {
 
 // exposeMetrics configures metrics and traces exporters and
 // exposes them to collectors.
-func (s *Server) exposeMetrics(config *monitoring.Config) {
+func (s *Server) exposeMetrics(config *monitoring.Config) error {
 	if !config.Monitor {
-		return
+		return nil
 	}
 
-	metricsExporter := monitoring.Configure(config, "store")
-	s.GetRaw(
-		"/metrics",
-		func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-			metricsExporter.ServeHTTP(w, r)
-		},
-	)
+	metricsHandler, err := monitoring.Configure(config, "store")
+	if err != nil {
+		return err
+	}
+	if metricsHandler != nil {
+		s.GetRaw(
+			"/metrics",
+			func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+				metricsHandler.ServeHTTP(w, r)
+			},
+		)
+	}
+	return nil
 }

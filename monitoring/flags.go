@@ -18,26 +18,59 @@ import "flag"
 
 var (
 	monitor            bool
-	metricsPort        int
-	jaegerEndpoint     string
 	traceSamplingRatio float64
+	metricsPort        int
+
+	metricsExporter string
+	tracesExporter  string
+
+	jaegerEndpoint       string
+	stackdriverProjectID string
 )
 
 // RegisterFlags registers the command-line monitoring flags.
 func RegisterFlags() {
 	flag.BoolVar(&monitor, "monitoring.active", true, "Set to true to activate monitoring")
-	flag.IntVar(&metricsPort, "monitoring.port", 0, "Port to use to expose metrics, for example 5001")
-	flag.StringVar(&jaegerEndpoint, "monitoring.jaeger_endpoint", DefaultJaegerEndpoint, "Endpoint where a Jaeger agent is running")
+	flag.IntVar(&metricsPort, "monitoring.metrics.port", 0, "Port to use to expose metrics, for example 5001")
 	flag.Float64Var(&traceSamplingRatio, "monitoring.trace_sampling_ratio", 1.0, "Set an appropriate sampling ratio depending on your load")
+
+	flag.StringVar(&metricsExporter, "monitoring.exporter.metrics", PrometheusExporter, "Exporter for metrics (either Prometheus or Stackdriver)")
+	flag.StringVar(&tracesExporter, "monitoring.exporter.traces", JaegerExporter, "Exporter for traces (either Jaeger or Stackdriver)")
+
+	flag.StringVar(&jaegerEndpoint, "monitoring.jaeger.endpoint", DefaultJaegerEndpoint, "Endpoint where a Jaeger agent is running")
+	flag.StringVar(&stackdriverProjectID, "monitoring.stackdriver.projectID", "", "ID of the project for which we want to export traces or metrics")
 }
 
 // ConfigurationFromFlags builds configuration from user-provided
 // command-line flags.
 func ConfigurationFromFlags() *Config {
-	return &Config{
+	config := &Config{
 		Monitor:            monitor,
-		MetricsPort:        metricsPort,
-		JaegerEndpoint:     jaegerEndpoint,
 		TraceSamplingRatio: traceSamplingRatio,
+
+		MetricsExporter: metricsExporter,
+		TracesExporter:  tracesExporter,
 	}
+
+	switch metricsExporter {
+	case PrometheusExporter:
+		break
+	case StackdriverExporter:
+		config.StackdriverConfig = &StackdriverConfig{
+			ProjectID: stackdriverProjectID,
+		}
+	}
+
+	switch tracesExporter {
+	case JaegerExporter:
+		config.JaegerConfig = &JaegerConfig{
+			Endpoint: jaegerEndpoint,
+		}
+	case StackdriverExporter:
+		config.StackdriverConfig = &StackdriverConfig{
+			ProjectID: stackdriverProjectID,
+		}
+	}
+
+	return config
 }
