@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package testutil
 
 import (
 	"context"
@@ -25,6 +25,7 @@ import (
 	types "docker.io/go-docker/api/types"
 	"docker.io/go-docker/api/types/container"
 	"docker.io/go-docker/api/types/network"
+
 	"github.com/docker/go-connections/nat"
 )
 
