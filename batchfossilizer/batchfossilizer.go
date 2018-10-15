@@ -32,7 +32,7 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
-	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
 
@@ -42,7 +42,7 @@ import (
 
 const (
 	// Name is the name set in the fossilizer's information.
-	Name = "batch"
+	Name = "batchfossilizer"
 
 	// Description is the description set in the fossilizer's information.
 	Description = "Stratumn Batch Fossilizer"
@@ -346,7 +346,7 @@ func (a *Fossilizer) batch(b *batch) {
 
 		tree, err := merkle.NewStaticTree(b.data)
 		if err != nil {
-			span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
+			span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
 			if !a.stopping {
 				err = a.stop(err)
 				if err != nil {
@@ -367,7 +367,7 @@ func (a *Fossilizer) batch(b *batch) {
 
 			if err := b.close(); err != nil {
 				log.WithField("error", err).Warn("Failed to close batch file")
-				span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: err.Error()})
+				span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
 			}
 
 			if a.config.Archive {
@@ -384,7 +384,7 @@ func (a *Fossilizer) batch(b *batch) {
 						"new":   filepath.Base(archivePath),
 						"error": err,
 					}).Warn("Failed to rename batch file")
-					span.SetStatus(trace.Status{Code: monitoring.Unknown, Message: err.Error()})
+					span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
 				}
 			} else {
 				if err := os.Remove(path); err == nil {
@@ -428,13 +428,13 @@ func (a *Fossilizer) sendEvidence(ctx context.Context, tree *merkle.StaticTree, 
 		evidence, err := proof.Evidence(Name)
 		if err != nil {
 			log.WithField("error", err).Error("Failed to create evidence")
-			span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 			continue
 		}
 
 		if r, err = a.transformer(evidence, d, m); err != nil {
 			log.WithField("error", err).Error("Failed to transform evidence")
-			span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Error()})
+			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		} else {
 			event := &fossilizer.Event{
 				EventType: fossilizer.DidFossilizeLink,
@@ -469,7 +469,7 @@ func (a *Fossilizer) stop(err error) error {
 	if a.pending.file != nil {
 		if e := a.pending.file.Close(); e != nil {
 			if err == nil {
-				err = e
+				err = types.WrapError(e, errorcode.InvalidArgument, Name, "failed to close file")
 			} else {
 				log.WithField("error", err).Error("Failed to close pending batch file")
 			}
@@ -481,21 +481,22 @@ func (a *Fossilizer) stop(err error) error {
 
 func (a *Fossilizer) ensurePath() error {
 	if err := os.MkdirAll(a.config.Path, DirPerm); err != nil && !os.IsExist(err) {
-		return err
+		return types.WrapError(err, errorcode.InvalidArgument, Name, "failed to create directory")
 	}
+
 	return nil
 }
 
 func (a *Fossilizer) recover() error {
 	matches, err := filepath.Glob(filepath.Join(a.config.Path, "*."+PendingExt))
 	if err != nil {
-		return err
+		return types.WrapError(err, errorcode.InvalidArgument, Name, "failed to find matching files")
 	}
 
 	for _, path := range matches {
 		file, err := os.OpenFile(path, os.O_RDONLY|os.O_EXCL, FilePerm)
 		if err != nil {
-			return err
+			return types.WrapError(err, errorcode.InvalidArgument, Name, "failed to open file")
 		}
 		defer file.Close()
 
@@ -514,7 +515,7 @@ func (a *Fossilizer) recover() error {
 		a.waitGroup.Wait()
 
 		if err := os.Remove(path); err != nil {
-			return err
+			return types.WrapError(err, errorcode.InvalidArgument, Name, "failed to remove file")
 		}
 
 		log.WithField("file", filepath.Base(path)).Info("Recovered pending hashes file")

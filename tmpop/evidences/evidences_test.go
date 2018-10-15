@@ -22,6 +22,7 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/tmpop/evidences"
 	"github.com/stratumn/merkle"
 	mktypes "github.com/stratumn/merkle/types"
@@ -159,7 +160,7 @@ func TestTendermintProof(t *testing.T) {
 
 			p, err := evidences.UnmarshalProof(e)
 			assert.Nil(t, p)
-			assert.EqualError(t, err, evidences.ErrInvalidBackend.Error())
+			testutil.AssertWrappedErrorEqual(t, err, evidences.ErrInvalidBackend)
 		},
 	}, {
 		"unmarshal-missing-chain-id",
@@ -171,7 +172,7 @@ func TestTendermintProof(t *testing.T) {
 
 			p, err := evidences.UnmarshalProof(e)
 			assert.Nil(t, p)
-			assert.EqualError(t, err, evidences.ErrMissingChainID.Error())
+			testutil.AssertWrappedErrorEqual(t, err, evidences.ErrMissingChainID)
 		},
 	}, {
 		"unmarshal-invalid-version",
@@ -184,7 +185,7 @@ func TestTendermintProof(t *testing.T) {
 
 			p, err := evidences.UnmarshalProof(e)
 			assert.Nil(t, p)
-			assert.EqualError(t, err, evidences.ErrUnknownVersion.Error())
+			testutil.AssertWrappedErrorEqual(t, err, evidences.ErrUnknownVersion)
 		},
 	}, {
 		"unmarshal-invalid-bytes",

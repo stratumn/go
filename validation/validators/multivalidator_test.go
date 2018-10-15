@@ -18,9 +18,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -122,7 +122,7 @@ func TestMultiValidator_New(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				err := mv.Validate(context.Background(), nil, tt.link)
 				if tt.err != nil {
-					assert.EqualError(t, errors.Cause(err), tt.err.Error())
+					testutil.AssertWrappedErrorEqual(t, err, tt.err)
 				} else {
 					assert.NoError(t, err)
 				}

@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package monitoring
-
-import "go.opencensus.io/trace"
+package errorcode
 
 // Taken from https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
 // as recommended by the OpenCensus documentation.
@@ -172,20 +170,3 @@ const (
 	// HTTP Mapping: 500 Internal Server Error
 	DataLoss = 15
 )
-
-// SetSpanStatusAndEnd sets the status of the span depending on the error
-// and ends it.
-// You should usually call:
-// defer func() {
-//     SetSpanStatusAndEnd(span, err)
-// }()
-func SetSpanStatusAndEnd(span *trace.Span, err error) {
-	if err != nil {
-		span.SetStatus(trace.Status{
-			Code:    Unknown,
-			Message: err.Error(),
-		})
-	}
-
-	span.End()
-}

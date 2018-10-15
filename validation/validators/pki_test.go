@@ -16,12 +16,11 @@ package validators_test
 
 import (
 	"context"
-	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stratumn/go-crypto/keys"
@@ -45,7 +44,7 @@ func TestPKI(t *testing.T) {
 			}
 
 			err := pki.Validate()
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrMissingKeys.Error()))
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrMissingKeys)
 		})
 
 		t.Run("invalid public key", func(t *testing.T) {
@@ -57,7 +56,7 @@ func TestPKI(t *testing.T) {
 			}
 
 			err := pki.Validate()
-			assert.Equal(t, 0, strings.Index(err.Error(), validators.ErrInvalidIdentity.Error()))
+			testutil.AssertErrorContains(t, err, validators.ErrInvalidIdentity)
 		})
 
 		t.Run("valid pki", func(t *testing.T) {
@@ -161,7 +160,7 @@ func TestPKIValidator(t *testing.T) {
 				if tt.valid {
 					assert.NoError(t, err)
 				} else {
-					assert.EqualError(t, errors.Cause(err), tt.err.Error())
+					testutil.AssertWrappedErrorEqual(t, err, tt.err)
 				}
 			})
 		}

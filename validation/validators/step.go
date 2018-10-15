@@ -20,10 +20,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+)
+
+const (
+	// StepValidatorName for monitoring.
+	StepValidatorName = "step-validator"
 )
 
 // Errors used by the ProcessStepValidator.
@@ -43,11 +50,11 @@ type ProcessStepValidator struct {
 // process and step.
 func NewProcessStepValidator(process, step string) (*ProcessStepValidator, error) {
 	if len(process) == 0 {
-		return nil, ErrMissingProcess
+		return nil, types.WrapError(ErrMissingProcess, errorcode.InvalidArgument, StepValidatorName, "could not create step validator")
 	}
 
 	if len(step) == 0 {
-		return nil, ErrMissingLinkStep
+		return nil, types.WrapError(ErrMissingLinkStep, errorcode.InvalidArgument, StepValidatorName, "could not create step validator")
 	}
 
 	return &ProcessStepValidator{process: process, step: step}, nil
@@ -75,9 +82,9 @@ func (v *ProcessStepValidator) ShouldValidate(link *chainscript.Link) bool {
 // Validate that the process and step match the configured values.
 func (v *ProcessStepValidator) Validate(ctx context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	if !v.ShouldValidate(link) {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "ProcessStep"))
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, StepValidatorName))
 		stats.Record(ctx, linksErr.M(1))
-		return ErrInvalidProcessOrStep
+		return types.WrapError(ErrInvalidProcessOrStep, errorcode.InvalidArgument, StepValidatorName, "step validation failed")
 	}
 
 	return nil

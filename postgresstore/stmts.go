@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
@@ -268,7 +269,7 @@ func newStmts(db SQLPreparerQuerier) (*stmts, error) {
 	s.GetEvidences = prepare(SQLGetEvidences)
 
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not prepare statements")
 	}
 
 	s.query = db.Query
@@ -319,7 +320,12 @@ func (s *stmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, error)
 
 	query := sqlHead + sqlBody + sqlTail
 
-	return s.query(query, values...)
+	rows, err := s.query(query, values...)
+	if err != nil {
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not get map ids")
+	}
+
+	return rows, nil
 }
 
 func getOrderingWay(reverse bool) string {
@@ -409,5 +415,10 @@ func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows,
 
 	query := sqlHead + sqlBody + sqlTail
 
-	return s.query(query, values...)
+	rows, err := s.query(query, values...)
+	if err != nil {
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not find segments")
+	}
+
+	return rows, nil
 }

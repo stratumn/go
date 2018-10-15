@@ -20,6 +20,7 @@ import (
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,7 +83,7 @@ func (f Factory) TestAdapterConfig(t *testing.T) {
 			Build()
 
 		llh2, err := a.CreateLink(ctx, ll2)
-		require.EqualError(t, err, store.ErrUniqueMapEntry.Error())
+		testutil.AssertWrappedErrorEqual(t, err, store.ErrUniqueMapEntry)
 
 		s2, err := a.GetSegment(ctx, llh2)
 		require.NoError(t, err)

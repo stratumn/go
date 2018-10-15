@@ -23,8 +23,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/couchstore"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storehttp"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
 )
@@ -59,7 +61,8 @@ func main() {
 			return false, nil
 		}
 
-		if _, ok := storeErr.(*couchstore.CouchNotReadyError); ok {
+		structErr, ok := storeErr.(*types.Error)
+		if ok && structErr.Code == errorcode.Unavailable {
 			log.Infof("Unable to connect to couchdb (%v). Retrying in 5s.", storeErr.Error())
 			time.Sleep(5 * time.Second)
 			return true, storeErr

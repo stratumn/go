@@ -27,12 +27,13 @@ import (
 	"github.com/stratumn/go-core/bcbatchfossilizer/evidences"
 	"github.com/stratumn/go-core/blockchain"
 	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
 
 const (
 	// Name is the name set in the fossilizer's information.
-	Name = "bcbatch"
+	Name = "bcbatchfossilizer"
 
 	// Description is the description set in the fossilizer's information.
 	Description = "Stratumn's Blockchain Batch Fossilizer"
@@ -64,7 +65,7 @@ type Fossilizer struct {
 // New creates an instance of a Fossilizer.
 func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, error) {
 	if batchConfig.MaxSimBatches > 1 {
-		return nil, fmt.Errorf("MaxSimBatches is %d want less than 2", batchConfig.MaxSimBatches)
+		return nil, types.NewErrorf(errorcode.InvalidArgument, Name, "MaxSimBatches is %d want less than 2", batchConfig.MaxSimBatches)
 	}
 
 	b, err := batchfossilizer.New(batchConfig)
@@ -79,7 +80,7 @@ func New(config *Config, batchConfig *batchfossilizer.Config) (*Fossilizer, erro
 
 	f.SetTransformer(f.transform)
 
-	return &f, err
+	return &f, nil
 }
 
 // GetInfo implements github.com/stratumn/go-core/fossilizer.Adapter.GetInfo.
@@ -91,7 +92,7 @@ func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 
 	info, ok := batchInfo.(*batchfossilizer.Info)
 	if !ok {
-		return nil, fmt.Errorf("Unexpected batchfossilizer info %#v", batchInfo)
+		return nil, types.NewErrorf(errorcode.InvalidArgument, Name, "Unexpected batchfossilizer info %#v", batchInfo)
 	}
 
 	timestamperInfo := a.config.HashTimestamper.GetInfo()

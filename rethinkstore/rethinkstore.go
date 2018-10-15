@@ -23,10 +23,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/utils"
@@ -139,7 +139,7 @@ func New(config *Config) (*Store, error) {
 	}, connectAttempts)
 
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not create rethinkstore")
 	}
 
 	db := rethink.DB(config.DB)
@@ -148,7 +148,7 @@ func New(config *Config) (*Store, error) {
 	}).Run(session)
 
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not create rethinkstore")
 	}
 
 	return &Store{
@@ -192,7 +192,7 @@ func formatLink(link *chainscript.Link) {
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	if link.Meta.OutDegree >= 0 {
-		return nil, store.ErrOutDegreeNotSupported
+		return nil, types.WrapError(store.ErrOutDegreeNotSupported, errorcode.Unimplemented, store.Component, "could not create link")
 	}
 
 	prevLinkHash := link.Meta.GetPrevLinkHash()
@@ -201,7 +201,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 
 	linkHash, err := link.Hash()
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
 	}
 
 	w := linkWrapper{
@@ -220,7 +220,7 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 	}
 
 	if err := a.links.Get(linkHash).Replace(&w).Exec(a.session); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not create link")
 	}
 
 	linkEvent := store.NewSavedLinks(link)
@@ -235,9 +235,8 @@ func (a *Store) CreateLink(ctx context.Context, link *chainscript.Link) (chainsc
 // GetSegment implements github.com/stratumn/go-core/store.SegmentReader.GetSegment.
 func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	cur, err := a.links.Get(linkHash).Run(a.session)
-
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get segment")
 	}
 	defer cur.Close()
 
@@ -246,12 +245,13 @@ func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 		if err == rethink.ErrEmptyResult {
 			return nil, nil
 		}
-		return nil, err
+
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get segment")
 	}
 
 	segment, err := w.Content.Segmentify()
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not segmentify")
 	}
 
 	if evidences, err := a.GetEvidences(ctx, segment.LinkHash()); evidences != nil && err == nil {
@@ -342,7 +342,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 
 	cur, err := q.Skip(filter.Offset).Limit(filter.Limit).Run(a.session)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not find segments")
 	}
 	defer cur.Close()
 
@@ -350,15 +350,16 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 		Segments: make(types.SegmentSlice, 0, filter.Limit),
 	}
 	if err := cur.All(&segments.Segments); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not find segments")
 	}
 
 	// Non optimal way to count all segments
 	totalCountCur, err := q.Run(a.session)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not count segments")
 	}
 	defer totalCountCur.Close()
+
 	segIt := chainscript.Segment{}
 	for totalCountCur.Next(&segIt) {
 		segments.TotalCount++
@@ -367,7 +368,7 @@ func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 	for _, s := range segments.Segments {
 		err = s.SetLinkHash()
 		if err != nil {
-			return nil, err
+			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
 		}
 	}
 
@@ -425,13 +426,13 @@ func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]strin
 
 	cur, err := q.Skip(filter.Pagination.Offset).Limit(filter.Limit).Run(a.session)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get map ids")
 	}
 	defer cur.Close()
 
 	mapIDs := []string{}
 	if err = cur.All(&mapIDs); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get map ids")
 	}
 
 	return mapIDs, nil
@@ -441,14 +442,14 @@ func (a *Store) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]strin
 func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
-		return err
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not add evidence")
 	}
 	defer cur.Close()
 
 	var ew evidencesWrapper
 	if err := cur.One(&ew); err != nil {
 		if err != rethink.ErrEmptyResult {
-			return err
+			return types.WrapError(err, errorcode.Unavailable, store.Component, "could not add evidence")
 		}
 	}
 
@@ -467,7 +468,7 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 		UpdatedAt: time.Now(),
 	}
 	if err := a.evidences.Get(linkHash).Replace(&w).Exec(a.session); err != nil {
-		return err
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not add evidence")
 	}
 
 	evidenceEvent := store.NewSavedEvidences()
@@ -483,7 +484,7 @@ func (a *Store) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, 
 func (a *Store) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	cur, err := a.evidences.Get(linkHash).Run(a.session)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get evidences")
 	}
 	defer cur.Close()
 
@@ -492,7 +493,8 @@ func (a *Store) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash)
 		if err == rethink.ErrEmptyResult {
 			return types.EvidenceSlice{}, nil
 		}
-		return nil, err
+
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get evidences")
 	}
 	return ew.Content, nil
 }
@@ -501,7 +503,7 @@ func (a *Store) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash)
 func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	cur, err := a.values.Get(key).Run(a.session)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get value")
 	}
 	defer cur.Close()
 
@@ -510,7 +512,8 @@ func (a *Store) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 		if err == rethink.ErrEmptyResult {
 			return nil, nil
 		}
-		return nil, err
+
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get value")
 	}
 
 	return w.Value, nil
@@ -523,7 +526,12 @@ func (a *Store) SetValue(ctx context.Context, key, value []byte) error {
 		Value: value,
 	}
 
-	return a.values.Get(key).Replace(&v).Exec(a.session)
+	err := a.values.Get(key).Replace(&v).Exec(a.session)
+	if err != nil {
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not set value")
+	}
+
+	return nil
 }
 
 // DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
@@ -533,19 +541,19 @@ func (a *Store) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 		Delete(rethink.DeleteOpts{ReturnChanges: true}).
 		RunWrite(a.session)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not delete value")
 	}
 	if res.Deleted < 1 {
 		return nil, nil
 	}
 	b, err := json.Marshal(res.Changes[0].OldValue)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Marshal")
 	}
 
 	var w valueWrapper
 	if err := json.Unmarshal(b, &w); err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Unmarshal")
 	}
 
 	return w.Value, nil
@@ -565,13 +573,15 @@ func (b *rethinkBufferedBatch) CreateLink(ctx context.Context, link *chainscript
 func (a *Store) NewBatch(ctx context.Context) (store.Batch, error) {
 	bbBatch := bufferedbatch.NewBatch(ctx, a)
 	if bbBatch == nil {
-		return nil, errors.New("cannot create underlying batch")
+		return nil, types.NewError(errorcode.Internal, store.Component, "cannot create underlying batch")
 	}
+
 	return &rethinkBufferedBatch{Batch: bbBatch}, nil
 }
 
 // Create creates the database tables and indexes.
-func (a *Store) Create() (err error) {
+func (a *Store) Create() error {
+	var err error
 	exec := func(term rethink.Term) {
 		if err == nil {
 			err = term.Exec(a.session)
@@ -580,7 +590,7 @@ func (a *Store) Create() (err error) {
 
 	exists, err := a.Exists()
 	if err != nil {
-		return err
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not create tables")
 	} else if exists {
 		return nil
 	}
@@ -623,42 +633,58 @@ func (a *Store) Create() (err error) {
 	exec(a.db.TableCreate("values", tblOpts))
 	exec(a.values.Wait())
 
-	return err
+	if err != nil {
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not create tables")
+	}
+
+	return nil
 }
 
 // Drop drops the database tables and indexes.
-func (a *Store) Drop() (err error) {
+func (a *Store) Drop() error {
+	var err error
 	exec := func(term rethink.Term) {
 		if err == nil {
 			err = term.Exec(a.session)
 		}
 	}
+
 	exec(a.db.TableDrop("links"))
 	exec(a.db.TableDrop("evidences"))
 	exec(a.db.TableDrop("values"))
 
-	return
+	if err != nil {
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not drop tables")
+	}
+
+	return nil
 }
 
 // Clean removes all documents from the tables.
-func (a *Store) Clean() (err error) {
+func (a *Store) Clean() error {
+	var err error
 	exec := func(term rethink.Term) {
 		if err == nil {
 			err = term.Exec(a.session)
 		}
 	}
+
 	exec(a.links.Delete())
 	exec(a.evidences.Delete())
 	exec(a.values.Delete())
 
-	return
+	if err != nil {
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not clean tables")
+	}
+
+	return nil
 }
 
 // Exists returns whether the database tables exists.
 func (a *Store) Exists() (bool, error) {
 	cur, err := a.db.TableList().Run(a.session)
 	if err != nil {
-		return false, err
+		return false, types.WrapError(err, errorcode.Unavailable, store.Component, "could not test tables")
 	}
 	defer cur.Close()
 
@@ -668,5 +694,6 @@ func (a *Store) Exists() (bool, error) {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }

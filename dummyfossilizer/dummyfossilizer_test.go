@@ -28,12 +28,8 @@ import (
 func TestGetInfo(t *testing.T) {
 	a := New(&Config{})
 	got, err := a.GetInfo(context.Background())
-	if err != nil {
-		t.Fatalf("a.GetInfo(): err: %s", err)
-	}
-	if _, ok := got.(*Info); !ok {
-		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
-	}
+	require.NoError(t, err)
+	assert.IsType(t, &Info{}, got)
 }
 
 func TestFossilize(t *testing.T) {
@@ -47,23 +43,16 @@ func TestFossilize(t *testing.T) {
 	)
 
 	go func() {
-		if err := a.Fossilize(context.Background(), data, meta); err != nil {
-			t.Errorf("a.Fossilize(): err: %s", err)
-		}
+		err := a.Fossilize(context.Background(), data, meta)
+		assert.NoError(t, err)
 	}()
 
 	e := <-ec
 	r := e.Data.(*fossilizer.Result)
 
-	if got, want := string(r.Data), string(data); got != want {
-		t.Errorf("<-rc: Data = %q want %q", got, want)
-	}
-	if got, want := string(r.Meta), string(meta); got != want {
-		t.Errorf("<-rc: Meta = %q want %q", got, want)
-	}
-	if got, want := r.Evidence.Provider, "dummy"; got != want {
-		t.Errorf(`<-rc: Evidence.Provider = %s want %s`, got, want)
-	}
+	assert.Equal(t, data, r.Data)
+	assert.Equal(t, meta, r.Meta)
+	assert.Equal(t, "dummyfossilizer", r.Evidence.Provider)
 }
 
 func TestDummyProof(t *testing.T) {

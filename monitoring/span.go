@@ -12,11 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresstore
+package monitoring
 
-import "github.com/pkg/errors"
+import (
+	"github.com/stratumn/go-core/monitoring/errorcode"
 
-// Errors used by the PostgresStore.
-var (
-	ErrLinkAlreadyExists = errors.New("link already exists")
+	"go.opencensus.io/trace"
 )
+
+// SetSpanStatusAndEnd sets the status of the span depending on the error
+// and ends it.
+// You should usually call:
+// defer func() {
+//     SetSpanStatusAndEnd(span, err)
+// }()
+func SetSpanStatusAndEnd(span *trace.Span, err error) {
+	if err != nil {
+		span.SetStatus(trace.Status{
+			Code:    errorcode.Unknown,
+			Message: err.Error(),
+		})
+	}
+
+	span.End()
+}

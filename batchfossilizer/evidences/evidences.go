@@ -19,13 +19,14 @@ import (
 	json "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	mktypes "github.com/stratumn/merkle/types"
 )
 
 const (
 	// BatchFossilizerName is the name used as the BatchProof backend.
-	BatchFossilizerName = "batch"
+	BatchFossilizerName = "batchfossilizer"
 
 	// Version1_0_0 uses canonical-JSON to serialize a timestamped merkle path
 	// and a merkle root.
@@ -37,7 +38,7 @@ const (
 
 // Errors used by the batch evidence.
 var (
-	ErrInvalidBackend = errors.New("backend is not batch")
+	ErrInvalidBackend = errors.New("backend is not batchfossilizer")
 	ErrUnknownVersion = errors.New("unknown evidence version")
 )
 
@@ -63,20 +64,25 @@ func (p *BatchProof) Verify(_ interface{}) bool {
 func (p *BatchProof) Evidence(provider string) (*chainscript.Evidence, error) {
 	proof, err := json.Marshal(p)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, BatchFossilizerName, "json.Marshal")
 	}
 
-	return chainscript.NewEvidence(Version, BatchFossilizerName, provider, proof)
+	e, err := chainscript.NewEvidence(Version, BatchFossilizerName, provider, proof)
+	if err != nil {
+		return nil, types.WrapError(err, errorcode.InvalidArgument, BatchFossilizerName, "failed to create evidence")
+	}
+
+	return e, nil
 }
 
 // UnmarshalProof unmarshals the batch proof contained in an evidence.
 func UnmarshalProof(e *chainscript.Evidence) (*BatchProof, error) {
 	if e.Backend != BatchFossilizerName {
-		return nil, ErrInvalidBackend
+		return nil, types.WrapError(ErrInvalidBackend, errorcode.InvalidArgument, BatchFossilizerName, "failed to unmarshal proof")
 	}
 
 	if len(e.Provider) == 0 {
-		return nil, chainscript.ErrMissingProvider
+		return nil, types.WrapError(chainscript.ErrMissingProvider, errorcode.InvalidArgument, BatchFossilizerName, "failed to unmarshal proof")
 	}
 
 	switch e.Version {
@@ -84,11 +90,11 @@ func UnmarshalProof(e *chainscript.Evidence) (*BatchProof, error) {
 		var proof BatchProof
 		err := json.Unmarshal(e.Proof, &proof)
 		if err != nil {
-			return nil, err
+			return nil, types.WrapError(err, errorcode.InvalidArgument, BatchFossilizerName, "json.Unmarshal")
 		}
 
 		return &proof, nil
 	default:
-		return nil, ErrUnknownVersion
+		return nil, types.WrapError(ErrUnknownVersion, errorcode.InvalidArgument, BatchFossilizerName, "failed to unmarshal proof")
 	}
 }

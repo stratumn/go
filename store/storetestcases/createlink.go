@@ -24,7 +24,10 @@ import (
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -91,7 +94,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(0).Build()
 
 			_, err := a.CreateLink(ctx, l)
-			if err == store.ErrOutDegreeNotSupported {
+			if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -102,7 +105,9 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = a.CreateLink(ctx, child)
-			assert.EqualError(t, err, chainscript.ErrOutDegree.Error())
+			require.NotNil(t, err)
+			testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrOutDegree)
+			assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
 
 			found, _ := a.GetSegment(ctx, childHash)
 			assert.Nil(t, found)
@@ -113,7 +118,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(1).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err == store.ErrOutDegreeNotSupported {
+			if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -144,7 +149,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 
 			select {
 			case err := <-errChan:
-				assert.EqualError(t, err, chainscript.ErrOutDegree.Error())
+				testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrOutDegree)
 			case <-time.After(100 * time.Millisecond):
 				assert.Fail(t, "timeout before link creation failure")
 			}
@@ -163,7 +168,7 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			l := chainscripttest.NewLinkBuilder(t).WithRandomData().WithDegree(2).Build()
 
 			lh, err := a.CreateLink(ctx, l)
-			if err == store.ErrOutDegreeNotSupported {
+			if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 				t.Skip("tested store doesn't support out degree yet")
 			}
 
@@ -184,7 +189,8 @@ func (f Factory) TestCreateLink(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = a.CreateLink(ctx, child3)
-			require.EqualError(t, err, chainscript.ErrOutDegree.Error())
+			testutil.AssertWrappedErrorEqual(t, err, chainscript.ErrOutDegree)
+			assert.Equal(t, errorcode.FailedPrecondition, err.(*types.Error).Code)
 
 			children, err := a.FindSegments(ctx, &store.SegmentFilter{
 				Pagination:   store.Pagination{Limit: 10},

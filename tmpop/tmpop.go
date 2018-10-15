@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/tmpop/evidences"
 	"github.com/stratumn/go-core/types"
@@ -111,7 +111,7 @@ func New(ctx context.Context, a store.Adapter, kv store.KeyValueStore, config *C
 
 	lastBlock, err := ReadLastBlock(ctx, kv)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot read the last block")
+		return nil, err
 	}
 
 	s, err := NewState(ctx, a, config)
@@ -164,7 +164,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 	t.currentHeader = &req.Header
 	if t.currentHeader == nil {
 		log.Error("Cannot begin block without header")
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: "Cannot begin block without header"})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: "Cannot begin block without header"})
 		return abci.ResponseBeginBlock{}
 	}
 
@@ -202,7 +202,7 @@ func (t *TMPop) DeliverTx(tx []byte) abci.ResponseDeliverTx {
 	if !err.IsOK() {
 		ctx, _ = tag.New(ctx, tag.Upsert(txStatus, "invalid"))
 		stats.Record(ctx, txCount.M(1))
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Log})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Log})
 		return abci.ResponseDeliverTx{
 			Code: err.Code,
 			Log:  err.Log,
@@ -221,7 +221,7 @@ func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
 
 	err := t.doTx(ctx, t.state.Check, tx)
 	if !err.IsOK() {
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: err.Log})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Log})
 		return abci.ResponseCheckTx{
 			Code: err.Code,
 			Log:  err.Log,
@@ -240,19 +240,19 @@ func (t *TMPop) Commit() abci.ResponseCommit {
 	appHash, links, err := t.state.Commit(ctx)
 	if err != nil {
 		log.Errorf("Error while committing: %s", err)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
 		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveValidatorHash(ctx); err != nil {
 		log.Errorf("Error while saving validator hash: %s", err)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
 		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveCommitLinkHashes(ctx, links); err != nil {
 		log.Errorf("Error while saving committed link hashes: %s", err)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: err.Error()})
+		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
 		return abci.ResponseCommit{}
 	}
 
@@ -277,7 +277,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	if reqQuery.Height != 0 {
 		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = "tmpop only supports queries on latest commit"
-		span.SetStatus(trace.Status{Code: monitoring.InvalidArgument, Message: resQuery.Log})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: resQuery.Log})
 		return
 	}
 
@@ -353,7 +353,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	if err != nil {
 		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = err.Error()
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: resQuery.Log})
+		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: resQuery.Log})
 		return
 	}
 
@@ -362,7 +362,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		if err != nil {
 			resQuery.Code = CodeTypeInternalError
 			resQuery.Log = err.Error()
-			span.SetStatus(trace.Status{Code: monitoring.Internal, Message: resQuery.Log})
+			span.SetStatus(trace.Status{Code: errorcode.Internal, Message: resQuery.Log})
 		}
 
 		resQuery.Value = resBytes
@@ -403,7 +403,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 	if t.tmClient == nil {
 		log.Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "TMPoP not connected to Tendermint Core."})
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: "TMPoP not connected to Tendermint Core."})
 		return
 	}
 
@@ -415,14 +415,14 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	// we need block N+2 to be committed.
 	evidenceHeight := header.Height - 3
 	if evidenceHeight <= 0 {
-		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition})
+		span.SetStatus(trace.Status{Code: errorcode.FailedPrecondition})
 		return
 	}
 
 	linkHashes, err := t.getCommitLinkHashes(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get link hashes for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get link hashes"})
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: "Could not get link hashes"})
 		return
 	}
 
@@ -435,34 +435,34 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	validatorHash, err := t.getValidatorHash(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get validator hash for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not get validator hash"})
+		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: "Could not get validator hash"})
 		return
 	}
 
 	evidenceBlock, err := t.tmClient.Block(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get block %d header: %v", header.Height, err)
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get block"})
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: "Could not get block"})
 		return
 	}
 
 	evidenceNextBlock, err := t.tmClient.Block(ctx, evidenceHeight+1)
 	if err != nil {
 		log.Warnf("Could not get next block %d header: %v", header.Height, err)
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get next block"})
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: "Could not get next block"})
 		return
 	}
 
 	evidenceLastBlock, err := t.tmClient.Block(ctx, evidenceHeight+2)
 	if err != nil {
 		log.Warnf("Could not get last block %d header: %v", header.Height, err)
-		span.SetStatus(trace.Status{Code: monitoring.Unavailable, Message: "Could not get last block"})
+		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: "Could not get last block"})
 		return
 	}
 
 	if len(evidenceNextBlock.Votes) == 0 || len(evidenceLastBlock.Votes) == 0 {
 		log.Warnf("Block %d isn't signed by validator nodes. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition, Message: "Votes are missing"})
+		span.SetStatus(trace.Status{Code: errorcode.FailedPrecondition, Message: "Votes are missing"})
 		return
 	}
 
@@ -475,24 +475,19 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	merkle, err := merkle.NewStaticTree(leaves)
 	if err != nil {
 		log.Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not create merkle tree"})
+		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: "Could not create merkle tree"})
 		return
 	}
 
 	merkleRoot := merkle.Root()
+	appHash := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 
-	appHash, err := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
-	if err != nil {
-		log.Warnf("Could not compute app hash for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: monitoring.Internal, Message: "Could not compute app hash"})
-		return
-	}
 	if !bytes.Equal(appHash, evidenceNextBlock.Header.AppHash) {
 		log.Warnf("App hash %x of block %d doesn't match the header's: %x. Evidence will not be generated.",
 			appHash,
 			header.Height,
 			header.AppHash)
-		span.SetStatus(trace.Status{Code: monitoring.FailedPrecondition, Message: "AppHash mismatch"})
+		span.SetStatus(trace.Status{Code: errorcode.FailedPrecondition, Message: "AppHash mismatch"})
 		return
 	}
 

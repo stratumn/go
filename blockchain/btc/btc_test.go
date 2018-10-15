@@ -18,8 +18,9 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcutil"
-	"github.com/pkg/errors"
 	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,7 +28,7 @@ func TestGetNetworkFromWIF(t *testing.T) {
 	type testCase struct {
 		name            string
 		wif             string
-		err             string
+		err             error
 		expectedNetwork btc.Network
 	}
 
@@ -45,23 +46,23 @@ func TestGetNetworkFromWIF(t *testing.T) {
 		{
 			name: "invalid WIF",
 			wif:  "fakeWIF",
-			err:  errors.Wrap(btcutil.ErrMalformedPrivateKey, btc.ErrBadWIF.Error()).Error(),
+			err:  types.WrapError(btcutil.ErrMalformedPrivateKey, errorcode.InvalidArgument, "btc", btc.ErrBadWIF.Error()),
 		},
 		{
 			name: "unknown bitcoin network",
 			wif:  "5KrPNVvAhnRBNMYRJUq58YMfyUMyVMQrQhhfFtcbT9rK67poC3F",
-			err:  btc.ErrUnknownBitcoinNetwork.Error(),
+			err:  types.WrapError(btc.ErrUnknownBitcoinNetwork, errorcode.InvalidArgument, "btc", "invalid network"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			net, err := btc.GetNetworkFromWIF(tt.wif)
-			if tt.err == "" {
+			if tt.err == nil {
 				assert.NoError(t, err)
 				assert.Equal(t, net, tt.expectedNetwork)
 			} else {
-				assert.EqualError(t, err, tt.err)
+				assert.EqualError(t, err, tt.err.Error())
 			}
 		})
 	}

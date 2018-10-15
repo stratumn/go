@@ -18,7 +18,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // LinkSelector used in LinkQuery.
@@ -118,7 +120,12 @@ func NewSegmentQuery(filter *store.SegmentFilter) ([]byte, error) {
 		Sort:     buildSortArgs(filter.Reverse),
 	}
 
-	return json.Marshal(linkQuery)
+	b, err := json.Marshal(linkQuery)
+	if err != nil {
+		return b, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Marshal")
+	}
+
+	return b, nil
 }
 
 // MapSelector used in MapQuery.
@@ -177,5 +184,10 @@ func NewMapQuery(filter *store.MapFilter) ([]byte, error) {
 		Skip:     filter.Pagination.Offset,
 	}
 
-	return json.Marshal(mapQuery)
+	b, err := json.Marshal(mapQuery)
+	if err != nil {
+		return b, types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Marshal")
+	}
+
+	return b, nil
 }

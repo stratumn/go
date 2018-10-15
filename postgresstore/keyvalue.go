@@ -17,6 +17,10 @@ package postgresstore
 import (
 	"context"
 	"database/sql"
+
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 // GetValue implements github.com/stratumn/go-core/store.KeyValueStore.GetValue.
@@ -27,7 +31,8 @@ func (s *scopedStore) GetValue(ctx context.Context, key []byte) ([]byte, error) 
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+
+		return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not get value")
 	}
 
 	return data, nil
@@ -36,7 +41,11 @@ func (s *scopedStore) GetValue(ctx context.Context, key []byte) ([]byte, error) 
 // SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (s *scopedStore) SetValue(ctx context.Context, key []byte, value []byte) error {
 	_, err := s.stmts.SaveValue.Exec(key, value)
-	return err
+	if err != nil {
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not set value")
+	}
+
+	return nil
 }
 
 // DeleteValue implements github.com/stratumn/go-core/store.KeyValueStore.DeleteValue.
@@ -47,7 +56,8 @@ func (s *scopedStore) DeleteValue(ctx context.Context, key []byte) ([]byte, erro
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, err
+
+		return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not delete value")
 	}
 
 	return data, nil

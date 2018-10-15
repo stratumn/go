@@ -18,6 +18,8 @@ import (
 	"context"
 
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 )
 
@@ -25,12 +27,12 @@ import (
 func (s *scopedStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
 	data, err := chainscript.MarshalEvidence(evidence)
 	if err != nil {
-		return err
+		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not marshal evidence")
 	}
 
 	_, err = s.stmts.AddEvidence.Exec(linkHash, evidence.Provider, data)
 	if err != nil {
-		return err
+		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not add evidence")
 	}
 
 	return nil
@@ -42,7 +44,7 @@ func (s *scopedStore) GetEvidences(ctx context.Context, linkHash chainscript.Lin
 
 	rows, err := s.stmts.GetEvidences.Query(linkHash)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get evidences")
 	}
 
 	for rows.Next() {
@@ -52,12 +54,12 @@ func (s *scopedStore) GetEvidences(ctx context.Context, linkHash chainscript.Lin
 		)
 
 		if err := rows.Scan(&data); err != nil {
-			return nil, err
+			return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not get evidence")
 		}
 
 		evidence, err = chainscript.UnmarshalEvidence(data)
 		if err != nil {
-			return nil, err
+			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not unmarshal evidence")
 		}
 
 		evidences = append(evidences, evidence)

@@ -25,6 +25,9 @@ import (
 )
 
 const (
+	// Component name for monitoring.
+	Component = "store"
+
 	// DefaultLimit is the default pagination limit.
 	DefaultLimit = 20
 

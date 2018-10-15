@@ -20,12 +20,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
 	batchevidences "github.com/stratumn/go-core/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
 
 const (
 	// BcBatchFossilizerName is the name used as the BcBatchProof backend.
-	BcBatchFossilizerName = "bcbatch"
+	BcBatchFossilizerName = "bcbatchfossilizer"
 
 	// Version1_0_0 uses canonical-JSON to serialize a timestamped merkle path
 	// and a merkle root along with a transaction ID.
@@ -61,20 +62,25 @@ func (p *BcBatchProof) Verify(linkHash interface{}) bool {
 func (p *BcBatchProof) Evidence(provider string) (*chainscript.Evidence, error) {
 	proof, err := json.Marshal(p)
 	if err != nil {
-		return nil, err
+		return nil, types.WrapError(err, errorcode.InvalidArgument, BcBatchFossilizerName, "json.Marshal")
 	}
 
-	return chainscript.NewEvidence(Version, BcBatchFossilizerName, provider, proof)
+	e, err := chainscript.NewEvidence(Version, BcBatchFossilizerName, provider, proof)
+	if err != nil {
+		return nil, types.WrapError(err, errorcode.InvalidArgument, BcBatchFossilizerName, "failed to create evidence")
+	}
+
+	return e, nil
 }
 
 // UnmarshalProof unmarshals the bcbatch proof contained in an evidence.
 func UnmarshalProof(e *chainscript.Evidence) (*BcBatchProof, error) {
 	if e.Backend != BcBatchFossilizerName {
-		return nil, ErrInvalidBackend
+		return nil, types.WrapError(ErrInvalidBackend, errorcode.InvalidArgument, BcBatchFossilizerName, "failed to unmarshal proof")
 	}
 
 	if len(e.Provider) == 0 {
-		return nil, chainscript.ErrMissingProvider
+		return nil, types.WrapError(chainscript.ErrMissingProvider, errorcode.InvalidArgument, BcBatchFossilizerName, "failed to unmarshal proof")
 	}
 
 	switch e.Version {
@@ -82,11 +88,11 @@ func UnmarshalProof(e *chainscript.Evidence) (*BcBatchProof, error) {
 		var proof BcBatchProof
 		err := json.Unmarshal(e.Proof, &proof)
 		if err != nil {
-			return nil, err
+			return nil, types.WrapError(err, errorcode.InvalidArgument, BcBatchFossilizerName, "json.Unmarshal")
 		}
 
 		return &proof, nil
 	default:
-		return nil, ErrUnknownVersion
+		return nil, types.WrapError(ErrUnknownVersion, errorcode.InvalidArgument, BcBatchFossilizerName, "failed to unmarshal proof")
 	}
 }
