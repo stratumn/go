@@ -33,12 +33,15 @@ func init() {
 
 // exposeMetrics configures metrics and traces exporters and
 // exposes them to collectors.
-func (s *Server) exposeMetrics(config *monitoring.Config) {
+func (s *Server) exposeMetrics(config *monitoring.Config) error {
 	if !config.Monitor {
-		return
+		return nil
 	}
 
-	metricsHandler := monitoring.Configure(config, "fossilizer")
+	metricsHandler, err := monitoring.Configure(config, "fossilizer")
+	if err != nil {
+		return err
+	}
 	if metricsHandler != nil {
 		s.GetRaw(
 			"/metrics",
@@ -47,4 +50,5 @@ func (s *Server) exposeMetrics(config *monitoring.Config) {
 			},
 		)
 	}
+	return nil
 }

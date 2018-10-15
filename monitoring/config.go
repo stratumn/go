@@ -16,7 +16,6 @@ package monitoring
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -44,6 +43,8 @@ const (
 var (
 	ErrInvalidMetricsExporter = errors.New("metrics exporter should be 'prometheus' or 'stackdriver'")
 	ErrInvalidTracesExporter  = errors.New("metrics exporter should be 'jaeger' or 'stackdriver'")
+	ErrMissingExporterConfig  = errors.New("missing exporter configuration section")
+	ErrMissingProjectID       = errors.New("missing stackdriver project id")
 )
 
 // Config contains options for monitoring.
@@ -51,6 +52,7 @@ type Config struct {
 	// Set to true to monitor Stratumn components.
 	Monitor bool
 
+	// Port used to expose metrics.
 	MetricsPort int
 
 	// Ratio of traces to record.
@@ -73,7 +75,7 @@ type Config struct {
 	StackdriverConfig *StackdriverConfig
 }
 
-// StackdriverConfig contains configuration options for Stackdriver.
+// StackdriverConfig contains configuration options for Stackdriver (metrics and tracing).
 type StackdriverConfig struct {
 	// ProjectID is the identifier of the Stackdriver project
 	ProjectID string
@@ -85,6 +87,28 @@ type JaegerConfig struct {
 	Endpoint string
 }
 
+// Validate the stackdriver configuration section.
+func (c *StackdriverConfig) Validate() error {
+	if c == nil {
+		return ErrMissingExporterConfig
+	}
+
+	if c.ProjectID == "" {
+		return ErrMissingProjectID
+	}
+
+	return nil
+}
+
+// Validate the jaeger configuration section.
+func (c *JaegerConfig) Validate() error {
+	if c == nil {
+		return ErrMissingExporterConfig
+	}
+
+	return nil
+}
+
 func configureMetricsExporter(config *Config) (exporter view.Exporter, err error) {
 	switch config.MetricsExporter {
 	case PrometheusExporter:
@@ -93,6 +117,9 @@ func configureMetricsExporter(config *Config) (exporter view.Exporter, err error
 			return nil, err
 		}
 	case StackdriverExporter:
+		if err := config.StackdriverConfig.Validate(); err != nil {
+			return nil, err
+		}
 		exporter, err = stackdriver.NewExporter(stackdriver.Options{
 			ProjectID: config.StackdriverConfig.ProjectID,
 		})
@@ -113,6 +140,9 @@ func configureMetricsExporter(config *Config) (exporter view.Exporter, err error
 func configureTracesExporter(config *Config, serviceName string) (exporter trace.Exporter, err error) {
 	switch config.TracesExporter {
 	case JaegerExporter:
+		if err := config.JaegerConfig.Validate(); err != nil {
+			return nil, err
+		}
 		if len(config.JaegerConfig.Endpoint) == 0 {
 			config.JaegerConfig.Endpoint = DefaultJaegerEndpoint
 		}
@@ -124,6 +154,9 @@ func configureTracesExporter(config *Config, serviceName string) (exporter trace
 			return nil, err
 		}
 	case StackdriverExporter:
+		if err := config.StackdriverConfig.Validate(); err != nil {
+			return nil, err
+		}
 		exporter, err = stackdriver.NewExporter(stackdriver.Options{
 			ProjectID: config.StackdriverConfig.ProjectID,
 		})
@@ -143,22 +176,22 @@ func configureTracesExporter(config *Config, serviceName string) (exporter trace
 // Configure configures metrics and trace monitoring.
 // If metrics need to be exposed on an http route ('/metrics'),
 // this function returns an http.Handler. It returns nil otherwise.
-func Configure(config *Config, serviceName string) http.Handler {
+func Configure(config *Config, serviceName string) (http.Handler, error) {
 	if !config.Monitor {
-		return nil
+		return nil, nil
 	}
 	_, err := configureTracesExporter(config, serviceName)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	metricsExporter, err := configureMetricsExporter(config)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	if handler, ok := metricsExporter.(http.Handler); ok {
-		return handler
+		return handler, nil
 	}
 
-	return nil
+	return nil, nil
 }

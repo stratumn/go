@@ -38,7 +38,11 @@ func Run(a store.Adapter, kv store.KeyValueStore, config *Config) {
 		log.Fatal(err)
 	}
 
-	go exposeMetrics(config.Monitoring)
+	go func() {
+		if err := exposeMetrics(config.Monitoring); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	log.Infof("TMPop v%s@%s", config.Version, config.Commit[:7])
 	log.Infof("Adapter %v", adapterInfo)

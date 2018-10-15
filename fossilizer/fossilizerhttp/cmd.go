@@ -65,7 +65,9 @@ func Run(
 	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
-	h.exposeMetrics(monitoringConfig)
+	if err := h.exposeMetrics(monitoringConfig); err != nil {
+		log.Fatal(err)
+	}
 
 	go func() {
 		<-ctx.Done()

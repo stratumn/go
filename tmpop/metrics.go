@@ -89,16 +89,19 @@ func init() {
 
 // exposeMetrics configures metrics and traces exporters and
 // exposes them to collectors.
-func exposeMetrics(config *monitoring.Config) {
+func exposeMetrics(config *monitoring.Config) error {
 	if !config.Monitor {
-		return
+		return nil
 	}
 
 	if config.MetricsPort == 0 {
 		config.MetricsPort = DefaultMetricsPort
 	}
 
-	metricsHandler := monitoring.Configure(config, "tmpop")
+	metricsHandler, err := monitoring.Configure(config, "tmpop")
+	if err != nil {
+		return err
+	}
 	if metricsHandler != nil {
 		metricsAddr := fmt.Sprintf(":%d", config.MetricsPort)
 
@@ -109,4 +112,5 @@ func exposeMetrics(config *monitoring.Config) {
 			panic(err)
 		}
 	}
+	return nil
 }
