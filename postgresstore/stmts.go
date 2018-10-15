@@ -103,10 +103,10 @@ const (
 )
 
 var sqlCreate = []string{
-	`CREATE SCHEMA store`,
-	`CREATE SCHEMA store_private`,
+	`CREATE SCHEMA IF NOT EXISTS store`,
+	`CREATE SCHEMA IF NOT EXISTS store_private`,
 	`
-		CREATE TABLE store.links (
+		CREATE TABLE IF NOT EXISTS store.links (
 			id BIGSERIAL PRIMARY KEY,
 			link_hash bytea NOT NULL,
 			priority double precision NOT NULL,
@@ -121,42 +121,42 @@ var sqlCreate = []string{
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX links_link_hash_idx
+		CREATE UNIQUE INDEX IF NOT EXISTS links_link_hash_idx
 		ON store.links (link_hash)
 	`,
 	`
-		CREATE INDEX links_priority_created_at_idx
+		CREATE INDEX IF NOT EXISTS links_priority_created_at_idx
 		ON store.links (priority DESC, created_at DESC)
 	`,
 	`
-		CREATE INDEX links_map_id_idx
+		CREATE INDEX IF NOT EXISTS links_map_id_idx
 		ON store.links (map_id text_pattern_ops)
 	`,
 	`
-		CREATE INDEX links_map_id_priority_created_at_idx
+		CREATE INDEX IF NOT EXISTS links_map_id_priority_created_at_idx
 		ON store.links (map_id, priority DESC, created_at DESC)
 	`,
 	`
-		CREATE INDEX links_prev_link_hash_priority_created_at_idx
+		CREATE INDEX IF NOT EXISTS links_prev_link_hash_priority_created_at_idx
 		ON store.links (prev_link_hash, priority DESC, created_at DESC)
 	`,
 	`
-		CREATE INDEX links_tags_idx
+		CREATE INDEX IF NOT EXISTS links_tags_idx
 		ON store.links USING gin(tags)
 	`,
 	`
-		CREATE TABLE store_private.links_degree (
+		CREATE TABLE IF NOT EXISTS store_private.links_degree (
 			id BIGSERIAL PRIMARY KEY,
 			link_hash bytea references store.links(link_hash),
 			out_degree integer
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX links_degree_link_hash_idx
+		CREATE UNIQUE INDEX IF NOT EXISTS links_degree_link_hash_idx
 		ON store_private.links_degree (link_hash)
 	`,
 	`
-		CREATE TABLE store.evidences (
+		CREATE TABLE IF NOT EXISTS store.evidences (
 			id BIGSERIAL PRIMARY KEY,
 			link_hash bytea references store.links(link_hash),
 			provider text NOT NULL,
@@ -166,15 +166,15 @@ var sqlCreate = []string{
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX evidences_link_hash_provider_idx
+		CREATE UNIQUE INDEX IF NOT EXISTS evidences_link_hash_provider_idx
 		ON store.evidences (link_hash, provider)
 	`,
 	`
-		CREATE INDEX evidences_link_hash_idx
+		CREATE INDEX IF NOT EXISTS evidences_link_hash_idx
 		ON store.evidences (link_hash)
 	`,
 	`
-		CREATE TABLE store.values (
+		CREATE TABLE IF NOT EXISTS store.values (
 			id BIGSERIAL PRIMARY KEY,
 			key bytea NOT NULL,
 			value bytea NOT NULL,
@@ -183,11 +183,11 @@ var sqlCreate = []string{
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX values_key_idx
+		CREATE UNIQUE INDEX IF NOT EXISTS values_key_idx
 		ON store.values (key)
 	`,
 	`
-		CREATE TABLE store_private.process_maps (
+		CREATE TABLE IF NOT EXISTS store_private.process_maps (
 			id BIGSERIAL PRIMARY KEY,
 			process text NOT NULL,
 			map_id text NOT NULL,
@@ -195,7 +195,7 @@ var sqlCreate = []string{
 		)
 	`,
 	`
-		CREATE UNIQUE INDEX process_map_idx
+		CREATE UNIQUE INDEX IF NOT EXISTS process_map_idx
 		ON store_private.process_maps (process, map_id)
 	`,
 }
