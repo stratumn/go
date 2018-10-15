@@ -21,7 +21,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/store"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 )
 
 const (
@@ -69,7 +69,7 @@ func Initialize(config *Config, create, drop, uniqueMapEntry bool) *Store {
 
 // createDB creates schemas, tables and indexes.
 func createDB(a *Store) {
-	err := utils.Retry(func(attempt int) (bool, error) {
+	err := util.Retry(func(attempt int) (bool, error) {
 		if err := a.Create(); err != nil {
 			log.WithField("error", err).Warn("Failed to create PostgreSQL tables and indexes. Retrying...")
 			time.Sleep(connectTimeout)
@@ -88,7 +88,7 @@ func createDB(a *Store) {
 
 // prepareDB prepares statements.
 func prepareDB(a *Store) {
-	err := utils.Retry(func(attempt int) (bool, error) {
+	err := util.Retry(func(attempt int) (bool, error) {
 		if err := a.Prepare(); err != nil {
 			log.WithField("error", err).Warn("Failed to prepare PostgreSQL statements. Retrying...")
 			time.Sleep(connectTimeout)
@@ -107,7 +107,7 @@ func prepareDB(a *Store) {
 
 // dropDB drops schemas, tables and indexes.
 func dropDB(a *Store) {
-	err := utils.Retry(func(attempt int) (bool, error) {
+	err := util.Retry(func(attempt int) (bool, error) {
 		if err := a.Drop(); err != nil {
 			log.WithField("error", err).Warn("Failed to drop PostgreSQL tables and indexes. Retrying...")
 			time.Sleep(connectTimeout)
@@ -129,7 +129,7 @@ func RegisterFlags() {
 	flag.BoolVar(&create, "create", false, "create tables and indexes then exit")
 	flag.BoolVar(&drop, "drop", false, "drop tables and indexes then exit")
 	flag.BoolVar(&uniqueMapEntry, "uniquemapentry", false, "enforce unicity of the first link in each process map")
-	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL), "URL of the PostgreSQL database")
+	flag.StringVar(&url, "url", util.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL), "URL of the PostgreSQL database")
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize

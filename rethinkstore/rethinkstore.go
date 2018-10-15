@@ -29,7 +29,7 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 
 	rethink "gopkg.in/dancannon/gorethink.v4"
 )
@@ -124,7 +124,7 @@ func New(config *Config) (*Store, error) {
 	opts := rethink.ConnectOpts{Addresses: strings.Split(config.URL, ",")}
 
 	var session *rethink.Session
-	err := utils.Retry(func(attempt int) (bool, error) {
+	err := util.Retry(func(attempt int) (bool, error) {
 		var err error
 		session, err = rethink.Connect(opts)
 		if err != nil {

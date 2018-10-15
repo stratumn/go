@@ -30,7 +30,7 @@ import (
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/tmpop"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 	abci "github.com/tendermint/abci/types"
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -127,7 +127,7 @@ func (t *TMStore) StartWebsocket(ctx context.Context) (err error) {
 
 // RetryStartWebsocket starts the websocket client and retries on errors.
 func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duration) error {
-	return utils.Retry(func(attempt int) (retry bool, err error) {
+	return util.Retry(func(attempt int) (retry bool, err error) {
 		err = t.StartWebsocket(ctx)
 		if err != nil {
 			if err.Error() == ErrAlreadySubscribed {

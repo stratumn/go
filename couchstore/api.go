@@ -28,7 +28,7 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 )
 
 const (
@@ -148,7 +148,7 @@ func (c *CouchStore) CreateDatabase(dbName string) error {
 		return couchResponseStatus.error()
 	}
 
-	return utils.Retry(func(attempt int) (bool, error) {
+	return util.Retry(func(attempt int) (bool, error) {
 		path := fmt.Sprintf("/%s", dbName)
 		_, couchResponseStatus, err := c.doHTTPRequest(http.MethodGet, path, nil)
 		if err != nil || !couchResponseStatus.Ok {

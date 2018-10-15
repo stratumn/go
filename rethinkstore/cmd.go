@@ -19,7 +19,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 )
 
 var (
@@ -71,8 +71,8 @@ func Initialize(config *Config, create, drop bool) *Store {
 func RegisterFlags() {
 	flag.BoolVar(&create, "create", false, "create tables and indexes then exit")
 	flag.BoolVar(&drop, "drop", false, "drop tables and indexes then exit")
-	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("RETHINKSTORE_URL"), DefaultURL), "URL of the RethinkDB database")
-	flag.StringVar(&db, "db", utils.OrStrings(os.Getenv("RETHINKSTORE_DB"), DefaultDB), "name of the RethinkDB database")
+	flag.StringVar(&url, "url", util.OrStrings(os.Getenv("RETHINKSTORE_URL"), DefaultURL), "URL of the RethinkDB database")
+	flag.StringVar(&db, "db", util.OrStrings(os.Getenv("RETHINKSTORE_DB"), DefaultDB), "name of the RethinkDB database")
 	flag.BoolVar(&hard, "hard", DefaultHard, "whether to use hard durability")
 }
 

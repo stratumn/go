@@ -29,9 +29,10 @@ import (
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storetestcases"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/tmpop/tmpoptestcases"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -62,17 +63,17 @@ func TestMain(m *testing.M) {
 	}
 
 	// Stop container if it is already running, swallow error.
-	utils.KillContainer(containerName)
+	testutil.KillContainer(containerName)
 
 	// Start elasticsearch container.
 	env := []string{"discovery.type=single-node"}
-	if err := utils.RunContainerWithEnv(containerName, imageName, env, exposedPorts, portBindings); err != nil {
+	if err := testutil.RunContainerWithEnv(containerName, imageName, env, exposedPorts, portBindings); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
 
 	// Retry until container is ready.
-	if err := utils.Retry(func(attempt int) (bool, error) {
+	if err := util.Retry(func(attempt int) (bool, error) {
 		_, err := http.Get(fmt.Sprintf("http://%s:%s", domain, port))
 		if err != nil {
 			time.Sleep(1 * time.Second)
@@ -88,7 +89,7 @@ func TestMain(m *testing.M) {
 	testResult := m.Run()
 
 	// Stop elasticsearch container.
-	if err := utils.KillContainer(containerName); err != nil {
+	if err := testutil.KillContainer(containerName); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}

@@ -21,7 +21,7 @@ import (
 
 	"github.com/olivere/elastic"
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 )
 
 var (
@@ -36,7 +36,7 @@ func Initialize(config *Config) *ESStore {
 	var es *ESStore
 	var storeErr error
 
-	err := utils.Retry(func(attempt int) (retry bool, err error) {
+	err := util.Retry(func(attempt int) (retry bool, err error) {
 		es, storeErr = New(config)
 
 		if storeErr == nil {
@@ -71,7 +71,7 @@ func Initialize(config *Config) *ESStore {
 
 // RegisterFlags registers the flags used by InitializeWithFlags.
 func RegisterFlags() {
-	flag.StringVar(&url, "url", utils.OrStrings(os.Getenv("ELASTICSEARCH_URL"), DefaultURL), "URL of the ElasticSearch database")
+	flag.StringVar(&url, "url", util.OrStrings(os.Getenv("ELASTICSEARCH_URL"), DefaultURL), "URL of the ElasticSearch database")
 	flag.BoolVar(&sniffing, "sniffing", false, "turn on elastic search nodes sniffing")
 	flag.BoolVar(&drop, "drop", false, "drop indexes then exit")
 	flag.StringVar(&logLevel, "es_log_level", "info", "set logrus log level")

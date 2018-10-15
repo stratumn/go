@@ -24,7 +24,8 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/util"
 )
 
 func TestMain(m *testing.M) {
@@ -54,15 +55,15 @@ func TestMain(m *testing.M) {
 	}
 
 	// Stop container if it is already running, swallow error.
-	utils.KillContainer(containerName)
+	testutil.KillContainer(containerName)
 
 	// Start postgres container
-	if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
+	if err := testutil.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
 	// Retry until container is ready.
-	if err := utils.Retry(createDatabase, 10); err != nil {
+	if err := util.Retry(createDatabase, 10); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
@@ -71,7 +72,7 @@ func TestMain(m *testing.M) {
 	testResult := m.Run()
 
 	// Stop postgres container.
-	if err := utils.KillContainer(containerName); err != nil {
+	if err := testutil.KillContainer(containerName); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
