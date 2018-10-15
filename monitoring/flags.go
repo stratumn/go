@@ -54,7 +54,7 @@ func ConfigurationFromFlags() *Config {
 
 	switch metricsExporter {
 	case PrometheusExporter:
-		fallthrough
+		break
 	case StackdriverExporter:
 		config.StackdriverConfig = &StackdriverConfig{
 			ProjectID: stackdriverProjectID,

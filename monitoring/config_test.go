@@ -25,7 +25,7 @@ import (
 
 func TestConfig(t *testing.T) {
 	serviceName := "svc"
-	credentialsFile := "./fixtures/credentials_test.json"
+	credentialsFile := "./testdata/credentials_test.json"
 
 	t.Run("with default values", func(t *testing.T) {
 		c := &monitoring.Config{

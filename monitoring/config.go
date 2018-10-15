@@ -42,7 +42,7 @@ const (
 // Errors used by the configuration module.
 var (
 	ErrInvalidMetricsExporter = errors.New("metrics exporter should be 'prometheus' or 'stackdriver'")
-	ErrInvalidTracesExporter  = errors.New("metrics exporter should be 'jaeger' or 'stackdriver'")
+	ErrInvalidTracesExporter  = errors.New("traces exporter should be 'jaeger' or 'stackdriver'")
 	ErrMissingExporterConfig  = errors.New("missing exporter configuration section")
 	ErrMissingProjectID       = errors.New("missing stackdriver project id")
 )
