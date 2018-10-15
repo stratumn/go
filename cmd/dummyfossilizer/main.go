@@ -24,7 +24,7 @@ import (
 	"github.com/stratumn/go-core/dummyfossilizer"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 )
 
 var (
@@ -41,7 +41,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	ctx = utils.CancelOnInterrupt(ctx)
+	ctx = util.CancelOnInterrupt(ctx)
 
 	log.Infof("%s v%s@%s", dummyfossilizer.Description, version, commit[:7])
 	a := monitoring.NewFossilizerAdapter(

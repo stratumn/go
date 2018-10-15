@@ -25,7 +25,6 @@ import (
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
 	"github.com/stratumn/go-core/testutil"
-	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
@@ -57,7 +56,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 	})
 
 	t.Run("with configuration file", func(t *testing.T) {
-		rules := utils.CreateTempFile(t, validationtesting.TestJSONRules)
+		rules := testutil.CreateTempFile(t, validationtesting.TestJSONRules)
 		defer os.Remove(rules)
 
 		testValidationStore, err := validation.WrapStoreWithConfigFile(
@@ -134,7 +133,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 		})
 
 		t.Run("invalid configuration file", func(t *testing.T) {
-			invalidRules := utils.CreateTempFile(t, "validate all the things")
+			invalidRules := testutil.CreateTempFile(t, "validate all the things")
 			defer os.Remove(invalidRules)
 
 			v, err := validation.WrapStoreWithConfigFile(
@@ -148,7 +147,7 @@ func TestStoreWithConfigFile(t *testing.T) {
 
 		t.Run("config file update", func(t *testing.T) {
 			ctx := context.Background()
-			rules := utils.CreateTempFile(t, `{
+			rules := testutil.CreateTempFile(t, `{
 				"drivers": {
 				  "steps": {
 					"add": {

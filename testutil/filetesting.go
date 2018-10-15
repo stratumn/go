@@ -12,27 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package testutil
 
 import (
-	"context"
-	"syscall"
+	"io/ioutil"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func TestCancelOnInterrupt(t *testing.T) {
-	ctx := CancelOnInterrupt(context.Background())
-	close := make(chan struct{})
+// CreateTempFile creates a temporary file for tests with data as content.
+func CreateTempFile(t *testing.T, data string) string {
+	tmpfile, err := ioutil.TempFile("", "core-tmpfile")
+	require.NoError(t, err, "ioutil.TempFile()")
 
-	go func() {
-		select {
-		case <-ctx.Done():
-			close <- struct{}{}
-		}
-	}()
-
-	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-
-	// if ctx.Done() is never notified, this will be blocking and fail the test
-	<-close
+	_, err = tmpfile.WriteString(data)
+	require.NoError(t, err, "tmpfile.WriteString()")
+	return tmpfile.Name()
 }

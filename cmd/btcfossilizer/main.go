@@ -24,7 +24,7 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc/btctimestamper"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 )
 
 var (
@@ -46,7 +46,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	ctx = utils.CancelOnInterrupt(ctx)
+	ctx = util.CancelOnInterrupt(ctx)
 
 	bcy := blockcypher.RunWithFlags(ctx, *key)
 	ts := btctimestamper.InitializeWithFlags(version, commit, *key, bcy, bcy)

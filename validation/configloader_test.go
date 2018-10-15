@@ -19,7 +19,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +37,7 @@ func TestLoadFromFile(t *testing.T) {
 	})
 
 	t.Run("invalid file content", func(t *testing.T) {
-		testFile := utils.CreateTempFile(t, "validatie-wixie kawaii rules-y")
+		testFile := testutil.CreateTempFile(t, "validatie-wixie kawaii rules-y")
 		defer os.Remove(testFile)
 
 		v, err := validation.LoadFromFile(context.Background(), &validation.Config{
@@ -49,7 +49,7 @@ func TestLoadFromFile(t *testing.T) {
 	})
 
 	t.Run("valid configuration file", func(t *testing.T) {
-		testFile := utils.CreateTempFile(t, validationtesting.TestJSONRules)
+		testFile := testutil.CreateTempFile(t, validationtesting.TestJSONRules)
 		defer os.Remove(testFile)
 
 		v, err := validation.LoadFromFile(context.Background(), &validation.Config{

@@ -23,7 +23,8 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/util"
 )
 
 var (
@@ -66,15 +67,15 @@ func TestMain(m *testing.M) {
 	}
 
 	// Stop container if it is already running, swallow error.
-	utils.KillContainer(containerName)
+	testutil.KillContainer(containerName)
 
 	// Start rethinkdb container
-	if err := utils.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
+	if err := testutil.RunContainer(containerName, imageName, exposedPorts, portBindings); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
 	// Retry until container is ready.
-	if err := utils.Retry(pingRethinkContainer, 10); err != nil {
+	if err := util.Retry(pingRethinkContainer, 10); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}
@@ -83,7 +84,7 @@ func TestMain(m *testing.M) {
 	testResult := m.Run()
 
 	// Stop rethinkdb container.
-	if err := utils.KillContainer(containerName); err != nil {
+	if err := testutil.KillContainer(containerName); err != nil {
 		fmt.Printf(err.Error())
 		os.Exit(1)
 	}

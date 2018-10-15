@@ -27,7 +27,7 @@ import (
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storehttp"
 	"github.com/stratumn/go-core/types"
-	"github.com/stratumn/go-core/utils"
+	"github.com/stratumn/go-core/util"
 	"github.com/stratumn/go-core/validation"
 )
 
@@ -50,7 +50,7 @@ func main() {
 	var a store.Adapter
 	var storeErr error
 
-	err := utils.Retry(func(attempt int) (retry bool, err error) {
+	err := util.Retry(func(attempt int) (retry bool, err error) {
 		a, storeErr = couchstore.New(&couchstore.Config{
 			Address: *endpoint,
 			Version: version,

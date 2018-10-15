@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/tmpop"
-	"github.com/stratumn/go-core/utils"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,7 +57,7 @@ const testValidationConfig = `
 
 // TestValidation tests what happens when validating a segment from a json-schema based validation file
 func (f Factory) TestValidation(t *testing.T) {
-	testFilename := utils.CreateTempFile(t, testValidationConfig)
+	testFilename := testutil.CreateTempFile(t, testValidationConfig)
 	defer os.Remove(testFilename)
 
 	h, req := f.newTMPop(t, &tmpop.Config{Validation: &validation.Config{RulesPath: testFilename}})

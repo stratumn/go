@@ -12,14 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package util
 
-// OrStrings returns the first non empty string in its arguments
-func OrStrings(strs ...string) string {
-	for _, s := range strs {
-		if s != "" {
-			return s
+import (
+	"context"
+	"syscall"
+	"testing"
+)
+
+func TestCancelOnInterrupt(t *testing.T) {
+	ctx := CancelOnInterrupt(context.Background())
+	close := make(chan struct{})
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			close <- struct{}{}
 		}
-	}
-	return ""
+	}()
+
+	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+
+	// if ctx.Done() is never notified, this will be blocking and fail the test
+	<-close
 }

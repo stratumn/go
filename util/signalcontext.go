@@ -12,21 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package util
 
 import (
-	"io/ioutil"
-	"testing"
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/stretchr/testify/require"
+	log "github.com/sirupsen/logrus"
 )
 
-// CreateTempFile creates a temporary file for tests with data as content.
-func CreateTempFile(t *testing.T, data string) string {
-	tmpfile, err := ioutil.TempFile("", "core-tmpfile")
-	require.NoError(t, err, "ioutil.TempFile()")
+// CancelOnInterrupt creates a context and calls the context cancel function when an interrupt signal is caught
+func CancelOnInterrupt(ctx context.Context) context.Context {
+	ctx, cancel := context.WithCancel(ctx)
 
-	_, err = tmpfile.WriteString(data)
-	require.NoError(t, err, "tmpfile.WriteString()")
-	return tmpfile.Name()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		defer func() {
+			signal.Stop(c)
+			cancel()
+		}()
+		select {
+		case sig := <-c:
+			log.WithField("signal", sig).Info("Got exit signal")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	return ctx
 }
