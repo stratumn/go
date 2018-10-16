@@ -14,6 +14,10 @@
 
 package errorcode
 
+import (
+	"fmt"
+)
+
 // Taken from https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
 // as recommended by the OpenCensus documentation.
 const (
@@ -170,3 +174,33 @@ const (
 	// HTTP Mapping: 500 Internal Server Error
 	DataLoss = 15
 )
+
+var text = map[int]string{
+	Ok:                 "Ok",
+	Cancelled:          "Cancelled",
+	Unknown:            "Unknown",
+	InvalidArgument:    "InvalidArgument",
+	DeadlineExceeded:   "DeadlineExceeded",
+	NotFound:           "NotFound",
+	AlreadyExists:      "AlreadyExists",
+	PermissionDenied:   "PermissionDenied",
+	Unauthenticated:    "Unauthenticated",
+	ResourceExhausted:  "ResourceExhausted",
+	FailedPrecondition: "FailedPrecondition",
+	Aborted:            "Aborted",
+	OutOfRange:         "OutOfRange",
+	Unimplemented:      "Unimplemented",
+	Internal:           "Internal",
+	Unavailable:        "Unavailable",
+	DataLoss:           "DataLoss",
+}
+
+// Text returns the text value of the given error code.
+func Text(errorcode int) string {
+	t, ok := text[errorcode]
+	if !ok {
+		return fmt.Sprintf("%d", errorcode)
+	}
+
+	return t
+}

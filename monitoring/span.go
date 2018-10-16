@@ -15,7 +15,10 @@
 package monitoring
 
 import (
+	"fmt"
+
 	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/trace"
 )
@@ -27,12 +30,30 @@ import (
 //     SetSpanStatusAndEnd(span, err)
 // }()
 func SetSpanStatusAndEnd(span *trace.Span, err error) {
-	if err != nil {
-		span.SetStatus(trace.Status{
-			Code:    errorcode.Unknown,
-			Message: err.Error(),
-		})
-	}
-
+	SetSpanStatus(span, err)
 	span.End()
+}
+
+// SetSpanStatus sets the status of the span depending on the error.
+func SetSpanStatus(span *trace.Span, err error) {
+	if err != nil {
+		switch e := err.(type) {
+		case *types.Error:
+			span.AddAttributes(
+				trace.Int64Attribute("error code", int64(e.Code)),
+				trace.StringAttribute("component", e.Component),
+			)
+			span.SetStatus(trace.Status{
+				Code: int32(e.Code),
+				// We want to include a stack trace to make it easy to
+				// investigate, hence the format.
+				Message: fmt.Sprintf("%v+", e),
+			})
+		default:
+			span.SetStatus(trace.Status{
+				Code:    errorcode.Unknown,
+				Message: err.Error(),
+			})
+		}
+	}
 }
