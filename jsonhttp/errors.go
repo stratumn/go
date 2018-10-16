@@ -62,8 +62,6 @@ func NewErrHTTP(err error) ErrHTTP {
 				status: status,
 			}
 		}
-
-		break
 	}
 
 	return ErrHTTP{
