@@ -53,7 +53,7 @@ func TestRoot_err(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "Internal Server Error", body["error"])
+	assert.Equal(t, "error", body["error"])
 	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
