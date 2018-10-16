@@ -366,7 +366,7 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 			// TODO: this package should be HTTP unaware, so
 			// we need a better way to pass error types.
 			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: result.CheckTx.Log})
-			return nil, jsonhttp.NewErrBadRequest(result.CheckTx.Log)
+			return nil, jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, result.CheckTx.Log))
 		}
 
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: result.CheckTx.Log})
