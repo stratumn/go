@@ -27,6 +27,13 @@ var (
 	DefaultLatencyDistribution = view.Distribution(0, 1, 2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 250, 300, 400, 500, 650, 800, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
 )
 
+// Metrics and tags available to all packages.
+var (
+	ErrorCodeTag      tag.Key
+	ErrorComponentTag tag.Key
+)
+
+// Private metrics used only inside this package.
 var (
 	storeRequestType    tag.Key
 	storeRequestCount   *stats.Int64Measure
@@ -57,6 +64,12 @@ func init() {
 	if storeRequestType, err = tag.NewKey("stratumn/core/store/request_type"); err != nil {
 		log.Fatal(err)
 	}
+	if ErrorCodeTag, err = tag.NewKey("stratumn/core/error_code"); err != nil {
+		log.Fatal(err)
+	}
+	if ErrorComponentTag, err = tag.NewKey("stratumn/core/error_component"); err != nil {
+		log.Fatal(err)
+	}
 
 	err = view.Register(
 		&view.View{
@@ -71,7 +84,7 @@ func init() {
 			Description: "number of request errors",
 			Measure:     storeRequestErr,
 			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{storeRequestType},
+			TagKeys:     []tag.Key{storeRequestType, ErrorCodeTag, ErrorComponentTag},
 		},
 		&view.View{
 			Name:        "stratumn/core/store/request_latency",

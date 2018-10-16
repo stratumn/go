@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 
@@ -215,6 +216,14 @@ func newRequestTracker(ctx context.Context, requestType string) *requestTracker 
 
 func (t *requestTracker) End(err error) {
 	if err != nil {
+		e, ok := err.(*types.Error)
+		if ok {
+			t.ctx, _ = tag.New(t.ctx,
+				tag.Upsert(ErrorCodeTag, errorcode.Text(e.Code)),
+				tag.Upsert(ErrorComponentTag, e.Component),
+			)
+		}
+
 		stats.Record(t.ctx, storeRequestErr.M(1))
 	}
 
