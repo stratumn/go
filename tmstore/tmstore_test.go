@@ -17,17 +17,17 @@ package tmstore
 import (
 	"context"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storetestcases"
 	"github.com/stratumn/go-core/tmpop"
+	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -125,9 +125,9 @@ func TestTMStore(t *testing.T) {
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
 
-			errHTTP, ok := err.(jsonhttp.ErrHTTP)
-			assert.True(t, ok, "Invalid error received: want ErrHTTP")
-			assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+			structErr, ok := err.(*types.Error)
+			assert.True(t, ok, "Invalid error received: want types.Error")
+			assert.Equal(t, errorcode.InvalidArgument, structErr.Code)
 		})
 
 		t.Run("Signature validation failed", func(t *testing.T) {
@@ -142,9 +142,10 @@ func TestTMStore(t *testing.T) {
 
 			_, err = tmstore.CreateLink(context.Background(), l)
 			assert.Error(t, err, "A validation error is expected")
-			errHTTP, ok := err.(jsonhttp.ErrHTTP)
-			assert.True(t, ok, "Invalid error received: want ErrHTTP")
-			assert.Equal(t, http.StatusBadRequest, errHTTP.Status())
+
+			structErr, ok := err.(*types.Error)
+			assert.True(t, ok, "Invalid error received: want types.Error")
+			assert.Equal(t, errorcode.InvalidArgument, structErr.Code)
 		})
 
 		t.Run("Validation rules update succeeds", func(t *testing.T) {

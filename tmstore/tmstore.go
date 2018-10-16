@@ -24,7 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
-	"github.com/stratumn/go-core/jsonhttp"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
@@ -363,10 +362,8 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 
 	if result.CheckTx.IsErr() {
 		if result.CheckTx.Code == tmpop.CodeTypeValidation {
-			// TODO: this package should be HTTP unaware, so
-			// we need a better way to pass error types.
 			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: result.CheckTx.Log})
-			return nil, jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, result.CheckTx.Log))
+			return nil, types.NewError(errorcode.InvalidArgument, store.Component, result.CheckTx.Log)
 		}
 
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: result.CheckTx.Log})
