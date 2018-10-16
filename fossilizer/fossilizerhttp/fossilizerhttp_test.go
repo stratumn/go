@@ -16,12 +16,10 @@ package fossilizerhttp
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"testing"
 	"time"
 
@@ -31,6 +29,8 @@ import (
 	"github.com/stratumn/go-core/jsonws"
 	"github.com/stratumn/go-core/jsonws/jsonwstesting"
 	"github.com/stratumn/go-core/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRoot(t *testing.T) {
@@ -39,19 +39,10 @@ func TestRoot(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.StatusCode = %d want %d", got, want)
-	}
-	if got, want := body["adapter"].(string), "test"; got != want {
-		t.Errorf(`body["adapter"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetInfo.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetInfo.CalledCount = %d want %d", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "test", body["adapter"])
+	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
 func TestRoot_err(t *testing.T) {
@@ -60,19 +51,10 @@ func TestRoot_err(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, jsonhttp.NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := a.MockGetInfo.CalledCount, 1; got != want {
-		t.Errorf("a.MockGetInfo.CalledCount = %d want %d", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "Internal Server Error", body["error"])
+	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
 func TestFossilize(t *testing.T) {
@@ -90,9 +72,7 @@ func TestFossilize(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, http.StatusOK; got != want {
-		t.Errorf("w.StatusCode = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestFossilize_noData(t *testing.T) {
@@ -105,9 +85,7 @@ func TestFossilize_noData(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, newErrData("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestFossilize_dataTooShort(t *testing.T) {
@@ -121,9 +99,7 @@ func TestFossilize_dataTooShort(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, newErrData("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestFossilize_dataTooLong(t *testing.T) {
@@ -137,9 +113,7 @@ func TestFossilize_dataTooLong(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, newErrData("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestFossilize_dataNotHex(t *testing.T) {
@@ -153,9 +127,7 @@ func TestFossilize_dataNotHex(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, newErrData("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestFossilize_noProcess(t *testing.T) {
@@ -168,9 +140,7 @@ func TestFossilize_noProcess(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, http.StatusBadRequest; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestFossilize_noBody(t *testing.T) {
@@ -181,9 +151,7 @@ func TestFossilize_noBody(t *testing.T) {
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, req)
 
-	if got, want := w.Code, http.StatusBadRequest; got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestNotFound(t *testing.T) {
@@ -191,16 +159,9 @@ func TestNotFound(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/azerty", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, jsonhttp.NewErrNotFound("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), jsonhttp.NewErrNotFound("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "Not Found", body["error"])
 }
 
 func TestGetSocket(t *testing.T) {
@@ -286,11 +247,7 @@ func TestGetSocket(t *testing.T) {
 	select {
 	case <-doneChan:
 		got := conn.MockWriteJSON.LastCalledWith.(*jsonws.Message)
-		if !reflect.DeepEqual(got, expected) {
-			gotjs, _ := json.MarshalIndent(got, "", "  ")
-			wantjs, _ := json.MarshalIndent(expected, "", "  ")
-			t.Errorf("conn.MockWriteJSON.LastCalledWith = %s\nwant %s", gotjs, wantjs)
-		}
+		assert.Equal(t, expected, got)
 	case <-time.After(2 * time.Second):
 		t.Fatalf("fossilized segment not broadcasted")
 	}

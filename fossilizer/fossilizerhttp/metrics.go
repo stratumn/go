@@ -25,6 +25,11 @@ import (
 	"go.opencensus.io/stats/view"
 )
 
+const (
+	// Component name for monitoring.
+	Component = "fossilizer"
+)
+
 func init() {
 	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
 		log.Fatal(err)
