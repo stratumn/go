@@ -40,7 +40,7 @@ const (
 
 	// DefaultReportingPeriod is the default interval between
 	// reporting aggregated views (in seconds).
-	DefaultReportingPeriod = 1
+	DefaultReportingPeriod = 10
 )
 
 // Errors used by the configuration module.
@@ -49,6 +49,7 @@ var (
 	ErrInvalidTracesExporter  = errors.New("traces exporter should be 'jaeger' or 'stackdriver'")
 	ErrMissingExporterConfig  = errors.New("missing exporter configuration section")
 	ErrMissingProjectID       = errors.New("missing stackdriver project id")
+	ErrInvalidReportingPeriod = errors.New("reporting period needs to be >60 when using stackdriver exporter")
 )
 
 // Config contains options for monitoring.
@@ -127,6 +128,9 @@ func configureMetricsExporter(config *Config) (exporter view.Exporter, err error
 	case StackdriverExporter:
 		if err := config.StackdriverConfig.Validate(); err != nil {
 			return nil, err
+		}
+		if config.MetricsReportingPeriod < 60 {
+			return nil, ErrInvalidReportingPeriod
 		}
 		exporter, err = stackdriver.NewExporter(stackdriver.Options{
 			ProjectID: config.StackdriverConfig.ProjectID,
