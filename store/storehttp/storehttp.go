@@ -51,6 +51,7 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/jsonhttp"
 	"github.com/stratumn/go-core/jsonws"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
@@ -175,7 +176,7 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 
 	adapterInfo, err := s.adapter.GetInfo(ctx)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
@@ -197,7 +198,7 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 	}
 
 	if _, err := s.adapter.CreateLink(ctx, &link); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
@@ -223,7 +224,7 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 	}
 
 	if err := s.adapter.AddEvidence(ctx, linkHash, &evidence); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
@@ -242,7 +243,7 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 
 	seg, err := s.adapter.GetSegment(ctx, linkHash)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 	if seg == nil {
@@ -259,13 +260,13 @@ func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprout
 
 	filter, e := parseSegmentFilter(r)
 	if e != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: e.Error()})
+		monitoring.SetSpanStatus(span, e)
 		return nil, e
 	}
 
 	slice, err := s.adapter.FindSegments(ctx, filter)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
@@ -278,13 +279,13 @@ func (s *Server) getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.
 
 	filter, e := parseMapFilter(r)
 	if e != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: e.Error()})
+		monitoring.SetSpanStatus(span, e)
 		return nil, e
 	}
 
 	slice, err := s.adapter.GetMapIDs(ctx, filter)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 

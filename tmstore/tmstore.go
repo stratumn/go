@@ -176,7 +176,7 @@ func (t *TMStore) notifyStoreChans(ctx context.Context) {
 	err = json.Unmarshal(response.Value, &pendingEvents)
 	if err != nil {
 		span.Annotatef(nil, "TMPoP pending events could not be unmarshalled: %s", err.Error())
-		span.SetStatus(trace.Status{Code: errorcode.Internal})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 		log.Warn("TMPoP pending events could not be unmarshalled.")
 	}
 

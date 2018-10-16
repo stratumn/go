@@ -240,19 +240,19 @@ func (t *TMPop) Commit() abci.ResponseCommit {
 	appHash, links, err := t.state.Commit(ctx)
 	if err != nil {
 		log.Errorf("Error while committing: %s", err)
-		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveValidatorHash(ctx); err != nil {
 		log.Errorf("Error while saving validator hash: %s", err)
-		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveCommitLinkHashes(ctx, links); err != nil {
 		log.Errorf("Error while saving committed link hashes: %s", err)
-		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return abci.ResponseCommit{}
 	}
 
@@ -353,7 +353,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 	if err != nil {
 		resQuery.Code = CodeTypeInternalError
 		resQuery.Log = err.Error()
-		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: resQuery.Log})
+		monitoring.SetSpanStatus(span, err)
 		return
 	}
 
@@ -362,7 +362,7 @@ func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) 
 		if err != nil {
 			resQuery.Code = CodeTypeInternalError
 			resQuery.Log = err.Error()
-			span.SetStatus(trace.Status{Code: errorcode.Internal, Message: resQuery.Log})
+			monitoring.SetSpanStatus(span, err)
 		}
 
 		resQuery.Value = resBytes
@@ -422,7 +422,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	linkHashes, err := t.getCommitLinkHashes(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get link hashes for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: "Could not get link hashes"})
+		monitoring.SetSpanStatus(span, err)
 		return
 	}
 
@@ -435,7 +435,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	validatorHash, err := t.getValidatorHash(ctx, evidenceHeight)
 	if err != nil {
 		log.Warnf("Could not get validator hash for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: "Could not get validator hash"})
+		monitoring.SetSpanStatus(span, err)
 		return
 	}
 
@@ -475,7 +475,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	merkle, err := merkle.NewStaticTree(leaves)
 	if err != nil {
 		log.Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
-		span.SetStatus(trace.Status{Code: errorcode.Internal, Message: "Could not create merkle tree"})
+		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: "Could not create merkle tree"})
 		return
 	}
 

@@ -32,6 +32,7 @@ import (
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/merkle"
@@ -346,7 +347,7 @@ func (a *Fossilizer) batch(b *batch) {
 
 		tree, err := merkle.NewStaticTree(b.data)
 		if err != nil {
-			span.SetStatus(trace.Status{Code: errorcode.Internal, Message: err.Error()})
+			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
 			if !a.stopping {
 				err = a.stop(err)
 				if err != nil {
@@ -367,7 +368,7 @@ func (a *Fossilizer) batch(b *batch) {
 
 			if err := b.close(); err != nil {
 				log.WithField("error", err).Warn("Failed to close batch file")
-				span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+				monitoring.SetSpanStatus(span, err)
 			}
 
 			if a.config.Archive {
@@ -384,7 +385,7 @@ func (a *Fossilizer) batch(b *batch) {
 						"new":   filepath.Base(archivePath),
 						"error": err,
 					}).Warn("Failed to rename batch file")
-					span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
+					monitoring.SetSpanStatus(span, err)
 				}
 			} else {
 				if err := os.Remove(path); err == nil {
@@ -428,13 +429,13 @@ func (a *Fossilizer) sendEvidence(ctx context.Context, tree *merkle.StaticTree, 
 		evidence, err := proof.Evidence(Name)
 		if err != nil {
 			log.WithField("error", err).Error("Failed to create evidence")
-			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+			monitoring.SetSpanStatus(span, err)
 			continue
 		}
 
 		if r, err = a.transformer(evidence, d, m); err != nil {
 			log.WithField("error", err).Error("Failed to transform evidence")
-			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+			monitoring.SetSpanStatus(span, err)
 		} else {
 			event := &fossilizer.Event{
 				EventType: fossilizer.DidFossilizeLink,

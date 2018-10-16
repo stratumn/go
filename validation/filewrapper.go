@@ -21,6 +21,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
@@ -94,12 +95,12 @@ func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.
 	}
 
 	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, err
 	}
 
 	if err := a.validateCustom(ctx, link); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		monitoring.SetSpanStatus(span, err)
 		return nil, err
 	}
 
