@@ -18,6 +18,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/types"
+)
+
+var (
+	// ErrorCodeToHTTPCode maps internal error codes to http status code.
+	ErrorCodeToHTTPCode = map[int]int{
+		errorcode.Ok:                 http.StatusOK,
+		errorcode.InvalidArgument:    http.StatusBadRequest,
+		errorcode.FailedPrecondition: http.StatusBadRequest,
+		errorcode.OutOfRange:         http.StatusBadRequest,
+		errorcode.AlreadyExists:      http.StatusConflict,
+		errorcode.Aborted:            http.StatusConflict,
+		errorcode.PermissionDenied:   http.StatusForbidden,
+		errorcode.DeadlineExceeded:   http.StatusGatewayTimeout,
+		errorcode.Unknown:            http.StatusInternalServerError,
+		errorcode.Internal:           http.StatusInternalServerError,
+		errorcode.DataLoss:           http.StatusInternalServerError,
+		errorcode.NotFound:           http.StatusNotFound,
+		errorcode.Unimplemented:      http.StatusNotImplemented,
+		errorcode.Unavailable:        http.StatusServiceUnavailable,
+		errorcode.ResourceExhausted:  http.StatusTooManyRequests,
+		errorcode.Unauthenticated:    http.StatusUnauthorized,
+	}
 )
 
 // ErrHTTP is an error with an HTTP status code.
@@ -26,46 +51,39 @@ type ErrHTTP struct {
 	status int
 }
 
-// NewErrHTTP creates a, error with a message and HTTP status code.
-func NewErrHTTP(msg string, status int) ErrHTTP {
-	return ErrHTTP{msg: msg, status: status}
+// NewErrHTTP creates an http error from an internal error.
+func NewErrHTTP(err error) ErrHTTP {
+	switch e := err.(type) {
+	case *types.Error:
+		status, ok := ErrorCodeToHTTPCode[e.Code]
+		if ok {
+			return ErrHTTP{
+				msg:    e.Error(),
+				status: status,
+			}
+		}
+	}
+
+	return ErrHTTP{
+		msg:    err.Error(),
+		status: http.StatusInternalServerError,
+	}
 }
 
-// NewErrInternalServer creates an error with an internal server error HTTP
-// status code.
-// If the message is empty, the default is "internal server error".
-func NewErrInternalServer(msg string) ErrHTTP {
-	if msg == "" {
-		msg = "internal server error"
+// NewErrNotFound creates an error not found.
+func NewErrNotFound() ErrHTTP {
+	return ErrHTTP{
+		msg:    http.StatusText(http.StatusNotFound),
+		status: http.StatusNotFound,
 	}
-	return NewErrHTTP(msg, http.StatusInternalServerError)
 }
 
-// NewErrBadRequest creates an error with a bad request HTTP status code.
-// If the message is empty, the default is "bad request".
-func NewErrBadRequest(msg string) ErrHTTP {
-	if msg == "" {
-		msg = "bad request"
+// NewErrInternalServer creates an internal server error.
+func NewErrInternalServer() ErrHTTP {
+	return ErrHTTP{
+		msg:    http.StatusText(http.StatusInternalServerError),
+		status: http.StatusInternalServerError,
 	}
-	return NewErrHTTP(msg, http.StatusBadRequest)
-}
-
-// NewErrUnauthorized creates an error with an unauthorized HTTP status code.
-// If the message is empty, the default is "unauthorized".
-func NewErrUnauthorized(msg string) ErrHTTP {
-	if msg == "" {
-		msg = "unauthorized"
-	}
-	return NewErrHTTP(msg, http.StatusUnauthorized)
-}
-
-// NewErrNotFound creates an error with a not found HTTP status code.
-// If the message is empty, the default is "not found".
-func NewErrNotFound(msg string) ErrHTTP {
-	if msg == "" {
-		msg = "not found"
-	}
-	return NewErrHTTP(msg, http.StatusNotFound)
 }
 
 // Status returns the HTTP status code of the error.

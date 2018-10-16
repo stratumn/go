@@ -53,6 +53,7 @@ import (
 	"github.com/stratumn/go-core/jsonws"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/trace"
 )
@@ -175,7 +176,7 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 	adapterInfo, err := s.adapter.GetInfo(ctx)
 	if err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return &Info{
@@ -192,12 +193,12 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 	var link chainscript.Link
 	if err := decoder.Decode(&link); err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, jsonhttp.NewErrBadRequest(err.Error())
+		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Decode"))
 	}
 
 	if _, err := s.adapter.CreateLink(ctx, &link); err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return link.Segmentify()
@@ -210,7 +211,7 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not parse link hash"))
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -218,12 +219,12 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 	var evidence chainscript.Evidence
 	if err := decoder.Decode(&evidence); err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, jsonhttp.NewErrBadRequest(err.Error())
+		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Decode"))
 	}
 
 	if err := s.adapter.AddEvidence(ctx, linkHash, &evidence); err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return nil, nil
@@ -236,17 +237,17 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, jsonhttp.NewErrBadRequest(err.Error())
+		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not parse link hash"))
 	}
 
 	seg, err := s.adapter.GetSegment(ctx, linkHash)
 	if err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 	if seg == nil {
 		span.SetStatus(trace.Status{Code: errorcode.NotFound})
-		return nil, jsonhttp.NewErrNotFound("")
+		return nil, jsonhttp.NewErrNotFound()
 	}
 
 	return seg, nil
@@ -259,13 +260,13 @@ func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprout
 	filter, e := parseSegmentFilter(r)
 	if e != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: e.Error()})
-		return nil, jsonhttp.NewErrBadRequest(e.Error())
+		return nil, e
 	}
 
 	slice, err := s.adapter.FindSegments(ctx, filter)
 	if err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return slice, nil
@@ -278,13 +279,13 @@ func (s *Server) getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.
 	filter, e := parseMapFilter(r)
 	if e != nil {
 		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: e.Error()})
-		return nil, jsonhttp.NewErrBadRequest(e.Error())
+		return nil, e
 	}
 
 	slice, err := s.adapter.GetMapIDs(ctx, filter)
 	if err != nil {
 		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: err.Error()})
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return slice, nil

@@ -50,7 +50,7 @@ func NewBufferedConn(conn PingableConn, config *BufferedConnConfig) *BufferedCon
 }
 
 // Start starts the buffered connection. It will stop with an error if a write
-// failed. It will also ping the connection at regulart intervals.
+// failed. It will also ping the connection at regular intervals.
 func (c *BufferedConn) Start() error {
 	// Configure control messages.
 	c.conn.SetReadLimit(c.config.MaxMsgSize)

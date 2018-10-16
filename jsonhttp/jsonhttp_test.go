@@ -21,6 +21,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/stratumn/go-core/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGet(t *testing.T) {
@@ -30,13 +32,8 @@ func TestGet(t *testing.T) {
 	})
 
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/test", nil, nil)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Body.String(), `{"test":true}`; got != want {
-		t.Errorf("w.Body = %s want %s", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `{"test":true}`, w.Body.String())
 }
 
 func TestPost(t *testing.T) {
@@ -46,13 +43,8 @@ func TestPost(t *testing.T) {
 	})
 
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/test", nil, nil)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Body.String(), `{"test":true}`; got != want {
-		t.Errorf("w.Body = %s want %s", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `{"test":true}`, w.Body.String())
 }
 
 func TestPut(t *testing.T) {
@@ -62,13 +54,8 @@ func TestPut(t *testing.T) {
 	})
 
 	w, err := testutil.RequestJSON(s.ServeHTTP, "PUT", "/test", nil, nil)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Body.String(), `{"test":true}`; got != want {
-		t.Errorf("w.Body = %s want %s", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `{"test":true}`, w.Body.String())
 }
 
 func TestDelete(t *testing.T) {
@@ -78,13 +65,8 @@ func TestDelete(t *testing.T) {
 	})
 
 	w, err := testutil.RequestJSON(s.ServeHTTP, "DELETE", "/test", nil, nil)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Body.String(), `{"test":true}`; got != want {
-		t.Errorf("w.Body = %s want %s", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `{"test":true}`, w.Body.String())
 }
 
 func TestPatch(t *testing.T) {
@@ -94,13 +76,8 @@ func TestPatch(t *testing.T) {
 	})
 
 	w, err := testutil.RequestJSON(s.ServeHTTP, "PATCH", "/test", nil, nil)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Body.String(), `{"test":true}`; got != want {
-		t.Errorf("w.Body = %s want %s", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `{"test":true}`, w.Body.String())
 }
 
 func TestOptions(t *testing.T) {
@@ -110,13 +87,8 @@ func TestOptions(t *testing.T) {
 	})
 
 	w, err := testutil.RequestJSON(s.ServeHTTP, "OPTIONS", "/test", nil, nil)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Body.String(), `{"test":true}`; got != want {
-		t.Errorf("w.Body = %s want %s", got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, `{"test":true}`, w.Body.String())
 }
 
 func TestNotFound(t *testing.T) {
@@ -124,43 +96,25 @@ func TestNotFound(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/test", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, NewErrNotFound("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), NewErrNotFound("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := int(body["status"].(float64)), NewErrNotFound("").Status(); got != want {
-		t.Errorf(`body["status"] = %d want %d`, got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "Not Found", body["error"])
+	assert.Equal(t, http.StatusNotFound, int(body["status"].(float64)))
 }
 
 func TestErrHTTP(t *testing.T) {
 	s := New(&Config{})
 
 	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
-		return nil, NewErrBadRequest("no")
+		return nil, ErrHTTP{msg: "no", status: http.StatusBadRequest}
 	})
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/test", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, NewErrBadRequest("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), "no"; got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := int(body["status"].(float64)), NewErrBadRequest("").Status(); got != want {
-		t.Errorf(`body["status"] = %d want %d`, got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "no", body["error"])
+	assert.Equal(t, http.StatusBadRequest, int(body["status"].(float64)))
 }
 
 func TestError(t *testing.T) {
@@ -172,17 +126,8 @@ func TestError(t *testing.T) {
 
 	var body map[string]interface{}
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/test", nil, &body)
-	if err != nil {
-		t.Fatalf("testutil.RequestJSON(): err: %s", err)
-	}
-
-	if got, want := w.Code, NewErrInternalServer("").Status(); got != want {
-		t.Errorf("w.Code = %d want %d", got, want)
-	}
-	if got, want := body["error"].(string), NewErrInternalServer("").Error(); got != want {
-		t.Errorf(`body["error"] = %q want %q`, got, want)
-	}
-	if got, want := int(body["status"].(float64)), NewErrInternalServer("").Status(); got != want {
-		t.Errorf(`body["status"] = %d want %d`, got, want)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "Internal Server Error", body["error"])
+	assert.Equal(t, http.StatusInternalServerError, int(body["status"].(float64)))
 }

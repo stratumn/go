@@ -37,6 +37,8 @@ import (
 	"github.com/stratumn/go-core/jsonhttp"
 	"github.com/stratumn/go-core/jsonws"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/types"
 
 	"go.opencensus.io/trace"
 )
@@ -168,7 +170,7 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 
 	adapterInfo, err := s.adapter.GetInfo(ctx)
 	if err != nil {
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return &Info{
@@ -184,11 +186,11 @@ func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.
 
 	data, process, err := s.parseFossilizeValues(r)
 	if err != nil {
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	if err := s.adapter.Fossilize(ctx, data, []byte(process)); err != nil {
-		return nil, err
+		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return "ok", nil
@@ -196,30 +198,30 @@ func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.
 
 func (s *Server) parseFossilizeValues(r *http.Request) ([]byte, string, error) {
 	if err := r.ParseForm(); err != nil {
-		return nil, "", err
+		return nil, "", types.WrapError(err, errorcode.InvalidArgument, Component, "form data required")
 	}
 
 	datastr := r.Form.Get("data")
 	if datastr == "" {
-		return nil, "", newErrData("")
+		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "data required")
 	}
 
 	l := len(datastr)
 	if l < s.config.MinDataLen {
-		return nil, "", newErrDataLen("")
+		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "invalid data length (too short)")
 	}
 	if s.config.MaxDataLen > 0 && l > s.config.MaxDataLen {
-		return nil, "", newErrDataLen("")
+		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "invalid data length (too big)")
 	}
 
 	data, err := hex.DecodeString(datastr)
 	if err != nil {
-		return nil, "", jsonhttp.NewErrHTTP(err.Error(), http.StatusBadRequest)
+		return nil, "", types.WrapError(err, errorcode.InvalidArgument, Component, "could not decode data")
 	}
 
 	process := r.Form.Get("process")
 	if process == "" {
-		return nil, "", newErrProcess("")
+		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "process is required")
 	}
 
 	return data, process, nil
