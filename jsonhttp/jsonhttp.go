@@ -76,7 +76,7 @@ type RawHandle func(http.ResponseWriter, *http.Request, httprouter.Params)
 
 // NotFound is a handle for a route that is not found.
 func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	return nil, NewErrNotFound("")
+	return nil, NewErrNotFound()
 }
 
 // New creates an instance of Server.
@@ -201,9 +201,7 @@ func renderErr(w http.ResponseWriter, r *http.Request, err error) {
 			"origin": r.RemoteAddr,
 			"error":  err,
 		}).Error("Failed to handle request")
-		// Note: we choose not to expose the internal details of the error.
-		// Users shouldn't be able to guess what went wrong in case of http 500.
-		e = NewErrInternalServer("")
+		e = NewErrInternalServer()
 	}
 
 	w.Header().Set("Content-Type", "application/json")

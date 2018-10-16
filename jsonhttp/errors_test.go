@@ -16,29 +16,33 @@ package jsonhttp
 
 import (
 	"net/http"
+	"strings"
 	"testing"
+
+	"github.com/stratumn/go-core/monitoring/errorcode"
+	"github.com/stratumn/go-core/types"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewErrInternalServer(t *testing.T) {
-	testErrStatus(t, NewErrInternalServer(""), http.StatusInternalServerError)
-	testErrError(t, NewErrInternalServer(""), "internal server error")
-	testErrError(t, NewErrInternalServer("test"), "test")
-}
-
-func TestNewErrBadRequest(t *testing.T) {
-	testErrStatus(t, NewErrBadRequest(""), http.StatusBadRequest)
-	testErrError(t, NewErrBadRequest(""), "bad request")
-	testErrError(t, NewErrBadRequest("test"), "test")
-}
-
-func TestNewErrUnauthorized(t *testing.T) {
-	testErrStatus(t, NewErrUnauthorized(""), http.StatusUnauthorized)
-	testErrError(t, NewErrUnauthorized(""), "unauthorized")
-	testErrError(t, NewErrUnauthorized("test"), "test")
+func TestNewErr(t *testing.T) {
+	assert.Equal(t, http.StatusBadRequest, NewErrHTTP(&types.Error{Code: errorcode.InvalidArgument}).Status())
+	assert.Equal(t, http.StatusBadRequest, NewErrHTTP(&types.Error{Code: errorcode.FailedPrecondition}).Status())
+	assert.Equal(t, http.StatusServiceUnavailable, NewErrHTTP(&types.Error{Code: errorcode.Unavailable}).Status())
+	assert.Equal(t, http.StatusNotImplemented, NewErrHTTP(&types.Error{Code: errorcode.Unimplemented}).Status())
 }
 
 func TestNewErrNotFound(t *testing.T) {
-	testErrStatus(t, NewErrNotFound(""), http.StatusNotFound)
-	testErrError(t, NewErrNotFound(""), "not found")
-	testErrError(t, NewErrNotFound("test"), "test")
+	assert.Equal(t, http.StatusNotFound, NewErrNotFound().Status())
+	assert.Equal(t, "Not Found", NewErrNotFound().Error())
+
+	customErr := NewErrHTTP(&types.Error{Code: errorcode.NotFound, Message: "test"})
+	assert.True(t, strings.Contains(customErr.Error(), "test"))
+}
+
+func TestNewErrInternalServer(t *testing.T) {
+	assert.Equal(t, http.StatusInternalServerError, NewErrInternalServer().Status())
+	assert.Equal(t, "Internal Server Error", NewErrInternalServer().Error())
+
+	customErr := NewErrHTTP(&types.Error{Code: errorcode.Internal, Message: "test"})
+	assert.True(t, strings.Contains(customErr.Error(), "test"))
 }
