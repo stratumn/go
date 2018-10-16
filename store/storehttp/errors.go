@@ -18,40 +18,47 @@ import (
 	"fmt"
 
 	"github.com/stratumn/go-core/jsonhttp"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 func newErrOffset(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
 		msg = "offset must be a positive integer"
 	}
-	return jsonhttp.NewErrBadRequest(msg)
+
+	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
 }
 
 func newErrLimit(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
 		msg = fmt.Sprintf("limit must be a posive integer less than or equal to %d", store.MaxLimit)
 	}
-	return jsonhttp.NewErrBadRequest(msg)
+
+	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
 }
 
 func newErrWithoutParent(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
 		msg = "withoutParent should be a boolean"
 	}
-	return jsonhttp.NewErrBadRequest(msg)
+
+	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
 }
 
 func newErrPrevLinkHash(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
 		msg = "prevLinkHash must be a 64 byte long hexadecimal string"
 	}
-	return jsonhttp.NewErrBadRequest(msg)
+
+	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
 }
 
 func newErrLinkHashes(msg string) jsonhttp.ErrHTTP {
 	if msg == "" {
 		msg = "linkHashes must be an array of 64 byte long hexadecimal string"
 	}
-	return jsonhttp.NewErrBadRequest(msg)
+
+	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
 }

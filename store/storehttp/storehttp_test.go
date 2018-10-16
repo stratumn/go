@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func TestRoot(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "test", body["adapter"].(string))
+	assert.Equal(t, "test", body["adapter"])
 	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
@@ -57,8 +58,8 @@ func TestRoot_err(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "error", body["error"])
 	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
 }
 
@@ -85,8 +86,8 @@ func TestCreateLink_err(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", chainscripttest.RandomLink(t), &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "test", body["error"])
 	assert.Equal(t, 1, a.MockCreateLink.CalledCount)
 }
 
@@ -97,8 +98,8 @@ func TestCreateLink_invalidJSON(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/links", "azertyuio", &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrBadRequest("").Status(), w.Code)
-	assert.Equal(t, "json: cannot unmarshal string into Go value of type chainscript.Link", body["error"].(string))
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.True(t, strings.Contains(body["error"].(string), "json: cannot unmarshal string into Go value of type chainscript.Link"))
 	assert.Zero(t, a.MockCreateLink.CalledCount)
 }
 
@@ -129,8 +130,8 @@ func TestAddEvidence_err(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/evidences/"+linkHash.String(), e, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "test", body["error"])
 	assert.Equal(t, 1, a.MockAddEvidence.CalledCount)
 }
 
@@ -158,8 +159,8 @@ func TestGetSegment_notFound(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, unknownHash, a.MockGetSegment.LastCalledWith)
-	assert.Equal(t, jsonhttp.NewErrNotFound("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrNotFound("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "Not Found", body["error"])
 	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
 }
 
@@ -173,8 +174,8 @@ func TestGetSegment_err(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, lh, a.MockGetSegment.LastCalledWith)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "error", body["error"])
 	assert.Equal(t, 1, a.MockGetSegment.CalledCount)
 }
 
@@ -331,8 +332,8 @@ func TestFindSegments_err(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments", nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "test", body["error"])
 	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
 }
 
@@ -344,7 +345,7 @@ func TestFindSegments_invalidOffset(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrOffset("").Status(), w.Code)
-	assert.Equal(t, newErrOffset("").Error(), body["error"].(string))
+	assert.Equal(t, newErrOffset("").Error(), body["error"])
 	assert.Zero(t, a.MockFindSegments.CalledCount)
 }
 
@@ -356,7 +357,7 @@ func TestFindSegments_invalidPrevLinkHash(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrPrevLinkHash("").Status(), w.Code)
-	assert.Equal(t, newErrPrevLinkHash("").Error(), body["error"].(string))
+	assert.Equal(t, newErrPrevLinkHash("").Error(), body["error"])
 	assert.Zero(t, a.MockFindSegments.CalledCount)
 }
 
@@ -368,7 +369,7 @@ func TestFindSegments_invalidLinkHashes(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrLinkHashes("").Status(), w.Code)
-	assert.Equal(t, newErrLinkHashes("").Error(), body["error"].(string))
+	assert.Equal(t, newErrLinkHashes("").Error(), body["error"])
 	assert.Equal(t, 0, a.MockFindSegments.CalledCount)
 }
 
@@ -398,8 +399,8 @@ func TestGetMapIDs_err(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/maps", nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrInternalServer("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "test", body["error"])
 	assert.Equal(t, 1, a.MockGetMapIDs.CalledCount)
 }
 
@@ -411,7 +412,7 @@ func TestGetMapIDs_invalidLimit(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrOffset("").Status(), w.Code)
-	assert.Equal(t, newErrLimit("").Error(), body["error"].(string))
+	assert.Equal(t, newErrLimit("").Error(), body["error"])
 	assert.Zero(t, a.MockGetMapIDs.CalledCount)
 }
 
@@ -424,7 +425,7 @@ func TestGetMapIDs_limitTooLarge(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrOffset("").Status(), w.Code)
-	assert.Equal(t, newErrLimit("").Error(), body["error"].(string))
+	assert.Equal(t, newErrLimit("").Error(), body["error"])
 	assert.Zero(t, a.MockGetMapIDs.CalledCount)
 }
 
@@ -435,8 +436,8 @@ func TestNotFound(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/azerty", nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, jsonhttp.NewErrNotFound("").Status(), w.Code)
-	assert.Equal(t, jsonhttp.NewErrNotFound("").Error(), body["error"].(string))
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "Not Found", body["error"])
 }
 
 func TestGetSocket(t *testing.T) {
