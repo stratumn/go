@@ -46,11 +46,12 @@ func TestConfig(t *testing.T) {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credentialsFile)
 
 		c := &monitoring.Config{
-			Monitor:            true,
-			MetricsPort:        1,
-			TraceSamplingRatio: 1,
-			MetricsExporter:    monitoring.StackdriverExporter,
-			TracesExporter:     monitoring.StackdriverExporter,
+			Monitor:                true,
+			MetricsPort:            1,
+			MetricsReportingPeriod: 60,
+			TraceSamplingRatio:     1,
+			MetricsExporter:        monitoring.StackdriverExporter,
+			TracesExporter:         monitoring.StackdriverExporter,
 			StackdriverConfig: &monitoring.StackdriverConfig{
 				ProjectID: "projectID",
 			},
@@ -108,15 +109,31 @@ func TestConfig(t *testing.T) {
 
 	t.Run("missing stackdriver project ID", func(t *testing.T) {
 		c := &monitoring.Config{
-			Monitor:            true,
-			MetricsPort:        1,
-			TraceSamplingRatio: 1,
-			MetricsExporter:    monitoring.StackdriverExporter,
-			TracesExporter:     monitoring.StackdriverExporter,
-			StackdriverConfig:  &monitoring.StackdriverConfig{},
+			Monitor:                true,
+			MetricsPort:            1,
+			TraceSamplingRatio:     1,
+			MetricsReportingPeriod: 60,
+			MetricsExporter:        monitoring.StackdriverExporter,
+			TracesExporter:         monitoring.StackdriverExporter,
+			StackdriverConfig:      &monitoring.StackdriverConfig{},
 		}
 		handler, err := monitoring.Configure(c, serviceName)
 		require.EqualError(t, err, monitoring.ErrMissingProjectID.Error())
+		require.Nil(t, handler)
+	})
+
+	t.Run("invalid reporting period", func(t *testing.T) {
+		c := &monitoring.Config{
+			Monitor:                true,
+			MetricsPort:            1,
+			MetricsReportingPeriod: 1,
+			TraceSamplingRatio:     1,
+			MetricsExporter:        monitoring.StackdriverExporter,
+			TracesExporter:         monitoring.StackdriverExporter,
+			StackdriverConfig:      &monitoring.StackdriverConfig{ProjectID: "yea"},
+		}
+		handler, err := monitoring.Configure(c, serviceName)
+		require.EqualError(t, err, monitoring.ErrInvalidReportingPeriod.Error())
 		require.Nil(t, handler)
 	})
 }

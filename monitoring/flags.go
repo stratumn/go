@@ -20,6 +20,7 @@ var (
 	monitor            bool
 	traceSamplingRatio float64
 	metricsPort        int
+	reportingPeriod    int
 
 	metricsExporter string
 	tracesExporter  string
@@ -32,6 +33,7 @@ var (
 func RegisterFlags() {
 	flag.BoolVar(&monitor, "monitoring.active", true, "Set to true to activate monitoring")
 	flag.IntVar(&metricsPort, "monitoring.metrics.port", 0, "Port to use to expose metrics, for example 5001")
+	flag.IntVar(&reportingPeriod, "monitoring.metrics.reporting_period", DefaultReportingPeriod, "Interval between reporting aggregated views (in seconds)")
 	flag.Float64Var(&traceSamplingRatio, "monitoring.trace_sampling_ratio", 1.0, "Set an appropriate sampling ratio depending on your load")
 
 	flag.StringVar(&metricsExporter, "monitoring.exporter.metrics", PrometheusExporter, "Exporter for metrics (either Prometheus or Stackdriver)")
@@ -45,8 +47,10 @@ func RegisterFlags() {
 // command-line flags.
 func ConfigurationFromFlags() *Config {
 	config := &Config{
-		Monitor:            monitor,
-		TraceSamplingRatio: traceSamplingRatio,
+		Monitor: monitor,
+
+		TraceSamplingRatio:     traceSamplingRatio,
+		MetricsReportingPeriod: reportingPeriod,
 
 		MetricsExporter: metricsExporter,
 		TracesExporter:  tracesExporter,

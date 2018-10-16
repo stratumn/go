@@ -37,6 +37,10 @@ const (
 	// DefaultJaegerEndpoint is the default endpoint exposed
 	// by the Jaeger collector.
 	DefaultJaegerEndpoint = "http://jaeger:14268"
+
+	// DefaultReportingPeriod is the default interval between
+	// reporting aggregated views (in seconds).
+	DefaultReportingPeriod = 10
 )
 
 // Errors used by the configuration module.
@@ -45,6 +49,7 @@ var (
 	ErrInvalidTracesExporter  = errors.New("traces exporter should be 'jaeger' or 'stackdriver'")
 	ErrMissingExporterConfig  = errors.New("missing exporter configuration section")
 	ErrMissingProjectID       = errors.New("missing stackdriver project id")
+	ErrInvalidReportingPeriod = errors.New("reporting period needs to be >60 when using stackdriver exporter")
 )
 
 // Config contains options for monitoring.
@@ -54,6 +59,10 @@ type Config struct {
 
 	// Port used to expose metrics.
 	MetricsPort int
+
+	// Interval between reporting aggregated views (in seconds).
+	// This interval needs to be >60 when using the Stackdriver exporter.
+	MetricsReportingPeriod int
 
 	// Ratio of traces to record.
 	// If set to 1.0, all traces will be recorded.
@@ -120,20 +129,21 @@ func configureMetricsExporter(config *Config) (exporter view.Exporter, err error
 		if err := config.StackdriverConfig.Validate(); err != nil {
 			return nil, err
 		}
+		if config.MetricsReportingPeriod < 60 {
+			return nil, ErrInvalidReportingPeriod
+		}
 		exporter, err = stackdriver.NewExporter(stackdriver.Options{
 			ProjectID: config.StackdriverConfig.ProjectID,
 		})
 		if err != nil {
 			return nil, err
 		}
-
 	default:
 		return nil, ErrInvalidMetricsExporter
 	}
 
 	view.RegisterExporter(exporter)
-	view.SetReportingPeriod(1 * time.Second)
-
+	view.SetReportingPeriod(time.Duration(config.MetricsReportingPeriod) * time.Second)
 	return exporter, nil
 }
 
