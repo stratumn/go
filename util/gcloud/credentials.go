@@ -22,6 +22,12 @@ import (
 	"google.golang.org/api/option"
 )
 
+// Constants used as environment variable names for credentials.
+const (
+	CredentialsFileEnv = "GOOGLE_APPLICATION_CREDENTIALS"
+	CredentialsDataEnv = "GOOGLE_APPLICATION_CREDENTIALS_DATA"
+)
+
 // Errors used by the configuration module.
 var (
 	ErrInvalidCredentials = errors.New("GOOGLE_APPLICATION_CREDENTIALS_DATA must contain the content of a service account file as a base64 string")
@@ -30,10 +36,10 @@ var (
 // GetCredentials looks through the environment for a way to
 // authenticate to a service using 'application default credentials'.
 func GetCredentials() (option.ClientOption, error) {
-	if credentialsFile, found := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS"); found {
+	if credentialsFile, found := os.LookupEnv(CredentialsFileEnv); found {
 		return option.WithCredentialsFile(credentialsFile), nil
 	}
-	if credentialsB64, found := os.LookupEnv("GOOGLE_APPLICATION_CREDENTIALS_DATA"); found {
+	if credentialsB64, found := os.LookupEnv(CredentialsDataEnv); found {
 		credentialsJSON, err := base64.StdEncoding.DecodeString(credentialsB64)
 		if err != nil {
 			return nil, ErrInvalidCredentials
