@@ -715,7 +715,6 @@
     "exporter/jaeger",
     "exporter/jaeger/internal/gen-go/jaeger",
     "exporter/prometheus",
-    "exporter/stackdriver/propagation",
     "internal",
     "internal/tagencoding",
     "plugin/ocgrpc",
@@ -832,7 +831,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:41ba2eea537b3f64f056efb1d1f71aa2f59d1780e1d7d2957296383582e1d012"
+  digest = "1:db8adde0e8b04865546c057782ce223a36e35deae3224f908cb9d2f53abc7a52"
   name = "google.golang.org/api"
   packages = [
     "googleapi/transport",
@@ -843,9 +842,10 @@
     "transport",
     "transport/grpc",
     "transport/http",
+    "transport/http/internal/propagation",
   ]
   pruneopts = ""
-  revision = "9f7560f3b05bd90f33f9d56a449e5afd4dab15b3"
+  revision = "3f6e8463aa1d824abe11b439d178c02220079da5"
 
 [[projects]]
   digest = "1:8c432632a230496c35a15cfdf441436f04c90e724ad99c8463ef0c82bbe93edb"
@@ -1006,6 +1006,7 @@
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
     "go.opencensus.io/trace",
+    "google.golang.org/api/option",
     "gopkg.in/dancannon/gorethink.v4",
   ]
   solver-name = "gps-cdcl"
