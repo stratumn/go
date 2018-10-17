@@ -85,7 +85,7 @@ func New(config *Config) *Server {
 	router.NotFound = notFoundHandler{config: config, serve: NotFound}.ServeHTTP
 	server := &http.Server{
 		Addr:           config.Address,
-		Handler:        &ochttp.Handler{Handler: router, IsPublicEndpoint: true},
+		Handler:        &ochttp.Handler{Handler: router},
 		ReadTimeout:    config.ReadTimeout,
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
