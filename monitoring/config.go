@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"github.com/stratumn/go-core/util/gcloud"
+	"github.com/stratumn/go-core/monitoring/gcloud"
 	"go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats/view"

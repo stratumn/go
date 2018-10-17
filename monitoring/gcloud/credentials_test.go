@@ -18,13 +18,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stratumn/go-core/util/gcloud"
+	"github.com/stratumn/go-core/monitoring/gcloud"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
 )
 
 func TestGetCredentials(t *testing.T) {
-
 	t.Run("with a file", func(t *testing.T) {
 		os.Setenv(gcloud.CredentialsFileEnv, "test")
 		defer os.Unsetenv(gcloud.CredentialsFileEnv)
@@ -32,7 +31,6 @@ func TestGetCredentials(t *testing.T) {
 		opt, err := gcloud.GetCredentials()
 		require.Nil(t, err)
 		require.Equal(t, option.WithCredentialsFile("test"), opt)
-
 	})
 
 	t.Run("with base64 credentials", func(t *testing.T) {
