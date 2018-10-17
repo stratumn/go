@@ -20,10 +20,12 @@ import (
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
+	"github.com/stratumn/go-core/util/gcloud"
 	"go.opencensus.io/exporter/jaeger"
 	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
+	"google.golang.org/api/option"
 )
 
 // Available exporters.
@@ -109,6 +111,20 @@ func (c *StackdriverConfig) Validate() error {
 	return nil
 }
 
+// Exporter finds the appropriate google credentials
+// and returns a stackdriver exporter.
+func (c *StackdriverConfig) Exporter() (*stackdriver.Exporter, error) {
+	opt, err := gcloud.GetCredentials()
+	if err != nil {
+		return nil, err
+	}
+	return stackdriver.NewExporter(stackdriver.Options{
+		ProjectID:               c.ProjectID,
+		MonitoringClientOptions: []option.ClientOption{opt},
+		TraceClientOptions:      []option.ClientOption{opt},
+	})
+}
+
 // Validate the jaeger configuration section.
 func (c *JaegerConfig) Validate() error {
 	if c == nil {
@@ -132,10 +148,7 @@ func configureMetricsExporter(config *Config) (exporter view.Exporter, err error
 		if config.MetricsReportingPeriod < 60 {
 			return nil, ErrInvalidReportingPeriod
 		}
-		exporter, err = stackdriver.NewExporter(stackdriver.Options{
-			ProjectID: config.StackdriverConfig.ProjectID,
-		})
-		if err != nil {
+		if exporter, err = config.StackdriverConfig.Exporter(); err != nil {
 			return nil, err
 		}
 	default:
@@ -167,10 +180,7 @@ func configureTracesExporter(config *Config, serviceName string) (exporter trace
 		if err := config.StackdriverConfig.Validate(); err != nil {
 			return nil, err
 		}
-		exporter, err = stackdriver.NewExporter(stackdriver.Options{
-			ProjectID: config.StackdriverConfig.ProjectID,
-		})
-		if err != nil {
+		if exporter, err = config.StackdriverConfig.Exporter(); err != nil {
 			return nil, err
 		}
 	default:
