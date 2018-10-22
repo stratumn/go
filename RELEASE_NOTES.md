@@ -2,7 +2,7 @@
 
 ## Getting started
 
-Read the documentation on the [Stratumn Core website](https://indigocore.org/documentation/v0.3.0/getting-started/install/).
+Read the documentation on our [developer portal](https://developer.stratumn.com).
 
 ## What's new
 
