@@ -6,15 +6,12 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/stratumn/go-core)](https://goreportcard.com/report/github.com/stratumn/go-core)
 [![Join the chat at https://gitter.im/stratumn/sdk](https://badges.gitter.im/stratumn/sdk.svg)](https://gitter.im/stratumn/sdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Logo](logo.png)](https://indigocore.org)
+[Stratumn](https://stratumn.com)'s open-source utilities to create
+decentralized applications and networks.
 
-[Stratumn](https://stratumn.com)'s open-source utilities to create decentralized applications and networks.
+To get started, visit our [developer portal](https://developer.stratumn.com).
 
 ---
-
-This repository includes tools to build [Proof of Process Networks](https://proofofprocess.org) using [Stratumn Core](https://indigocore.org).
-
-To get started, visit the Stratumn Core website: <https://indigocore.org>
 
 ## Run tests
 
