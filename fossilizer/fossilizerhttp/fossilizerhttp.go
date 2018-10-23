@@ -203,8 +203,8 @@ func (s *Server) parseFossilizeValues(r *http.Request) ([]byte, []byte, error) {
 	decoder := json.NewDecoder(r.Body)
 
 	var fossilizeData struct {
-		Data string `json="data"`
-		Meta string `json="meta"`
+		Data string `json:"data"`
+		Meta string `json:"meta"`
 	}
 	if err := decoder.Decode(&fossilizeData); err != nil {
 		return nil, nil, types.WrapError(err, errorcode.InvalidArgument, Component, "json.Decode")
