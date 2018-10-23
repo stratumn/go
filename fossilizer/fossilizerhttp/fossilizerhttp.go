@@ -21,14 +21,17 @@
 //
 //	POST /fossils
 //		Requests data to be fossilized.
-//		Form.data should be a hex encoded buffer.
-//		Form.process should be the name of the process that generated
-// 		the data
+//		Body should be a JSON object containing:
+//		{
+//			data: "hex-encoded string",
+//			meta: "human-readable string"
+//		}
 package fossilizerhttp
 
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"sync"
 
@@ -184,47 +187,49 @@ func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
 
-	data, process, err := s.parseFossilizeValues(r)
+	data, meta, err := s.parseFossilizeValues(r)
 	if err != nil {
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
-	if err := s.adapter.Fossilize(ctx, data, []byte(process)); err != nil {
+	if err := s.adapter.Fossilize(ctx, data, meta); err != nil {
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 
 	return "ok", nil
 }
 
-func (s *Server) parseFossilizeValues(r *http.Request) ([]byte, string, error) {
-	if err := r.ParseForm(); err != nil {
-		return nil, "", types.WrapError(err, errorcode.InvalidArgument, Component, "form data required")
+func (s *Server) parseFossilizeValues(r *http.Request) ([]byte, []byte, error) {
+	decoder := json.NewDecoder(r.Body)
+
+	var fossilizeData struct {
+		Data string `json:"data"`
+		Meta string `json:"meta"`
+	}
+	if err := decoder.Decode(&fossilizeData); err != nil {
+		return nil, nil, types.WrapError(err, errorcode.InvalidArgument, Component, "json.Decode")
 	}
 
-	datastr := r.Form.Get("data")
-	if datastr == "" {
-		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "data required")
+	if len(fossilizeData.Data) == 0 {
+		return nil, nil, types.NewError(errorcode.InvalidArgument, Component, "data required")
+	}
+	if len(fossilizeData.Data) < s.config.MinDataLen {
+		return nil, nil, types.NewError(errorcode.InvalidArgument, Component, "invalid data length (too short)")
+	}
+	if 0 < s.config.MaxDataLen && s.config.MaxDataLen < len(fossilizeData.Data) {
+		return nil, nil, types.NewError(errorcode.InvalidArgument, Component, "invalid data length (too big)")
 	}
 
-	l := len(datastr)
-	if l < s.config.MinDataLen {
-		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "invalid data length (too short)")
-	}
-	if s.config.MaxDataLen > 0 && l > s.config.MaxDataLen {
-		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "invalid data length (too big)")
-	}
-
-	data, err := hex.DecodeString(datastr)
+	data, err := hex.DecodeString(fossilizeData.Data)
 	if err != nil {
-		return nil, "", types.WrapError(err, errorcode.InvalidArgument, Component, "could not decode data")
+		return nil, nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not decode data")
 	}
 
-	process := r.Form.Get("process")
-	if process == "" {
-		return nil, "", types.NewError(errorcode.InvalidArgument, Component, "process is required")
+	if len(fossilizeData.Meta) == 0 {
+		return nil, nil, types.NewError(errorcode.InvalidArgument, Component, "meta required")
 	}
 
-	return data, process, nil
+	return data, []byte(fossilizeData.Meta), nil
 }
 
 func (s *Server) getWebSocket(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
