@@ -15,11 +15,12 @@
 package fossilizerhttp
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 	"time"
 
@@ -34,124 +35,129 @@ import (
 )
 
 func TestRoot(t *testing.T) {
-	s, a := createServer()
-	a.MockGetInfo.Fn = func() (interface{}, error) { return "test", nil }
+	testCases := []struct {
+		name       string
+		stub       func() (interface{}, error)
+		statusCode int
+		validate   func(*testing.T, map[string]interface{})
+	}{{
+		"success",
+		func() (interface{}, error) { return "test", nil },
+		http.StatusOK,
+		func(t *testing.T, body map[string]interface{}) {
+			assert.Equal(t, "test", body["adapter"])
+		},
+	}, {
+		"failure",
+		func() (interface{}, error) { return "test", errors.New("error") },
+		http.StatusInternalServerError,
+		func(t *testing.T, body map[string]interface{}) {
+			assert.Equal(t, "error", body["error"])
+		},
+	}}
 
-	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "test", body["adapter"])
-	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
-}
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			s, a := createServer()
+			a.MockGetInfo.Fn = tt.stub
 
-func TestRoot_err(t *testing.T) {
-	s, a := createServer()
-	a.MockGetInfo.Fn = func() (interface{}, error) { return "test", errors.New("error") }
+			var body map[string]interface{}
+			w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
+			require.NoError(t, err)
 
-	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/", nil, &body)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "error", body["error"])
-	assert.Equal(t, 1, a.MockGetInfo.CalledCount)
+			assert.Equal(t, tt.statusCode, w.Code)
+			assert.Equal(t, 1, a.MockGetInfo.CalledCount)
+			tt.validate(t, body)
+		})
+	}
 }
 
 func TestFossilize(t *testing.T) {
-	s, a := createServer()
-	a.MockFossilize.Fn = func(data []byte, meta []byte) error {
-		return nil
+	testCases := []struct {
+		name          string
+		data          map[string]string
+		fossilizerErr error
+		statusCode    int
+	}{{
+		"success",
+		map[string]string{
+			"data": "42",
+			"meta": "zou",
+		},
+		nil,
+		http.StatusOK,
+	}, {
+		"fossilizer error",
+		map[string]string{
+			"data": "42",
+			"meta": "zou",
+		},
+		errors.New("fatal"),
+		http.StatusInternalServerError,
+	}, {
+		"missing data",
+		map[string]string{
+			"meta": "zou",
+		},
+		nil,
+		http.StatusBadRequest,
+	}, {
+		"data too short",
+		map[string]string{
+			"data": "1",
+			"meta": "zou",
+		},
+		nil,
+		http.StatusBadRequest,
+	}, {
+		"data too long",
+		map[string]string{
+			"data": "42424242424242424242424242424242",
+			"meta": "zou",
+		},
+		nil,
+		http.StatusBadRequest,
+	}, {
+		"data not hex",
+		map[string]string{
+			"data": "spongebob",
+			"meta": "zou",
+		},
+		nil,
+		http.StatusBadRequest,
+	}, {
+		"missing meta",
+		map[string]string{
+			"data": "42",
+		},
+		nil,
+		http.StatusBadRequest,
+	}, {
+		"missing request body",
+		nil,
+		nil,
+		http.StatusBadRequest,
+	}}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			s, a := createServer()
+			a.MockFossilize.Fn = func(data []byte, meta []byte) error {
+				return tt.fossilizerErr
+			}
+
+			reqBytes, err := json.Marshal(tt.data)
+			require.NoError(t, err)
+
+			req := httptest.NewRequest("POST", "/fossils", bytes.NewBuffer(reqBytes))
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			s.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.statusCode, w.Code)
+		})
 	}
-
-	// Make request.
-	req := httptest.NewRequest("POST", "/fossils", nil)
-	req.Form = url.Values{}
-	req.Form.Set("data", "42")
-	req.Form.Set("process", "zou")
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-}
-
-func TestFossilize_noData(t *testing.T) {
-	s, _ := createServer()
-
-	req := httptest.NewRequest("POST", "/fossils", nil)
-	req.Form = url.Values{}
-	req.Form.Set("process", "zou")
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestFossilize_dataTooShort(t *testing.T) {
-	s, _ := createServer()
-
-	req := httptest.NewRequest("POST", "/fossils", nil)
-	req.Form = url.Values{}
-	req.Form.Set("data", "1")
-	req.Form.Set("process", "zou")
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestFossilize_dataTooLong(t *testing.T) {
-	s, _ := createServer()
-
-	req := httptest.NewRequest("POST", "/fossils", nil)
-	req.Form = url.Values{}
-	req.Form.Set("data", "12345678901234567890")
-	req.Form.Set("process", "zou")
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestFossilize_dataNotHex(t *testing.T) {
-	s, _ := createServer()
-
-	req := httptest.NewRequest("POST", "/fossils", nil)
-	req.Form = url.Values{}
-	req.Form.Set("data", "azertyuiop")
-	req.Form.Set("process", "zou")
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestFossilize_noProcess(t *testing.T) {
-	s, _ := createServer()
-
-	req := httptest.NewRequest("POST", "/fossils", nil)
-	req.Form = url.Values{}
-	req.Form.Set("data", "1234567890")
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func TestFossilize_noBody(t *testing.T) {
-	s, _ := createServer()
-
-	req := httptest.NewRequest("POST", "/fossils", nil)
-
-	w := httptest.NewRecorder()
-	s.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestNotFound(t *testing.T) {
