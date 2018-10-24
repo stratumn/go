@@ -155,6 +155,11 @@ type handler struct {
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
+	// Enable CORS, no restriction.
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Accept-Language, Authorization, Content-Type")
+
 	data, err := h.serve(w, r, p)
 	if err != nil {
 		renderErr(w, r, err)

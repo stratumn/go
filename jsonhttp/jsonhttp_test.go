@@ -89,6 +89,7 @@ func TestOptions(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "OPTIONS", "/test", nil, nil)
 	require.NoError(t, err)
 	assert.Equal(t, `{"test":true}`, w.Body.String())
+	assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 }
 
 func TestNotFound(t *testing.T) {
