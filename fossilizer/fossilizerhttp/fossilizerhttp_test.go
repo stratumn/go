@@ -131,7 +131,7 @@ func TestFossilize(t *testing.T) {
 			"data": "42",
 		},
 		nil,
-		http.StatusBadRequest,
+		http.StatusOK,
 	}, {
 		"missing request body",
 		nil,

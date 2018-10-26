@@ -225,10 +225,6 @@ func (s *Server) parseFossilizeValues(r *http.Request) ([]byte, []byte, error) {
 		return nil, nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not decode data")
 	}
 
-	if len(fossilizeData.Meta) == 0 {
-		return nil, nil, types.NewError(errorcode.InvalidArgument, Component, "meta required")
-	}
-
 	return data, []byte(fossilizeData.Meta), nil
 }
 
