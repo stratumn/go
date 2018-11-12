@@ -59,6 +59,10 @@ type Config struct {
 
 	// Optionally, the path to a TLS private key.
 	KeyFile string
+
+	// Optionally, enable cross-origin requests.
+	// By default this will be disabled.
+	EnableCORS bool
 }
 
 // Server is the type that implements net/http.Handler.
@@ -79,10 +83,18 @@ func NotFound(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (inte
 	return nil, NewErrNotFound()
 }
 
+// SetCORSHeaders sets expected CORS headers to allow calls from anywhere.
+func SetCORSHeaders(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "DELETE, GET, OPTIONS, POST, PUT")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Accept-Language, Authorization, Content-Type")
+}
+
 // New creates an instance of Server.
 func New(config *Config) *Server {
 	router := httprouter.New()
 	router.NotFound = notFoundHandler{config: config, serve: NotFound}.ServeHTTP
+
 	server := &http.Server{
 		Addr:           config.Address,
 		Handler:        &ochttp.Handler{Handler: router},
@@ -90,6 +102,7 @@ func New(config *Config) *Server {
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
 	}
+
 	return &Server{server: server, router: router, config: config}
 }
 
@@ -100,26 +113,46 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Get adds a GET route.
 func (s *Server) Get(path string, handle Handle) {
+	if s.config.EnableCORS {
+		s.router.OPTIONS(path, SetCORSHeaders)
+	}
+
 	s.router.GET(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Post adds a POST route.
 func (s *Server) Post(path string, handle Handle) {
+	if s.config.EnableCORS {
+		s.router.OPTIONS(path, SetCORSHeaders)
+	}
+
 	s.router.POST(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Put adds a PUT route.
 func (s *Server) Put(path string, handle Handle) {
+	if s.config.EnableCORS {
+		s.router.OPTIONS(path, SetCORSHeaders)
+	}
+
 	s.router.PUT(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Delete adds a DELETE route.
 func (s *Server) Delete(path string, handle Handle) {
+	if s.config.EnableCORS {
+		s.router.OPTIONS(path, SetCORSHeaders)
+	}
+
 	s.router.DELETE(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
 // Patch adds a PATCH route.
 func (s *Server) Patch(path string, handle Handle) {
+	if s.config.EnableCORS {
+		s.router.OPTIONS(path, SetCORSHeaders)
+	}
+
 	s.router.PATCH(path, handler{config: s.config, serve: handle}.ServeHTTP)
 }
 
@@ -130,6 +163,10 @@ func (s *Server) Options(path string, handle Handle) {
 
 // GetRaw adds a GET non-JSON route.
 func (s *Server) GetRaw(path string, handle RawHandle) {
+	if s.config.EnableCORS {
+		s.router.OPTIONS(path, SetCORSHeaders)
+	}
+
 	s.router.GET(path, rawHandler{config: s.config, serve: handle}.ServeHTTP)
 }
 
@@ -155,10 +192,9 @@ type handler struct {
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	var err error
 
-	// Enable CORS, no restriction.
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers", "Accept, Accept-Language, Authorization, Content-Type")
+	if h.config.EnableCORS {
+		SetCORSHeaders(w, r, p)
+	}
 
 	data, err := h.serve(w, r, p)
 	if err != nil {

@@ -89,6 +89,19 @@ func TestOptions(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "OPTIONS", "/test", nil, nil)
 	require.NoError(t, err)
 	assert.Equal(t, `{"test":true}`, w.Body.String())
+}
+
+func TestCORS(t *testing.T) {
+	s := New(&Config{EnableCORS: true})
+	// Once CORS is enabled, options calls are automatically handled on all
+	// registered routes.
+	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
+		return map[string]bool{"test": true}, nil
+	})
+
+	w, err := testutil.RequestJSON(s.ServeHTTP, "OPTIONS", "/test", nil, nil)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 }
 

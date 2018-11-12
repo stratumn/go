@@ -47,6 +47,7 @@ var (
 	writeTimeout            time.Duration
 	maxHeaderBytes          int
 	shutdownTimeout         time.Duration
+	enableCORS              bool
 )
 
 // Run launches a fossilizerhttp server.
@@ -103,6 +104,7 @@ func RegisterFlags() {
 	flag.DurationVar(&wsPongTimeout, "ws_pong_timeout", jsonws.DefaultWebSocketPongTimeout, "Timeout for a web socket expected pong")
 	flag.DurationVar(&wsPingInterval, "ws_ping_interval", jsonws.DefaultWebSocketPingInterval, "Interval between web socket pings")
 	flag.Int64Var(&wsMaxMsgSize, "max_msg_size", jsonws.DefaultWebSocketMaxMsgSize, "Maximum size of a received web socket message")
+	flag.BoolVar(&enableCORS, "enable_cors", false, "Allow cross-origin requests")
 }
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
@@ -121,6 +123,7 @@ func RunWithFlags(ctx context.Context, a fossilizer.Adapter) {
 		MaxHeaderBytes: maxHeaderBytes,
 		CertFile:       certFile,
 		KeyFile:        keyFile,
+		EnableCORS:     enableCORS,
 	}
 	basicConfig := &jsonws.BasicConfig{
 		ReadBufferSize:  wsReadBufSize,

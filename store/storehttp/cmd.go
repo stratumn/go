@@ -47,6 +47,7 @@ var (
 	writeTimeout        time.Duration
 	maxHeaderBytes      int
 	shutdownTimeout     time.Duration
+	enableCORS          bool
 )
 
 // Run launches a storehttp server.
@@ -106,6 +107,7 @@ func RegisterFlags() {
 	flag.DurationVar(&writeTimeout, "write_timeout", jsonhttp.DefaultWriteTimeout, "Write timeout")
 	flag.IntVar(&maxHeaderBytes, "max_header_bytes", jsonhttp.DefaultMaxHeaderBytes, "Maximum header bytes")
 	flag.DurationVar(&shutdownTimeout, "shutdown_timeout", 10*time.Second, "Shutdown timeout")
+	flag.BoolVar(&enableCORS, "enable_cors", false, "Allow cross-origin requests")
 }
 
 // RunWithFlags should be called after RegisterFlags and flag.Parse to launch
@@ -122,6 +124,7 @@ func RunWithFlags(a store.Adapter) {
 		MaxHeaderBytes: maxHeaderBytes,
 		CertFile:       certFile,
 		KeyFile:        keyFile,
+		EnableCORS:     enableCORS,
 	}
 	basicConfig := &jsonws.BasicConfig{
 		ReadBufferSize:  wsReadBufSize,
