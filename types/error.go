@@ -141,7 +141,6 @@ func (e *Error) MarshalJSON() ([]byte, error) {
 		switch wrapped := e.Wrapped.(type) {
 		case *Error:
 			marshalled["inner"] = wrapped
-			break
 		default:
 			marshalled["inner"] = wrapped.Error()
 		}

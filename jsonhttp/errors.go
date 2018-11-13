@@ -108,7 +108,6 @@ func (e ErrHTTP) JSONMarshal() []byte {
 	switch err := e.err.(type) {
 	case *types.Error:
 		toMarshal["error"] = err
-		break
 	default:
 		toMarshal["error"] = err.Error()
 	}
