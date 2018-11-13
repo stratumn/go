@@ -20,7 +20,9 @@ import (
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -117,18 +119,61 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestErrHTTP(t *testing.T) {
-	s := New(&Config{})
+	testCases := []struct {
+		name     string
+		err      error
+		validate func(*testing.T, interface{})
+	}{{
+		"standard error",
+		errors.New("nothing for you today sir"),
+		func(t *testing.T, err interface{}) {
+			assert.Equal(t, "nothing for you today sir", err)
+		},
+	}, {
+		"structured error",
+		types.WrapError(
+			types.WrapError(
+				errors.New("inner error"),
+				errorcode.FailedPrecondition,
+				"A",
+				"inner message",
+			),
+			errorcode.Internal,
+			"B",
+			"outer message",
+		),
+		func(t *testing.T, err interface{}) {
+			expected := map[string]interface{}{
+				"category": "B",
+				"code":     float64(13),
+				"inner": map[string]interface{}{
+					"category": "A",
+					"code":     float64(9),
+					"inner":    "inner error",
+					"message":  "inner message",
+				},
+				"message": "outer message",
+			}
+			assert.Equal(t, expected, err)
+		},
+	}}
 
-	s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
-		return nil, ErrHTTP{msg: "no", status: http.StatusBadRequest}
-	})
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			s := New(&Config{})
+			s.Get("/test", func(r http.ResponseWriter, _ *http.Request, p httprouter.Params) (interface{}, error) {
+				return nil, ErrHTTP{err: tt.err, status: http.StatusBadRequest}
+			})
 
-	var body map[string]interface{}
-	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/test", nil, &body)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "no", body["error"])
-	assert.Equal(t, http.StatusBadRequest, int(body["status"].(float64)))
+			var body map[string]interface{}
+			w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/test", nil, &body)
+
+			require.NoError(t, err)
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			assert.Equal(t, http.StatusBadRequest, int(body["status"].(float64)))
+			tt.validate(t, body["error"])
+		})
+	}
 }
 
 func TestError(t *testing.T) {

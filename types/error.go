@@ -15,6 +15,7 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -127,4 +128,24 @@ func (e *Error) Format(s fmt.State, verb rune) {
 	case 's':
 		_, _ = io.WriteString(s, e.Error())
 	}
+}
+
+// MarshalJSON recursively checks inner errors to marshal them properly.
+func (e *Error) MarshalJSON() ([]byte, error) {
+	marshalled := make(map[string]interface{})
+	marshalled["code"] = e.Code
+	marshalled["category"] = e.Component
+	marshalled["message"] = e.Message
+
+	if e.Wrapped != nil {
+		switch wrapped := e.Wrapped.(type) {
+		case *Error:
+			marshalled["inner"] = wrapped
+			break
+		default:
+			marshalled["inner"] = wrapped.Error()
+		}
+	}
+
+	return json.Marshal(marshalled)
 }

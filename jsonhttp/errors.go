@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 )
@@ -47,7 +48,7 @@ var (
 
 // ErrHTTP is an error with an HTTP status code.
 type ErrHTTP struct {
-	msg    string
+	err    error
 	status int
 }
 
@@ -58,14 +59,14 @@ func NewErrHTTP(err error) ErrHTTP {
 		status, ok := ErrorCodeToHTTPCode[e.Code]
 		if ok {
 			return ErrHTTP{
-				msg:    e.Error(),
+				err:    err,
 				status: status,
 			}
 		}
 	}
 
 	return ErrHTTP{
-		msg:    err.Error(),
+		err:    err,
 		status: http.StatusInternalServerError,
 	}
 }
@@ -73,7 +74,7 @@ func NewErrHTTP(err error) ErrHTTP {
 // NewErrNotFound creates an error not found.
 func NewErrNotFound() ErrHTTP {
 	return ErrHTTP{
-		msg:    http.StatusText(http.StatusNotFound),
+		err:    errors.New(http.StatusText(http.StatusNotFound)),
 		status: http.StatusNotFound,
 	}
 }
@@ -81,7 +82,7 @@ func NewErrNotFound() ErrHTTP {
 // NewErrInternalServer creates an internal server error.
 func NewErrInternalServer() ErrHTTP {
 	return ErrHTTP{
-		msg:    http.StatusText(http.StatusInternalServerError),
+		err:    errors.New(http.StatusText(http.StatusInternalServerError)),
 		status: http.StatusInternalServerError,
 	}
 }
@@ -93,17 +94,26 @@ func (e ErrHTTP) Status() int {
 
 // Error implements error.Error.
 func (e ErrHTTP) Error() string {
-	return e.msg
+	return e.err.Error()
 }
 
 var internalServerJSON = fmt.Sprintf(`{"error:":"internal server error","status":%d}`, http.StatusInternalServerError)
 
 // JSONMarshal marshals an error to JSON.
 func (e ErrHTTP) JSONMarshal() []byte {
-	js, err := json.Marshal(map[string]interface{}{
-		"error":  e.msg,
+	toMarshal := map[string]interface{}{
 		"status": e.status,
-	})
+	}
+
+	switch err := e.err.(type) {
+	case *types.Error:
+		toMarshal["error"] = err
+		break
+	default:
+		toMarshal["error"] = err.Error()
+	}
+
+	js, err := json.Marshal(toMarshal)
 	if err != nil {
 		msg := internalServerJSON
 		return []byte(msg)
