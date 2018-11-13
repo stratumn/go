@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -99,7 +98,6 @@ func TestCreateLink_invalidJSON(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.True(t, strings.Contains(body["error"].(string), "json: cannot unmarshal string into Go value of type chainscript.Link"))
 	assert.Zero(t, a.MockCreateLink.CalledCount)
 }
 
@@ -345,7 +343,7 @@ func TestFindSegments_invalidOffset(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrOffset("").Status(), w.Code)
-	assert.Equal(t, newErrOffset("").Error(), body["error"])
+	assert.Equal(t, "offset must be a positive integer", body["error"].(map[string]interface{})["message"])
 	assert.Zero(t, a.MockFindSegments.CalledCount)
 }
 
@@ -357,7 +355,7 @@ func TestFindSegments_invalidPrevLinkHash(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrPrevLinkHash("").Status(), w.Code)
-	assert.Equal(t, newErrPrevLinkHash("").Error(), body["error"])
+	assert.Equal(t, "prevLinkHash must be a 64 byte long hexadecimal string", body["error"].(map[string]interface{})["message"])
 	assert.Zero(t, a.MockFindSegments.CalledCount)
 }
 
@@ -369,7 +367,7 @@ func TestFindSegments_invalidLinkHashes(t *testing.T) {
 	require.NoError(t, err, "testutil.RequestJSON()")
 
 	assert.Equal(t, newErrLinkHashes("").Status(), w.Code)
-	assert.Equal(t, newErrLinkHashes("").Error(), body["error"])
+	assert.Equal(t, "linkHashes must be an array of 64 byte long hexadecimal string", body["error"].(map[string]interface{})["message"])
 	assert.Equal(t, 0, a.MockFindSegments.CalledCount)
 }
 
@@ -411,8 +409,8 @@ func TestGetMapIDs_invalidLimit(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/maps?limit=-1", nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, newErrOffset("").Status(), w.Code)
-	assert.Equal(t, newErrLimit("").Error(), body["error"])
+	assert.Equal(t, newErrLimit("").Status(), w.Code)
+	assert.Equal(t, "limit must be a posive integer less than or equal to 200", body["error"].(map[string]interface{})["message"])
 	assert.Zero(t, a.MockGetMapIDs.CalledCount)
 }
 
@@ -424,8 +422,8 @@ func TestGetMapIDs_limitTooLarge(t *testing.T) {
 	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", fmt.Sprintf("/maps?limit=%d", limit), nil, &body)
 	require.NoError(t, err, "testutil.RequestJSON()")
 
-	assert.Equal(t, newErrOffset("").Status(), w.Code)
-	assert.Equal(t, newErrLimit("").Error(), body["error"])
+	assert.Equal(t, newErrLimit("").Status(), w.Code)
+	assert.Equal(t, "limit must be a posive integer less than or equal to 200", body["error"].(map[string]interface{})["message"])
 	assert.Zero(t, a.MockGetMapIDs.CalledCount)
 }
 
