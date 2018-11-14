@@ -93,7 +93,7 @@ func SetCORSHeaders(w http.ResponseWriter, _ *http.Request, _ httprouter.Params)
 // New creates an instance of Server.
 func New(config *Config) *Server {
 	router := httprouter.New()
-	router.NotFound = notFoundHandler{config: config, serve: NotFound}.ServeHTTP
+	router.NotFound = notFoundHandler{config: config, serve: NotFound}
 
 	server := &http.Server{
 		Addr:           config.Address,
