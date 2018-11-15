@@ -10,71 +10,40 @@ execution_time_limit:
 blocks:
   - name: Install and cache tools
     task:
-      prologue:
-        commands:
-          # Go project boiler plate.
-          - export "GOPATH=$(go env GOPATH)"
-          - export "GOBIN=${GOPATH}/bin"
-          - export "PATH=${GOBIN}:${PATH}"
-          - export "SEMAPHORE_GIT_DIR=${GOPATH}/src/github.com/stratumn/go-core"
-          - mkdir -vp "${SEMAPHORE_GIT_DIR}"
       jobs:
         - name: Go tools
           commands:
+            - GOPATH=$(go env GOPATH)
+            - GOBIN=${GOPATH}/bin
+            - PATH=${GOBIN}:${PATH}
+            - mkdir -vp $GOPATH
             - cd $GOPATH
             # Only update binaries once a month.
-            - KEY=gotools-$(date +%Y%m)-v1
-            - cache restore "$KEY"
-            - cache has_key "$KEY" || mkdir -vp "${GOBIN}"
-            - cache has_key "$KEY" || curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            - cache has_key "$KEY" || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin v1.12.2
+            - GOTOOLS_KEY=gotools-$(date +%Y%m)-v1
+            - cache restore $GOTOOLS_KEY
+            - cache has_key $GOTOOLS_KEY || mkdir -vp $GOBIN
+            - cache has_key $GOTOOLS_KEY || curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+            - cache has_key $GOTOOLS_KEY || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOBIN v1.12.2
             # Cache everything in $GOPATH/bin.
-            - cache store "$KEY" bin
+            - cache store $GOTOOLS_KEY bin
 
   - name: Warm cache
     task:
       prologue:
-        commands:
-          # Go project boiler plate.
-          - export "GOPATH=$(go env GOPATH)"
-          - export "GOBIN=${GOPATH}/bin"
-          - export "PATH=${GOBIN}:${PATH}"
-          - export "SEMAPHORE_GIT_DIR=${GOPATH}/src/github.com/stratumn/go-core"
-          - mkdir -vp "${SEMAPHORE_GIT_DIR}"
-          # Load Go tools from cache.
-          - cd $GOPATH
-          - cache restore gotools-$(date +%Y%m)-v1
-          - cd $SEMAPHORE_GIT_DIR
-          # Git checkout.
-          - checkout
+        commands_file: boilerplate
       jobs:
         - name: Deps
           commands:
-            - export "KEY=deps-$(checksum Gopkg.lock)-v1"
-            - cache restore "$KEY"
-            - cache has_key "$KEY" || dep ensure -v
-            - cache store $KEY vendor
+            # Note: $DEPS_KEY should be quoted because we don't know the character range of the checksum.
+            - cache has_key "$DEPS_KEY" || dep ensure -v
+            - cache store "$DEPS_KEY" vendor
 
   - name: Lint and test
     task:
-      prologue:
-        commands:
-          # Go project boiler plate.
-          - export "GOPATH=$(go env GOPATH)"
-          - export "GOBIN=${GOPATH}/bin"
-          - export "PATH=${GOBIN}:${PATH}"
-          - export "SEMAPHORE_GIT_DIR=$GOPATH/src/github.com/stratumn/go-core"
-          - mkdir -vp "${SEMAPHORE_GIT_DIR}"
-          # Load Go tools from cache.
-          - cd $GOPATH
-          - cache restore gotools-$(date +%Y%m)-v1
-          - cd $SEMAPHORE_GIT_DIR
-          # Git checkout.
-          - checkout
-          # Restore caches.
-          - cache restore deps-$(checksum Gopkg.lock)-v1
       secrets:
         - name: go-core-codecov
+      prologue:
+        commands_file: boilerplate
       jobs:
       - name: Headers
         commands:

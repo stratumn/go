@@ -1,0 +1,11 @@
+export GOPATH=$(go env GOPATH)
+export GOBIN=${GOPATH}/bin
+export PATH=${GOBIN}:${PATH}
+export SEMAPHORE_GIT_DIR=${GOPATH}/src/github.com/stratumn/go-core
+mkdir -vp $SEMAPHORE_GIT_DIR
+cd $GOPATH
+cache restore gotools-$(date +%Y%m)-v1
+cd $SEMAPHORE_GIT_DIR
+checkout
+export "DEPS_KEY=deps-$(checksum Gopkg.lock)-v1"
+cache restore "$DEPS_KEY"
