@@ -1,0 +1,36 @@
+version: v1.0
+name: go-core-docker
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+execution_time_limit:
+  minutes: 15
+
+blocks:
+  - name: Build artifacts
+    task:
+      prologue:
+        commands_file: boilerplate
+      jobs:
+        - name: Linux build
+          commands:
+            # Build if needed and store in cache.
+            - DIST_KEY=dist-${SEMAPHORE_GIT_SHA}-v1
+            - cache restore $DIST_KEY
+            - cache has_key $DIST_KEY || GOOS=linux CGO_ENABLED=0 make build
+            - cache has_key $DIST_KEY || cache store $DIST_KEY dist
+
+  - name: Publish to DockerHub
+    task:
+      secrets:
+        - name: docker
+      prologue:
+        commands_file: boilerplate
+      jobs:
+        - name: Build and push
+          commands:
+            - cache restore dist-${SEMAPHORE_GIT_SHA}-v1
+            - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            - make docker_images
+            - make docker_push
