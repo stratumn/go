@@ -32,5 +32,7 @@ blocks:
           commands:
             - cache restore dist-${SEMAPHORE_GIT_SHA}-v1
             - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            # Update timestamps of binaries so make doesn't rebuild them.
+            - find dist -type f  -exec touch {} +
             - make docker_images
             - make docker_push
