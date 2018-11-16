@@ -18,7 +18,7 @@ blocks:
             # Build if needed and store in cache.
             - DIST_KEY=dist-${SEMAPHORE_GIT_SHA}-v1
             - cache restore $DIST_KEY
-            - cache has_key $DIST_KEY || GOOS=linux CGO_ENABLED=0 make build
+            - cache has_key $DIST_KEY || WIN_OS_ARCHS= NIX_OS_ARCHS=linux-amd64 CGO_ENABLED=0 make build
             - cache has_key $DIST_KEY || cache store $DIST_KEY dist
 
   - name: Publish to DockerHub
@@ -32,5 +32,7 @@ blocks:
           commands:
             - cache restore dist-${SEMAPHORE_GIT_SHA}-v1
             - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            # Update timestamps of binaries so make doesn't rebuild them.
+            - find dist -type f  -exec touch {} +
             - make docker_images
             - make docker_push
