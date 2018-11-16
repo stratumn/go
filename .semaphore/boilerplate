@@ -7,5 +7,5 @@ cd $GOPATH
 cache restore gotools-$(date +%Y%m)-v1
 cd $SEMAPHORE_GIT_DIR
 checkout
-export "DEPS_KEY=deps-$(checksum Gopkg.lock)-v1"
-cache restore "$DEPS_KEY"
+export DEPS_KEY=deps-$(checksum Gopkg.lock)-v1
+cache restore $DEPS_KEY

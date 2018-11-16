@@ -1,5 +1,5 @@
 version: v1.0
-name: go-core
+name: Test
 agent:
   machine:
     type: e1-standard-2
@@ -27,16 +27,15 @@ blocks:
             # Cache everything in $GOPATH/bin.
             - cache has_key $GOTOOLS_KEY || cache store $GOTOOLS_KEY bin
 
-  - name: Warm cache
+  - name: Warm dep cache
     task:
       prologue:
         commands_file: boilerplate
       jobs:
         - name: Deps
           commands:
-            # Note: $DEPS_KEY should be quoted because we don't know the character range of the checksum.
-            - cache has_key "$DEPS_KEY" || dep ensure -v
-            - cache has_key "$DEPS_KEY" || cache store "$DEPS_KEY" vendor
+            - cache has_key $DEPS_KEY || dep ensure -v
+            - cache has_key $DEPS_KEY || cache store $DEPS_KEY vendor
 
   - name: Lint and test
     task:

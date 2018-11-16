@@ -1,5 +1,5 @@
 version: v1.0
-name: go-core-docker
+name: Docker
 agent:
   machine:
     type: e1-standard-2
