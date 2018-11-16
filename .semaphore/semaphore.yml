@@ -1,0 +1,64 @@
+version: v1.0
+name: Test
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+execution_time_limit:
+  minutes: 15
+
+blocks:
+  - name: Install and cache tools
+    task:
+      jobs:
+        - name: Go tools
+          commands:
+            - GOPATH=$(go env GOPATH)
+            - GOBIN=${GOPATH}/bin
+            - PATH=${GOBIN}:${PATH}
+            - mkdir -vp $GOPATH
+            - cd $GOPATH
+            # Only update binaries once a month.
+            - GOTOOLS_KEY=gotools-$(date +%Y%m)-v1
+            - cache restore $GOTOOLS_KEY
+            - cache has_key $GOTOOLS_KEY || mkdir -vp $GOBIN
+            - cache has_key $GOTOOLS_KEY || curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+            - cache has_key $GOTOOLS_KEY || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOBIN v1.12.2
+            # Cache everything in $GOPATH/bin.
+            - cache has_key $GOTOOLS_KEY || cache store $GOTOOLS_KEY bin
+
+  - name: Warm dep cache
+    task:
+      prologue:
+        commands_file: boilerplate
+      jobs:
+        - name: Deps
+          commands:
+            - cache has_key $DEPS_KEY || dep ensure -v
+            - cache has_key $DEPS_KEY || cache store $DEPS_KEY vendor
+
+  - name: Lint and test
+    task:
+      secrets:
+        - name: go-core-codecov
+      prologue:
+        commands_file: boilerplate
+      jobs:
+      - name: Headers
+        commands:
+          - make test_headers
+      - name: Lint
+        commands:
+          - make lint
+      - name: Test
+        commands:
+          - make coverage
+          - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
+
+promotions:
+  - name: Publish to DockerHub
+    pipeline_file: docker.yml
+    auto_promote_on:
+      - result: passed
+        branch:
+          - master
