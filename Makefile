@@ -1,11 +1,35 @@
 SHELL=/bin/bash
-NIX_OS_ARCHS?=darwin-amd64 linux-amd64
-WIN_OS_ARCHS?=windows-amd64
-DIST_DIR=dist
-COMMAND_DIR=cmd
-VERSION=$(shell ./version.sh)
+
+# Release info.
+VERSION?=$(shell ./version.sh)
 PRERELEASE=$(shell cat PRERELEASE)
 GIT_COMMIT=$(shell git rev-parse HEAD)
+
+# Cross-compile for these architecture when using `make build`.
+NIX_OS_ARCHS?=darwin-amd64 linux-amd64
+WIN_OS_ARCHS?=windows-amd64
+
+# Parent directory of the Go entry point for each commands.
+COMMAND_DIR=cmd
+
+# Get the command names for list of directories.
+COMMANDS=$(shell ls $(COMMAND_DIR))
+
+# Parent directory of the output binaries.
+DIST_DIR?=dist
+
+# Compute the paths of the binaries for the specified architectures.
+NIX_EXECS=$(foreach command, $(COMMANDS), $(foreach os-arch, $(NIX_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command)))
+WIN_EXECS=$(foreach command, $(COMMANDS), $(foreach os-arch, $(WIN_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command).exe))
+EXECS=$(NIX_EXECS) $(WIN_EXECS)
+
+# Go build flags and commands (static by default).
+GO_CMD=go
+GO_LD_FLAGS?=-extldflags "-static"
+CGO_ENABLED?=0
+GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) $(GO_LD_FLAGS)'
+
+
 GIT_PATH=$(shell git rev-parse --show-toplevel)
 GITHUB_REPO=$(shell basename $(GIT_PATH))
 GITHUB_USER=$(shell basename $(shell dirname $(GIT_PATH)))
@@ -20,18 +44,18 @@ COVERHTML_FILE=coverhtml.txt
 CLEAN_PATHS=$(DIST_DIR) $(COVERAGE_FILE) $(COVERHTML_FILE)
 TMP_DIR:=$(shell mktemp -d)
 
-GO_CMD=go
 GO_LINT_CMD=golangci-lint
 KEYBASE_CMD=keybase
 GITHUB_RELEASE_COMMAND=github-release
 DOCKER_CMD=docker
 
+DOCKER_GOLANG_IMAGE?=golang:1.11.2
+
 GITHUB_RELEASE_FLAGS=--user '$(GITHUB_USER)' --repo '$(GITHUB_REPO)' --tag '$(GIT_TAG)'
 GITHUB_RELEASE_RELEASE_FLAGS=$(GITHUB_RELEASE_FLAGS) --name '$(RELEASE_NAME)' --description "$$(cat $(RELEASE_NOTES_FILE))"
 
-CGO_ENABLED?=0
+
 GO_LIST=$(GO_CMD) list
-GO_BUILD=$(GO_CMD) build -gcflags=-trimpath=$(GOPATH) -asmflags=-trimpath=$(GOPATH) -ldflags '-extldflags "-static" -X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT)'
 GO_TEST=$(GO_CMD) test
 GO_BENCHMARK=$(GO_TEST) -bench .
 GO_LINT=$(GO_LINT_CMD) run --build-tags="lint" --disable="gas" --deadline=4m --tests=false --skip-dirs="testutils" --skip-dirs="storetestcases"
@@ -46,11 +70,7 @@ PACKAGES=$(shell $(GO_LIST) ./... | grep -v vendor)
 TEST_PACKAGES=$(shell $(GO_LIST) ./... | grep -v vendor | grep -v testutil | grep -v testcases)
 COVERAGE_SOURCES=$(shell find * -name '*.go' -not -path "testutil/*" -not -path "*testcases/*" | grep -v 'doc.go')
 BUILD_SOURCES=$(shell find * -name '*.go' -not -path "testutil/*" -not -path "*testcases/*" | grep -v '_test.go' | grep -v 'doc.go')
-COMMANDS=$(shell ls $(COMMAND_DIR))
 
-NIX_EXECS=$(foreach command, $(COMMANDS), $(foreach os-arch, $(NIX_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command)))
-WIN_EXECS=$(foreach command, $(COMMANDS), $(foreach os-arch, $(WIN_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command).exe))
-EXECS=$(NIX_EXECS) $(WIN_EXECS)
 SIGNATURES=$(foreach exec, $(EXECS), $(exec).sig)
 NIX_ZIP_FILES=$(foreach command, $(COMMANDS), $(foreach os-arch, $(NIX_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command).zip))
 WIN_ZIP_FILES=$(foreach command, $(COMMANDS), $(foreach os-arch, $(WIN_OS_ARCHS), $(DIST_DIR)/$(os-arch)/$(command).zip))
@@ -131,6 +151,20 @@ BUILD_PACKAGE=$(shell $(GO_LIST) ./$(COMMAND_DIR)/$(BUILD_COMMAND))
 
 $(EXECS): $(BUILD_SOURCES)
 	GOOS=$(BUILD_OS) GOARCH=$(BUILD_ARCH) CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) -o $@ $(BUILD_PACKAGE)
+
+# == build_docker =============================================================
+# Builds dynamically linked binaries from within a Docker container.
+# Warning: this is really slow on a Mac.
+build_docker: $(BUILD_SOURCES)
+	docker run \
+		--rm \
+		--volume ${PWD}:/go/src/github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
+		--workdir /go/src/github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
+		--env WIN_OS_ARCHS= \
+		--env NIX_OS_ARCHS=linux-amd64 \
+		--env CGO_ENABLED=1 \
+		--env GO_LD_FLAGS= \
+		$(DOCKER_GOLANG_IMAGE) make build
 
 # == sign =====================================================================
 sign: $(SIGNATURES)
@@ -228,7 +262,9 @@ docker_push: $(DOCKER_PUSH_LIST)
 
 $(DOCKER_PUSH_LIST): docker_push_%:
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):$(VERSION)
-	$(DOCKER_PUSH) $(DOCKER_IMAGE):latest
+	@if [[ "$(VERSION)" = "master" ]]; then \
+	  $(DOCKER_PUSH) $(DOCKER_IMAGE):latest; \
+	fi
 
 # == license_headers ==========================================================
 license_headers: $(LICENSED_FILES)

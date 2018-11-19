@@ -18,7 +18,7 @@ blocks:
             # Build if needed and store in cache.
             - DIST_KEY=dist-${SEMAPHORE_GIT_SHA}-v1
             - cache restore $DIST_KEY
-            - cache has_key $DIST_KEY || WIN_OS_ARCHS= NIX_OS_ARCHS=linux-amd64 CGO_ENABLED=0 make build
+            - cache has_key $DIST_KEY || make build_docker
             - cache has_key $DIST_KEY || cache store $DIST_KEY dist
 
   - name: Publish to DockerHub
