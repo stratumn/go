@@ -159,7 +159,6 @@ build_docker: $(BUILD_SOURCES)
 	docker run \
 		--rm \
 		--volume ${PWD}:/go/src/github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
-		--volume ${GOPATH}/src/gx:/go/src/gx \
 		--workdir /go/src/github.com/$(GITHUB_USER)/$(GITHUB_REPO) \
 		--env WIN_OS_ARCHS= \
 		--env NIX_OS_ARCHS=linux-amd64 \
@@ -262,9 +261,6 @@ $(DOCKER_IMAGE_LIST): docker_image_%: $(DIST_DIR)/%.Dockerfile $(DIST_DIR)/linux
 docker_push: $(DOCKER_PUSH_LIST)
 
 $(DOCKER_PUSH_LIST): docker_push_%:
-	@if [[ "$(VERSION)" = "master" ]]; then \
-	  echo test; \
-	fi
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):$(VERSION)
 	@if [[ "$(VERSION)" = "master" ]]; then \
 	  $(DOCKER_PUSH) $(DOCKER_IMAGE):latest; \
