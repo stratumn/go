@@ -129,6 +129,7 @@ func RunWithFlags(a store.Adapter) {
 	basicConfig := &jsonws.BasicConfig{
 		ReadBufferSize:  wsReadBufSize,
 		WriteBufferSize: wsWriteBufSize,
+		EnableCORS:      enableCORS,
 	}
 	bufConnConfig := &jsonws.BufferedConnConfig{
 		Size:         wsWriteChanSize,

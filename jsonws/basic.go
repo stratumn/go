@@ -76,6 +76,7 @@ type BasicConfig struct {
 	WriteBufferSize int               // Size of the write buffer in bytes
 	UpgradeHandle   UpgradeHandle     // Optional custom HTTP request upgrader
 	MsgAllocator    BasicMsgAllocator // Optional custom message allocator
+	EnableCORS      bool              // Optionally enable cross-origin requests
 }
 
 // BasicConnMsg contains a connection and a message read from that connection.
@@ -115,6 +116,11 @@ func NewBasic(config *BasicConfig, bufConnConfig *BufferedConnConfig) *Basic {
 			ReadBufferSize:  config.ReadBufferSize,
 			WriteBufferSize: config.WriteBufferSize,
 		}
+
+		if config.EnableCORS {
+			upgrader.CheckOrigin = func(_ *http.Request) bool { return true }
+		}
+
 		handle = func(w http.ResponseWriter, r *http.Request, h http.Header) (PingableConn, error) {
 			conn, err := upgrader.Upgrade(w, r, h)
 			if err != nil {
