@@ -128,6 +128,7 @@ func RunWithFlags(ctx context.Context, a fossilizer.Adapter) {
 	basicConfig := &jsonws.BasicConfig{
 		ReadBufferSize:  wsReadBufSize,
 		WriteBufferSize: wsWriteBufSize,
+		EnableCORS:      enableCORS,
 	}
 	bufConnConfig := &jsonws.BufferedConnConfig{
 		Size:         wsWriteChanSize,
