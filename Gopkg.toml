@@ -14,7 +14,7 @@
 [[constraint]]
   # Even a patch version update  breaks Tendermint 0.18.0
   name = "github.com/tendermint/tmlibs"
-  version = "=0.8.1"
+  version = ">= 0.8.1, < 1.0.0"
 
 [[override]] 
   # This is required because Tendermint needs ~1.0.0

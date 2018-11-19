@@ -667,7 +667,7 @@
   version = "v0.18.0"
 
 [[projects]]
-  digest = "1:170275a391732827d0f661a4facd1f62ee6ba76265f61065778d5021ea906286"
+  digest = "1:163bf7fe9146590910305857c809a07430ff49d89b128a435cc28a7cfa77cdf3"
   name = "github.com/tendermint/tmlibs"
   packages = [
     "autofile",
@@ -682,8 +682,8 @@
     "pubsub/query",
   ]
   pruneopts = ""
-  revision = "2e24b64fc121dcdf1cabceab8dc2f7257675483c"
-  version = "0.8.1"
+  revision = "692f1d86a6e2c0efa698fd1e4541b68c74ffaf38"
+  version = "v0.8.4"
 
 [[projects]]
   branch = "master"
