@@ -1,4 +1,4 @@
-FROM stratumn/gobase:v0.4.0-rc2
+FROM stratumn/gobase:v0.4.0-rc3
 
 MAINTAINER Stephan Florquin <stephan@stratumn.com>
 
