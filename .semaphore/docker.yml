@@ -35,4 +35,6 @@ blocks:
             # Update timestamps of binaries so make doesn't rebuild them.
             - find dist -type f  -exec touch {} +
             - make docker_images
+            - make docker_image_code
             - make docker_push
+            - make docker_push_code
