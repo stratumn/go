@@ -92,7 +92,7 @@ CLEAN_LIST=$(foreach path, $(CLEAN_PATHS), clean_$(path))
 all: build
 
 # == release ==================================================================
-release: test lint clean build git_tag github_draft github_upload github_publish docker_images docker_push
+release: test lint clean build git_tag github_draft github_upload github_publish docker_images docker_image_code docker_push docker_push_code
 
 # == test =====================================================================
 test: $(TEST_LIST)
@@ -257,6 +257,17 @@ $(DOCKER_IMAGE_LIST): docker_image_%: $(DIST_DIR)/%.Dockerfile $(DIST_DIR)/linux
 		$(DOCKER_BUILD) -f $*.Dockerfile -t $(DOCKER_IMAGE):$(VERSION) -t $(DOCKER_IMAGE):latest . ; \
 		cd - ; rm -fr $(DIST_DIR)/$*
 
+# == docker_image_code ========================================================
+# Build a base image that contains the repository's code and its dependencies.
+# This base image can be used to build go plugins for validation scripts.
+docker_image_code: $(BUILD_SOURCES)
+	docker build \
+		--build-arg golang_image=$(DOCKER_GOLANG_IMAGE) \
+		--build-arg org=$(GITHUB_USER) \
+		--build-arg repository=$(GITHUB_REPO) \
+		-t $(DOCKER_USER)/$(GITHUB_REPO):$(VERSION) \
+		-t $(DOCKER_USER)/$(GITHUB_REPO):latest .
+
 # == docker_push ==============================================================
 docker_push: $(DOCKER_PUSH_LIST)
 
@@ -264,6 +275,13 @@ $(DOCKER_PUSH_LIST): docker_push_%:
 	$(DOCKER_PUSH) $(DOCKER_IMAGE):$(VERSION)
 	@if [[ "$(VERSION)" = "master" ]]; then \
 	  $(DOCKER_PUSH) $(DOCKER_IMAGE):latest; \
+	fi
+
+# == docker_push_code =========================================================
+docker_push_code:
+	$(DOCKER_PUSH) $(DOCKER_USER)/$(GITHUB_REPO):$(VERSION)
+	@if [[ "$(VERSION)" = "master" ]]; then \
+	  $(DOCKER_PUSH) $(DOCKER_USER)/$(GITHUB_REPO):latest; \
 	fi
 
 # == license_headers ==========================================================

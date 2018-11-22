@@ -28,7 +28,7 @@ blocks:
       prologue:
         commands_file: boilerplate
       jobs:
-        - name: Build and push
+        - name: Build and push binaries
           commands:
             - cache restore dist-${SEMAPHORE_GIT_SHA}-v1
             - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
@@ -36,3 +36,8 @@ blocks:
             - find dist -type f  -exec touch {} +
             - make docker_images
             - make docker_push
+        - name: Build and push code
+          commands:
+            - echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            - make docker_image_code
+            - make docker_push_code
