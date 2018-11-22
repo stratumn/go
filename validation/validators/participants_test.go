@@ -19,24 +19,127 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/dummystore"
 	"github.com/stratumn/go-core/testutil"
+	"github.com/stratumn/go-core/validation/validationtesting"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func newParticipantLinkBuilder(t *testing.T, step string) *chainscripttest.LinkBuilder {
+	return chainscripttest.NewLinkBuilder(t).
+		WithProcess(validators.GovernanceProcess).
+		WithMapID(validators.ParticipantsMap).
+		WithStep(step)
+}
+
+func newParticipantAccept(t *testing.T) *chainscripttest.LinkBuilder {
+	return newParticipantLinkBuilder(t, validators.ParticipantsAcceptStep).
+		WithDegree(1)
+}
 
 func TestParticipantsValidator(t *testing.T) {
 	v := validators.NewParticipantsValidator()
 
 	t.Run("Validate()", func(t *testing.T) {
 		t.Run("rejects unknown step", func(t *testing.T) {
-			l := chainscripttest.NewLinkBuilder(t).
-				WithProcess(validators.GovernanceProcess).
-				WithMapID(validators.ParticipantsMap).
-				WithStep("pwn").
-				Build()
+			l := newParticipantLinkBuilder(t, "pwn").Build()
 			err := v.Validate(context.Background(), nil, l)
 			testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantStep)
+		})
+
+		t.Run("accept", func(t *testing.T) {
+			t.Run("missing participants", func(t *testing.T) {
+				l := newParticipantAccept(t).Build()
+
+				err := v.Validate(context.Background(), nil, l)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("invalid participant", func(t *testing.T) {
+				l := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{
+						&validators.Participant{
+							Name:  "alice",
+							Power: 3,
+							// Missing public key
+						},
+					}).
+					Build()
+
+				err := v.Validate(context.Background(), nil, l)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("data is not a participants list", func(t *testing.T) {
+				l := newParticipantAccept(t).
+					WithData(t, map[string]string{
+						"name": "alice",
+						"role": "admin",
+					}).
+					Build()
+
+				err := v.Validate(context.Background(), nil, l)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("out degree should be 1", func(t *testing.T) {
+				l := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{
+						&validators.Participant{
+							Name:      "alice",
+							Power:     5,
+							PublicKey: []byte(validationtesting.AlicePublicKey),
+						},
+					}).
+					WithDegree(3).
+					Build()
+
+				err := v.Validate(context.Background(), nil, l)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
+			})
+
+			t.Run("participants already initialized", func(t *testing.T) {
+				init := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{
+						&validators.Participant{
+							Name:      "alice",
+							Power:     1,
+							PublicKey: []byte(validationtesting.AlicePublicKey),
+						},
+					}).
+					Build()
+
+				store := dummystore.New(&dummystore.Config{})
+				_, err := store.CreateLink(context.Background(), init)
+				require.NoError(t, err)
+
+				// We can't add a new accept link with no parent if there's
+				// already one.
+				err = v.Validate(context.Background(), store, init)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrParticipantsAlreadyInitialized)
+			})
+
+			t.Run("initialize participants", func(t *testing.T) {
+				init := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{
+						&validators.Participant{
+							Name:      "alice",
+							Power:     1,
+							PublicKey: []byte(validationtesting.AlicePublicKey),
+						},
+						&validators.Participant{
+							Name:      "bob",
+							Power:     2,
+							PublicKey: []byte(validationtesting.BobPublicKey),
+						},
+					}).
+					Build()
+
+				err := v.Validate(context.Background(), dummystore.New(&dummystore.Config{}), init)
+				require.NoError(t, err)
+			})
 		})
 	})
 

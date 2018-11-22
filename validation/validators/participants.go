@@ -42,7 +42,10 @@ const (
 
 // Errors used by the participants validator.
 var (
-	ErrInvalidParticipantStep = errors.New("invalid step in network participants update")
+	ErrInvalidParticipantStep         = errors.New("invalid step in network participants update")
+	ErrInvalidParticipantData         = errors.New("invalid participant data")
+	ErrParticipantsAlreadyInitialized = errors.New("participants map already initialized")
+	ErrInvalidAcceptParticipant       = errors.New("invalid accept participant link")
 )
 
 // ParticipantsValidator validates changes to the governance participants list.
@@ -60,7 +63,7 @@ func NewParticipantsValidator() Validator {
 func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
 	switch l.Meta.Step {
 	case ParticipantsAcceptStep:
-		panic("not implemented")
+		return v.validateAccept(ctx, r, l)
 	case ParticipantsUpdateStep:
 		panic("not implemented")
 	case ParticipantsVoteStep:
@@ -68,6 +71,49 @@ func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentRea
 	default:
 		return types.WrapError(ErrInvalidParticipantStep, errorcode.InvalidArgument, ParticipantsValidatorName, "participants validation failed")
 	}
+}
+
+func (v *ParticipantsValidator) validateAccept(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
+	if l.Meta.OutDegree != 1 {
+		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link out degree should be 1")
+	}
+
+	var participants []*Participant
+	err := l.StructurizeData(&participants)
+	if err != nil {
+		return types.WrapError(ErrInvalidParticipantData, errorcode.InvalidArgument, ParticipantsValidatorName, "link should contain a list of participants")
+	}
+
+	if len(participants) == 0 {
+		return types.WrapError(ErrInvalidParticipantData, errorcode.InvalidArgument, ParticipantsValidatorName, "link should contain at least one participant")
+	}
+
+	for _, p := range participants {
+		if err := p.Validate(); err != nil {
+			return types.WrapError(ErrInvalidParticipantData, errorcode.InvalidArgument, ParticipantsValidatorName, err.Error())
+		}
+	}
+
+	// If this is the first participants link, verify that the map has not
+	// already been initialized.
+	if len(l.PrevLinkHash()) == 0 {
+		s, err := r.FindSegments(ctx, &store.SegmentFilter{
+			MapIDs:     []string{ParticipantsMap},
+			Pagination: store.Pagination{Limit: 1},
+		})
+		if err != nil {
+			return types.WrapError(err, errorcode.Unknown, ParticipantsValidatorName, "could not get participants map")
+		}
+
+		if s.TotalCount > 0 {
+			return types.WrapError(ErrParticipantsAlreadyInitialized, errorcode.FailedPrecondition, ParticipantsValidatorName, "cannot add accept link")
+		}
+
+		return nil
+	}
+
+	// Otherwise verify that the voting policy is enforced.
+	panic("votes verification not implemented")
 }
 
 // ShouldValidate returns true if the segment belongs to the participants map
