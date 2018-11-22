@@ -17,8 +17,11 @@ package validators
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
+	"github.com/stratumn/go-core/types"
 )
 
 const (
@@ -28,6 +31,18 @@ const (
 	// ParticipantsMap is the ID of the map containing participants in the
 	// governance process.
 	ParticipantsMap = "_participants"
+)
+
+// Allowed steps in the participants map.
+const (
+	ParticipantsAcceptStep = "accept"
+	ParticipantsUpdateStep = "update"
+	ParticipantsVoteStep   = "vote"
+)
+
+// Errors used by the participants validator.
+var (
+	ErrInvalidParticipantStep = errors.New("invalid step in network participants update")
 )
 
 // ParticipantsValidator validates changes to the governance participants list.
@@ -42,8 +57,17 @@ func NewParticipantsValidator() Validator {
 }
 
 // Validate a participants update.
-func (v *ParticipantsValidator) Validate(context.Context, store.SegmentReader, *chainscript.Link) error {
-	panic("not implemented")
+func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
+	switch l.Meta.Step {
+	case ParticipantsAcceptStep:
+		panic("not implemented")
+	case ParticipantsUpdateStep:
+		panic("not implemented")
+	case ParticipantsVoteStep:
+		panic("not implemented")
+	default:
+		return types.WrapError(ErrInvalidParticipantStep, errorcode.InvalidArgument, ParticipantsValidatorName, "participants validation failed")
+	}
 }
 
 // ShouldValidate returns true if the segment belongs to the participants map

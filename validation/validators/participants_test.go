@@ -15,9 +15,11 @@
 package validators_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,6 +27,18 @@ import (
 
 func TestParticipantsValidator(t *testing.T) {
 	v := validators.NewParticipantsValidator()
+
+	t.Run("Validate()", func(t *testing.T) {
+		t.Run("rejects unknown step", func(t *testing.T) {
+			l := chainscripttest.NewLinkBuilder(t).
+				WithProcess(validators.GovernanceProcess).
+				WithMapID(validators.ParticipantsMap).
+				WithStep("pwn").
+				Build()
+			err := v.Validate(context.Background(), nil, l)
+			testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantStep)
+		})
+	})
 
 	t.Run("ShouldValidate()", func(t *testing.T) {
 		t.Run("ignores non-governance process", func(t *testing.T) {
