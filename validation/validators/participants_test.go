@@ -17,14 +17,42 @@ package validators_test
 import (
 	"testing"
 
+	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/validation/validators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParticipantsValidator(t *testing.T) {
+	v := validators.NewParticipantsValidator()
+
+	t.Run("ShouldValidate()", func(t *testing.T) {
+		t.Run("ignores non-governance process", func(t *testing.T) {
+			l := chainscripttest.NewLinkBuilder(t).
+				WithProcess("not-governance").
+				WithMapID(validators.ParticipantsMap).
+				Build()
+			assert.False(t, v.ShouldValidate(l))
+		})
+
+		t.Run("ignores non-participants map", func(t *testing.T) {
+			l := chainscripttest.NewLinkBuilder(t).
+				WithProcess(validators.GovernanceProcess).
+				WithMapID("not-participants").
+				Build()
+			assert.False(t, v.ShouldValidate(l))
+		})
+
+		t.Run("validates governance participants", func(t *testing.T) {
+			l := chainscripttest.NewLinkBuilder(t).
+				WithProcess(validators.GovernanceProcess).
+				WithMapID(validators.ParticipantsMap).
+				Build()
+			assert.True(t, v.ShouldValidate(l))
+		})
+	})
+
 	t.Run("Hash()", func(t *testing.T) {
-		v := validators.NewParticipantsValidator()
 		h, err := v.Hash()
 		require.NoError(t, err)
 		assert.Nil(t, h)

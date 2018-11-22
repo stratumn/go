@@ -24,6 +24,10 @@ import (
 const (
 	// ParticipantsValidatorName name for monitoring.
 	ParticipantsValidatorName = "participants-validator"
+
+	// ParticipantsMap is the ID of the map containing participants in the
+	// governance process.
+	ParticipantsMap = "_participants"
 )
 
 // ParticipantsValidator validates changes to the governance participants list.
@@ -44,8 +48,8 @@ func (v *ParticipantsValidator) Validate(context.Context, store.SegmentReader, *
 
 // ShouldValidate returns true if the segment belongs to the participants map
 // in the governance process.
-func (v *ParticipantsValidator) ShouldValidate(*chainscript.Link) bool {
-	panic("not implemented")
+func (v *ParticipantsValidator) ShouldValidate(l *chainscript.Link) bool {
+	return l.Meta.Process.Name == GovernanceProcess && l.Meta.MapId == ParticipantsMap
 }
 
 // Hash returns an empty hash since ParticipantsValidator doesn't have any
