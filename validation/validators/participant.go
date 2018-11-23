@@ -23,6 +23,8 @@ var (
 	ErrInvalidVotingPower     = errors.New("participant voting power is missing")
 	ErrMissingParticipantName = errors.New("participant name is missing")
 	ErrMissingParticipantKey  = errors.New("participant public key is missing")
+	ErrUnknownUpdateType      = errors.New("unknown participant update type")
+	ErrParticipantNotFound    = errors.New("participant not found")
 )
 
 // Participant in a decentralized network.
@@ -48,4 +50,34 @@ func (p Participant) Validate() error {
 	}
 
 	return nil
+}
+
+// Available update types.
+const (
+	ParticipantUpsert = "upsert"
+	ParticipantRemove = "remove"
+)
+
+// ParticipantUpdate operation to remove/update network participants.
+type ParticipantUpdate struct {
+	Type string `json:"updateType"`
+	Participant
+}
+
+// Validate participant update data.
+func (p ParticipantUpdate) Validate(current []*Participant) error {
+	switch p.Type {
+	case ParticipantUpsert:
+		return p.Participant.Validate()
+	case ParticipantRemove:
+		for _, cur := range current {
+			if cur.Name == p.Name {
+				return nil
+			}
+		}
+
+		return ErrParticipantNotFound
+	default:
+		return ErrUnknownUpdateType
+	}
 }

@@ -66,3 +66,68 @@ func TestParticipant(t *testing.T) {
 		})
 	})
 }
+
+func TestParticipantUpdate(t *testing.T) {
+	t.Run("Validate()", func(t *testing.T) {
+		t.Run("unknown update type", func(t *testing.T) {
+			p := &validators.ParticipantUpdate{
+				Type: "unknown",
+			}
+
+			err := p.Validate(nil)
+			assert.EqualError(t, err, validators.ErrUnknownUpdateType.Error())
+		})
+
+		t.Run("remove missing participant", func(t *testing.T) {
+			p := &validators.ParticipantUpdate{
+				Type: validators.ParticipantRemove,
+				Participant: validators.Participant{
+					Name: "alice",
+				},
+			}
+
+			err := p.Validate(nil)
+			assert.EqualError(t, err, validators.ErrParticipantNotFound.Error())
+		})
+
+		t.Run("valid remove update", func(t *testing.T) {
+			p := &validators.ParticipantUpdate{
+				Type: validators.ParticipantRemove,
+				Participant: validators.Participant{
+					Name: "alice",
+				},
+			}
+
+			err := p.Validate([]*validators.Participant{&validators.Participant{Name: "alice"}})
+			assert.NoError(t, err)
+		})
+
+		t.Run("add invalid participant", func(t *testing.T) {
+			p := &validators.ParticipantUpdate{
+				Type: validators.ParticipantUpsert,
+				Participant: validators.Participant{
+					Name:  "alice",
+					Power: 3,
+					// Missing public key
+				},
+			}
+
+			err := p.Validate(nil)
+			assert.EqualError(t, err, validators.ErrMissingParticipantKey.Error())
+		})
+
+		t.Run("valid add update", func(t *testing.T) {
+			p := &validators.ParticipantUpdate{
+				Type: validators.ParticipantUpsert,
+				Participant: validators.Participant{
+					Name:      "alice",
+					Power:     3,
+					PublicKey: []byte(validationtesting.AlicePublicKey),
+				},
+			}
+
+			err := p.Validate(nil)
+			assert.NoError(t, err)
+		})
+	})
+}

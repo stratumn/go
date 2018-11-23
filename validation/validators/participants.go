@@ -15,6 +15,7 @@
 package validators
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/pkg/errors"
@@ -45,7 +46,9 @@ var (
 	ErrInvalidParticipantStep         = errors.New("invalid step in network participants update")
 	ErrInvalidParticipantData         = errors.New("invalid participant data")
 	ErrParticipantsAlreadyInitialized = errors.New("participants map already initialized")
+	ErrParticipantsNotInitialized     = errors.New("participants map not initialized")
 	ErrInvalidAcceptParticipant       = errors.New("invalid accept participant link")
+	ErrInvalidUpdateParticipant       = errors.New("invalid update participant link")
 )
 
 // ParticipantsValidator validates changes to the governance participants list.
@@ -65,7 +68,7 @@ func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentRea
 	case ParticipantsAcceptStep:
 		return v.validateAccept(ctx, r, l)
 	case ParticipantsUpdateStep:
-		panic("not implemented")
+		return v.validateUpdate(ctx, r, l)
 	case ParticipantsVoteStep:
 		panic("not implemented")
 	default:
@@ -98,6 +101,7 @@ func (v *ParticipantsValidator) validateAccept(ctx context.Context, r store.Segm
 	// already been initialized.
 	if len(l.PrevLinkHash()) == 0 {
 		s, err := r.FindSegments(ctx, &store.SegmentFilter{
+			Process:    GovernanceProcess,
 			MapIDs:     []string{ParticipantsMap},
 			Pagination: store.Pagination{Limit: 1},
 		})
@@ -114,6 +118,93 @@ func (v *ParticipantsValidator) validateAccept(ctx context.Context, r store.Segm
 
 	// Otherwise verify that the voting policy is enforced.
 	panic("votes verification not implemented")
+}
+
+func (v *ParticipantsValidator) validateUpdate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
+	updates, err := v.validateUpdateStructure(l)
+	if err != nil {
+		return err
+	}
+
+	currentHash, current, err := v.getCurrentParticipants(ctx, r)
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(currentHash, l.Meta.Refs[0].LinkHash) {
+		return types.WrapError(ErrInvalidUpdateParticipant, errorcode.FailedPrecondition, ParticipantsValidatorName, "update does not reference the latest accepted link")
+	}
+
+	removeOps := 0
+	for _, p := range updates {
+		if p.Type == ParticipantRemove {
+			removeOps++
+		}
+
+		if err := p.Validate(current); err != nil {
+			return types.WrapError(ErrInvalidParticipantData, errorcode.InvalidArgument, ParticipantsValidatorName, err.Error())
+		}
+	}
+
+	if removeOps > 1 {
+		return types.WrapError(ErrInvalidUpdateParticipant, errorcode.Unknown, ParticipantsValidatorName, "cannot remove more than one participant")
+	}
+
+	return nil
+}
+
+func (v *ParticipantsValidator) validateUpdateStructure(l *chainscript.Link) ([]*ParticipantUpdate, error) {
+	if len(l.Meta.PrevLinkHash) > 0 {
+		return nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "update link should have no parent")
+	}
+
+	if l.Meta.OutDegree >= 0 {
+		return nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "update link should have unlimited children")
+	}
+
+	if len(l.Meta.Refs) != 1 {
+		return nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "update link should reference an accept link")
+	}
+
+	var updates []*ParticipantUpdate
+	err := l.StructurizeData(&updates)
+	if err != nil {
+		return nil, types.WrapError(ErrInvalidParticipantData, errorcode.InvalidArgument, ParticipantsValidatorName, "link should contain a list of participant updates")
+	}
+
+	if len(updates) == 0 {
+		return nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link should contain at least one participant update")
+	}
+
+	return updates, nil
+}
+
+func (v *ParticipantsValidator) getCurrentParticipants(ctx context.Context, r store.SegmentReader) (chainscript.LinkHash, []*Participant, error) {
+	// Since accepted segments have increasing priority, we only need to get
+	// the last one.
+	s, err := r.FindSegments(ctx, &store.SegmentFilter{
+		Process:    GovernanceProcess,
+		MapIDs:     []string{ParticipantsMap},
+		Step:       ParticipantsAcceptStep,
+		Pagination: store.Pagination{Limit: 1},
+	})
+	if err != nil {
+		return nil, nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.Unknown, ParticipantsValidatorName, err.Error())
+	}
+
+	if len(s.Segments) == 0 {
+		return nil, nil, types.WrapError(ErrParticipantsNotInitialized, errorcode.FailedPrecondition, ParticipantsValidatorName, "cannot get latest accepted link")
+	}
+
+	latest := s.Segments[0]
+
+	var current []*Participant
+	err = latest.Link.StructurizeData(&current)
+	if err != nil {
+		return nil, nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.Unknown, ParticipantsValidatorName, err.Error())
+	}
+
+	return latest.LinkHash(), current, nil
 }
 
 // ShouldValidate returns true if the segment belongs to the participants map
