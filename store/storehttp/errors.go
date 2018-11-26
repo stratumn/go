@@ -62,3 +62,11 @@ func newErrLinkHashes(msg string) jsonhttp.ErrHTTP {
 
 	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
 }
+
+func newErrReferencing(msg string) jsonhttp.ErrHTTP {
+	if msg == "" {
+		msg = "referencing linkHash must be a 64 byte long hexadecimal string"
+	}
+
+	return jsonhttp.NewErrHTTP(types.NewError(errorcode.InvalidArgument, store.Component, msg))
+}

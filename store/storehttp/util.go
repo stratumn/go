@@ -35,6 +35,7 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 		process          = q.Get("process")
 		withoutParentStr = q.Get("withoutParent")
 		prevLinkHashStr  = q.Get("prevLinkHash")
+		referencingStr   = q.Get("referencing")
 		tags             = append(q["tags[]"], q["tags%5B%5D"]...)
 	)
 
@@ -67,6 +68,13 @@ func parseSegmentFilter(r *http.Request) (*store.SegmentFilter, error) {
 			}
 
 			filter.LinkHashes = append(filter.LinkHashes, lh)
+		}
+	}
+
+	if len(referencingStr) > 0 {
+		filter.Referencing, err = chainscript.NewLinkHashFromString(referencingStr)
+		if err != nil {
+			return nil, newErrReferencing("")
 		}
 	}
 
