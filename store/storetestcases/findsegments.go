@@ -103,11 +103,12 @@ func (f Factory) TestFindSegments(t *testing.T) {
 	testPageSize := 3
 	segmentsTotalCount := 8
 
-	createRandomLink(t, a, func(l *chainscript.Link) {
+	link1 := createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.MapId = "map1"
 		l.Meta.Process.Name = "Foo"
 		l.Meta.Step = "propose"
 	})
+	linkHash1, _ := link1.Hash()
 
 	createRandomLink(t, a, func(l *chainscript.Link) {
 		l.Meta.Tags = []string{"tag1", "tag42"}
@@ -118,7 +119,12 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		l.Meta.Tags = []string{"tag2"}
 	})
 
-	link4 := createRandomLink(t, a, nil)
+	link4 := createRandomLink(t, a, func(l *chainscript.Link) {
+		l.Meta.Refs = []*chainscript.LinkReference{&chainscript.LinkReference{
+			LinkHash: linkHash1,
+			Process:  link1.Meta.Process.Name,
+		}}
+	})
 	linkHash4, _ := link4.Hash()
 
 	createLinkBranch(t, a, link4, func(l *chainscript.Link) {
@@ -463,17 +469,23 @@ func (f Factory) TestFindSegments(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
 			Referencing: linkHash4,
+			Pagination: store.Pagination{
+				Limit: 1,
+			},
 		})
 		if err != nil && err.(*types.Error).Code == errorcode.Unimplemented {
 			t.Skip("tested store doesn't support reference filtering yet")
 		}
 
-		verifyResultsCountWithTotalCount(t, nil, slice, 2, 2)
+		verifyResultsCountWithTotalCount(t, nil, slice, 1, 2)
 	})
 
 	t.Run("Finds segments referencing a given segment with a given mapID", func(t *testing.T) {
 		ctx := context.Background()
 		slice, err := a.FindSegments(ctx, &store.SegmentFilter{
+			Pagination: store.Pagination{
+				Limit: segmentsTotalCount,
+			},
 			Referencing: linkHash4,
 			MapIDs:      []string{"map2"},
 		})

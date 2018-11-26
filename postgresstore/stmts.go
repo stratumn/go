@@ -413,6 +413,15 @@ func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows,
 	if len(filter.Tags) > 0 {
 		filters = append(filters, fmt.Sprintf("tags @>  $%d", cnt))
 		values = append(values, pq.Array(filter.Tags))
+		cnt++
+	}
+
+	if len(filter.Referencing) > 0 {
+		sqlHead += fmt.Sprintf(`INNER JOIN store_private.refs r 
+		ON l.link_hash = r.referenced_by AND r.link_hash = $%d
+		`, cnt)
+		values = append(values, filter.Referencing)
+		cnt++
 	}
 
 	sqlBody := ""
