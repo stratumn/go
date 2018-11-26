@@ -421,7 +421,6 @@ func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows,
 		ON l.link_hash = r.referenced_by AND r.link_hash = $%d
 		`, cnt)
 		values = append(values, filter.Referencing)
-		cnt++
 	}
 
 	sqlBody := ""
