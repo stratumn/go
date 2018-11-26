@@ -135,19 +135,10 @@ func (v *ParticipantsValidator) validateUpdate(ctx context.Context, r store.Segm
 		return types.WrapError(ErrInvalidUpdateParticipant, errorcode.FailedPrecondition, ParticipantsValidatorName, "update does not reference the latest accepted link")
 	}
 
-	removeOps := 0
 	for _, p := range updates {
-		if p.Type == ParticipantRemove {
-			removeOps++
-		}
-
 		if err := p.Validate(current); err != nil {
 			return types.WrapError(ErrInvalidParticipantData, errorcode.InvalidArgument, ParticipantsValidatorName, err.Error())
 		}
-	}
-
-	if removeOps > 1 {
-		return types.WrapError(ErrInvalidUpdateParticipant, errorcode.Unknown, ParticipantsValidatorName, "cannot remove more than one participant")
 	}
 
 	return nil

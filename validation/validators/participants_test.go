@@ -198,19 +198,6 @@ func TestParticipantsValidator(t *testing.T) {
 				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
 			})
 
-			t.Run("remove multiple participants", func(t *testing.T) {
-				missingParticipant := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
-					Type:        validators.ParticipantRemove,
-					Participant: validators.Participant{Name: "alice"},
-				}, &validators.ParticipantUpdate{
-					Type:        validators.ParticipantRemove,
-					Participant: validators.Participant{Name: "bob"},
-				}).Build()
-
-				err := v.Validate(ctx, store, missingParticipant)
-				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidUpdateParticipant)
-			})
-
 			t.Run("should have no parent", func(t *testing.T) {
 				addCarol := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
 					Type:        validators.ParticipantUpsert,
