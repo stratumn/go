@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
 	"github.com/stratumn/go-core/dummystore"
 	"github.com/stratumn/go-core/testutil"
@@ -39,7 +40,35 @@ func newParticipantAccept(t *testing.T) *chainscripttest.LinkBuilder {
 		WithDegree(1)
 }
 
+func newParticipantUpdate(t *testing.T, accepted *chainscript.Link, p ...*validators.ParticipantUpdate) *chainscripttest.LinkBuilder {
+	lb := newParticipantLinkBuilder(t, validators.ParticipantsUpdateStep)
+	if accepted != nil {
+		lb.WithRef(t, accepted)
+	}
+	if len(p) > 0 {
+		lb.WithData(t, p)
+	}
+
+	return lb
+}
+
 func TestParticipantsValidator(t *testing.T) {
+	alice := &validators.Participant{
+		Name:      "alice",
+		Power:     3,
+		PublicKey: []byte(validationtesting.AlicePublicKey),
+	}
+	bob := &validators.Participant{
+		Name:      "bob",
+		Power:     2,
+		PublicKey: []byte(validationtesting.BobPublicKey),
+	}
+	carol := &validators.Participant{
+		Name:      "carol",
+		Power:     2,
+		PublicKey: []byte(validationtesting.CarolPublicKey),
+	}
+
 	v := validators.NewParticipantsValidator()
 
 	t.Run("Validate()", func(t *testing.T) {
@@ -86,13 +115,7 @@ func TestParticipantsValidator(t *testing.T) {
 
 			t.Run("out degree should be 1", func(t *testing.T) {
 				l := newParticipantAccept(t).
-					WithData(t, []*validators.Participant{
-						&validators.Participant{
-							Name:      "alice",
-							Power:     5,
-							PublicKey: []byte(validationtesting.AlicePublicKey),
-						},
-					}).
+					WithData(t, []*validators.Participant{alice}).
 					WithDegree(3).
 					Build()
 
@@ -102,13 +125,7 @@ func TestParticipantsValidator(t *testing.T) {
 
 			t.Run("participants already initialized", func(t *testing.T) {
 				init := newParticipantAccept(t).
-					WithData(t, []*validators.Participant{
-						&validators.Participant{
-							Name:      "alice",
-							Power:     1,
-							PublicKey: []byte(validationtesting.AlicePublicKey),
-						},
-					}).
+					WithData(t, []*validators.Participant{alice}).
 					Build()
 
 				store := dummystore.New(&dummystore.Config{})
@@ -123,22 +140,156 @@ func TestParticipantsValidator(t *testing.T) {
 
 			t.Run("initialize participants", func(t *testing.T) {
 				init := newParticipantAccept(t).
-					WithData(t, []*validators.Participant{
-						&validators.Participant{
-							Name:      "alice",
-							Power:     1,
-							PublicKey: []byte(validationtesting.AlicePublicKey),
-						},
-						&validators.Participant{
-							Name:      "bob",
-							Power:     2,
-							PublicKey: []byte(validationtesting.BobPublicKey),
-						},
-					}).
+					WithData(t, []*validators.Participant{alice, bob}).
 					Build()
 
 				err := v.Validate(context.Background(), dummystore.New(&dummystore.Config{}), init)
 				require.NoError(t, err)
+			})
+		})
+
+		t.Run("update", func(t *testing.T) {
+			ctx := context.Background()
+			store := dummystore.New(&dummystore.Config{})
+			accepted := newParticipantAccept(t).
+				WithData(t, []*validators.Participant{alice, bob}).
+				Build()
+			_, err := store.CreateLink(ctx, accepted)
+			require.NoError(t, err)
+
+			t.Run("link data should contain participants updates", func(t *testing.T) {
+				invalid := newParticipantUpdate(t, accepted).WithData(t, "not a participants list").Build()
+
+				err := v.Validate(ctx, store, invalid)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("add invalid participant", func(t *testing.T) {
+				missingKey := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+					Type: validators.ParticipantUpsert,
+					Participant: validators.Participant{
+						Name:  "carol",
+						Power: 2,
+					},
+				}).Build()
+
+				err := v.Validate(ctx, store, missingKey)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("invalid update operation", func(t *testing.T) {
+				invalidType := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+					Type: "removeAll",
+				}).Build()
+
+				err := v.Validate(ctx, store, invalidType)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("remove missing participant", func(t *testing.T) {
+				missingParticipant := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+					Type: validators.ParticipantRemove,
+					Participant: validators.Participant{
+						Name: "carol",
+					},
+				}).Build()
+
+				err := v.Validate(ctx, store, missingParticipant)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidParticipantData)
+			})
+
+			t.Run("should have no parent", func(t *testing.T) {
+				addCarol := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).WithParent(t, accepted).Build()
+
+				err := v.Validate(ctx, store, addCarol)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidUpdateParticipant)
+			})
+
+			t.Run("should have unlimited children", func(t *testing.T) {
+				addCarol := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).WithDegree(3).Build()
+
+				err := v.Validate(ctx, store, addCarol)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidUpdateParticipant)
+			})
+
+			t.Run("should reference an accept link", func(t *testing.T) {
+				addCarol := newParticipantUpdate(t, nil, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).Build()
+
+				err := v.Validate(ctx, store, addCarol)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidUpdateParticipant)
+			})
+
+			t.Run("should not reference multiple links", func(t *testing.T) {
+				addCarol := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).WithRef(t, chainscripttest.RandomLink(t)).Build()
+
+				err := v.Validate(ctx, store, addCarol)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidUpdateParticipant)
+			})
+
+			t.Run("should reference latest accept link", func(t *testing.T) {
+				s2 := dummystore.New(&dummystore.Config{})
+				a1 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice}).
+					Build()
+				_, err := s2.CreateLink(ctx, a1)
+				require.NoError(t, err)
+
+				a2 := newParticipantAccept(t).
+					WithParent(t, a1).
+					WithPriority(a1.Meta.Priority+1).
+					WithData(t, []*validators.Participant{alice, bob}).
+					Build()
+				_, err = s2.CreateLink(ctx, a2)
+				require.NoError(t, err)
+
+				addCarol := newParticipantUpdate(t, a1, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).Build()
+
+				err = v.Validate(ctx, s2, addCarol)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidUpdateParticipant)
+			})
+
+			t.Run("add and remove participants", func(t *testing.T) {
+				updates := newParticipantUpdate(t, accepted,
+					// Add Carol.
+					&validators.ParticipantUpdate{
+						Type:        validators.ParticipantUpsert,
+						Participant: *carol,
+					},
+					// Update Alice's public key.
+					&validators.ParticipantUpdate{
+						Type: validators.ParticipantUpsert,
+						Participant: validators.Participant{
+							Name:      alice.Name,
+							Power:     alice.Power,
+							PublicKey: carol.PublicKey,
+						},
+					},
+					// Remove Bob.
+					&validators.ParticipantUpdate{
+						Type: validators.ParticipantRemove,
+						Participant: validators.Participant{
+							Name: bob.Name,
+						},
+					},
+				).Build()
+
+				err := v.Validate(ctx, store, updates)
+				assert.NoError(t, err)
 			})
 		})
 	})
