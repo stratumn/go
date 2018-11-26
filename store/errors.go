@@ -20,7 +20,8 @@ import (
 
 // Common errors that can be used by store implementations.
 var (
-	ErrLinkAlreadyExists     = errors.New("link already exists")
-	ErrOutDegreeNotSupported = errors.New("out degree is not supported by the current implementation")
-	ErrUniqueMapEntry        = errors.New("unique map entry is set and map already has an initial link")
+	ErrLinkAlreadyExists       = errors.New("link already exists")
+	ErrOutDegreeNotSupported   = errors.New("out degree is not supported by the current implementation")
+	ErrUniqueMapEntry          = errors.New("unique map entry is set and map already has an initial link")
+	ErrReferencingNotSupported = errors.New("filtering on referencing segments is not supported by the current implementation")
 )

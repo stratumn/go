@@ -169,6 +169,9 @@ type SegmentFilter struct {
 	// A slice of linkHashes to search Segments.
 	LinkHashes []chainscript.LinkHash `json:"linkHashes" url:"-"`
 
+	// A link that should be referenced by the matching segments.
+	Referencing chainscript.LinkHash `json:"referencing" url:"-"`
+
 	// A slice of tags the segments must all contain.
 	Tags []string `json:"tags" url:"tags,brackets"`
 

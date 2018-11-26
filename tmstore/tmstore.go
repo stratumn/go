@@ -311,6 +311,10 @@ func (t *TMStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash)
 
 // FindSegments implements github.com/stratumn/go-core/store.SegmentReader.FindSegments.
 func (t *TMStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (segments *types.PaginatedSegments, err error) {
+	if len(filter.Referencing) > 0 {
+		return nil, types.WrapError(store.ErrReferencingNotSupported, errorcode.Unimplemented, store.Component, "could not find segments")
+	}
+
 	response, err := t.sendQuery(ctx, tmpop.FindSegments, filter)
 	if err != nil {
 		return
