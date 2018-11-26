@@ -307,6 +307,19 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 		}
 	}
 
+	if len(filter.Referencing) > 0 {
+		var match = false
+		for _, r := range link.Meta.Refs {
+			if bytes.Equal(filter.Referencing, r.LinkHash) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+
 	return true
 }
 
