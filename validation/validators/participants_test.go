@@ -52,6 +52,19 @@ func newParticipantUpdate(t *testing.T, accepted *chainscript.Link, p ...*valida
 	return lb
 }
 
+func newParticipantVote(t *testing.T, update *chainscript.Link, key []byte) *chainscripttest.LinkBuilder {
+	lb := newParticipantLinkBuilder(t, validators.ParticipantsVoteStep).WithDegree(0)
+	if update != nil {
+		lb.WithParent(t, update)
+	}
+
+	if len(key) > 0 {
+		lb.WithSignatureFromKey(t, key, "")
+	}
+
+	return lb
+}
+
 func TestParticipantsValidator(t *testing.T) {
 	alice := &validators.Participant{
 		Name:      "alice",
@@ -289,6 +302,62 @@ func TestParticipantsValidator(t *testing.T) {
 				).Build()
 
 				err := v.Validate(ctx, store, updates)
+				assert.NoError(t, err)
+			})
+		})
+
+		t.Run("vote", func(t *testing.T) {
+			ctx := context.Background()
+			store := dummystore.New(&dummystore.Config{})
+
+			accepted := newParticipantAccept(t).
+				WithData(t, []*validators.Participant{alice, bob}).
+				Build()
+			_, err := store.CreateLink(ctx, accepted)
+			require.NoError(t, err)
+
+			proposal := newParticipantUpdate(t, accepted, &validators.ParticipantUpdate{
+				Type:        validators.ParticipantUpsert,
+				Participant: *carol,
+			}).Build()
+			_, err = store.CreateLink(ctx, proposal)
+			require.NoError(t, err)
+
+			t.Run("missing parent", func(t *testing.T) {
+				vote := newParticipantVote(t, nil, []byte(validationtesting.AlicePrivateKey)).Build()
+
+				err := v.Validate(ctx, store, vote)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidVoteParticipant)
+			})
+
+			t.Run("parent is not an update proposal", func(t *testing.T) {
+				vote := newParticipantVote(t, accepted, []byte(validationtesting.AlicePrivateKey)).Build()
+
+				err := v.Validate(ctx, store, vote)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidVoteParticipant)
+			})
+
+			t.Run("missing signature", func(t *testing.T) {
+				vote := newParticipantVote(t, proposal, nil).Build()
+
+				err := v.Validate(ctx, store, vote)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidVoteParticipant)
+			})
+
+			t.Run("invalid out degree", func(t *testing.T) {
+				vote := newParticipantVote(t, proposal, []byte(validationtesting.AlicePrivateKey)).
+					WithDegree(3).
+					Build()
+
+				err := v.Validate(ctx, store, vote)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidVoteParticipant)
+			})
+
+			t.Run("provides valid signature", func(t *testing.T) {
+				vote := newParticipantVote(t, proposal, []byte(validationtesting.AlicePrivateKey)).
+					Build()
+
+				err := v.Validate(ctx, store, vote)
 				assert.NoError(t, err)
 			})
 		})

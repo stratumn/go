@@ -23,6 +23,9 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 const (
@@ -49,6 +52,7 @@ var (
 	ErrParticipantsNotInitialized     = errors.New("participants map not initialized")
 	ErrInvalidAcceptParticipant       = errors.New("invalid accept participant link")
 	ErrInvalidUpdateParticipant       = errors.New("invalid update participant link")
+	ErrInvalidVoteParticipant         = errors.New("invalid vote participant link")
 )
 
 // ParticipantsValidator validates changes to the governance participants list.
@@ -64,16 +68,24 @@ func NewParticipantsValidator() Validator {
 
 // Validate a participants update.
 func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
+	var err error
 	switch l.Meta.Step {
 	case ParticipantsAcceptStep:
-		return v.validateAccept(ctx, r, l)
+		err = v.validateAccept(ctx, r, l)
 	case ParticipantsUpdateStep:
-		return v.validateUpdate(ctx, r, l)
+		err = v.validateUpdate(ctx, r, l)
 	case ParticipantsVoteStep:
-		panic("not implemented")
+		err = v.validateVote(ctx, r, l)
 	default:
-		return types.WrapError(ErrInvalidParticipantStep, errorcode.InvalidArgument, ParticipantsValidatorName, "participants validation failed")
+		err = types.WrapError(ErrInvalidParticipantStep, errorcode.InvalidArgument, ParticipantsValidatorName, "participants validation failed")
 	}
+
+	if err != nil {
+		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, ParticipantsValidatorName))
+		stats.Record(ctx, linksErr.M(1))
+	}
+
+	return err
 }
 
 func (v *ParticipantsValidator) validateAccept(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
@@ -168,6 +180,37 @@ func (v *ParticipantsValidator) validateUpdateStructure(l *chainscript.Link) ([]
 	}
 
 	return updates, nil
+}
+
+func (v *ParticipantsValidator) validateVote(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
+	if l.Meta.OutDegree != 0 {
+		return types.WrapError(ErrInvalidVoteParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link should not accept children")
+	}
+
+	if len(l.Meta.PrevLinkHash) == 0 {
+		return types.WrapError(ErrInvalidVoteParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link should have a parent")
+	}
+
+	if len(l.Signatures) == 0 {
+		return types.WrapError(ErrInvalidVoteParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link should contain a signature")
+	}
+
+	for _, s := range l.Signatures {
+		if err := s.Validate(l); err != nil {
+			return types.WrapError(ErrInvalidVoteParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, err.Error())
+		}
+	}
+
+	parent, err := r.GetSegment(ctx, l.Meta.PrevLinkHash)
+	if err != nil {
+		return types.WrapError(ErrInvalidVoteParticipant, errorcode.Unknown, ParticipantsValidatorName, err.Error())
+	}
+
+	if parent.Link.Meta.Step != ParticipantsUpdateStep {
+		return types.WrapError(ErrInvalidVoteParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "parent should be an update proposal")
+	}
+
+	return nil
 }
 
 func (v *ParticipantsValidator) getCurrentParticipants(ctx context.Context, r store.SegmentReader) (chainscript.LinkHash, []*Participant, error) {
