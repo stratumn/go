@@ -202,6 +202,10 @@ func (c *CouchStore) findSegmentsSlice(ctx context.Context, filter *store.Segmen
 
 // FindSegments implements github.com/stratumn/go-core/store.Adapter.FindSegments.
 func (c *CouchStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
+	if len(filter.Referencing) > 0 {
+		return nil, types.WrapError(store.ErrReferencingNotSupported, errorcode.Unimplemented, store.Component, "could not find segments")
+	}
+
 	segments, err := c.findSegmentsSlice(ctx, filter)
 	if err != nil {
 		return nil, err

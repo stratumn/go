@@ -263,6 +263,10 @@ func (a *Store) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 
 // FindSegments implements github.com/stratumn/go-core/store.SegmentReader.FindSegments.
 func (a *Store) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
+	if len(filter.Referencing) > 0 {
+		return nil, types.WrapError(store.ErrReferencingNotSupported, errorcode.Unimplemented, store.Component, "could not find segments")
+	}
+
 	var prevLinkHash []byte
 	q := a.links
 

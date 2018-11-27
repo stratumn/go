@@ -169,6 +169,9 @@ type SegmentFilter struct {
 	// A slice of linkHashes to search Segments.
 	LinkHashes []chainscript.LinkHash `json:"linkHashes" url:"-"`
 
+	// A link that should be referenced by the matching segments.
+	Referencing chainscript.LinkHash `json:"referencing" url:"-"`
+
 	// A slice of tags the segments must all contain.
 	Tags []string `json:"tags" url:"tags,brackets"`
 
@@ -301,6 +304,19 @@ func (filter SegmentFilter) MatchLink(link *chainscript.Link) bool {
 			if _, ok := tags[tag]; !ok {
 				return false
 			}
+		}
+	}
+
+	if len(filter.Referencing) > 0 {
+		var match = false
+		for _, r := range link.Meta.Refs {
+			if bytes.Equal(filter.Referencing, r.LinkHash) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
 		}
 	}
 

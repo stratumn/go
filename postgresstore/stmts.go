@@ -63,6 +63,17 @@ const (
 		)
 		VALUES ($1, $2)
 	`
+	SQLAddReference = `
+		INSERT INTO store_private.refs (
+			link_hash,
+			referenced_by
+		)
+		VALUES ($1, $2)
+	`
+	SQLReferencedBy = `
+		SELECT referenced_by FROM store_private.refs
+		WHERE link_hash = $1
+	`
 	SQLGetSegment = `
 		SELECT l.link_hash, l.data, e.data FROM store.links l
 		LEFT JOIN store.evidences e ON l.link_hash = e.link_hash
@@ -181,6 +192,17 @@ var sqlCreate = []string{
 			UNIQUE(process, map_id)
 		)
 	`,
+	`
+		CREATE TABLE IF NOT EXISTS store_private.refs (
+			id BIGSERIAL PRIMARY KEY,
+			link_hash bytea NOT NULL,
+			referenced_by bytea NOT NULL
+		)
+	`,
+	`
+		CREATE INDEX IF NOT EXISTS refs_link_hash_idx
+		ON store_private.refs (link_hash)
+	`,
 }
 
 var sqlDrop = []string{
@@ -211,6 +233,8 @@ type stmts struct {
 	GetSegment       *sql.Stmt
 	LockLinkDegree   *sql.Stmt
 	UpdateLinkDegree *sql.Stmt
+	AddRef           *sql.Stmt
+	GetReferencedBy  *sql.Stmt
 
 	DeleteValue *sql.Stmt
 	GetValue    *sql.Stmt
@@ -242,6 +266,8 @@ func newStmts(db SQLPreparerQuerier) (*stmts, error) {
 	s.GetSegment = prepare(SQLGetSegment)
 	s.LockLinkDegree = prepare(SQLLockLinkDegree)
 	s.UpdateLinkDegree = prepare(SQLUpdateLinkDegree)
+	s.AddRef = prepare(SQLAddReference)
+	s.GetReferencedBy = prepare(SQLReferencedBy)
 
 	s.DeleteValue = prepare(SQLDeleteValue)
 	s.GetValue = prepare(SQLGetValue)
@@ -387,6 +413,14 @@ func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows,
 	if len(filter.Tags) > 0 {
 		filters = append(filters, fmt.Sprintf("tags @>  $%d", cnt))
 		values = append(values, pq.Array(filter.Tags))
+		cnt++
+	}
+
+	if len(filter.Referencing) > 0 {
+		sqlHead += fmt.Sprintf(`INNER JOIN store_private.refs r 
+		ON l.link_hash = r.referenced_by AND r.link_hash = $%d
+		`, cnt)
+		values = append(values, filter.Referencing)
 	}
 
 	sqlBody := ""

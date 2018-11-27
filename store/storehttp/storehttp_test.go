@@ -297,6 +297,25 @@ func TestFindSegments_withoutParent(t *testing.T) {
 	assert.Nil(t, f.PrevLinkHash)
 }
 
+func TestFindSegments_Referencing(t *testing.T) {
+	s, a := createServer()
+	s1 := &types.PaginatedSegments{
+		Segments: []*chainscript.Segment{chainscripttest.RandomSegment(t)},
+	}
+	a.MockFindSegments.Fn = func(*store.SegmentFilter) (*types.PaginatedSegments, error) { return s1, nil }
+
+	s2 := &types.PaginatedSegments{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "GET", "/segments?referencing="+s1.Segments[0].LinkHash().String(), nil, &s2)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	testutil.PaginatedSegmentsEqual(t, s1, s2)
+	assert.Equal(t, 1, a.MockFindSegments.CalledCount)
+
+	f := a.MockFindSegments.LastCalledWith
+	assert.Equal(t, f.Referencing, s1.Segments[0].LinkHash())
+}
+
 func TestFindSegments_defaultLimit(t *testing.T) {
 	s, a := createServer()
 	s1 := &types.PaginatedSegments{}

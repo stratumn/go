@@ -62,6 +62,7 @@ func defaultTestingSegment() *chainscript.Segment {
 		WithStep("vote").
 		WithTags("Foo", "Bar").
 		WithParent(prevLinkHashTestingValue).
+		WithRefs(&chainscript.LinkReference{LinkHash: []byte{42, 42}, Process: "AnotherProcess"}).
 		Build()
 
 	segment, _ := link.Segmentify()
@@ -83,6 +84,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 		WithoutParent bool
 		PrevLinkHash  chainscript.LinkHash
 		LinkHashes    []chainscript.LinkHash
+		Referencing   chainscript.LinkHash
 		Tags          []string
 	}
 
@@ -222,6 +224,18 @@ func TestSegmentFilter_Match(t *testing.T) {
 			args:   args{segment: testSegment},
 			want:   true,
 		},
+		{
+			name:   "Referencing",
+			fields: fields{Referencing: []byte{42, 42}},
+			args:   args{segment: testSegment},
+			want:   true,
+		},
+		{
+			name:   "Referencing no match",
+			fields: fields{Referencing: []byte{24, 42, 24}},
+			args:   args{segment: testSegment},
+			want:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -233,6 +247,7 @@ func TestSegmentFilter_Match(t *testing.T) {
 				LinkHashes:    tt.fields.LinkHashes,
 				WithoutParent: tt.fields.WithoutParent,
 				PrevLinkHash:  tt.fields.PrevLinkHash,
+				Referencing:   tt.fields.Referencing,
 				Tags:          tt.fields.Tags,
 			}
 

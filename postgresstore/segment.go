@@ -28,15 +28,6 @@ import (
 
 // CreateLink implements github.com/stratumn/go-core/store.Adapter.CreateLink.
 func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	var (
-		priority     = link.Meta.Priority
-		mapID        = link.Meta.MapId
-		prevLinkHash = link.Meta.GetPrevLinkHash()
-		tags         = link.Meta.Tags
-		process      = link.Meta.Process.Name
-		step         = link.Meta.Step
-	)
-
 	linkHash, err := link.Hash()
 	if err != nil {
 		return linkHash, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
@@ -47,19 +38,19 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 		return linkHash, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not marshal link")
 	}
 
-	if len(prevLinkHash) == 0 {
-		err = s.createLink(linkHash, priority, mapID, []byte{}, tags, data, process, step)
+	if len(link.PrevLinkHash()) == 0 {
+		err = s.createLink(linkHash, data, link)
 		return linkHash, err
 	}
 
-	parent, err := s.GetSegment(ctx, prevLinkHash)
+	parent, err := s.GetSegment(ctx, link.PrevLinkHash())
 	if err != nil {
 		return linkHash, err
 	}
 
 	parentDegree := parent.Link.Meta.OutDegree
 	if parentDegree < 0 {
-		err = s.createLink(linkHash, priority, mapID, prevLinkHash, tags, data, process, step)
+		err = s.createLink(linkHash, data, link)
 		return linkHash, err
 	}
 
@@ -75,7 +66,7 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 		return linkHash, err
 	}
 
-	currentDegree, err := s.getLinkDegree(tx, prevLinkHash)
+	currentDegree, err := s.getLinkDegree(tx, link.PrevLinkHash())
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return linkHash, err
@@ -86,13 +77,13 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 		return linkHash, types.WrapError(chainscript.ErrOutDegree, errorcode.FailedPrecondition, store.Component, "could not create link")
 	}
 
-	err = s.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process, step)
+	err = s.createLinkInTx(tx, linkHash, data, link)
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return linkHash, err
 	}
 
-	err = s.incrementLinkDegree(tx, prevLinkHash, currentDegree)
+	err = s.incrementLinkDegree(tx, link.PrevLinkHash(), currentDegree)
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return linkHash, err
@@ -146,20 +137,15 @@ func (s *scopedStore) incrementLinkDegree(tx *sql.Tx, linkHash chainscript.LinkH
 // createLink adds the given link to the DB.
 func (s *scopedStore) createLink(
 	linkHash chainscript.LinkHash,
-	priority float64,
-	mapID string,
-	prevLinkHash chainscript.LinkHash,
-	tags []string,
 	data []byte,
-	process string,
-	step string,
+	link *chainscript.Link,
 ) error {
 	tx, err := s.txFactory.NewTx()
 	if err != nil {
 		return err
 	}
 
-	err = s.createLinkInTx(tx, linkHash, priority, mapID, prevLinkHash, tags, data, process, step)
+	err = s.createLinkInTx(tx, linkHash, data, link)
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return err
@@ -173,20 +159,30 @@ func (s *scopedStore) createLink(
 func (s *scopedStore) createLinkInTx(
 	tx *sql.Tx,
 	linkHash chainscript.LinkHash,
-	priority float64,
-	mapID string,
-	prevLinkHash chainscript.LinkHash,
-	tags []string,
 	data []byte,
-	process string,
-	step string,
+	link *chainscript.Link,
 ) error {
+	prevLinkHash := link.PrevLinkHash()
+	if prevLinkHash == nil {
+		prevLinkHash = []byte{}
+	}
+
+	// Create the link.
 	createLink, err := tx.Prepare(SQLCreateLink)
 	if err != nil {
 		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not create link")
 	}
 
-	res, err := createLink.Exec(linkHash, priority, mapID, prevLinkHash, pq.Array(tags), data, process, step)
+	res, err := createLink.Exec(
+		linkHash,
+		link.Meta.Priority,
+		link.Meta.MapId,
+		prevLinkHash,
+		pq.Array(link.Meta.Tags),
+		data,
+		link.Meta.Process.Name,
+		link.Meta.Step,
+	)
 	if err != nil {
 		return types.WrapError(err, errorcode.Internal, store.Component, "could not create link")
 	}
@@ -200,18 +196,33 @@ func (s *scopedStore) createLinkInTx(
 		return types.WrapError(store.ErrLinkAlreadyExists, errorcode.AlreadyExists, store.Component, "could not create link")
 	}
 
+	// Update refs table.
+	addRef, err := tx.Prepare(SQLAddReference)
+	if err != nil {
+		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not add reference")
+	}
+
+	for _, ref := range link.Meta.Refs {
+		_, err = addRef.Exec(ref.LinkHash, linkHash)
+		if err != nil {
+			return types.WrapError(err, errorcode.Internal, store.Component, "could not add reference")
+		}
+	}
+
+	// Update maps table.
 	if s.enforceUniqueMapEntry && len(prevLinkHash) == 0 {
 		initMap, err := tx.Prepare(SQLInitMap)
 		if err != nil {
 			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not initialize map")
 		}
 
-		_, err = initMap.Exec(process, mapID)
+		_, err = initMap.Exec(link.Meta.Process.Name, link.Meta.MapId)
 		if err != nil {
 			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not initialize map")
 		}
 	}
 
+	// Update degree table.
 	initDegree, err := tx.Prepare(SQLCreateLinkDegree)
 	if err != nil {
 		return types.WrapError(err, errorcode.Internal, store.Component, "could not update link degree")
