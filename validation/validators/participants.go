@@ -59,6 +59,24 @@ var (
 )
 
 // ParticipantsValidator validates changes to the governance participants list.
+// The participants map should have the following structure:
+//
+// ,---------,                                         ,--------------,                                            ,----------------,
+// | accept  | <====================================== |    accept    | <========================================= |     accept     |
+// | (alice) | <-.                                     | (alice, bob) | <-.                                        | (alice, carol) |
+// `---------'   |    ,----------,      ,---------,    `--------------'   |   ,-------------,                      `----------------'
+//                `-- |  update  |      |  vote   |           |           `-- |   update    |      ,---------,            |  |
+//                    | add: bob | <=== | (alice) | <---------'               | add: carol  | <=== |  vote   |            |  |
+//                    `----------'      `---------'                           | remove: bob | <=\  | (alice) | <----------'  |
+//                                                                            `-------------'  ||  `---------'               |
+//                                                                                             ||  ,---------,               |
+//                                                                                             ``= |  vote   |               |
+//                                                                                                 |  (bob)  | <-------------'
+//                                                                                                 `---------'
+//
+// where:
+// <=== represents a parent relationship
+// <--- represents a reference
 type ParticipantsValidator struct{}
 
 // NewParticipantsValidator creates a new participants validator for the
