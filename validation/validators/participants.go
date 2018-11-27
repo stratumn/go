@@ -17,6 +17,9 @@ package validators
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/stratumn/go-chainscript"
@@ -88,6 +91,7 @@ func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentRea
 	return err
 }
 
+// Validate an `accept` link.
 func (v *ParticipantsValidator) validateAccept(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
 	if l.Meta.OutDegree != 1 {
 		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link out degree should be 1")
@@ -129,21 +133,168 @@ func (v *ParticipantsValidator) validateAccept(ctx context.Context, r store.Segm
 	}
 
 	// Otherwise verify that the voting policy is enforced.
-	panic("votes verification not implemented")
+	latest, latestParticipants, err := v.getCurrentParticipants(ctx, r)
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(l.PrevLinkHash(), latest.LinkHash()) {
+		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "parent should be the latest accepted link")
+	}
+
+	if l.Meta.Priority != latest.Link.Meta.Priority+1 {
+		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "priority should increase by 1")
+	}
+
+	update, votes, err := v.getVotes(ctx, r, l)
+	if err != nil {
+		return types.WrapError(err, errorcode.Unknown, ParticipantsValidatorName, "could not get votes")
+	}
+
+	if !bytes.Equal(update.Link.Meta.Refs[0].LinkHash, latest.LinkHash()) {
+		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "update should reference latest accepted link")
+	}
+
+	voteOk := v.tallyVotes(latestParticipants, votes)
+	if !voteOk {
+		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "not enough voting power to accept")
+	}
+
+	err = v.verifyParticipantsUpdate(latestParticipants, update.Link, participants)
+	if err != nil {
+		return types.WrapError(ErrInvalidAcceptParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, err.Error())
+	}
+
+	return nil
 }
 
+// getVotes fetches the votes referenced by the given link and the update
+// proposal that was voted.
+func (v *ParticipantsValidator) getVotes(
+	ctx context.Context,
+	r store.SegmentReader,
+	l *chainscript.Link,
+) (*chainscript.Segment, []*chainscript.Segment, error) {
+	f := &store.SegmentFilter{}
+	for _, r := range l.Meta.Refs {
+		f.LinkHashes = append(f.LinkHashes, r.LinkHash)
+	}
+
+	f.Pagination = store.Pagination{Limit: len(f.LinkHashes)}
+	resp, err := r.FindSegments(ctx, f)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Select only votes, the segment is allowed to reference other segments
+	// for information.
+	var votes []*chainscript.Segment
+	for _, s := range resp.Segments {
+		if s.Link.Meta.Process.Name == GovernanceProcess &&
+			s.Link.Meta.MapId == ParticipantsMap &&
+			s.Link.Meta.Step == ParticipantsVoteStep {
+			votes = append(votes, s)
+		}
+	}
+
+	if len(votes) == 0 {
+		return nil, nil, errors.New("no votes found")
+	}
+
+	update, err := r.GetSegment(ctx, votes[0].Link.PrevLinkHash())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return update, votes, nil
+}
+
+// tallyVotes counts votes and checks if the voting threshold has been reached.
+func (v *ParticipantsValidator) tallyVotes(participants []*Participant, votes []*chainscript.Segment) bool {
+	voters := make(map[string]struct{})
+	for _, v := range votes {
+		for _, s := range v.Link.Signatures {
+			// No need to verify signatures, invalid votes should have been
+			// rejected earlier.
+			keyHash := sha256.Sum256(s.PublicKey)
+			voters[hex.EncodeToString(keyHash[:])] = struct{}{}
+		}
+	}
+
+	networkPower := uint(0)
+	tally := uint(0)
+	for _, p := range participants {
+		networkPower += p.Power
+
+		keyHash := sha256.Sum256(p.PublicKey)
+		_, ok := voters[hex.EncodeToString(keyHash[:])]
+		if ok {
+			tally += p.Power
+		}
+	}
+
+	return tally > ((2 * networkPower) / 3)
+}
+
+// verifyParticipantsUpdate verifies that the update applied to the current
+// participants list equals the proposed result.
+func (v *ParticipantsValidator) verifyParticipantsUpdate(
+	current []*Participant,
+	update *chainscript.Link,
+	proposed []*Participant,
+) error {
+	var updates []*ParticipantUpdate
+	err := update.StructurizeData(&updates)
+	if err != nil {
+		return errors.New("could not extract participant updates from link")
+	}
+
+	// Simulate applying the update.
+	expected := make(map[string]*Participant)
+	for _, p := range current {
+		expected[p.Name] = p
+	}
+
+	for _, u := range updates {
+		if u.Type == ParticipantRemove {
+			delete(expected, u.Name)
+		} else {
+			expected[u.Name] = &u.Participant
+		}
+	}
+
+	// Compare to the proposal.
+	if len(proposed) != len(expected) {
+		return errors.New("invalid participants count")
+	}
+
+	for _, p := range proposed {
+		pp, ok := expected[p.Name]
+		if !ok {
+			return fmt.Errorf("%s should not be in the participants list", p.Name)
+		}
+
+		if p.Power != pp.Power || !bytes.Equal(p.PublicKey, pp.PublicKey) {
+			return fmt.Errorf("invalid update for participant '%s'", p.Name)
+		}
+	}
+
+	return nil
+}
+
+// Validate an `update` proposal link.
 func (v *ParticipantsValidator) validateUpdate(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
 	updates, err := v.validateUpdateStructure(l)
 	if err != nil {
 		return err
 	}
 
-	currentHash, current, err := v.getCurrentParticipants(ctx, r)
+	currentSegment, current, err := v.getCurrentParticipants(ctx, r)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(currentHash, l.Meta.Refs[0].LinkHash) {
+	if !bytes.Equal(currentSegment.LinkHash(), l.Meta.Refs[0].LinkHash) {
 		return types.WrapError(ErrInvalidUpdateParticipant, errorcode.FailedPrecondition, ParticipantsValidatorName, "update does not reference the latest accepted link")
 	}
 
@@ -156,6 +307,7 @@ func (v *ParticipantsValidator) validateUpdate(ctx context.Context, r store.Segm
 	return nil
 }
 
+// Validate the structure of an `update` proposal link.
 func (v *ParticipantsValidator) validateUpdateStructure(l *chainscript.Link) ([]*ParticipantUpdate, error) {
 	if len(l.Meta.PrevLinkHash) > 0 {
 		return nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "update link should have no parent")
@@ -182,6 +334,7 @@ func (v *ParticipantsValidator) validateUpdateStructure(l *chainscript.Link) ([]
 	return updates, nil
 }
 
+// Validate a `vote` link.
 func (v *ParticipantsValidator) validateVote(ctx context.Context, r store.SegmentReader, l *chainscript.Link) error {
 	if l.Meta.OutDegree != 0 {
 		return types.WrapError(ErrInvalidVoteParticipant, errorcode.InvalidArgument, ParticipantsValidatorName, "link should not accept children")
@@ -213,7 +366,8 @@ func (v *ParticipantsValidator) validateVote(ctx context.Context, r store.Segmen
 	return nil
 }
 
-func (v *ParticipantsValidator) getCurrentParticipants(ctx context.Context, r store.SegmentReader) (chainscript.LinkHash, []*Participant, error) {
+// Get the latest participants list that was elected.
+func (v *ParticipantsValidator) getCurrentParticipants(ctx context.Context, r store.SegmentReader) (*chainscript.Segment, []*Participant, error) {
 	// Since accepted segments have increasing priority, we only need to get
 	// the last one.
 	s, err := r.FindSegments(ctx, &store.SegmentFilter{
@@ -238,7 +392,7 @@ func (v *ParticipantsValidator) getCurrentParticipants(ctx context.Context, r st
 		return nil, nil, types.WrapError(ErrInvalidUpdateParticipant, errorcode.Unknown, ParticipantsValidatorName, err.Error())
 	}
 
-	return latest.LinkHash(), current, nil
+	return latest, current, nil
 }
 
 // ShouldValidate returns true if the segment belongs to the participants map

@@ -206,7 +206,7 @@ func TestParticipantsValidator(t *testing.T) {
 
 				err = v.Validate(ctx, store, invalid)
 				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
-				assert.Contains(t, err.Error(), "latest accepted")
+				assert.Contains(t, err.Error(), "reference latest accepted link")
 			})
 
 			t.Run("invalid priority", func(t *testing.T) {
@@ -239,7 +239,7 @@ func TestParticipantsValidator(t *testing.T) {
 
 				err = v.Validate(ctx, store, a2)
 				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
-				assert.Contains(t, err.Error(), "priority")
+				assert.Contains(t, err.Error(), "priority should increase")
 			})
 
 			t.Run("invalid new participants list", func(t *testing.T) {
@@ -273,7 +273,7 @@ func TestParticipantsValidator(t *testing.T) {
 
 				err = v.Validate(ctx, store, a2)
 				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
-				assert.Contains(t, err.Error(), "invalid participants list")
+				assert.Contains(t, err.Error(), "invalid participants")
 			})
 
 			t.Run("update not enough votes", func(t *testing.T) {
@@ -298,16 +298,16 @@ func TestParticipantsValidator(t *testing.T) {
 				require.NoError(t, err)
 
 				a2 := newParticipantAccept(t).
-					// The update should only add Bob, not Carol.
 					WithData(t, []*validators.Participant{alice, bob, carol}).
 					WithParent(t, a1).
 					WithPriority(1).
 					WithRef(t, v1).
+					WithRef(t, chainscripttest.RandomLink(t)).
 					Build()
 
 				err = v.Validate(ctx, store, a2)
 				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
-				assert.Contains(t, err.Error(), "voting power")
+				assert.Contains(t, err.Error(), "not enough voting power")
 			})
 
 			t.Run("update participants", func(t *testing.T) {
