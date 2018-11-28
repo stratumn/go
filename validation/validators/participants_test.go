@@ -159,6 +159,204 @@ func TestParticipantsValidator(t *testing.T) {
 				err := v.Validate(context.Background(), dummystore.New(&dummystore.Config{}), init)
 				require.NoError(t, err)
 			})
+
+			t.Run("update votes not on latest", func(t *testing.T) {
+				ctx := context.Background()
+				store := dummystore.New(&dummystore.Config{})
+
+				// The link will be invalid because it tries to bypass the
+				// latest accepted link (l2) by referencing valid votes on
+				// the previous accepted link (l1) to try to bypass Bob's
+				// signature.
+				//
+				// l1 <------ l2 <------- invalid
+				//	\                       |
+				//	 `----- u1 <----- v1 <--'
+
+				l1 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice}).
+					Build()
+				_, err := store.CreateLink(ctx, l1)
+				require.NoError(t, err)
+
+				l2 := newParticipantAccept(t).WithData(t, []*validators.Participant{alice, bob}).
+					WithParent(t, l1).
+					WithPriority(1).
+					Build()
+				_, err = store.CreateLink(ctx, l2)
+				require.NoError(t, err)
+
+				u1 := newParticipantUpdate(t, l1, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).Build()
+				_, err = store.CreateLink(ctx, u1)
+				require.NoError(t, err)
+
+				v1 := newParticipantVote(t, u1, []byte(validationtesting.AlicePrivateKey)).Build()
+				_, err = store.CreateLink(ctx, v1)
+				require.NoError(t, err)
+
+				invalid := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice, carol}).
+					WithParent(t, l2).
+					WithPriority(2).
+					WithRef(t, v1).
+					Build()
+
+				err = v.Validate(ctx, store, invalid)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
+				assert.Contains(t, err.Error(), "reference latest accepted link")
+			})
+
+			t.Run("invalid priority", func(t *testing.T) {
+				ctx := context.Background()
+				store := dummystore.New(&dummystore.Config{})
+
+				a1 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice}).
+					Build()
+				_, err := store.CreateLink(ctx, a1)
+				require.NoError(t, err)
+
+				u1 := newParticipantUpdate(t, a1, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *bob,
+				}).Build()
+				_, err = store.CreateLink(ctx, u1)
+				require.NoError(t, err)
+
+				v1 := newParticipantVote(t, u1, []byte(validationtesting.AlicePrivateKey)).Build()
+				_, err = store.CreateLink(ctx, v1)
+				require.NoError(t, err)
+
+				a2 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice, bob}).
+					WithParent(t, a1).
+					WithPriority(3).
+					WithRef(t, v1).
+					Build()
+
+				err = v.Validate(ctx, store, a2)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
+				assert.Contains(t, err.Error(), "priority should increase")
+			})
+
+			t.Run("invalid new participants list", func(t *testing.T) {
+				ctx := context.Background()
+				store := dummystore.New(&dummystore.Config{})
+
+				a1 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice}).
+					Build()
+				_, err := store.CreateLink(ctx, a1)
+				require.NoError(t, err)
+
+				u1 := newParticipantUpdate(t, a1, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *bob,
+				}).Build()
+				_, err = store.CreateLink(ctx, u1)
+				require.NoError(t, err)
+
+				v1 := newParticipantVote(t, u1, []byte(validationtesting.AlicePrivateKey)).Build()
+				_, err = store.CreateLink(ctx, v1)
+				require.NoError(t, err)
+
+				a2 := newParticipantAccept(t).
+					// The update should only add Bob, not Carol.
+					WithData(t, []*validators.Participant{alice, bob, carol}).
+					WithParent(t, a1).
+					WithPriority(1).
+					WithRef(t, v1).
+					Build()
+
+				err = v.Validate(ctx, store, a2)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
+				assert.Contains(t, err.Error(), "invalid participants")
+			})
+
+			t.Run("update not enough votes", func(t *testing.T) {
+				ctx := context.Background()
+				store := dummystore.New(&dummystore.Config{})
+
+				a1 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice, bob}).
+					Build()
+				_, err := store.CreateLink(ctx, a1)
+				require.NoError(t, err)
+
+				u1 := newParticipantUpdate(t, a1, &validators.ParticipantUpdate{
+					Type:        validators.ParticipantUpsert,
+					Participant: *carol,
+				}).Build()
+				_, err = store.CreateLink(ctx, u1)
+				require.NoError(t, err)
+
+				v1 := newParticipantVote(t, u1, []byte(validationtesting.AlicePrivateKey)).Build()
+				_, err = store.CreateLink(ctx, v1)
+				require.NoError(t, err)
+
+				a2 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice, bob, carol}).
+					WithParent(t, a1).
+					WithPriority(1).
+					WithRef(t, v1).
+					WithRef(t, chainscripttest.RandomLink(t)).
+					Build()
+
+				err = v.Validate(ctx, store, a2)
+				testutil.AssertWrappedErrorEqual(t, err, validators.ErrInvalidAcceptParticipant)
+				assert.Contains(t, err.Error(), "not enough voting power")
+			})
+
+			t.Run("update participants", func(t *testing.T) {
+				ctx := context.Background()
+				store := dummystore.New(&dummystore.Config{})
+
+				dave := validators.Participant{
+					Name:      "dave",
+					Power:     1,
+					PublicKey: []byte("this is a public key"),
+				}
+
+				a1 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice, bob, carol}).
+					Build()
+				_, err := store.CreateLink(ctx, a1)
+				require.NoError(t, err)
+
+				u1 := newParticipantUpdate(t, a1,
+					&validators.ParticipantUpdate{
+						Type:        validators.ParticipantRemove,
+						Participant: validators.Participant{Name: "carol"},
+					},
+					&validators.ParticipantUpdate{
+						Type:        validators.ParticipantUpsert,
+						Participant: dave,
+					}).Build()
+				_, err = store.CreateLink(ctx, u1)
+				require.NoError(t, err)
+
+				aliceVote := newParticipantVote(t, u1, []byte(validationtesting.AlicePrivateKey)).Build()
+				_, err = store.CreateLink(ctx, aliceVote)
+				require.NoError(t, err)
+
+				bobVote := newParticipantVote(t, u1, []byte(validationtesting.BobPrivateKey)).Build()
+				_, err = store.CreateLink(ctx, bobVote)
+				require.NoError(t, err)
+
+				a2 := newParticipantAccept(t).
+					WithData(t, []*validators.Participant{alice, bob, &dave}).
+					WithParent(t, a1).
+					WithPriority(1).
+					WithRef(t, aliceVote).
+					WithRef(t, bobVote).
+					Build()
+
+				err = v.Validate(ctx, store, a2)
+				assert.NoError(t, err)
+			})
 		})
 
 		t.Run("update", func(t *testing.T) {
