@@ -517,15 +517,15 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:0552160ecfbab455587ecd6bdfd9cd853540c495ded9c0f333a65384f5d863b3"
+  digest = "1:24d0c3d4898a7361136aa7bc6a932ddb3c354535d81f74a4d6693e267c3427a0"
   name = "github.com/stratumn/go-chainscript"
   packages = [
     ".",
     "chainscripttest",
   ]
   pruneopts = ""
-  revision = "6cacc3def0e5d0a3effc63b0ebf5aca986803b62"
-  version = "v1.0.0"
+  revision = "6374ab03c7424f3fea4857fee8b2ab5a231441c3"
+  version = "v1.0.1"
 
 [[projects]]
   digest = "1:3536bd8a6bec567bdd0d79679c180f80bddaa8a0adf23d3dafd8e6661f9676cb"
