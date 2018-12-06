@@ -15,6 +15,7 @@
 package blockcypher
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -23,17 +24,18 @@ import (
 )
 
 func TestRetry(t *testing.T) {
+	ctx := context.Background()
 	waitRetryBase = time.Millisecond
 
 	t.Run("success", func(t *testing.T) {
-		err := RetryWithBackOff(func() error { return nil })
+		err := RetryWithBackOff(ctx, func() error { return nil })
 		require.NoError(t, err)
 	})
 
 	t.Run("success after retry", func(t *testing.T) {
 		i := 0
 
-		err := RetryWithBackOff(func() error {
+		err := RetryWithBackOff(ctx, func() error {
 			if i == 3 {
 				return nil
 			}
@@ -46,7 +48,7 @@ func TestRetry(t *testing.T) {
 	})
 
 	t.Run("failure", func(t *testing.T) {
-		err := RetryWithBackOff(func() error { return errors.New("fatal") })
+		err := RetryWithBackOff(ctx, func() error { return errors.New("fatal") })
 		require.EqualError(t, err, "fatal")
 	})
 }

@@ -25,6 +25,8 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
+
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -62,9 +64,12 @@ func New(c *Config) *Client {
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
+	_, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent")
+	defer span.End()
+
 	addr := base58.CheckEncode(address[:], c.config.Network.ID())
 	var addrInfo gobcy.Addr
-	err = RetryWithBackOff(func() error {
+	err = RetryWithBackOff(ctx, func() error {
 		addrInfo, err = c.api.GetAddr(addr, map[string]string{
 			"unspentOnly":   "true",
 			"includeScript": "true",
@@ -113,7 +118,10 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 // Broadcast implements
 // github.com/stratumn/go-core/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(ctx context.Context, raw []byte) error {
-	return RetryWithBackOff(func() error {
+	_, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast")
+	defer span.End()
+
+	return RetryWithBackOff(ctx, func() error {
 		_, err := c.api.PushTX(hex.EncodeToString(raw))
 		return err
 	})
