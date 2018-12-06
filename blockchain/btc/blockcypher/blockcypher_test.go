@@ -17,70 +17,47 @@ package blockcypher
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/testutil"
 	"github.com/stratumn/go-core/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFindUnspent(t *testing.T) {
+	ctx := context.Background()
+	testAddr := "n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX"
 	bcy := New(&Config{Network: btc.NetworkTest3})
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
-	go bcy.Start(ctx)
+	addr, err := btcutil.DecodeAddress(testAddr, &chaincfg.TestNet3Params)
+	require.NoError(t, err)
 
-	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
-	if err != nil {
-		t.Fatalf("btcutil.DecodeAddress(): err: %s", err)
-	}
 	var addr20 types.ReversedBytes20
 	copy(addr20[:], addr.ScriptAddress())
 
-	res, err := bcy.FindUnspent(&addr20, 1000000)
+	t.Run("with enough coins", func(t *testing.T) {
+		res, err := bcy.FindUnspent(ctx, &addr20, 1000000)
+		require.NoError(t, err)
+		assert.Truef(t, res.Sum >= 1000000, "invalid result sum %d", res.Sum)
+		assert.Truef(t, res.Total >= res.Sum, "invalid total amount %d", res.Total)
+		assert.True(t, len(res.Outputs) > 0, "missing res outputs")
 
-	if err != nil {
-		t.Errorf("bcy.FindUnspent(): err: %s", err)
-	}
-	if res.Sum < 1000000 {
-		t.Errorf("bcy.FindUnspent(): sum = %d want %d", res.Sum, 1000000)
-	}
-	if res.Total < res.Sum {
-		t.Errorf("bcy.FindUnspent(): total = %d want %d", res.Total, res.Sum)
-	}
-	if l := len(res.Outputs); l < 1 {
-		t.Errorf("bcy.FindUnspent(): len(outputs) = %d want > 0", l)
-	}
+		for _, output := range res.Outputs {
+			// Avoid being throttled by blockcypher
+			<-time.After(time.Second)
 
-	for _, output := range res.Outputs {
-		tx, err := bcy.api.GetTX(output.TXHash.String(), nil)
-		if err != nil {
-			t.Errorf("bcy.api.GetTX(): err: %s", err)
+			tx, err := bcy.api.GetTX(output.TXHash.String(), nil)
+			require.NoError(t, err)
+			assert.True(t, testutil.ContainsString(tx.Addresses, testAddr), "can't find address in output addresses")
 		}
-		if !testutil.ContainsString(tx.Addresses, "n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX") {
-			t.Errorf("bcy.FindUnspent(): can't find address in output addresses %s", tx.Addresses)
-		}
-	}
-}
+	})
 
-func TestFindUnspent_notEnough(t *testing.T) {
-	bcy := New(&Config{Network: btc.NetworkTest3})
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	go bcy.Start(ctx)
-
-	addr, err := btcutil.DecodeAddress("n4XCm5oQmo98uGhAJDxQ8wGsqA2YoGrKNX", &chaincfg.TestNet3Params)
-	if err != nil {
-		t.Fatalf("btcutil.DecodeAddress(): err: %s", err)
-	}
-	var addr20 types.ReversedBytes20
-	copy(addr20[:], addr.ScriptAddress())
-
-	_, err = bcy.FindUnspent(&addr20, 1000000000000)
-	if err == nil {
-		t.Errorf("bcy.FindUnspent(): err = nil want Error")
-	}
+	t.Run("without enough coins", func(t *testing.T) {
+		_, err = bcy.FindUnspent(ctx, &addr20, 1000000000000)
+		require.Error(t, err)
+	})
 }
