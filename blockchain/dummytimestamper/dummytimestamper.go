@@ -16,6 +16,7 @@
 package dummytimestamper
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 
@@ -49,7 +50,7 @@ func (Timestamper) Network() blockchain.Network {
 }
 
 // Timestamp implements github.com/stratumn/go-core/blockchain.Timestamper.
-func (Timestamper) Timestamp(data interface{}) (types.TransactionID, error) {
+func (Timestamper) Timestamp(_ context.Context, data interface{}) (types.TransactionID, error) {
 	js, err := json.Marshal(data)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "json.Marshal")
@@ -59,7 +60,7 @@ func (Timestamper) Timestamp(data interface{}) (types.TransactionID, error) {
 }
 
 // TimestampHash implements github.com/stratumn/go-core/blockchain.HashTimestamper.
-func (Timestamper) TimestampHash(hash []byte) (types.TransactionID, error) {
+func (Timestamper) TimestampHash(_ context.Context, hash []byte) (types.TransactionID, error) {
 	sum := sha256.Sum256(hash)
 	return sum[:], nil
 }

@@ -16,6 +16,7 @@
 package blockchain
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/stratumn/go-core/types"
@@ -35,7 +36,7 @@ type Network interface {
 // Timestamper must be able to timestamp data.
 type Timestamper interface {
 	// Timestamp timestamps data on a blockchain.
-	Timestamp(data interface{}) (types.TransactionID, error)
+	Timestamp(ctx context.Context, data interface{}) (types.TransactionID, error)
 }
 
 // HashTimestamper must be able to timestamp a hash.
@@ -44,5 +45,5 @@ type HashTimestamper interface {
 	GetInfo() *Info
 
 	// TimestampHash timestamps a hash on a blockchain.
-	TimestampHash(hash []byte) (types.TransactionID, error)
+	TimestampHash(ctx context.Context, hash []byte) (types.TransactionID, error)
 }

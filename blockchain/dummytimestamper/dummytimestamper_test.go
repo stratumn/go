@@ -12,38 +12,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dummytimestamper
+package dummytimestamper_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/blockchain/dummytimestamper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNetworkString(t *testing.T) {
-	n := Network{}
-	if got := n.String(); got != networkString {
-		t.Errorf("n.String() = %q want %q", got, networkString)
-	}
-}
+func TestDummyTimestamper(t *testing.T) {
+	ctx := context.Background()
+	ts := &dummytimestamper.Timestamper{}
 
-func TestTimestamperNetwork(t *testing.T) {
-	ts := Timestamper{}
-	if n, ok := ts.Network().(Network); !ok {
-		t.Errorf("ts.Network = %#v want Network", n)
-	}
-}
+	t.Run("network string", func(t *testing.T) {
+		n := dummytimestamper.Network{}
+		assert.Equal(t, "dummytimestamper", n.String())
+	})
 
-func TestTimestamperTimestamp(t *testing.T) {
-	ts := Timestamper{}
-	if _, err := ts.Timestamp(map[string][]byte{"hash": chainscripttest.RandomHash()}); err != nil {
-		t.Errorf("ts.Timestamp(): err: %s", err)
-	}
-}
+	t.Run("timestamper network string", func(t *testing.T) {
+		assert.Equal(t, "dummytimestamper", ts.Network().String())
+	})
 
-func TestTimestamperTimestampHash(t *testing.T) {
-	ts := Timestamper{}
-	if _, err := ts.TimestampHash(chainscripttest.RandomHash()); err != nil {
-		t.Errorf("ts.TimestampHash(): err: %s", err)
-	}
+	t.Run("timestamp", func(t *testing.T) {
+		_, err := ts.Timestamp(ctx, map[string][]byte{"hash": chainscripttest.RandomHash()})
+		require.NoError(t, err)
+	})
+
+	t.Run("timestamp hash", func(t *testing.T) {
+		_, err := ts.TimestampHash(ctx, chainscripttest.RandomHash())
+		require.NoError(t, err)
+	})
 }
