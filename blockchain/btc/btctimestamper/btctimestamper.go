@@ -96,7 +96,7 @@ func New(config *Config) (*Timestamper, error) {
 		return nil, types.NewError(errorcode.InvalidArgument, Component, "unsupported network")
 	}
 
-	pubKeyHash := btcutil.Hash160(ts.pubKey.SerializeUncompressed())
+	pubKeyHash := btcutil.Hash160(ts.pubKey.SerializeCompressed())
 	ts.address, err = btcutil.NewAddressPubKeyHash(pubKeyHash, ts.netParams)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create new address")
@@ -210,8 +210,15 @@ func (ts *Timestamper) createNullDataTxOut(hash []byte) (*wire.TxOut, error) {
 
 func (ts *Timestamper) signTx(tx *wire.MsgTx, prevPKScripts [][]byte) error {
 	for index, PKScript := range prevPKScripts {
-		sig, err := txscript.SignTxOutput(ts.netParams, tx, 0, PKScript,
-			txscript.SigHashAll, txscript.KeyClosure(ts.lookupKey), nil, nil)
+		sig, err := txscript.SignTxOutput(
+			ts.netParams,
+			tx,
+			0,
+			PKScript,
+			txscript.SigHashAll,
+			txscript.KeyClosure(ts.lookupKey),
+			nil,
+			nil)
 		if err != nil {
 			return types.WrapError(err, errorcode.InvalidArgument, Component, "could not sign tx")
 		}
@@ -241,5 +248,5 @@ func (ts *Timestamper) validateTx(tx *wire.MsgTx, prevPKScripts [][]byte) error 
 
 func (ts *Timestamper) lookupKey(btcutil.Address) (*btcec.PrivateKey, bool, error) {
 	// Second value means uncompressed.
-	return ts.privKey, false, nil
+	return ts.privKey, true, nil
 }
