@@ -29,7 +29,7 @@ import (
 
 func TestNetwork_NetworkTest3(t *testing.T) {
 	ts, err := New(&Config{
-		WIF: "924v2d7ryXJjnbwB6M9GsZDEjAkfE9aHeQAG1j8muA4UEjozeAJ",
+		WIF: "cMptgcyVp9nPpmvWM9tSR6SyCMkGH4xUX1LkJ2ZTTwfUfbZGXfXB",
 		Fee: int64(10000),
 	})
 	require.NoError(t, err)
@@ -49,24 +49,24 @@ func TestTimestamperTimestampHash(t *testing.T) {
 	ctx := context.Background()
 	mock := &btctesting.Mock{}
 	mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
-		PKScriptHex := "76a914fc56f7f9f80cfba26f300c77b893c39ed89351ff88ac"
+		PKScriptHex := "76a914bf1e72331f8018f66faec356a04ca98b35bf5ee288ac"
 		PKScript, _ := hex.DecodeString(PKScriptHex)
 		output := btc.Output{Index: 0, PKScript: PKScript}
-		if err := output.TXHash.Unstring("c805dd0fbf728e6b7e6c4e5d4ddfaba0089291145453aafb762bcff7a8afe2f5"); err != nil {
+		if err := output.TXHash.Unstring("e35297e10fde340e5d0e2200de20f314f3851ea683d06feccf2f8bef6dd337d5"); err != nil {
 			return btc.UnspentResult{}, err
 		}
 
 		return btc.UnspentResult{
 			Outputs: []btc.Output{output},
-			Sum:     6241000,
+			Sum:     14745268,
 		}, nil
 	}
 
 	ts, err := New(&Config{
-		WIF:           "924v2d7ryXJjnbwB6M9GsZDEjAkfE9aHeQAG1j8muA4UEjozeAJ",
+		WIF:           "cQNA7W1beoBJsefQQeznRoYT6XH9HkpU98V2S4ZUaWNxVPPT1qEk",
 		UnspentFinder: mock,
 		Broadcaster:   mock,
-		Fee:           int64(10000),
+		Fee:           int64(15000),
 	})
 	require.NoError(t, err)
 
