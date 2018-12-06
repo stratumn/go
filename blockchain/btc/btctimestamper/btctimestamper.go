@@ -27,12 +27,14 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/blockchain"
 	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
-	log "github.com/sirupsen/logrus"
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -119,7 +121,12 @@ func (ts *Timestamper) GetInfo() *blockchain.Info {
 
 // TimestampHash implements
 // github.com/stratumn/go-core/blockchain.HashTimestamper.
-func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (types.TransactionID, error) {
+func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid types.TransactionID, err error) {
+	ctx, span := trace.StartSpan(ctx, "blockchain/btc/btctimestamper/TimestampHash")
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
+
 	var prevPKScripts [][]byte
 
 	addr := (*types.ReversedBytes20)(ts.address.Hash160())
