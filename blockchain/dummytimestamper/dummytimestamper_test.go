@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stratumn/go-chainscript/chainscripttest"
-	"github.com/stratumn/go-core/types"
 )
 
 func TestNetworkString(t *testing.T) {
@@ -37,14 +36,14 @@ func TestTimestamperNetwork(t *testing.T) {
 
 func TestTimestamperTimestamp(t *testing.T) {
 	ts := Timestamper{}
-	if _, err := ts.Timestamp(map[string]types.Bytes32{"hash": *types.NewBytes32FromBytes(chainscripttest.RandomHash())}); err != nil {
+	if _, err := ts.Timestamp(map[string][]byte{"hash": chainscripttest.RandomHash()}); err != nil {
 		t.Errorf("ts.Timestamp(): err: %s", err)
 	}
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
 	ts := Timestamper{}
-	if _, err := ts.TimestampHash(types.NewBytes32FromBytes(chainscripttest.RandomHash())); err != nil {
+	if _, err := ts.TimestampHash(chainscripttest.RandomHash()); err != nil {
 		t.Errorf("ts.TimestampHash(): err: %s", err)
 	}
 }

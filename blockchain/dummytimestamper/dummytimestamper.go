@@ -59,8 +59,8 @@ func (Timestamper) Timestamp(data interface{}) (types.TransactionID, error) {
 }
 
 // TimestampHash implements github.com/stratumn/go-core/blockchain.HashTimestamper.
-func (Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
-	sum := sha256.Sum256(hash[:])
+func (Timestamper) TimestampHash(hash []byte) (types.TransactionID, error) {
+	sum := sha256.Sum256(hash)
 	return sum[:], nil
 }
 
