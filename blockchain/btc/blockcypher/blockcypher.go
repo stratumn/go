@@ -19,13 +19,17 @@ import (
 	"context"
 	"encoding/hex"
 	"strings"
+	"time"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 )
 
@@ -64,8 +68,20 @@ func New(c *Config) *Client {
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
-	_, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent")
-	defer span.End()
+	ctx, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent")
+	ctx, _ = tag.New(ctx, tag.Insert(requestType, "FindUnspent"))
+	start := time.Now()
+	defer func() {
+		if err != nil {
+			stats.Record(ctx, requestErr.M(1))
+		}
+
+		stats.Record(ctx,
+			requestCount.M(1),
+			requestLatency.M(float64(time.Since(start))/float64(time.Millisecond)),
+		)
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	addr := base58.CheckEncode(address[:], c.config.Network.ID())
 	var addrInfo gobcy.Addr
@@ -118,11 +134,23 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 // Broadcast implements
 // github.com/stratumn/go-core/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(ctx context.Context, raw []byte) error {
-	_, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast")
+	ctx, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast")
+	ctx, _ = tag.New(ctx, tag.Insert(requestType, "Broadcast"))
 	defer span.End()
 
-	return RetryWithBackOff(ctx, func() error {
+	start := time.Now()
+	err := RetryWithBackOff(ctx, func() error {
 		_, err := c.api.PushTX(hex.EncodeToString(raw))
 		return err
 	})
+	if err != nil {
+		stats.Record(ctx, requestErr.M(1))
+		monitoring.SetSpanStatus(span, err)
+	}
+
+	stats.Record(ctx,
+		requestCount.M(1),
+		requestLatency.M(float64(time.Since(start))/float64(time.Millisecond)),
+	)
+	return err
 }
