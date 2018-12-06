@@ -15,6 +15,7 @@
 package btctimestamper
 
 import (
+	"context"
 	"encoding/hex"
 	"testing"
 
@@ -22,6 +23,8 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/blockchain/btc/btctesting"
 	"github.com/stratumn/go-core/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNetwork_NetworkTest3(t *testing.T) {
@@ -29,13 +32,8 @@ func TestNetwork_NetworkTest3(t *testing.T) {
 		WIF: "924v2d7ryXJjnbwB6M9GsZDEjAkfE9aHeQAG1j8muA4UEjozeAJ",
 		Fee: int64(10000),
 	})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-
-	if got := ts.Network(); got != btc.NetworkTest3 {
-		t.Errorf("ts.Network() = %q want %q", got, btc.NetworkTest3)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, btc.NetworkTest3, ts.Network())
 }
 
 func TestNetwork_NetworkMain(t *testing.T) {
@@ -43,18 +41,14 @@ func TestNetwork_NetworkMain(t *testing.T) {
 		WIF: "L3Wbnfn57Fc547FLSkm6iCzAaHmLArNUBCYx6q8LdxWoEMoFZmLH",
 		Fee: int64(10000),
 	})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-
-	if got := ts.Network(); got != btc.NetworkMain {
-		t.Errorf("ts.Network() = %q want %q", got, btc.NetworkMain)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, btc.NetworkMain, ts.Network())
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
+	ctx := context.Background()
 	mock := &btctesting.Mock{}
-	mock.MockFindUnspent.Fn = func(*types.ReversedBytes20, int64) (btc.UnspentResult, error) {
+	mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
 		PKScriptHex := "76a914fc56f7f9f80cfba26f300c77b893c39ed89351ff88ac"
 		PKScript, _ := hex.DecodeString(PKScriptHex)
 		output := btc.Output{Index: 0, PKScript: PKScript}
@@ -74,15 +68,9 @@ func TestTimestamperTimestampHash(t *testing.T) {
 		Broadcaster:   mock,
 		Fee:           int64(10000),
 	})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
+	require.NoError(t, err)
 
-	if _, err := ts.TimestampHash(types.NewBytes32FromBytes(chainscripttest.RandomHash())); err != nil {
-		t.Fatalf("ts.TimestampHash(): err: %s", err)
-	}
-
-	if got := mock.MockBroadcast.CalledCount; got != 1 {
-		t.Errorf("ts.TimestampHash(): Broadcast() called %d time(s) want 1 time", mock.MockBroadcast.CalledCount)
-	}
+	_, err = ts.TimestampHash(ctx, chainscripttest.RandomHash())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, mock.MockBroadcast.CalledCount)
 }

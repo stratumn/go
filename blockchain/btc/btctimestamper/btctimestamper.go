@@ -18,6 +18,7 @@ package btctimestamper
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -38,10 +39,7 @@ const (
 	// Component name for monitoring.
 	Component = "btc"
 
-	// DefaultFee is the default transaction fee.
-	DefaultFee = int64(15000)
-
-	// Description describes this Timestamper
+	// Description describes this Timestamper.
 	Description = "Bitcoin Timestamper"
 )
 
@@ -121,11 +119,11 @@ func (ts *Timestamper) GetInfo() *blockchain.Info {
 
 // TimestampHash implements
 // github.com/stratumn/go-core/blockchain.HashTimestamper.
-func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
+func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (types.TransactionID, error) {
 	var prevPKScripts [][]byte
 
 	addr := (*types.ReversedBytes20)(ts.address.Hash160())
-	res, err := ts.config.UnspentFinder.FindUnspent(addr, ts.config.Fee)
+	res, err := ts.config.UnspentFinder.FindUnspent(ctx, addr, ts.config.Fee)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +162,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not read tx buffer")
 	}
-	err = ts.config.Broadcaster.Broadcast(raw)
+	err = ts.config.Broadcaster.Broadcast(ctx, raw)
 	if err != nil {
 		return nil, err
 	}
@@ -194,8 +192,8 @@ func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
 	return wire.NewTxOut(amount, PKScript), nil
 }
 
-func (ts *Timestamper) createNullDataTxOut(hash *types.Bytes32) (*wire.TxOut, error) {
-	PKScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(hash[:]).Script()
+func (ts *Timestamper) createNullDataTxOut(hash []byte) (*wire.TxOut, error) {
+	PKScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(hash).Script()
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.Unknown, Component, "could not create null tx")
 	}
