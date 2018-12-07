@@ -34,16 +34,22 @@ type Adapter interface {
 	Fossilize(ctx context.Context, data []byte, meta []byte) error
 }
 
+// Fossil that will be fossilized.
+type Fossil struct {
+	// The data that was fossilized.
+	Data []byte
+
+	// The metadata associated with the fossilized data.
+	Meta []byte
+}
+
 // Result is the type sent to the result channels.
 type Result struct {
 	// Evidence created by the fossilizer.
 	Evidence chainscript.Evidence
 
-	// The data that was fossilized.
-	Data []byte
-
-	// The meta data that was given to Adapter.Fossilize.
-	Meta []byte
+	// The fossilized data.
+	Fossil
 }
 
 // EventType lets you know the kind of event received.

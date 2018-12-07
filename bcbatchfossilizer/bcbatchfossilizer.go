@@ -149,8 +149,10 @@ func (a *Fossilizer) transform(evidence *chainscript.Evidence, data, meta []byte
 
 	r := fossilizer.Result{
 		Evidence: *evidence,
-		Data:     data,
-		Meta:     meta,
+		fossilizer.Fossil{
+			Data: data,
+			Meta: meta,
+		},
 	}
 
 	return &r, nil

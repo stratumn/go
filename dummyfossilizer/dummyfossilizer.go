@@ -87,8 +87,10 @@ func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byt
 
 	r := &fossilizer.Result{
 		Evidence: *evidence,
-		Data:     data,
-		Meta:     meta,
+		Fossil: fossilizer.Fossil{
+			Data: data,
+			Meta: meta,
+		},
 	}
 	event := &fossilizer.Event{
 		EventType: fossilizer.DidFossilize,
