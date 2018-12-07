@@ -25,12 +25,12 @@ import (
 func TestConfig(t *testing.T) {
 	t.Run("Interval", func(t *testing.T) {
 		t.Run("default", func(t *testing.T) {
-			i := &batchfossilizer.Config{}.GetInterval()
+			i := batchfossilizer.Config{}.GetInterval()
 			assert.Equal(t, batchfossilizer.DefaultInterval, i)
 		})
 
 		t.Run("configured", func(t *testing.T) {
-			i := &batchfossilizer.Config{
+			i := batchfossilizer.Config{
 				Interval: time.Second,
 			}.GetInterval()
 			assert.Equal(t, time.Second, i)
@@ -39,12 +39,12 @@ func TestConfig(t *testing.T) {
 
 	t.Run("MaxLeaves", func(t *testing.T) {
 		t.Run("default", func(t *testing.T) {
-			v := &batchfossilizer.Config{}.GetMaxLeaves()
+			v := batchfossilizer.Config{}.GetMaxLeaves()
 			assert.Equal(t, batchfossilizer.DefaultMaxLeaves, v)
 		})
 
 		t.Run("configured", func(t *testing.T) {
-			v := &batchfossilizer.Config{
+			v := batchfossilizer.Config{
 				MaxLeaves: 42,
 			}.GetMaxLeaves()
 			assert.Equal(t, 42, v)
@@ -53,12 +53,12 @@ func TestConfig(t *testing.T) {
 
 	t.Run("MaxSimBatches", func(t *testing.T) {
 		t.Run("default", func(t *testing.T) {
-			v := &batchfossilizer.Config{}.GetMaxSimBatches()
+			v := batchfossilizer.Config{}.GetMaxSimBatches()
 			assert.Equal(t, batchfossilizer.DefaultMaxSimBatches, v)
 		})
 
 		t.Run("configured", func(t *testing.T) {
-			v := &batchfossilizer.Config{
+			v := batchfossilizer.Config{
 				MaxSimBatches: 42,
 			}.GetMaxSimBatches()
 			assert.Equal(t, 42, v)

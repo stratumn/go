@@ -34,7 +34,7 @@ type Config struct {
 	// A version string that will be set in the store's information.
 	Version string
 
-	// A git commit sha that will be set in the store's information.
+	// A git commit hash that will be set in the store's information.
 	Commit string
 
 	// Interval between batches.
@@ -48,7 +48,7 @@ type Config struct {
 }
 
 // GetInterval returns the configuration's interval or the default value.
-func (c *Config) GetInterval() time.Duration {
+func (c Config) GetInterval() time.Duration {
 	if c.Interval > 0 {
 		return c.Interval
 	}
@@ -58,7 +58,7 @@ func (c *Config) GetInterval() time.Duration {
 
 // GetMaxLeaves returns the configuration's maximum number of leaves of a Merkle
 // tree or the default value.
-func (c *Config) GetMaxLeaves() int {
+func (c Config) GetMaxLeaves() int {
 	if c.MaxLeaves > 0 {
 		return c.MaxLeaves
 	}
@@ -68,7 +68,7 @@ func (c *Config) GetMaxLeaves() int {
 
 // GetMaxSimBatches returns the configuration's maximum number of simultaneous
 // batches or the default value.
-func (c *Config) GetMaxSimBatches() int {
+func (c Config) GetMaxSimBatches() int {
 	if c.MaxSimBatches > 0 {
 		return c.MaxSimBatches
 	}
