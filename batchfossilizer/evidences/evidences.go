@@ -44,9 +44,9 @@ var (
 
 // BatchProof implements the chainscript.Proof interface.
 type BatchProof struct {
-	Timestamp int64          `json:"timestamp"`
-	Root      *types.Bytes32 `json:"merkleRoot"`
-	Path      mktypes.Path   `json:"merklePath"`
+	Timestamp int64        `json:"timestamp"`
+	Root      []byte       `json:"merkleRoot"`
+	Path      mktypes.Path `json:"merklePath"`
 }
 
 // Time returns the timestamp from the block header.

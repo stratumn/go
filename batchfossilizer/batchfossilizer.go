@@ -47,95 +47,7 @@ const (
 
 	// Description is the description set in the fossilizer's information.
 	Description = "Stratumn Batch Fossilizer"
-
-	// DefaultInterval is the default interval between batches.
-	DefaultInterval = 10 * time.Minute
-
-	// DefaultMaxLeaves if the default maximum number of leaves of a Merkle
-	// tree.
-	DefaultMaxLeaves = 32 * 1024
-
-	// DefaultMaxSimBatches is the default maximum number of simultaneous
-	// batches.
-	DefaultMaxSimBatches = 1
-
-	// DefaultArchive is whether to archive completed batches by default.
-	DefaultArchive = true
-
-	// DefaultStopBatch is whether to do a batch on stop by default.
-	DefaultStopBatch = true
-
-	// DefaultFSync is whether to fsync after saving a hash to disk by
-	// default.
-	DefaultFSync = false
-
-	// PendingExt is the pending hashes filename extension.
-	PendingExt = "pending"
-
-	// DirPerm is the directory's permissions.
-	DirPerm = 0600
-
-	// FilePerm is the files's permissions.
-	FilePerm = 0600
 )
-
-// Config contains configuration options for the fossilizer.
-type Config struct {
-	// A version string that will be set in the store's information.
-	Version string
-
-	// A git commit sha that will be set in the store's information.
-	Commit string
-
-	// Interval between batches.
-	Interval time.Duration
-
-	// Maximum number of leaves of a Merkle tree.
-	MaxLeaves int
-
-	// Maximum number of simultaneous batches.
-	MaxSimBatches int
-
-	// Where to store pending hashes.
-	// If empty, pending hashes are not saved and will be lost if stopped
-	// abruptly.
-	Path string
-
-	// Whether to archive completed batches.
-	Archive bool
-
-	// Whether to do a batch on stop.
-	StopBatch bool
-
-	// Whether to fsync after saving a hash to disk.
-	FSync bool
-}
-
-// GetInterval returns the configuration's interval or the default value.
-func (c *Config) GetInterval() time.Duration {
-	if c.Interval > 0 {
-		return c.Interval
-	}
-	return DefaultInterval
-}
-
-// GetMaxLeaves returns the configuration's maximum number of leaves of a Merkle
-// tree or the default value.
-func (c *Config) GetMaxLeaves() int {
-	if c.MaxLeaves > 0 {
-		return c.MaxLeaves
-	}
-	return DefaultMaxLeaves
-}
-
-// GetMaxSimBatches returns the configuration's maximum number of simultaneous
-// batches or the default value.
-func (c *Config) GetMaxSimBatches() int {
-	if c.MaxSimBatches > 0 {
-		return c.MaxSimBatches
-	}
-	return DefaultMaxSimBatches
-}
 
 // Info is the info returned by GetInfo.
 type Info struct {
@@ -423,7 +335,7 @@ func (a *Fossilizer) sendEvidence(ctx context.Context, tree *merkle.StaticTree, 
 
 		proof := &evidences.BatchProof{
 			Timestamp: ts,
-			Root:      types.NewBytes32FromBytes(root),
+			Root:      root,
 			Path:      tree.Path(i),
 		}
 		evidence, err := proof.Evidence(Name)
