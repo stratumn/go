@@ -55,7 +55,7 @@ type DummyFossilizer struct {
 }
 
 // New creates an instance of a DummyFossilizer.
-func New(config *Config) *DummyFossilizer {
+func New(config *Config) fossilizer.Adapter {
 	return &DummyFossilizer{config: config, fossilizerEventChans: nil}
 }
 
