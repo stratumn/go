@@ -51,8 +51,8 @@ type Result struct {
 type EventType string
 
 const (
-	// DidFossilizeLink means that the link was fossilized
-	DidFossilizeLink EventType = "DidFossilizeLink"
+	// DidFossilize is sent when a piece of data was successfully fossilized.
+	DidFossilize EventType = "DidFossilize"
 )
 
 // Event is the object fossilizers send to notify of important events.

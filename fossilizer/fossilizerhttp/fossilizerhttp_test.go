@@ -227,7 +227,7 @@ func TestGetSocket(t *testing.T) {
 	go s.getWebSocket(w, r, nil)
 
 	event := &fossilizer.Event{
-		EventType: fossilizer.DidFossilizeLink,
+		EventType: fossilizer.DidFossilize,
 		Data:      &fossilizer.Result{},
 	}
 

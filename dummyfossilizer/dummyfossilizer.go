@@ -91,7 +91,7 @@ func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byt
 		Meta:     meta,
 	}
 	event := &fossilizer.Event{
-		EventType: fossilizer.DidFossilizeLink,
+		EventType: fossilizer.DidFossilize,
 		Data:      r,
 	}
 

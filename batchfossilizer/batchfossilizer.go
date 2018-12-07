@@ -438,7 +438,7 @@ func (a *Fossilizer) sendEvidence(ctx context.Context, tree *merkle.StaticTree, 
 			monitoring.SetSpanStatus(span, err)
 		} else {
 			event := &fossilizer.Event{
-				EventType: fossilizer.DidFossilizeLink,
+				EventType: fossilizer.DidFossilize,
 				Data:      r,
 			}
 
