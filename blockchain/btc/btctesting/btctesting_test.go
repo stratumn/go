@@ -15,6 +15,7 @@
 package btctesting
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -26,20 +27,21 @@ import (
 )
 
 func TestMockFindUnspent(t *testing.T) {
+	ctx := context.Background()
 	a := &Mock{}
 
 	var addr1 types.ReversedBytes20
 	copy(addr1[:], chainscripttest.RandomHash())
-	_, err := a.FindUnspent(&addr1, 1000)
+	_, err := a.FindUnspent(ctx, &addr1, 1000)
 	require.NoError(t, err, "a.FindUnspent()")
 
-	a.MockFindUnspent.Fn = func(*types.ReversedBytes20, int64) (btc.UnspentResult, error) {
+	a.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
 		return btc.UnspentResult{Sum: 10000}, nil
 	}
 
 	var addr2 types.ReversedBytes20
 	copy(addr2[:], chainscripttest.RandomHash())
-	_, err = a.FindUnspent(&addr2, 2000)
+	_, err = a.FindUnspent(ctx, &addr2, 2000)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 2, a.MockFindUnspent.CalledCount)
@@ -50,16 +52,17 @@ func TestMockFindUnspent(t *testing.T) {
 }
 
 func TestMockBroadcast(t *testing.T) {
+	ctx := context.Background()
 	a := &Mock{}
 
 	tx1 := []byte(chainscripttest.RandomHash())
-	err := a.Broadcast(tx1)
+	err := a.Broadcast(ctx, tx1)
 	require.NoError(t, err, "a.Broadcast()")
 
-	a.MockBroadcast.Fn = func(raw []byte) error { return errors.New("error") }
+	a.MockBroadcast.Fn = func(_ context.Context, raw []byte) error { return errors.New("error") }
 
 	tx2 := []byte(chainscripttest.RandomHash())
-	err = a.Broadcast(tx2)
+	err = a.Broadcast(ctx, tx2)
 	require.Error(t, err, "a.Broadcast()")
 
 	assert.Equal(t, 2, a.MockBroadcast.CalledCount)

@@ -16,6 +16,8 @@
 package btc
 
 import (
+	"context"
+
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/pkg/errors"
@@ -41,7 +43,7 @@ var (
 	// ErrUnknownBitcoinNetwork is returned when the network ID associated to the WIF is unknown.
 	ErrUnknownBitcoinNetwork = errors.New("WIF encoded private key uses unknown Bitcoin network")
 
-	// ErrBadWIF is returned when the WIF encoded private key could not be decoded
+	// ErrBadWIF is returned when the WIF encoded private key could not be decoded.
 	ErrBadWIF = errors.New("Failed to decode WIF encoded private key")
 )
 
@@ -104,11 +106,11 @@ type UnspentResult struct {
 type UnspentFinder interface {
 	// FindUnspent find unspent outputs for the given address and the
 	// required amount.
-	FindUnspent(address *types.ReversedBytes20, amount int64) (UnspentResult, error)
+	FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (UnspentResult, error)
 }
 
 // Broadcaster is able to broadcast raw Bitcoin transactions.
 type Broadcaster interface {
 	// Broadcast broadcasts a raw transaction.
-	Broadcast(raw []byte) error
+	Broadcast(ctx context.Context, raw []byte) error
 }

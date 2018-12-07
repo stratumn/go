@@ -19,7 +19,9 @@ import (
 	"flag"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/bcbatchfossilizer"
+	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/blockchain/btc/blockcypher"
 	"github.com/stratumn/go-core/blockchain/btc/btctimestamper"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
@@ -28,7 +30,9 @@ import (
 )
 
 var (
-	key = flag.String("wif", os.Getenv("BTCFOSSILIZER_WIF"), "wallet import format key")
+	key       = flag.String("wif", os.Getenv("BTCFOSSILIZER_WIF"), "wallet import format key")
+	bcyAPIKey = flag.String("bcyapikey", "", "BlockCypher API key")
+	fee       = flag.Int64("fee", int64(15000), "transaction fee (satoshis)")
 
 	version = "x.x.x"
 	commit  = "00000000000000000000000000000000"
@@ -36,8 +40,6 @@ var (
 
 func init() {
 	fossilizerhttp.RegisterFlags()
-	blockcypher.RegisterFlags()
-	btctimestamper.RegisterFlags()
 	bcbatchfossilizer.RegisterFlags()
 	monitoring.RegisterFlags()
 }
@@ -45,14 +47,36 @@ func init() {
 func main() {
 	flag.Parse()
 
-	ctx := context.Background()
-	ctx = util.CancelOnInterrupt(ctx)
+	ctx := util.CancelOnInterrupt(context.Background())
 
-	bcy := blockcypher.RunWithFlags(ctx, *key)
-	ts := btctimestamper.InitializeWithFlags(version, commit, *key, bcy, bcy)
+	if *key == "" {
+		log.Fatal("A WIF encoded private key is required")
+	}
+
+	network, err := btc.GetNetworkFromWIF(*key)
+	if err != nil {
+		log.WithField("error", err).Fatal()
+	}
+
+	bcy := blockcypher.New(&blockcypher.Config{
+		Network: network,
+		APIKey:  *bcyAPIKey,
+	})
+
+	ts, err := btctimestamper.New(&btctimestamper.Config{
+		Fee:           *fee,
+		WIF:           *key,
+		Broadcaster:   bcy,
+		UnspentFinder: bcy,
+	})
+	if err != nil {
+		log.WithField("error", err).Fatal()
+	}
+
 	a := monitoring.NewFossilizerAdapter(
 		bcbatchfossilizer.RunWithFlags(ctx, version, commit, ts),
 		"bcbatchfossilizer",
 	)
+
 	fossilizerhttp.RunWithFlags(ctx, a)
 }

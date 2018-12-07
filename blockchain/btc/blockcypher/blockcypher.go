@@ -19,23 +19,23 @@ import (
 	"context"
 	"encoding/hex"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
+	"go.opencensus.io/trace"
 )
 
 const (
-	// DefaultLimiterInterval is the default BlockCypher API limiter
-	// interval.
-	DefaultLimiterInterval = time.Minute
-
-	// DefaultLimiterSize is the default BlockCypher API limiter size.
-	DefaultLimiterSize = 2
+	// Component name for monitoring.
+	Component = "btc"
 )
 
 // Config contains configuration options for the client.
@@ -44,55 +44,55 @@ type Config struct {
 	Network btc.Network
 
 	// APIKey is an optional BlockCypher API key.
+	// It prevents your requests from being throttled.
 	APIKey string
-
-	// LimiterInterval is the BlockCypher API limiter interval.
-	LimiterInterval time.Duration
-
-	// LimiterSize is the BlockCypher API limiter size.
-	LimiterSize int
 }
 
 // Client is a BlockCypher API client.
 type Client struct {
-	config    *Config
-	api       *gobcy.API
-	limiter   chan struct{}
-	timer     *time.Timer
-	waitGroup sync.WaitGroup
+	config *Config
+	api    *gobcy.API
 }
 
 // New creates a client for a Bitcoin network, using an optional BlockCypher API
 // key.
 func New(c *Config) *Client {
 	parts := strings.Split(c.Network.String(), ":")
-	size := c.LimiterSize
-	if size == 0 {
-		size = DefaultLimiterSize
-	}
-	limiter := make(chan struct{}, size)
 
 	return &Client{
-		config:  c,
-		api:     &gobcy.API{Token: c.APIKey, Coin: "btc", Chain: parts[1]},
-		limiter: limiter,
+		config: c,
+		api:    &gobcy.API{Token: c.APIKey, Coin: "btc", Chain: parts[1]},
 	}
 }
 
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
-func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
-	for range c.limiter {
-		break
-	}
-	c.waitGroup.Add(1)
-	defer c.waitGroup.Done()
+func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
+	ctx, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent")
+	ctx, _ = tag.New(ctx, tag.Insert(requestType, "FindUnspent"))
+	start := time.Now()
+	defer func() {
+		if err != nil {
+			stats.Record(ctx, requestErr.M(1))
+		}
+
+		stats.Record(ctx,
+			requestCount.M(1),
+			requestLatency.M(float64(time.Since(start))/float64(time.Millisecond)),
+		)
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
 
 	addr := base58.CheckEncode(address[:], c.config.Network.ID())
-	addrInfo, err := c.api.GetAddr(addr, map[string]string{
-		"unspentOnly":   "true",
-		"includeScript": "true",
-		"limit":         "50",
+	var addrInfo gobcy.Addr
+	err = RetryWithBackOff(ctx, func() error {
+		addrInfo, err = c.api.GetAddr(addr, map[string]string{
+			"unspentOnly":   "true",
+			"includeScript": "true",
+			"limit":         "50",
+		})
+
+		return err
 	})
 	if err != nil {
 		return
@@ -133,54 +133,24 @@ func (c *Client) FindUnspent(address *types.ReversedBytes20, amount int64) (res 
 
 // Broadcast implements
 // github.com/stratumn/go-core/blockchain/btc.Broadcaster.Broadcast.
-func (c *Client) Broadcast(raw []byte) error {
-	for range c.limiter {
-		break
-	}
-	c.waitGroup.Add(1)
-	defer c.waitGroup.Done()
+func (c *Client) Broadcast(ctx context.Context, raw []byte) error {
+	ctx, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast")
+	ctx, _ = tag.New(ctx, tag.Insert(requestType, "Broadcast"))
+	defer span.End()
 
-	_, err := c.api.PushTX(hex.EncodeToString(raw))
+	start := time.Now()
+	err := RetryWithBackOff(ctx, func() error {
+		_, err := c.api.PushTX(hex.EncodeToString(raw))
+		return err
+	})
+	if err != nil {
+		stats.Record(ctx, requestErr.M(1))
+		monitoring.SetSpanStatus(span, err)
+	}
+
+	stats.Record(ctx,
+		requestCount.M(1),
+		requestLatency.M(float64(time.Since(start))/float64(time.Millisecond)),
+	)
 	return err
-}
-
-// Start starts the client.
-func (c *Client) Start(ctx context.Context) {
-	size := c.config.LimiterSize
-	if size == 0 {
-		size = DefaultLimiterSize
-	}
-	for i := 0; i < size; i++ {
-		c.limiter <- struct{}{}
-	}
-
-	interval := c.config.LimiterInterval
-	if interval == 0 {
-		interval = DefaultLimiterInterval
-	}
-
-	c.timer = time.NewTimer(interval)
-
-	for {
-		select {
-		case <-c.timer.C:
-			c.timer = time.NewTimer(interval)
-			c.limiter <- struct{}{}
-		case <-ctx.Done():
-			c.stop()
-			return
-		}
-
-	}
-}
-
-// stop stops the client.
-func (c *Client) stop() {
-	if !c.timer.Stop() {
-		<-c.timer.C
-	}
-
-	c.waitGroup.Wait()
-	<-c.limiter
-	close(c.limiter)
 }

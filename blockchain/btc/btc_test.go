@@ -69,16 +69,10 @@ func TestGetNetworkFromWIF(t *testing.T) {
 }
 
 func TestNetworkString(t *testing.T) {
-	if got, want := btc.NetworkTest3.String(), "bitcoin:test3"; got != want {
-		t.Errorf("NetworkTest3.String() = %s want %s", got, want)
-	}
+	assert.Equal(t, "bitcoin:test3", btc.NetworkTest3.String())
 }
 
 func TestNetworkID(t *testing.T) {
-	if got, want := btc.NetworkTest3.ID(), byte(0x6F); got != want {
-		t.Errorf(`NetworkTest3.String() = "%x" want "%x"`, got, want)
-	}
-	if got, want := btc.NetworkMain.ID(), byte(0x00); got != want {
-		t.Errorf(`NetworkTest3.String() = "%x" want "%x"`, got, want)
-	}
+	assert.Equal(t, byte(0x6F), btc.NetworkTest3.ID())
+	assert.Equal(t, byte(0x00), btc.NetworkMain.ID())
 }

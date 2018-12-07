@@ -18,6 +18,7 @@ package btctimestamper
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 
 	"github.com/btcsuite/btcd/btcec"
@@ -26,22 +27,21 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/blockchain"
 	"github.com/stratumn/go-core/blockchain/btc"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
-	log "github.com/sirupsen/logrus"
+	"go.opencensus.io/trace"
 )
 
 const (
 	// Component name for monitoring.
 	Component = "btc"
 
-	// DefaultFee is the default transaction fee.
-	DefaultFee = int64(15000)
-
-	// Description describes this Timestamper
+	// Description describes this Timestamper.
 	Description = "Bitcoin Timestamper"
 )
 
@@ -96,7 +96,7 @@ func New(config *Config) (*Timestamper, error) {
 		return nil, types.NewError(errorcode.InvalidArgument, Component, "unsupported network")
 	}
 
-	pubKeyHash := btcutil.Hash160(ts.pubKey.SerializeUncompressed())
+	pubKeyHash := btcutil.Hash160(ts.pubKey.SerializeCompressed())
 	ts.address, err = btcutil.NewAddressPubKeyHash(pubKeyHash, ts.netParams)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create new address")
@@ -121,11 +121,16 @@ func (ts *Timestamper) GetInfo() *blockchain.Info {
 
 // TimestampHash implements
 // github.com/stratumn/go-core/blockchain.HashTimestamper.
-func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, error) {
+func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid types.TransactionID, err error) {
+	ctx, span := trace.StartSpan(ctx, "blockchain/btc/btctimestamper/TimestampHash")
+	defer func() {
+		monitoring.SetSpanStatusAndEnd(span, err)
+	}()
+
 	var prevPKScripts [][]byte
 
 	addr := (*types.ReversedBytes20)(ts.address.Hash160())
-	res, err := ts.config.UnspentFinder.FindUnspent(addr, ts.config.Fee)
+	res, err := ts.config.UnspentFinder.FindUnspent(ctx, addr, ts.config.Fee)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +169,7 @@ func (ts *Timestamper) TimestampHash(hash *types.Bytes32) (types.TransactionID, 
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not read tx buffer")
 	}
-	err = ts.config.Broadcaster.Broadcast(raw)
+	err = ts.config.Broadcaster.Broadcast(ctx, raw)
 	if err != nil {
 		return nil, err
 	}
@@ -194,8 +199,8 @@ func (ts *Timestamper) createPayToAddrTxOut(amount int64) (*wire.TxOut, error) {
 	return wire.NewTxOut(amount, PKScript), nil
 }
 
-func (ts *Timestamper) createNullDataTxOut(hash *types.Bytes32) (*wire.TxOut, error) {
-	PKScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(hash[:]).Script()
+func (ts *Timestamper) createNullDataTxOut(hash []byte) (*wire.TxOut, error) {
+	PKScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData(hash).Script()
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.Unknown, Component, "could not create null tx")
 	}
@@ -205,8 +210,15 @@ func (ts *Timestamper) createNullDataTxOut(hash *types.Bytes32) (*wire.TxOut, er
 
 func (ts *Timestamper) signTx(tx *wire.MsgTx, prevPKScripts [][]byte) error {
 	for index, PKScript := range prevPKScripts {
-		sig, err := txscript.SignTxOutput(ts.netParams, tx, 0, PKScript,
-			txscript.SigHashAll, txscript.KeyClosure(ts.lookupKey), nil, nil)
+		sig, err := txscript.SignTxOutput(
+			ts.netParams,
+			tx,
+			0,
+			PKScript,
+			txscript.SigHashAll,
+			txscript.KeyClosure(ts.lookupKey),
+			nil,
+			nil)
 		if err != nil {
 			return types.WrapError(err, errorcode.InvalidArgument, Component, "could not sign tx")
 		}
@@ -236,5 +248,5 @@ func (ts *Timestamper) validateTx(tx *wire.MsgTx, prevPKScripts [][]byte) error 
 
 func (ts *Timestamper) lookupKey(btcutil.Address) (*btcec.PrivateKey, bool, error) {
 	// Second value means uncompressed.
-	return ts.privKey, false, nil
+	return ts.privKey, true, nil
 }

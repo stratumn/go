@@ -16,6 +16,8 @@
 package btctesting
 
 import (
+	"context"
+
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/types"
 )
@@ -49,7 +51,7 @@ type MockFindUnspent struct {
 	LastCalledWithAmount int64
 
 	// An optional implementation of the function.
-	Fn func(*types.ReversedBytes20, int64) (btc.UnspentResult, error)
+	Fn func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error)
 }
 
 // MockBroadcast mocks the Broadcast function.
@@ -64,12 +66,12 @@ type MockBroadcast struct {
 	LastCalledWith []byte
 
 	// An optional implementation of the function.
-	Fn func([]byte) error
+	Fn func(context.Context, []byte) error
 }
 
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
-func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) (btc.UnspentResult, error) {
+func (a *Mock) FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (btc.UnspentResult, error) {
 	a.MockFindUnspent.CalledCount++
 	a.MockFindUnspent.CalledWithAddress = append(a.MockFindUnspent.CalledWithAddress, address)
 	a.MockFindUnspent.LastCalledWithAddress = address
@@ -77,7 +79,7 @@ func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) (btc.Un
 	a.MockFindUnspent.LastCalledWithAmount = amount
 
 	if a.MockFindUnspent.Fn != nil {
-		return a.MockFindUnspent.Fn(address, amount)
+		return a.MockFindUnspent.Fn(ctx, address, amount)
 	}
 
 	return btc.UnspentResult{}, nil
@@ -85,13 +87,13 @@ func (a *Mock) FindUnspent(address *types.ReversedBytes20, amount int64) (btc.Un
 
 // Broadcast implements
 // github.com/stratumn/go-core/blockchain/btc.Broadcaster.Broadcast.
-func (a *Mock) Broadcast(raw []byte) error {
+func (a *Mock) Broadcast(ctx context.Context, raw []byte) error {
 	a.MockBroadcast.CalledCount++
 	a.MockBroadcast.CalledWith = append(a.MockBroadcast.CalledWith, raw)
 	a.MockBroadcast.LastCalledWith = raw
 
 	if a.MockBroadcast.Fn != nil {
-		return a.MockBroadcast.Fn(raw)
+		return a.MockBroadcast.Fn(ctx, raw)
 	}
 
 	return nil

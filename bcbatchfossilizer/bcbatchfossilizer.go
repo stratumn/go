@@ -120,7 +120,7 @@ func (a *Fossilizer) transform(evidence *chainscript.Evidence, data, meta []byte
 	root := batchProof.Root
 
 	if a.lastRoot == nil || *root != *a.lastRoot {
-		txid, err = a.config.HashTimestamper.TimestampHash(root)
+		txid, err = a.config.HashTimestamper.TimestampHash(context.TODO(), root[:])
 		if err != nil {
 			return nil, err
 		}
