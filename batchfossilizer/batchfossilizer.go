@@ -216,7 +216,7 @@ func (a *Fossilizer) eventLoop(ctx context.Context, fChan chan *fossilizer.Event
 // individual fossilization events for each fossil included in the merkle tree.
 // It then sends these events to all registered listeners.
 func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
-	ctx, span := trace.StartSpan(ctx, "batchfossilizer/eventBatch")
+	_, span := trace.StartSpan(ctx, "batchfossilizer/eventBatch")
 	defer span.End()
 
 	if e.EventType != fossilizer.DidFossilize {

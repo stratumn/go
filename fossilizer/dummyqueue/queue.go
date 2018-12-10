@@ -65,9 +65,7 @@ func (q *DummyQueue) Fossils() []*fossilizer.Fossil {
 	defer q.fossilsLock.RUnlock()
 
 	fossils := make([]*fossilizer.Fossil, len(q.fossils))
-	for i, f := range q.fossils {
-		fossils[i] = f
-	}
+	copy(fossils, q.fossils)
 
 	return fossils
 }
