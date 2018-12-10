@@ -106,7 +106,7 @@ func (a *Fossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 	}, nil
 }
 
-// AddFossilizerEventChan forwards to the underlying fossilizer.
+// AddFossilizerEventChan adds a new listener.
 func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
 	a.eventChansLock.Lock()
 	defer a.eventChansLock.Unlock()

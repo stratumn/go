@@ -20,10 +20,11 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/stratumn/go-core/bcbatchfossilizer"
+	"github.com/stratumn/go-core/batchfossilizer"
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/blockchain/btc/blockcypher"
 	"github.com/stratumn/go-core/blockchain/btc/btctimestamper"
+	"github.com/stratumn/go-core/fossilizer/dummyqueue"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/util"
@@ -40,7 +41,7 @@ var (
 
 func init() {
 	fossilizerhttp.RegisterFlags()
-	bcbatchfossilizer.RegisterFlags()
+	batchfossilizer.RegisterFlags()
 	monitoring.RegisterFlags()
 }
 
@@ -74,8 +75,12 @@ func main() {
 	}
 
 	a := monitoring.NewFossilizerAdapter(
-		bcbatchfossilizer.RunWithFlags(ctx, version, commit, ts),
-		"bcbatchfossilizer",
+		batchfossilizer.New(ctx,
+			batchfossilizer.ConfigFromFlags(version, commit),
+			nil,              // TODO
+			dummyqueue.New(), // TODO: plug configurable queue implementation
+		),
+		"btcfossilizer",
 	)
 
 	fossilizerhttp.RunWithFlags(ctx, a)
