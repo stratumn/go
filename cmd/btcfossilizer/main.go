@@ -24,6 +24,7 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/blockchain/btc/blockcypher"
 	"github.com/stratumn/go-core/blockchain/btc/btctimestamper"
+	"github.com/stratumn/go-core/blockchainfossilizer"
 	"github.com/stratumn/go-core/fossilizer/dummyqueue"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
@@ -77,7 +78,11 @@ func main() {
 	a := monitoring.NewFossilizerAdapter(
 		batchfossilizer.New(ctx,
 			batchfossilizer.ConfigFromFlags(version, commit),
-			nil,              // TODO
+			blockchainfossilizer.New(&blockchainfossilizer.Config{
+				Commit:      commit,
+				Version:     version,
+				Timestamper: ts,
+			}),
 			dummyqueue.New(), // TODO: plug configurable queue implementation
 		),
 		"btcfossilizer",
