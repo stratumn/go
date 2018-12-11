@@ -21,9 +21,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	awsqueue "github.com/stratumn/go-core/cloud/aws"
 	"github.com/stratumn/go-core/fossilizer"
@@ -37,16 +34,7 @@ const (
 )
 
 func TestFossilsQueue(t *testing.T) {
-	cfg := aws.NewConfig().
-		WithRegion(testRegion).
-		// You need valid credentials in the ~/.aws folder or in your
-		// environment variables.
-		WithCredentials(credentials.NewChainCredentials([]credentials.Provider{
-			&credentials.EnvProvider{},
-			&credentials.SharedCredentialsProvider{},
-		}))
-
-	sess, err := session.NewSession(cfg)
+	sess, err := awsqueue.NewSession(testRegion)
 	require.NoError(t, err)
 
 	client := sqs.New(sess)
