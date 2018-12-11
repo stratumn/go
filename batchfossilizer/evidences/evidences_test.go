@@ -64,7 +64,11 @@ func TestBatchFossilizerEvidence(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
-		proof := &evidences.BatchProof{Timestamp: 42}
+		proof := &evidences.BatchProof{
+			Timestamp: 42,
+			Root:      []byte("b4tm4n"),
+			Proof:     []byte("r0b1n"),
+		}
 		e, err := proof.Evidence("btc")
 		require.NoError(t, err)
 
@@ -72,5 +76,7 @@ func TestBatchFossilizerEvidence(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, int64(42), p.Timestamp)
+		assert.Equal(t, []byte("b4tm4n"), p.Root)
+		assert.Equal(t, []byte("r0b1n"), p.Proof)
 	})
 }

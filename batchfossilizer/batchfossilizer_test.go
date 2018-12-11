@@ -12,293 +12,234 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batchfossilizer
+package batchfossilizer_test
 
 import (
 	"context"
-	"crypto/sha256"
-	"io/ioutil"
-	"os"
-	"path/filepath"
+	"encoding/hex"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	json "github.com/gibson042/canonicaljson-go"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/batchfossilizer"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
+	"github.com/stratumn/go-core/dummyfossilizer"
+	dummyevidences "github.com/stratumn/go-core/dummyfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/fossilizer/dummyqueue"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+func batchProof(t *testing.T, e *chainscript.Evidence) *evidences.BatchProof {
+	var proof evidences.BatchProof
+	err := json.Unmarshal(e.Proof, &proof)
+	require.NoError(t, err)
+
+	return &proof
+}
+
 func TestGetInfo(t *testing.T) {
-	t.Parallel()
-	a, err := New(&Config{})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	got, err := a.GetInfo(context.Background())
-	if err != nil {
-		t.Fatalf("a.GetInfo(): err: %s", err)
-	}
-	if _, ok := got.(*Info); !ok {
-		t.Errorf("a.GetInfo(): info = %#v want *Info", got)
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	f := batchfossilizer.New(
+		ctx,
+		&batchfossilizer.Config{
+			Version: "1.0.0",
+			Commit:  "abcdef",
+		},
+		dummyfossilizer.New(&dummyfossilizer.Config{}),
+		dummyqueue.New(),
+	)
+
+	i, err := f.GetInfo(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "1.0.0", i.(*batchfossilizer.Info).Version)
+	assert.Equal(t, "abcdef", i.(*batchfossilizer.Info).Commit)
 }
 
 func TestFossilize(t *testing.T) {
-	t.Parallel()
-	a, err := New(&Config{Interval: interval})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
-		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, true, true)
-}
+	t.Run("nothing to fossilize", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-func TestFossilize_MaxLeaves(t *testing.T) {
-	t.Parallel()
-	a, err := New(&Config{Interval: interval, MaxLeaves: 4})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a 1"), pathABCD0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b 1"), pathABCD1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c 1"), pathABCD2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d 1"), pathABCD3, 0, false},
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a 2"), pathABC0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b 2"), pathABC1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c 2"), pathABC2, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, true, true)
-}
+		f := dummyfossilizer.New(&dummyfossilizer.Config{})
+		q := dummyqueue.New()
+		batch := batchfossilizer.New(
+			ctx,
+			&batchfossilizer.Config{Interval: 3 * time.Millisecond},
+			f,
+			q,
+		)
 
-func TestFossilize_Interval(t *testing.T) {
-	t.Parallel()
-	a, err := New(&Config{Interval: interval})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a 1"), pathABC0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b 1"), pathABC1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c 1"), pathABC2, interval * 10, false},
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a 2"), pathABCD0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b 2"), pathABCD1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c 2"), pathABCD2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d 2"), pathABCD3, interval * 10, false},
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a 3"), pathABC0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b 3"), pathABC1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c 3"), pathABC2, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, true, true)
-}
+		eventChan := make(chan *fossilizer.Event, 1)
+		batch.AddFossilizerEventChan(eventChan)
 
-func TestStop_StopBatch(t *testing.T) {
-	ctx := context.Background()
-
-	t.Parallel()
-	path, err := ioutil.TempDir("", "batchfossilizer")
-	if err != nil {
-		t.Fatalf("ioutil.TempDir(): err: %s", err)
-	}
-	defer os.RemoveAll(path)
-
-	a, err := New(&Config{Interval: interval, Path: path, StopBatch: true})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-
-	go func() {
-		if err := a.Start(ctx); err != nil && errors.Cause(err) != context.Canceled {
-			t.Fatalf("a.Start(): err: %s", err)
-		}
-	}()
-
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-
-	cancel()
-
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
-		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, false, false)
-}
-
-func TestFossilize_Archive(t *testing.T) {
-	t.Parallel()
-	path, err := ioutil.TempDir("", "batchfossilizer")
-	if err != nil {
-		t.Fatalf("ioutil.TempDir(): err: %s", err)
-	}
-	defer os.RemoveAll(path)
-
-	a, err := New(&Config{Path: path, Archive: true, MaxLeaves: 5})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
-		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, true, true)
-
-	archive := filepath.Join(path, "d71f8983ad4ee170f8129f1ebcdd7440be7798d8e1c80420bf11f1eced610dba")
-
-	if _, err := os.Stat(archive); err != nil {
-		t.Errorf("os.Stat(): err: %s", err)
-	}
-}
-
-func TestNew_recover(t *testing.T) {
-	ctx := context.Background()
-
-	t.Parallel()
-	path, err := ioutil.TempDir("", "batchfossilizer")
-	if err != nil {
-		t.Fatalf("ioutil.TempDir(): err: %s", err)
-	}
-	defer os.RemoveAll(path)
-
-	a, err := New(&Config{Path: path, StopBatch: false})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	go func() {
-		if err := a.Start(ctx); err != nil && errors.Cause(err) != context.Canceled {
-			t.Fatalf("a.Start(): err: %s", err)
-		}
-	}()
-
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("a"))), []byte("test a")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("b"))), []byte("test b")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("c"))), []byte("test c")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("d"))), []byte("test d")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-	if err := a.Fossilize(ctx, atos(sha256.Sum256([]byte("e"))), []byte("test e")); err != nil {
-		t.Errorf("a.Fossilize(): err: %s", err)
-	}
-
-	<-a.Started()
-	cancel()
-
-	a, err = New(&Config{Interval: interval, Path: path})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
-		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, true, false)
-}
-
-func TestSetTransformer(t *testing.T) {
-	t.Parallel()
-	a, err := New(&Config{Interval: interval})
-	if err != nil {
-		t.Fatalf("New(): err: %s", err)
-	}
-	transformerCalled := false
-	transformer := func(evidence *chainscript.Evidence, data, meta []byte) (*fossilizer.Result, error) {
-		transformerCalled = true
-		return &fossilizer.Result{
-			Evidence: *evidence,
-			Data:     data,
-			Meta:     meta,
-		}, nil
-	}
-	a.SetTransformer(transformer)
-
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
-		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
-	}
-	testFossilizeMultiple(t, a, tests, true, true)
-
-	if !transformerCalled {
-		t.Errorf("a.transform() was not called")
-	}
-}
-
-func TestBatchProof(t *testing.T) {
-	t.Parallel()
-
-	a, err := New(&Config{
-		Interval: interval,
-	})
-	require.NoError(t, err)
-
-	tests := []fossilizeTest{
-		{atos(sha256.Sum256([]byte("a"))), []byte("test a"), pathABCDE0, 0, false},
-		{atos(sha256.Sum256([]byte("b"))), []byte("test b"), pathABCDE1, 0, false},
-		{atos(sha256.Sum256([]byte("c"))), []byte("test c"), pathABCDE2, 0, false},
-		{atos(sha256.Sum256([]byte("d"))), []byte("test d"), pathABCDE3, 0, false},
-		{atos(sha256.Sum256([]byte("e"))), []byte("test e"), pathABCDE4, 0, false},
-	}
-	results := testFossilizeMultiple(t, a, tests, true, true)
-
-	t.Run("TestTime()", func(t *testing.T) {
-		for _, r := range results {
-			e, err := evidences.UnmarshalProof(&r.Evidence)
-			require.NoError(t, err)
-
-			assert.Equal(t, uint64(time.Now().Unix()), e.Time())
+		select {
+		case <-eventChan:
+			assert.Fail(t, "unexpected fossilizer event")
+		case <-time.After(5 * time.Millisecond):
 		}
 	})
 
-	t.Run("TestVerify()", func(t *testing.T) {
-		for _, r := range results {
-			e, err := evidences.UnmarshalProof(&r.Evidence)
-			require.NoError(t, err)
+	t.Run("single element", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 
-			assert.True(t, e.Verify(nil))
+		f := dummyfossilizer.New(&dummyfossilizer.Config{})
+		q := dummyqueue.New()
+		batch := batchfossilizer.New(
+			ctx,
+			&batchfossilizer.Config{Interval: 3 * time.Millisecond},
+			f,
+			q,
+		)
+
+		eventChan := make(chan *fossilizer.Event)
+		batch.AddFossilizerEventChan(eventChan)
+
+		err := batch.Fossilize(ctx, []byte("b4tm4n"), []byte("r0b1n"))
+		require.NoError(t, err)
+
+		e := <-eventChan
+		assert.Equal(t, fossilizer.DidFossilize, e.EventType)
+
+		r, ok := e.Data.(*fossilizer.Result)
+		require.True(t, ok)
+		assert.Equal(t, []byte("b4tm4n"), r.Data)
+		assert.Equal(t, []byte("r0b1n"), r.Meta)
+
+		// The queue should have been emptied.
+		assert.Empty(t, q.Fossils())
+	})
+
+	t.Run("max leaves", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		f := dummyfossilizer.New(&dummyfossilizer.Config{})
+		q := dummyqueue.New()
+		batch := batchfossilizer.New(
+			ctx,
+			&batchfossilizer.Config{
+				Interval:  3 * time.Millisecond,
+				MaxLeaves: 2,
+			},
+			f,
+			q,
+		)
+
+		eventChan := make(chan *fossilizer.Event, 3)
+		batch.AddFossilizerEventChan(eventChan)
+
+		for i := byte(0); i < 3; i++ {
+			err := batch.Fossilize(ctx, []byte{i}, []byte{i + 10})
+			require.NoError(t, err)
+		}
+
+		trees := make(map[string]struct{})
+		for i := byte(0); i < 3; i++ {
+			e := <-eventChan
+			r, ok := e.Data.(*fossilizer.Result)
+			require.True(t, ok)
+
+			p := batchProof(t, &r.Evidence)
+			trees[hex.EncodeToString(p.Root)] = struct{}{}
+		}
+
+		// The fossils should have been split into two merkle trees.
+		assert.Len(t, trees, 2)
+		assert.Empty(t, q.Fossils())
+	})
+
+	t.Run("simultaneous batches", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		f := dummyfossilizer.New(&dummyfossilizer.Config{})
+		q := dummyqueue.New()
+		batch := batchfossilizer.New(
+			ctx,
+			&batchfossilizer.Config{
+				Interval:      3 * time.Millisecond,
+				MaxLeaves:     2,
+				MaxSimBatches: 2,
+			},
+			f,
+			q,
+		)
+
+		eventChan := make(chan *fossilizer.Event, 5)
+		batch.AddFossilizerEventChan(eventChan)
+
+		for i := byte(0); i < 5; i++ {
+			err := batch.Fossilize(ctx, []byte{i}, []byte{i + 10})
+			require.NoError(t, err)
+		}
+
+		trees := make(map[string]struct{})
+		for i := byte(0); i < 5; i++ {
+			e := <-eventChan
+			r, ok := e.Data.(*fossilizer.Result)
+			require.True(t, ok)
+
+			p := batchProof(t, &r.Evidence)
+			trees[hex.EncodeToString(p.Root)] = struct{}{}
+		}
+
+		// The fossils should have been split into three merkle trees.
+		assert.Len(t, trees, 3)
+		assert.Empty(t, q.Fossils())
+	})
+
+	t.Run("fossilizer evidence", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		f := dummyfossilizer.New(&dummyfossilizer.Config{})
+		q := dummyqueue.New()
+		batch := batchfossilizer.New(
+			ctx,
+			&batchfossilizer.Config{
+				Interval:  3 * time.Millisecond,
+				MaxLeaves: 10,
+			},
+			f,
+			q,
+		)
+
+		eventChan := make(chan *fossilizer.Event, 3)
+		batch.AddFossilizerEventChan(eventChan)
+
+		for i := byte(0); i < 3; i++ {
+			err := batch.Fossilize(ctx, []byte{i}, []byte{i + 10})
+			require.NoError(t, err)
+		}
+
+		now := time.Now().Unix()
+		var root []byte
+		for i := 0; i < 3; i++ {
+			e := <-eventChan
+			r, ok := e.Data.(*fossilizer.Result)
+			require.True(t, ok)
+
+			p := batchProof(t, &r.Evidence)
+			if root == nil {
+				root = p.Root
+			}
+
+			// All fossils should be in the same merkle tree.
+			assert.Equal(t, root, p.Root)
+			assert.InDelta(t, now, p.Timestamp, 10)
+			assert.NoError(t, p.Path.Validate())
+
+			// We should find an evidence produced by the wrapped fossilizer.
+			var proof dummyevidences.DummyProof
+			err := json.Unmarshal(p.Proof, &proof)
+			require.NoError(t, err)
+			assert.InDelta(t, now, proof.Timestamp, 10)
 		}
 	})
 }

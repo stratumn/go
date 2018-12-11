@@ -43,10 +43,15 @@ var (
 )
 
 // BatchProof implements the chainscript.Proof interface.
+// The data is put in the leaf of a merkle tree and we provide a merkle proof
+// for that leaf.
+// The batch proof needs a separate fossilizer to produce a proof of the merkle
+// root: that proof can be found in the `Proof` field.
 type BatchProof struct {
-	Timestamp int64          `json:"timestamp"`
-	Root      *types.Bytes32 `json:"merkleRoot"`
-	Path      mktypes.Path   `json:"merklePath"`
+	Timestamp int64        `json:"timestamp"`
+	Root      []byte       `json:"merkleRoot"`
+	Path      mktypes.Path `json:"merklePath"`
+	Proof     []byte       `json:"proof"`
 }
 
 // Time returns the timestamp from the block header.

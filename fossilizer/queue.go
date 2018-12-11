@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package batchfossilizer
+package fossilizer
 
 import (
-	"encoding/gob"
+	"context"
 )
 
-type fossil struct {
-	Data []byte
-	Meta []byte
-}
+// FossilsQueue can be used by batch fossilizers to store data that's pending
+// fossilization.
+// StorageQueue implementations can use persistent storage (like cloud queues)
+// to prevent loss of data in cloud micro-services architecture.
+type FossilsQueue interface {
+	// Push a fossil to the queue.
+	Push(context.Context, *Fossil) error
 
-func newFossilFromDecoder(dec *gob.Decoder) (f *fossil, err error) {
-	err = dec.Decode(&f)
-	return
-}
-
-func (f *fossil) write(enc *gob.Encoder) error {
-	return enc.Encode(f)
+	// Pop fossils from the queue.
+	Pop(context.Context, int) ([]*Fossil, error)
 }

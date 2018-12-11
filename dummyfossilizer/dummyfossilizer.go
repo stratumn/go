@@ -55,7 +55,7 @@ type DummyFossilizer struct {
 }
 
 // New creates an instance of a DummyFossilizer.
-func New(config *Config) *DummyFossilizer {
+func New(config *Config) fossilizer.Adapter {
 	return &DummyFossilizer{config: config, fossilizerEventChans: nil}
 }
 
@@ -87,11 +87,13 @@ func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byt
 
 	r := &fossilizer.Result{
 		Evidence: *evidence,
-		Data:     data,
-		Meta:     meta,
+		Fossil: fossilizer.Fossil{
+			Data: data,
+			Meta: meta,
+		},
 	}
 	event := &fossilizer.Event{
-		EventType: fossilizer.DidFossilizeLink,
+		EventType: fossilizer.DidFossilize,
 		Data:      r,
 	}
 

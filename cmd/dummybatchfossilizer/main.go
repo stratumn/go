@@ -18,8 +18,9 @@ import (
 	"context"
 	"flag"
 
-	"github.com/stratumn/go-core/bcbatchfossilizer"
-	"github.com/stratumn/go-core/blockchain/dummytimestamper"
+	"github.com/stratumn/go-core/batchfossilizer"
+	"github.com/stratumn/go-core/dummyfossilizer"
+	"github.com/stratumn/go-core/fossilizer/dummyqueue"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/util"
@@ -32,7 +33,7 @@ var (
 
 func init() {
 	fossilizerhttp.RegisterFlags()
-	bcbatchfossilizer.RegisterFlags()
+	batchfossilizer.RegisterFlags()
 	monitoring.RegisterFlags()
 }
 
@@ -43,7 +44,14 @@ func main() {
 	ctx = util.CancelOnInterrupt(ctx)
 
 	a := monitoring.NewFossilizerAdapter(
-		bcbatchfossilizer.RunWithFlags(ctx, version, commit, dummytimestamper.Timestamper{}),
+		batchfossilizer.New(ctx,
+			batchfossilizer.ConfigFromFlags(version, commit),
+			dummyfossilizer.New(&dummyfossilizer.Config{
+				Version: version,
+				Commit:  commit,
+			}),
+			dummyqueue.New(),
+		),
 		"dummybatchfossilizer",
 	)
 	fossilizerhttp.RunWithFlags(ctx, a)
