@@ -39,8 +39,12 @@ const (
 func TestFossilsQueue(t *testing.T) {
 	cfg := aws.NewConfig().
 		WithRegion(testRegion).
-		// You need valid credentials in the ~/.aws folder.
-		WithCredentials(credentials.NewSharedCredentials("", "default"))
+		// You need valid credentials in the ~/.aws folder or in your
+		// environment variables.
+		WithCredentials(credentials.NewChainCredentials([]credentials.Provider{
+			&credentials.EnvProvider{},
+			&credentials.SharedCredentialsProvider{},
+		}))
 
 	sess, err := session.NewSession(cfg)
 	require.NoError(t, err)
@@ -49,6 +53,8 @@ func TestFossilsQueue(t *testing.T) {
 	defer cleanTestQueues(t, client)
 
 	t.Run("push and pop", func(t *testing.T) {
+		t.Parallel()
+
 		ctx := context.Background()
 		queueURL := createTestQueue(t, client)
 		q := awsqueue.NewFossilsQueue(client, queueURL)
@@ -74,6 +80,8 @@ func TestFossilsQueue(t *testing.T) {
 	})
 
 	t.Run("pop empty queue", func(t *testing.T) {
+		t.Parallel()
+
 		ctx := context.Background()
 		queueURL := createTestQueue(t, client)
 		q := awsqueue.NewFossilsQueue(client, queueURL)
@@ -84,6 +92,8 @@ func TestFossilsQueue(t *testing.T) {
 	})
 
 	t.Run("pop many", func(t *testing.T) {
+		t.Parallel()
+
 		ctx := context.Background()
 		queueURL := createTestQueue(t, client)
 		q := awsqueue.NewFossilsQueue(client, queueURL)
@@ -108,6 +118,8 @@ func TestFossilsQueue(t *testing.T) {
 	})
 
 	t.Run("pop more than queue size", func(t *testing.T) {
+		t.Parallel()
+
 		ctx := context.Background()
 		queueURL := createTestQueue(t, client)
 		q := awsqueue.NewFossilsQueue(client, queueURL)

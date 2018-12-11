@@ -41,19 +41,20 @@ blocks:
     task:
       secrets:
         - name: go-core-codecov
+        - name: aws-deploy
       prologue:
         commands_file: boilerplate
       jobs:
-      - name: Headers
-        commands:
-          - make test_headers
-      - name: Lint
-        commands:
-          - make lint
-      - name: Test
-        commands:
-          - make coverage
-          - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
+        - name: Headers
+          commands:
+            - make test_headers
+        - name: Lint
+          commands:
+            - make lint
+        - name: Test
+          commands:
+            - make coverage
+            - bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
 
 promotions:
   - name: Publish to DockerHub
