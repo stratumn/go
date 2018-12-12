@@ -26,7 +26,7 @@ var (
 	maxSimBatches int
 )
 
-// RegisterFlags registers the flags used by RunWithFlags.
+// RegisterFlags registers the flags used by batch fossilizers.
 func RegisterFlags() {
 	flag.DurationVar(&interval, "interval", DefaultInterval, "batch interval")
 	flag.IntVar(&maxLeaves, "maxleaves", DefaultMaxLeaves, "maximum number of leaves in a Merkle tree")

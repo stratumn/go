@@ -25,7 +25,7 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc/blockcypher"
 	"github.com/stratumn/go-core/blockchain/btc/btctimestamper"
 	"github.com/stratumn/go-core/blockchainfossilizer"
-	"github.com/stratumn/go-core/fossilizer/dummyqueue"
+	"github.com/stratumn/go-core/cloud/aws"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/util"
@@ -36,6 +36,9 @@ var (
 	bcyAPIKey = flag.String("bcyapikey", "", "BlockCypher API key")
 	fee       = flag.Int64("fee", int64(15000), "transaction fee (satoshis)")
 
+	queueType    = flag.String("queuetype", AWSQueue, "queue implementation ('dummy' or 'aws')")
+	fossilsQueue = flag.String("fossilsqueue", DefaultFossilsQueue, "name of the pending fossils queue")
+
 	version = "x.x.x"
 	commit  = "00000000000000000000000000000000"
 )
@@ -44,6 +47,7 @@ func init() {
 	fossilizerhttp.RegisterFlags()
 	batchfossilizer.RegisterFlags()
 	monitoring.RegisterFlags()
+	aws.RegisterFlags()
 }
 
 func main() {
@@ -83,7 +87,7 @@ func main() {
 				Version:     version,
 				Timestamper: ts,
 			}),
-			dummyqueue.New(), // TODO: plug configurable queue implementation
+			QueueFromFlags(),
 		),
 		"btcfossilizer",
 	)

@@ -37,10 +37,10 @@ type Adapter interface {
 // Fossil that will be fossilized.
 type Fossil struct {
 	// The data that was fossilized.
-	Data []byte
+	Data []byte `json:"data"`
 
 	// The metadata associated with the fossilized data.
-	Meta []byte
+	Meta []byte `json:"meta"`
 }
 
 // Result is the type sent to the result channels.
