@@ -19,6 +19,7 @@ package dummyfossilizer
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/stratumn/go-core/dummyfossilizer/evidences"
@@ -50,12 +51,14 @@ type Info struct {
 // DummyFossilizer is the type that implements
 // github.com/stratumn/go-core/fossilizer.Adapter.
 type DummyFossilizer struct {
-	config               *Config
+	config *Config
+
+	chansLock            sync.RWMutex
 	fossilizerEventChans []chan *fossilizer.Event
 }
 
 // New creates an instance of a DummyFossilizer.
-func New(config *Config) fossilizer.Adapter {
+func New(config *Config) *DummyFossilizer {
 	return &DummyFossilizer{config: config, fossilizerEventChans: nil}
 }
 
@@ -72,7 +75,18 @@ func (a *DummyFossilizer) GetInfo(ctx context.Context) (interface{}, error) {
 // AddFossilizerEventChan implements
 // github.com/stratumn/go-core/fossilizer.Adapter.AddFossilizerEventChan.
 func (a *DummyFossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer.Event) {
+	a.chansLock.Lock()
+	defer a.chansLock.Unlock()
+
 	a.fossilizerEventChans = append(a.fossilizerEventChans, fossilizerEventChan)
+}
+
+// ListenersCount returns the number of registered listeners.
+func (a *DummyFossilizer) ListenersCount() int {
+	a.chansLock.RLock()
+	defer a.chansLock.RUnlock()
+
+	return len(a.fossilizerEventChans)
 }
 
 // Fossilize implements github.com/stratumn/go-core/fossilizer.Adapter.Fossilize.
@@ -97,8 +111,13 @@ func (a *DummyFossilizer) Fossilize(ctx context.Context, data []byte, meta []byt
 		Data:      r,
 	}
 
+	a.chansLock.RLock()
+	defer a.chansLock.RUnlock()
+
 	for _, c := range a.fossilizerEventChans {
-		c <- event
+		go func(c chan *fossilizer.Event) {
+			c <- event
+		}(c)
 	}
 
 	return nil
