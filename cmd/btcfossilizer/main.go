@@ -26,6 +26,7 @@ import (
 	"github.com/stratumn/go-core/blockchain/btc/btctimestamper"
 	"github.com/stratumn/go-core/blockchainfossilizer"
 	"github.com/stratumn/go-core/cloud/aws"
+	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/util"
@@ -38,6 +39,9 @@ var (
 
 	queueType    = flag.String("queuetype", AWSQueue, "queue implementation ('dummy' or 'aws')")
 	fossilsQueue = flag.String("fossilsqueue", DefaultFossilsQueue, "name of the pending fossils queue")
+
+	exporter      = flag.String("exporter", NoExporter, "exporter for fossilizer events ('', 'console' or 'aws')")
+	exporterQueue = flag.String("exporterqueue", DefaultExporterQueue, "name of the fossilizer events queue")
 
 	version = "x.x.x"
 	commit  = "00000000000000000000000000000000"
@@ -91,6 +95,12 @@ func main() {
 		),
 		"btcfossilizer",
 	)
+
+	// Run an exporter for fossilizer events.
+	exporter := ExporterFromFlags()
+	if exporter != nil {
+		go fossilizer.RunExporter(ctx, a, exporter)
+	}
 
 	fossilizerhttp.RunWithFlags(ctx, a)
 }

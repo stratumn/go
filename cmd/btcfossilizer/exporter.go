@@ -19,42 +19,36 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/cloud/aws"
 	"github.com/stratumn/go-core/fossilizer"
-	"github.com/stratumn/go-core/fossilizer/dummyqueue"
+	"github.com/stratumn/go-core/fossilizer/dummyexporter"
 )
 
-// Queues that can be used by the BTC fossilizer.
+// Exporters that can be used by the BTC fossilizer.
 const (
-	DummyQueue = "dummy"
-	AWSQueue   = "aws"
+	NoExporter      = ""
+	ConsoleExporter = "console"
+	AWSExporter     = "aws"
 )
 
 // Default values for command-line flags.
 const (
-	DefaultFossilsQueue = "pending-fossils"
+	DefaultExporterQueue = "fossilizer-events"
 )
 
-// QueueFromFlags creates a fossils queue from command-line flags.
-func QueueFromFlags() fossilizer.FossilsQueue {
-	switch *queueType {
-	case DummyQueue:
-		return dummyqueue.New()
-	case AWSQueue:
+// ExporterFromFlags creates a fossilizer events exporter from command-line
+// flags.
+func ExporterFromFlags() fossilizer.EventExporter {
+	switch *exporter {
+	case NoExporter:
+		return nil
+	case ConsoleExporter:
+		return dummyexporter.New()
+	case AWSExporter:
 		session := aws.SessionFromFlags()
 		client := sqs.New(session)
-		queueURL := QueueURL(client, fossilsQueue)
-		return aws.NewFossilsQueue(client, queueURL)
+		queueURL := QueueURL(client, exporterQueue)
+		return aws.NewEventExporter(client, queueURL)
 	default:
-		log.WithField("queueType", *queueType).Fatal("unknown queue type")
+		log.WithField("exporter", *exporter).Fatal("unknown exporter type")
 		return nil
 	}
-}
-
-// QueueURL retrieves the queue URL from its name.
-func QueueURL(client *sqs.SQS, queueName *string) *string {
-	r, err := client.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: queueName})
-	if err != nil {
-		log.WithField("error", err.Error()).Fatal("aws configuration is invalid")
-	}
-
-	return r.QueueUrl
 }
