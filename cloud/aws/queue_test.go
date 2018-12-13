@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -159,10 +160,17 @@ func createTestQueue(t *testing.T, client *sqs.SQS) *string {
 func cleanTestQueues(t *testing.T, client *sqs.SQS) {
 	prefix := testQueuePrefix
 	r, err := client.ListQueues(&sqs.ListQueuesInput{QueueNamePrefix: &prefix})
-	require.NoErrorf(t, err, "could not list test queues: you might need to manually delete test queues")
+	assert.NoErrorf(t, err, "could not list test queues: you might need to manually delete test queues")
 
 	for _, queueURL := range r.QueueUrls {
 		_, err = client.DeleteQueue(&sqs.DeleteQueueInput{QueueUrl: queueURL})
-		require.NoErrorf(t, err, "could not delete test queue (%s): you might need to manually delete it", *queueURL)
+		if err != nil {
+			assert.Truef(t,
+				strings.HasPrefix(err.Error(), sqs.ErrCodeQueueDoesNotExist),
+				"could not delete test queue (%s): %s",
+				*queueURL,
+				err.Error,
+			)
+		}
 	}
 }

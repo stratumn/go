@@ -17,6 +17,7 @@ package fossilizer
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/stratumn/go-chainscript"
 )
@@ -65,4 +66,20 @@ const (
 type Event struct {
 	EventType EventType
 	Data      interface{}
+}
+
+// Result converts the event data to a fossilizer.Result.
+func (e Event) Result() (*Result, error) {
+	b, err := json.Marshal(e.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	var result Result
+	err = json.Unmarshal(b, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
