@@ -99,6 +99,8 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 	}
 
 	res.Total = int64(addrInfo.Balance)
+	ctx, _ = tag.New(ctx, tag.Upsert(accountAddress, addr))
+	stats.Record(ctx, accountBalance.M(res.Total))
 
 	for _, TXRef := range addrInfo.TXRefs {
 		output := btc.Output{Index: TXRef.TXOutputN}
