@@ -29,6 +29,9 @@ var (
 	requestCount   *stats.Int64Measure
 	requestErr     *stats.Int64Measure
 	requestLatency *stats.Float64Measure
+
+	accountAddress tag.Key
+	accountBalance *stats.Int64Measure
 )
 
 func init() {
@@ -50,8 +53,17 @@ func init() {
 		stats.UnitMilliseconds,
 	)
 
+	accountBalance = stats.Int64(
+		"stratumn/core/blockchain/btc/account_balance",
+		"balance of the bitcoin addresses used",
+		stats.UnitDimensionless,
+	)
+
 	var err error
 	if requestType, err = tag.NewKey("stratumn/core/blockchain/btc/request_type"); err != nil {
+		log.Fatal(err)
+	}
+	if accountAddress, err = tag.NewKey("stratumn/core/blockchain/btc/address"); err != nil {
 		log.Fatal(err)
 	}
 
@@ -76,6 +88,13 @@ func init() {
 			Measure:     requestLatency,
 			Aggregation: monitoring.DefaultLatencyDistribution,
 			TagKeys:     []tag.Key{requestType},
+		},
+		&view.View{
+			Name:        "stratumn/core/blockchain/btc/account_balance",
+			Description: "balance of the bitcoin addresses used",
+			Measure:     accountBalance,
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{accountAddress},
 		})
 	if err != nil {
 		log.Fatal(err)
