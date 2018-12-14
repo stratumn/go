@@ -16,20 +16,17 @@ package aws
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 // NewSession creates a new session in the given AWS region.
-// You need valid credentials in the ~/.aws folder or in your environment
-// variables.
+// If you run locally, you need valid credentials in the ~/.aws folder or in
+// your environment variables.
+// If you run on an AWS EC2 instance of inside ECS, you just need to configure
+// an IAM role for your instance that has the necessary permissions and
+// credentials will be fetched automatically.
 func NewSession(region string) (*session.Session, error) {
-	cfg := aws.NewConfig().
-		WithRegion(region).
-		WithCredentials(credentials.NewChainCredentials([]credentials.Provider{
-			&credentials.EnvProvider{},
-			&credentials.SharedCredentialsProvider{},
-		}))
-
-	return session.NewSession(cfg)
+	return session.NewSession(
+		aws.NewConfig().WithRegion(region),
+	)
 }
