@@ -17,6 +17,7 @@ package monitoring
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
@@ -39,6 +40,7 @@ func SetSpanStatus(span *trace.Span, err error) {
 	if err != nil {
 		switch e := err.(type) {
 		case *types.Error:
+			log.Errorf("%v+", e)
 			span.AddAttributes(
 				trace.Int64Attribute("error code", int64(e.Code)),
 				trace.StringAttribute("component", e.Component),
@@ -50,6 +52,7 @@ func SetSpanStatus(span *trace.Span, err error) {
 				Message: fmt.Sprintf("%v+", e),
 			})
 		default:
+			log.Error(err)
 			span.SetStatus(trace.Status{
 				Code:    errorcode.Unknown,
 				Message: err.Error(),
