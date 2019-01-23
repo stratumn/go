@@ -17,6 +17,7 @@ package batchfossilizer_test
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"testing"
 	"time"
 
@@ -31,6 +32,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type FailingFossilizer struct{}
+
+func NewFailingFossilizer() fossilizer.Adapter {
+	return &FailingFossilizer{}
+}
+
+func (f FailingFossilizer) GetInfo(context.Context) (interface{}, error) {
+	return nil, errors.New("fatal")
+}
+
+func (f FailingFossilizer) AddFossilizerEventChan(chan *fossilizer.Event) {}
+
+func (f FailingFossilizer) Fossilize(context.Context, []byte, []byte) error {
+	return errors.New("fatal")
+}
 
 func batchProof(t *testing.T, e *chainscript.Evidence) *evidences.BatchProof {
 	var proof evidences.BatchProof
@@ -241,5 +258,36 @@ func TestFossilize(t *testing.T) {
 			require.NoError(t, err)
 			assert.InDelta(t, now, proof.Timestamp, 10)
 		}
+	})
+
+	t.Run("child fossilizer failure", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		f := NewFailingFossilizer()
+		q := dummyqueue.New()
+		batch := batchfossilizer.New(
+			ctx,
+			&batchfossilizer.Config{
+				Interval:  10 * time.Millisecond,
+				MaxLeaves: 10,
+			},
+			f,
+			q,
+		)
+
+		for i := byte(0); i < 3; i++ {
+			err := batch.Fossilize(ctx, []byte{i}, []byte{i + 10})
+			require.NoError(t, err)
+		}
+
+		assert.Equal(t, 3, q.PushCount())
+
+		<-time.After(25 * time.Millisecond)
+
+		// Fossils should have been put back in the queue.
+		assert.Len(t, q.Fossils(), 3)
+		assert.Equal(t, 6, q.PopCount())
+		assert.Equal(t, 9, q.PushCount())
 	})
 }
