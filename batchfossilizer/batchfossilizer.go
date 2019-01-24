@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/monitoring"
@@ -168,6 +169,25 @@ func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
 		err = a.foss.Fossilize(ctx, root, nil)
 		if err != nil {
 			monitoring.SetSpanStatus(span, err)
+
+			log.Warnf("Batch fossilization failed. Pushing %d pending fossils back to the queue.", len(fossils))
+
+			a.removePendingProofs(root)
+
+			// Some fossilizers rely on external APIs that can transiently fail
+			// (btcfossilizer for example).
+			// We want to keep the failed fossils in the queue and retry at the
+			// next batch.
+			for _, fossil := range fossils {
+				err := a.queue.Push(ctx, fossil)
+				if err != nil {
+					log.Errorf("Could not enqueue fossil. %s won't be fossilized, please investigate. %s",
+						hex.EncodeToString(fossil.Data),
+						err.Error(),
+					)
+				}
+			}
+
 			return
 		}
 
@@ -198,6 +218,16 @@ func (a *Fossilizer) addPendingProofs(fossils []*fossilizer.Fossil, root []byte,
 
 	key := hex.EncodeToString(root)
 	a.pendingProofs[key] = pendingProofs
+}
+
+// removePendingProofs removes an obsolete proof (for example if child
+// fossilizer failed) to prevent memory leaks.
+func (a *Fossilizer) removePendingProofs(root []byte) {
+	a.pendingProofsLock.Lock()
+	defer a.pendingProofsLock.Unlock()
+
+	key := hex.EncodeToString(root)
+	delete(a.pendingProofs, key)
 }
 
 func (a *Fossilizer) eventLoop(ctx context.Context, fChan chan *fossilizer.Event) {

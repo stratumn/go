@@ -25,6 +25,8 @@ import (
 type DummyQueue struct {
 	fossilsLock sync.RWMutex
 	fossils     []*fossilizer.Fossil
+	popCount    int
+	pushCount   int
 }
 
 // New creates a new dummy queue.
@@ -38,7 +40,17 @@ func (q *DummyQueue) Push(_ context.Context, f *fossilizer.Fossil) error {
 	defer q.fossilsLock.Unlock()
 
 	q.fossils = append(q.fossils, f)
+	q.pushCount++
+
 	return nil
+}
+
+// PushCount returns the number of fossils pushed.
+func (q *DummyQueue) PushCount() int {
+	q.fossilsLock.RLock()
+	defer q.fossilsLock.RUnlock()
+
+	return q.pushCount
 }
 
 // Pop fossils from the queue.
@@ -54,9 +66,18 @@ func (q *DummyQueue) Pop(_ context.Context, count int) ([]*fossilizer.Fossil, er
 
 		fossils = append(fossils, q.fossils[0])
 		q.fossils = q.fossils[1:]
+		q.popCount++
 	}
 
 	return fossils, nil
+}
+
+// PopCount returns the number of fossils popped.
+func (q *DummyQueue) PopCount() int {
+	q.fossilsLock.RLock()
+	defer q.fossilsLock.RUnlock()
+
+	return q.popCount
 }
 
 // Fossils returns all the fossils in the queue for testing purposes.
