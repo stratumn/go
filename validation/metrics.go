@@ -15,32 +15,21 @@
 package validation
 
 import (
-	log "github.com/sirupsen/logrus"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
-	linksCount *stats.Int64Measure
+	linksCount prometheus.Counter
 )
 
 func init() {
-	linksCount = stats.Int64(
-		"stratumn/core/validation/links_count",
-		"number of links validated",
-		stats.UnitDimensionless,
-	)
-
-	err := view.Register(
-		&view.View{
-			Name:        "stratumn/core/validation/links_count",
-			Description: "number of links validated",
-			Measure:     linksCount,
-			Aggregation: view.Count(),
+	linksCount = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "stratumn",
+			Subsystem: "validation",
+			Name:      "links_count",
+			Help:      "number of links validated",
 		},
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
