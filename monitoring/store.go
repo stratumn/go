@@ -17,16 +17,12 @@ package monitoring
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/stratumn/go-chainscript"
-	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 // StoreAdapter is a decorator for the store.Adapter interface.
@@ -43,11 +39,11 @@ func WrapStore(s store.Adapter, name string) store.Adapter {
 
 // GetInfo instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetInfo(ctx context.Context) (res interface{}, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name))
-	tracker := newRequestTracker(ctx, "GetInfo")
+	tracker := newStoreRequestTracker("GetInfo")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	res, err = a.s.GetInfo(ctx)
@@ -61,7 +57,7 @@ func (a *StoreAdapter) AddStoreEventChannel(c chan *store.Event) {
 
 // NewBatch instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/NewBatch", a.name))
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/NewBatch", a.name), SpanTypeAppRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 	}()
@@ -72,11 +68,11 @@ func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) 
 
 // AddEvidence instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) (err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/AddEvidence", a.name))
-	tracker := newRequestTracker(ctx, "AddEvidence")
+	tracker := newStoreRequestTracker("AddEvidence")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/AddEvidence", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	err = a.s.AddEvidence(ctx, linkHash, evidence)
@@ -85,11 +81,11 @@ func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.Lin
 
 // GetEvidences instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (e types.EvidenceSlice, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetEvidences", a.name))
-	tracker := newRequestTracker(ctx, "GetEvidences")
+	tracker := newStoreRequestTracker("GetEvidences")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetEvidences", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	e, err = a.s.GetEvidences(ctx, linkHash)
@@ -98,11 +94,11 @@ func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.Li
 
 // CreateLink instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (lh chainscript.LinkHash, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/CreateLink", a.name))
-	tracker := newRequestTracker(ctx, "CreateLink")
+	tracker := newStoreRequestTracker("CreateLink")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/CreateLink", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	lh, err = a.s.CreateLink(ctx, link)
@@ -111,11 +107,11 @@ func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (
 
 // GetSegment instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (s *chainscript.Segment, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetSegment", a.name))
-	tracker := newRequestTracker(ctx, "GetSegment")
+	tracker := newStoreRequestTracker("GetSegment")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetSegment", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	s, err = a.s.GetSegment(ctx, linkHash)
@@ -124,11 +120,11 @@ func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.Link
 
 // FindSegments instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss *types.PaginatedSegments, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name))
-	tracker := newRequestTracker(ctx, "FindSegments")
+	tracker := newStoreRequestTracker("FindSegments")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	ss, err = a.s.FindSegments(ctx, filter)
@@ -137,11 +133,11 @@ func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFi
 
 // GetMapIDs instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetMapIDs(ctx context.Context, filter *store.MapFilter) (mids []string, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetMapIDs", a.name))
-	tracker := newRequestTracker(ctx, "GetMapIDs")
+	tracker := newStoreRequestTracker("GetMapIDs")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetMapIDs", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	mids, err = a.s.GetMapIDs(ctx, filter)
@@ -163,11 +159,11 @@ func WrapKeyValueStore(s store.KeyValueStore, name string) store.KeyValueStore {
 
 // GetValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) GetValue(ctx context.Context, key []byte) (v []byte, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/GetValue", a.name))
-	tracker := newRequestTracker(ctx, "GetValue")
+	tracker := newStoreRequestTracker("GetValue")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetValue", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	v, err = a.s.GetValue(ctx, key)
@@ -176,11 +172,11 @@ func (a *KeyValueStoreAdapter) GetValue(ctx context.Context, key []byte) (v []by
 
 // SetValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) SetValue(ctx context.Context, key []byte, value []byte) (err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/SetValue", a.name))
-	tracker := newRequestTracker(ctx, "SetValue")
+	tracker := newStoreRequestTracker("SetValue")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/SetValue", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	err = a.s.SetValue(ctx, key, value)
@@ -189,46 +185,13 @@ func (a *KeyValueStoreAdapter) SetValue(ctx context.Context, key []byte, value [
 
 // DeleteValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) DeleteValue(ctx context.Context, key []byte) (v []byte, err error) {
-	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("%s/DeleteValue", a.name))
-	tracker := newRequestTracker(ctx, "DeleteValue")
+	tracker := newStoreRequestTracker("DeleteValue")
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/DeleteValue", a.name), SpanTypeAppRequest)
 	defer func() {
-		tracker.End(err)
 		SetSpanStatusAndEnd(span, err)
+		tracker.End(err)
 	}()
 
 	v, err = a.s.DeleteValue(ctx, key)
 	return
-}
-
-type requestTracker struct {
-	ctx   context.Context
-	start time.Time
-}
-
-func newRequestTracker(ctx context.Context, requestType string) *requestTracker {
-	ctx, _ = tag.New(ctx, tag.Insert(storeRequestType, requestType))
-
-	return &requestTracker{
-		ctx:   ctx,
-		start: time.Now(),
-	}
-}
-
-func (t *requestTracker) End(err error) {
-	if err != nil {
-		e, ok := err.(*types.Error)
-		if ok {
-			t.ctx, _ = tag.New(t.ctx,
-				tag.Upsert(ErrorCodeTag, errorcode.Text(e.Code)),
-				tag.Upsert(ErrorComponentTag, e.Component),
-			)
-		}
-
-		stats.Record(t.ctx, storeRequestErr.M(1))
-	}
-
-	stats.Record(t.ctx,
-		storeRequestCount.M(1),
-		storeRequestLatency.M(float64(time.Since(t.start))/float64(time.Millisecond)),
-	)
 }

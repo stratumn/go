@@ -15,13 +15,16 @@
 package monitoring
 
 import (
-	"fmt"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
+)
+
+// Span types.
+const (
+	SpanTypeAppRequest = "app.request"
 )
 
 // SetSpanStatusAndEnd sets the status of the span depending on the error
@@ -30,33 +33,26 @@ import (
 // defer func() {
 //     SetSpanStatusAndEnd(span, err)
 // }()
-func SetSpanStatusAndEnd(span *trace.Span, err error) {
+func SetSpanStatusAndEnd(span *apm.Span, err error) {
 	SetSpanStatus(span, err)
 	span.End()
 }
 
 // SetSpanStatus sets the status of the span depending on the error.
-func SetSpanStatus(span *trace.Span, err error) {
+func SetSpanStatus(span *apm.Span, err error) {
 	if err != nil {
 		switch e := err.(type) {
 		case *types.Error:
+			// We want to include a stack trace to make it easy to
+			// investigate, hence the format.
 			log.Errorf("%v+", e)
-			span.AddAttributes(
-				trace.Int64Attribute("error code", int64(e.Code)),
-				trace.StringAttribute("component", e.Component),
-			)
-			span.SetStatus(trace.Status{
-				Code: int32(e.Code),
-				// We want to include a stack trace to make it easy to
-				// investigate, hence the format.
-				Message: fmt.Sprintf("%v+", e),
-			})
+
+			span.Context.SetTag(ErrorLabel, e.Error())
+			span.Context.SetTag(ErrorCodeLabel, errorcode.Text(e.Code))
+			span.Context.SetTag(ErrorComponentLabel, e.Component)
 		default:
 			log.Error(err)
-			span.SetStatus(trace.Status{
-				Code:    errorcode.Unknown,
-				Message: err.Error(),
-			})
+			span.Context.SetTag(ErrorLabel, err.Error())
 		}
 	}
 }
