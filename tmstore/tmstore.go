@@ -19,6 +19,7 @@ package tmstore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmcommon "github.com/tendermint/tmlibs/common"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -92,7 +93,7 @@ func New(config *Config, tmClient client.Client) *TMStore {
 
 // StartWebsocket starts the websocket client and wait for New Block events.
 func (t *TMStore) StartWebsocket(ctx context.Context) (err error) {
-	ctx, span := trace.StartSpan(ctx, "tmstore/StartWebSocket")
+	span, ctx := apm.StartSpan(ctx, "tmstore/StartWebSocket", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -141,7 +142,7 @@ func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duratio
 
 // StopWebsocket stops the websocket client.
 func (t *TMStore) StopWebsocket(ctx context.Context) (err error) {
-	ctx, span := trace.StartSpan(ctx, "tmstore/StopWebSocket")
+	span, ctx := apm.StartSpan(ctx, "tmstore/StopWebSocket", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -163,24 +164,23 @@ func (t *TMStore) StopWebsocket(ctx context.Context) (err error) {
 }
 
 func (t *TMStore) notifyStoreChans(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "tmstore/notifyStoreChans")
+	span, ctx := apm.StartSpan(ctx, "tmstore/notifyStoreChans", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	var pendingEvents []*store.Event
 	response, err := t.sendQuery(ctx, tmpop.PendingEvents, nil)
 	if err != nil || response.Value == nil {
-		span.Annotate(nil, "No pending events in TMPoP")
 		log.Warn("Could not get pending events from TMPoP.")
 	}
 
 	err = json.Unmarshal(response.Value, &pendingEvents)
 	if err != nil {
-		span.Annotatef(nil, "TMPoP pending events could not be unmarshalled: %s", err.Error())
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		log.Warn("TMPoP pending events could not be unmarshalled.")
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
+		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
+		log.Warnf("TMPoP pending events could not be unmarshalled: %v+", err)
 	}
 
-	span.AddAttributes(trace.Int64Attribute("EventCount", int64(len(pendingEvents))))
+	span.Context.SetTag("event_count", fmt.Sprintf("%d", len(pendingEvents)))
 
 	for _, event := range pendingEvents {
 		for _, c := range t.storeEventChans {
@@ -349,41 +349,46 @@ func (t *TMStore) NewBatch(ctx context.Context) (store.Batch, error) {
 }
 
 func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
-	_, span := trace.StartSpan(ctx, "tmstore/broadcastTx")
+	span, _ := apm.StartSpan(ctx, "tmstore/broadcastTx", monitoring.SpanTypeOutgoingRequest)
 	defer span.End()
 
 	txBytes, err := json.Marshal(tx)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.InvalidArgument, Name, "json.Marshal")
+		err = types.WrapError(err, errorcode.InvalidArgument, Name, "json.Marshal")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	result, err := t.tmClient.BroadcastTxCommit(txBytes)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: err.Error()})
+		err = types.WrapError(err, errorcode.Unavailable, Name, "json.Marshal")
+		monitoring.SetSpanStatus(span, err)
 		return nil, types.WrapError(err, errorcode.Unavailable, Name, "json.Marshal")
 	}
 
 	if result.CheckTx.IsErr() {
 		if result.CheckTx.Code == tmpop.CodeTypeValidation {
-			span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: result.CheckTx.Log})
-			return nil, types.NewError(errorcode.InvalidArgument, store.Component, result.CheckTx.Log)
+			err = types.NewError(errorcode.InvalidArgument, store.Component, result.CheckTx.Log)
+			monitoring.SetSpanStatus(span, err)
+			return nil, err
 		}
 
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: result.CheckTx.Log})
-		return nil, types.NewError(errorcode.Unknown, Name, result.CheckTx.Log)
+		err = types.NewError(errorcode.Unknown, Name, result.CheckTx.Log)
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	if result.DeliverTx.IsErr() {
-		span.SetStatus(trace.Status{Code: errorcode.Unknown, Message: result.DeliverTx.Log})
-		return nil, types.NewError(errorcode.Unknown, Name, result.DeliverTx.Log)
+		err = types.NewError(errorcode.Unknown, Name, result.DeliverTx.Log)
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	return result, nil
 }
 
 func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) (res *abci.ResponseQuery, err error) {
-	_, span := trace.StartSpan(ctx, "tmstore/sendQuery")
+	span, _ := apm.StartSpan(ctx, "tmstore/sendQuery", monitoring.SpanTypeOutgoingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
