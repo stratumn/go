@@ -18,12 +18,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -31,60 +29,45 @@ const (
 	DefaultMetricsPort = 5090
 )
 
-var (
-	blockCount *stats.Int64Measure
+const (
+	txStatus = "tx_status"
+)
 
-	txCount    *stats.Int64Measure
-	txPerBlock *stats.Int64Measure
-	txStatus   tag.Key
+var (
+	blockCount prometheus.Counter
+	txCount    *prometheus.CounterVec
+	txPerBlock prometheus.Histogram
 )
 
 func init() {
-	blockCount = stats.Int64(
-		"stratumn/core/tmpop/block_count",
-		"number of blocks created",
-		stats.UnitDimensionless,
-	)
-
-	txCount = stats.Int64(
-		"stratumn/core/tmpop/tx_count",
-		"number of transactions received",
-		stats.UnitDimensionless,
-	)
-
-	txPerBlock = stats.Int64(
-		"stratumn/core/tmpop/tx_per_block",
-		"number of transactions per block",
-		stats.UnitDimensionless,
-	)
-
-	var err error
-	if txStatus, err = tag.NewKey("stratumn/core/tmpop/tx_status"); err != nil {
-		log.Fatal(err)
-	}
-
-	if err = view.Register(
-		&view.View{
-			Name:        "stratumn/core/tmpop/block_count",
-			Description: "number of blocks created",
-			Measure:     blockCount,
-			Aggregation: view.Count(),
+	blockCount = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "stratumn",
+			Subsystem: "tmpop",
+			Name:      "block_count",
+			Help:      "number of blocks created",
 		},
-		&view.View{
-			Name:        "stratumn/core/tmpop/tx_count",
-			Description: "number of transactions received",
-			Measure:     txCount,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{txStatus},
+	)
+
+	txCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "stratumn",
+			Subsystem: "tmpop",
+			Name:      "tx_count",
+			Help:      "number of transactions received",
 		},
-		&view.View{
-			Name:        "stratumn/core/tmpop/tx_per_block",
-			Description: "number of transactions per block",
-			Measure:     txPerBlock,
-			Aggregation: view.Distribution(1, 5, 10, 50, 100),
-		}); err != nil {
-		log.Fatal(err)
-	}
+		[]string{txStatus},
+	)
+
+	txPerBlock = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Namespace: "stratumn",
+			Subsystem: "tmpop",
+			Name:      "tx_per_block",
+			Help:      "number of transactions per block",
+			Buckets:   []float64{1, 5, 10, 50, 100},
+		},
+	)
 }
 
 // exposeMetrics configures metrics and traces exporters and
