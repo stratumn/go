@@ -27,7 +27,7 @@ import (
 func (s *scopedStore) GetValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
-	if err := s.stmts.GetValue.QueryRow(key).Scan(&data); err != nil {
+	if err := s.stmts.GetValue.QueryRowContext(ctx, key).Scan(&data); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -40,7 +40,7 @@ func (s *scopedStore) GetValue(ctx context.Context, key []byte) ([]byte, error) 
 
 // SetValue implements github.com/stratumn/go-core/store.KeyValueStore.SetValue.
 func (s *scopedStore) SetValue(ctx context.Context, key []byte, value []byte) error {
-	_, err := s.stmts.SaveValue.Exec(key, value)
+	_, err := s.stmts.SaveValue.ExecContext(ctx, key, value)
 	if err != nil {
 		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not set value")
 	}
@@ -52,7 +52,7 @@ func (s *scopedStore) SetValue(ctx context.Context, key []byte, value []byte) er
 func (s *scopedStore) DeleteValue(ctx context.Context, key []byte) ([]byte, error) {
 	var data []byte
 
-	if err := s.stmts.DeleteValue.QueryRow(key).Scan(&data); err != nil {
+	if err := s.stmts.DeleteValue.QueryRowContext(ctx, key).Scan(&data); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

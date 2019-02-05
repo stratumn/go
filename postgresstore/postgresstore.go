@@ -26,6 +26,11 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
+
+	"go.elastic.co/apm/module/apmsql"
+
+	// PQ drivers should be loaded for automatic instrumentation.
+	_ "go.elastic.co/apm/module/apmsql/pq"
 )
 
 const (
@@ -88,7 +93,7 @@ type Store struct {
 
 // New creates an instance of a Store.
 func New(config *Config) (*Store, error) {
-	db, err := sql.Open("postgres", config.URL)
+	db, err := apmsql.Open("postgres", config.URL)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not create postgresstore")
 	}

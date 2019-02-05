@@ -15,6 +15,7 @@
 package postgresstore
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -217,7 +218,7 @@ type SQLPreparer interface {
 
 // SQLQuerier executes queries.
 type SQLQuerier interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }
 
 // SQLPreparerQuerier prepares statements and executes queries.
@@ -244,7 +245,7 @@ type stmts struct {
 	GetEvidences *sql.Stmt
 
 	// DB.Query or Tx.Query depending on if we are in batch.
-	query func(query string, args ...interface{}) (*sql.Rows, error)
+	query func(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
 }
 
 func newStmts(db SQLPreparerQuerier) (*stmts, error) {
@@ -280,13 +281,13 @@ func newStmts(db SQLPreparerQuerier) (*stmts, error) {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not prepare statements")
 	}
 
-	s.query = db.Query
+	s.query = db.QueryContext
 
 	return &s, nil
 }
 
 // GetMapIDsWithFilters retrieves maps ids from the store given some filters.
-func (s *stmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, error) {
+func (s *stmts) GetMapIDsWithFilters(ctx context.Context, filter *store.MapFilter) (*sql.Rows, error) {
 	sqlHead := `
 		SELECT l.map_id FROM store.links l
 	`
@@ -328,7 +329,7 @@ func (s *stmts) GetMapIDsWithFilters(filter *store.MapFilter) (*sql.Rows, error)
 
 	query := sqlHead + sqlBody + sqlTail
 
-	rows, err := s.query(query, values...)
+	rows, err := s.query(ctx, query, values...)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not get map ids")
 	}
@@ -344,7 +345,7 @@ func getOrderingWay(reverse bool) string {
 }
 
 // FindSegments formats a read query and retrieves segments according to the filter.
-func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows, error) {
+func (s *stmts) FindSegmentsWithFilters(ctx context.Context, filter *store.SegmentFilter) (*sql.Rows, error) {
 	// Method to count distinct over: https://www.sqlservercentral.com/Forums/FindPost1824788.aspx
 	sqlTotalCount := `DENSE_RANK() OVER (ORDER BY l.link_hash ASC) +
 	DENSE_RANK() OVER (ORDER BY l.link_hash DESC) - 1 AS total_count
@@ -431,7 +432,7 @@ func (s *stmts) FindSegmentsWithFilters(filter *store.SegmentFilter) (*sql.Rows,
 
 	query := sqlHead + sqlBody + sqlTail
 
-	rows, err := s.query(query, values...)
+	rows, err := s.query(ctx, query, values...)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not find segments")
 	}

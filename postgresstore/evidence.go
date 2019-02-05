@@ -30,7 +30,7 @@ func (s *scopedStore) AddEvidence(ctx context.Context, linkHash chainscript.Link
 		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not marshal evidence")
 	}
 
-	_, err = s.stmts.AddEvidence.Exec(linkHash, evidence.Provider, data)
+	_, err = s.stmts.AddEvidence.ExecContext(ctx, linkHash, evidence.Provider, data)
 	if err != nil {
 		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not add evidence")
 	}
@@ -42,7 +42,7 @@ func (s *scopedStore) AddEvidence(ctx context.Context, linkHash chainscript.Link
 func (s *scopedStore) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (types.EvidenceSlice, error) {
 	var evidences types.EvidenceSlice
 
-	rows, err := s.stmts.GetEvidences.Query(linkHash)
+	rows, err := s.stmts.GetEvidences.QueryContext(ctx, linkHash)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get evidences")
 	}
