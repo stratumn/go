@@ -20,6 +20,7 @@ package batchfossilizer
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"sync"
 	"time"
 
@@ -29,7 +30,7 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/merkle"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -136,12 +137,14 @@ func (a *Fossilizer) fossilizeLoop(ctx context.Context) {
 }
 
 func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "batchfossilizer/fossilizeBatch")
+	span, ctx := apm.StartSpan(ctx, "batchfossilizer/fossilizeBatch", monitoring.SpanTypeAppProcessing)
 	defer span.End()
 
 	batchSize := a.config.GetMaxLeaves()
 
 	for i := 0; i < a.config.GetMaxSimBatches(); i++ {
+		batchCount.Inc()
+
 		fossils, err := a.queue.Pop(ctx, batchSize)
 		if err != nil {
 			monitoring.SetSpanStatus(span, err)
@@ -246,7 +249,7 @@ func (a *Fossilizer) eventLoop(ctx context.Context, fChan chan *fossilizer.Event
 // individual fossilization events for each fossil included in the merkle tree.
 // It then sends these events to all registered listeners.
 func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
-	_, span := trace.StartSpan(ctx, "batchfossilizer/eventBatch")
+	span, _ := apm.StartSpan(ctx, "batchfossilizer/eventBatch", monitoring.SpanTypeAppProcessing)
 	defer span.End()
 
 	if e.EventType != fossilizer.DidFossilize {
@@ -261,7 +264,7 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 
 	pendingProofs, ok := a.pendingProofs[key]
 	if !ok {
-		span.Annotatef(nil, "pending proofs not found for root %s", key)
+		monitoring.SetSpanStatus(span, fmt.Errorf("pending proofs not found for root %s", key))
 		return
 	}
 
@@ -274,14 +277,13 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 		p.proof.Proof = r.Evidence.Proof
 		ev, err := p.proof.Evidence(Name)
 		if err != nil {
-			span.Annotate(
-				[]trace.Attribute{trace.StringAttribute("error", err.Error())},
-				"could not create evidence",
-			)
+			log.WithError(err).Warnf("could not create evidence")
 			continue
 		}
 
 		for _, l := range a.eventChans {
+			fossilizedLinksCount.Inc()
+
 			go func(l chan *fossilizer.Event) {
 				l <- &fossilizer.Event{
 					EventType: fossilizer.DidFossilize,
