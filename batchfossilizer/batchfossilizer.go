@@ -137,7 +137,7 @@ func (a *Fossilizer) fossilizeLoop(ctx context.Context) {
 }
 
 func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
-	span, ctx := apm.StartSpan(ctx, "batchfossilizer/fossilizeBatch", monitoring.SpanTypeAppProcessing)
+	span, ctx := apm.StartSpan(ctx, "batchfossilizer/fossilizeBatch", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	batchSize := a.config.GetMaxLeaves()
@@ -249,7 +249,7 @@ func (a *Fossilizer) eventLoop(ctx context.Context, fChan chan *fossilizer.Event
 // individual fossilization events for each fossil included in the merkle tree.
 // It then sends these events to all registered listeners.
 func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
-	span, _ := apm.StartSpan(ctx, "batchfossilizer/eventBatch", monitoring.SpanTypeAppProcessing)
+	span, _ := apm.StartSpan(ctx, "batchfossilizer/eventBatch", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	if e.EventType != fossilizer.DidFossilize {
