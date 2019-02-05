@@ -40,7 +40,7 @@ func WrapStore(s store.Adapter, name string) store.Adapter {
 // GetInfo instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetInfo(ctx context.Context) (res interface{}, err error) {
 	tracker := newStoreRequestTracker("GetInfo")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -57,7 +57,7 @@ func (a *StoreAdapter) AddStoreEventChannel(c chan *store.Event) {
 
 // NewBatch instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) {
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/NewBatch", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/NewBatch", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 	}()
@@ -69,7 +69,7 @@ func (a *StoreAdapter) NewBatch(ctx context.Context) (b store.Batch, err error) 
 // AddEvidence instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) (err error) {
 	tracker := newStoreRequestTracker("AddEvidence")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/AddEvidence", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/AddEvidence", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -82,7 +82,7 @@ func (a *StoreAdapter) AddEvidence(ctx context.Context, linkHash chainscript.Lin
 // GetEvidences instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.LinkHash) (e types.EvidenceSlice, err error) {
 	tracker := newStoreRequestTracker("GetEvidences")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetEvidences", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetEvidences", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -95,7 +95,7 @@ func (a *StoreAdapter) GetEvidences(ctx context.Context, linkHash chainscript.Li
 // CreateLink instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (lh chainscript.LinkHash, err error) {
 	tracker := newStoreRequestTracker("CreateLink")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/CreateLink", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/CreateLink", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -108,7 +108,7 @@ func (a *StoreAdapter) CreateLink(ctx context.Context, link *chainscript.Link) (
 // GetSegment instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (s *chainscript.Segment, err error) {
 	tracker := newStoreRequestTracker("GetSegment")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetSegment", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetSegment", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -121,7 +121,7 @@ func (a *StoreAdapter) GetSegment(ctx context.Context, linkHash chainscript.Link
 // FindSegments instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFilter) (ss *types.PaginatedSegments, err error) {
 	tracker := newStoreRequestTracker("FindSegments")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/FindSegments", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -134,7 +134,7 @@ func (a *StoreAdapter) FindSegments(ctx context.Context, filter *store.SegmentFi
 // GetMapIDs instruments the call and delegates to the underlying store.
 func (a *StoreAdapter) GetMapIDs(ctx context.Context, filter *store.MapFilter) (mids []string, err error) {
 	tracker := newStoreRequestTracker("GetMapIDs")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetMapIDs", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetMapIDs", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -160,7 +160,7 @@ func WrapKeyValueStore(s store.KeyValueStore, name string) store.KeyValueStore {
 // GetValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) GetValue(ctx context.Context, key []byte) (v []byte, err error) {
 	tracker := newStoreRequestTracker("GetValue")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetValue", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetValue", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -173,7 +173,7 @@ func (a *KeyValueStoreAdapter) GetValue(ctx context.Context, key []byte) (v []by
 // SetValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) SetValue(ctx context.Context, key []byte, value []byte) (err error) {
 	tracker := newStoreRequestTracker("SetValue")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/SetValue", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/SetValue", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)
@@ -186,7 +186,7 @@ func (a *KeyValueStoreAdapter) SetValue(ctx context.Context, key []byte, value [
 // DeleteValue instruments the call and delegates to the underlying store.
 func (a *KeyValueStoreAdapter) DeleteValue(ctx context.Context, key []byte) (v []byte, err error) {
 	tracker := newStoreRequestTracker("DeleteValue")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/DeleteValue", a.name), SpanTypeAppRequest)
+	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/DeleteValue", a.name), SpanTypeIncomingRequest)
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)

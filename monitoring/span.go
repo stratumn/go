@@ -24,8 +24,9 @@ import (
 
 // Span types.
 const (
-	SpanTypeAppRequest    = "app.request"
-	SpanTypeAppProcessing = "app.processing"
+	SpanTypeIncomingRequest = "app.request.incoming"
+	SpanTypeOutgoingRequest = "app.request.outgoing"
+	SpanTypeProcessing      = "app.processing"
 )
 
 // SetSpanStatusAndEnd sets the status of the span depending on the error
