@@ -19,13 +19,11 @@ import (
 	"crypto/sha256"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -82,8 +80,7 @@ func (v *ProcessStepValidator) ShouldValidate(link *chainscript.Link) bool {
 // Validate that the process and step match the configured values.
 func (v *ProcessStepValidator) Validate(ctx context.Context, _ store.SegmentReader, link *chainscript.Link) error {
 	if !v.ShouldValidate(link) {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, StepValidatorName))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: StepValidatorName}).Inc()
 		return types.WrapError(ErrInvalidProcessOrStep, errorcode.InvalidArgument, StepValidatorName, "step validation failed")
 	}
 

@@ -19,14 +19,12 @@ import (
 	"crypto/sha256"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/xeipuuv/gojsonschema"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -78,14 +76,12 @@ func (sv SchemaValidator) Validate(ctx context.Context, _ store.SegmentReader, l
 	linkData := gojsonschema.NewBytesLoader(link.Data)
 	result, err := sv.schema.Validate(linkData)
 	if err != nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, SchemaValidatorName))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: SchemaValidatorName}).Inc()
 		return types.WrapError(err, errorcode.InvalidArgument, SchemaValidatorName, "schema validation failed")
 	}
 
 	if !result.Valid() {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, SchemaValidatorName))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: SchemaValidatorName}).Inc()
 		return types.WrapErrorf(ErrInvalidLinkSchema, errorcode.InvalidArgument, SchemaValidatorName, "schema validation failed: %v", result.Errors())
 	}
 

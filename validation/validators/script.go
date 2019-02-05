@@ -24,13 +24,11 @@ import (
 	"plugin"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -115,8 +113,7 @@ func (sv *ScriptValidator) ShouldValidate(link *chainscript.Link) bool {
 func (sv *ScriptValidator) Validate(ctx context.Context, storeReader store.SegmentReader, link *chainscript.Link) error {
 	err := sv.script(ctx, storeReader, &types.Link{Link: link})
 	if err != nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, ScriptValidatorName))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: ScriptValidatorName}).Inc()
 		return types.WrapError(err, errorcode.InvalidArgument, ScriptValidatorName, "script validation failed")
 	}
 

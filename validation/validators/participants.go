@@ -22,13 +22,11 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -102,8 +100,7 @@ func (v *ParticipantsValidator) Validate(ctx context.Context, r store.SegmentRea
 	}
 
 	if err != nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, ParticipantsValidatorName))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: ParticipantsValidatorName}).Inc()
 	}
 
 	return err
