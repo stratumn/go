@@ -16,11 +16,12 @@ package blockcypher
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/stratumn/go-core/monitoring"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 var (
@@ -29,7 +30,7 @@ var (
 
 // RetryWithBackOff will retry the given call with an exponential backoff.
 func RetryWithBackOff(ctx context.Context, call func() error) (err error) {
-	_, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/RetryWithBackOff")
+	span, _ := apm.StartSpan(ctx, "blockchain/btc/blockcypher/RetryWithBackOff", monitoring.SpanTypeOutgoingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -42,7 +43,7 @@ func RetryWithBackOff(ctx context.Context, call func() error) (err error) {
 			return
 		}
 
-		span.AddAttributes(trace.Int64Attribute("retry count", int64(i+1)))
+		span.Context.SetTag("retry_count", fmt.Sprintf("%d", i+1))
 		<-time.After(waitRetryBase * time.Duration(2^i))
 	}
 

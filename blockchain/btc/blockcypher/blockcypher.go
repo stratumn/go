@@ -23,14 +23,13 @@ import (
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -68,18 +67,18 @@ func New(c *Config) *Client {
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
-	ctx, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent")
-	ctx, _ = tag.New(ctx, tag.Insert(requestType, "FindUnspent"))
+	span, ctx := apm.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent", monitoring.SpanTypeOutgoingRequest)
 	start := time.Now()
 	defer func() {
 		if err != nil {
-			stats.Record(ctx, requestErr.M(1))
+			requestErr.With(prometheus.Labels{requestType: "FindUnspent"}).Inc()
 		}
 
-		stats.Record(ctx,
-			requestCount.M(1),
-			requestLatency.M(float64(time.Since(start))/float64(time.Millisecond)),
+		requestCount.With(prometheus.Labels{requestType: "FindUnspent"}).Inc()
+		requestLatency.With(prometheus.Labels{requestType: "FindUnspent"}).Observe(
+			float64(time.Since(start)) / float64(time.Millisecond),
 		)
+
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
 
@@ -99,8 +98,7 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 	}
 
 	res.Total = int64(addrInfo.Balance)
-	ctx, _ = tag.New(ctx, tag.Upsert(accountAddress, addr))
-	stats.Record(ctx, accountBalance.M(res.Total))
+	accountBalance.With(prometheus.Labels{accountAddress: addr}).Set(float64(res.Total))
 
 	for _, TXRef := range addrInfo.TXRefs {
 		output := btc.Output{Index: TXRef.TXOutputN}
@@ -136,8 +134,7 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 // Broadcast implements
 // github.com/stratumn/go-core/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(ctx context.Context, raw []byte) error {
-	ctx, span := trace.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast")
-	ctx, _ = tag.New(ctx, tag.Insert(requestType, "Broadcast"))
+	span, ctx := apm.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast", monitoring.SpanTypeOutgoingRequest)
 	defer span.End()
 
 	start := time.Now()
@@ -146,13 +143,14 @@ func (c *Client) Broadcast(ctx context.Context, raw []byte) error {
 		return err
 	})
 	if err != nil {
-		stats.Record(ctx, requestErr.M(1))
+		requestErr.With(prometheus.Labels{requestType: "Broadcast"}).Inc()
 		monitoring.SetSpanStatus(span, err)
 	}
 
-	stats.Record(ctx,
-		requestCount.M(1),
-		requestLatency.M(float64(time.Since(start))/float64(time.Millisecond)),
+	requestCount.With(prometheus.Labels{requestType: "Broadcast"}).Inc()
+	requestLatency.With(prometheus.Labels{requestType: "Broadcast"}).Observe(
+		float64(time.Since(start)) / float64(time.Millisecond),
 	)
+
 	return err
 }
