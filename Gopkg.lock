@@ -68,6 +68,14 @@
   version = "v0.4.11"
 
 [[projects]]
+  digest = "1:5680f8c40e48f07cb77aece3165a866aaf8276305258b3b70db8ec7ad6ddb78d"
+  name = "github.com/armon/go-radix"
+  packages = ["."]
+  pruneopts = ""
+  revision = "1a2de0c21c94309923825da3df33a4381872c795"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:e7bc25f207f70bb7e2a1b88c726bffa8eb4256ea17e5c8ab6e88f9b3c8f43a6f"
   name = "github.com/aws/aws-sdk-go"
   packages = [
@@ -210,6 +218,30 @@
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
 
 [[projects]]
+  branch = "master"
+  digest = "1:10808a231991506e33d92579224ad81e649bc0b2874d99e0c8be8e234a52c3ab"
+  name = "github.com/elastic/go-sysinfo"
+  packages = [
+    ".",
+    "internal/registry",
+    "providers/darwin",
+    "providers/linux",
+    "providers/shared",
+    "providers/windows",
+    "types",
+  ]
+  pruneopts = ""
+  revision = "59ef8c0eae46c0929e3b219ac86368d4b5934f91"
+
+[[projects]]
+  branch = "master"
+  digest = "1:63509fc7f9aac866d56904b62131b2d1e71291d36513e072c560c3deaad704a0"
+  name = "github.com/elastic/go-windows"
+  packages = ["."]
+  pruneopts = ""
+  revision = "bb1581babc04d5cb29a2bfa7a9ac6781c730c8dd"
+
+[[projects]]
   digest = "1:eb53021a8aa3f599d29c7102e65026242bdedce998a54837dc67f14b6a97c5fd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -340,6 +372,14 @@
   packages = ["."]
   pruneopts = ""
   revision = "c42d9e0ca023e2198120196f842701bb4c55d7b9"
+
+[[projects]]
+  branch = "master"
+  digest = "1:521a4970efd87aee222f294b7f0c281266fd4325a3e5c31bda725dff082d120a"
+  name = "github.com/joeshaw/multierror"
+  packages = ["."]
+  pruneopts = ""
+  revision = "69b34d4ec901851247ae7e77d33909caf9df99ed"
 
 [[projects]]
   digest = "1:deeb6536ebbcb66ab11213ecfaac9daadfcd004dd057446a4980ffd6c15c36e2"
@@ -509,6 +549,20 @@
   packages = ["."]
   pruneopts = ""
   revision = "3113b8401b8a98917cde58f8bbd42a1b1c03b1fd"
+
+[[projects]]
+  digest = "1:4b73a0659a08dd32fb042bfee9e62f4481bddf18cfc4dbff7dc68084e6ea4460"
+  name = "github.com/santhosh-tekuri/jsonschema"
+  packages = [
+    ".",
+    "decoders",
+    "formats",
+    "loader",
+    "mediatypes",
+  ]
+  pruneopts = ""
+  revision = "534765aa6277d702a0aaf99c986492dda697d48f"
+  version = "v1.2.4"
 
 [[projects]]
   digest = "1:9d57e200ef5ccc4217fe0a34287308bac652435e7c6513f6263e0493d2245c56"
@@ -712,6 +766,37 @@
   version = "v1.0"
 
 [[projects]]
+  digest = "1:a98315339728e075197d04be6a57a46b141aa382db3728392f0771e9a54cf77b"
+  name = "go.elastic.co/apm"
+  packages = [
+    ".",
+    "internal/apmconfig",
+    "internal/apmcontext",
+    "internal/apmhostutil",
+    "internal/apmhttputil",
+    "internal/apmlog",
+    "internal/apmschema",
+    "internal/apmstrings",
+    "internal/iochan",
+    "internal/ringbuffer",
+    "internal/wildcard",
+    "model",
+    "stacktrace",
+    "transport",
+  ]
+  pruneopts = ""
+  revision = "cc1e77d6cd8552403fc3f91464308b1d3ceebab4"
+  version = "v1.2.0"
+
+[[projects]]
+  digest = "1:e05c654acb77a3d7c00aecaf64fdb66310f5f063f896a0d749be8a8d1fb168df"
+  name = "go.elastic.co/fastjson"
+  packages = ["."]
+  pruneopts = ""
+  revision = "676cec79bd027a8a4618de0991f27cfe632978f1"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:8c8ec859c77fccd10a347b7219b597c4c21c448949e8bdf3fc3e6f4c78f952b4"
   name = "go.opencensus.io"
   packages = [
@@ -807,6 +892,7 @@
   packages = [
     "unix",
     "windows",
+    "windows/registry",
   ]
   pruneopts = ""
   revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
@@ -955,6 +1041,14 @@
   revision = "64076e7cb29082288c24da773249419b82b20050"
   version = "v4.1.0"
 
+[[projects]]
+  branch = "master"
+  digest = "1:e43acd1190dde7223727f1f8aeac537156d33bf87776d5637e672e1c6b354be4"
+  name = "howett.net/plist"
+  packages = ["."]
+  pruneopts = ""
+  revision = "591f970eefbbeb04d7b37f334a0c4c3256e32876"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1009,6 +1103,7 @@
     "github.com/tendermint/tmlibs/db",
     "github.com/tendermint/tmlibs/log",
     "github.com/xeipuuv/gojsonschema",
+    "go.elastic.co/apm",
     "go.opencensus.io/exporter/jaeger",
     "go.opencensus.io/exporter/prometheus",
     "go.opencensus.io/plugin/ochttp",
