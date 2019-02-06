@@ -17,6 +17,7 @@ package bufferedbatch
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 const (
@@ -32,7 +33,7 @@ var (
 func init() {
 	batchCount = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "bufferedbatch",
 			Name:      "batch_count",
 			Help:      "number of batches created",
@@ -41,7 +42,7 @@ func init() {
 
 	linksPerBatch = promauto.NewHistogram(
 		prometheus.HistogramOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "bufferedbatch",
 			Name:      "links_per_batch",
 			Help:      "number of links per batch",
@@ -51,7 +52,7 @@ func init() {
 
 	writeCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "bufferedbatch",
 			Name:      "write_count",
 			Help:      "number of batch writes",

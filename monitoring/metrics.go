@@ -26,6 +26,7 @@ var (
 
 // Metrics and labels available to all packages.
 const (
+	Stratumn            = "stratumn"
 	ErrorLabel          = "error"
 	ErrorCodeLabel      = "error_code"
 	ErrorComponentLabel = "error_component"
@@ -53,7 +54,7 @@ var (
 func init() {
 	storeRequestCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: Stratumn,
 			Subsystem: "store",
 			Name:      "request_count",
 			Help:      "number of requests to the store",
@@ -63,7 +64,7 @@ func init() {
 
 	storeRequestLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Namespace: "stratumn",
+			Namespace: Stratumn,
 			Subsystem: "store",
 			Name:      "request_latency_ms",
 			Help:      "latency of store requests",
@@ -74,7 +75,7 @@ func init() {
 
 	storeRequestErr = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: Stratumn,
 			Subsystem: "store",
 			Name:      "request_error",
 			Help:      "number of fossilizer request errors",
@@ -84,7 +85,7 @@ func init() {
 
 	fossilizerRequestCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: Stratumn,
 			Subsystem: "fossilizer",
 			Name:      "request_count",
 			Help:      "number of requests to the fossilizer",
@@ -94,7 +95,7 @@ func init() {
 
 	fossilizerRequestLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Namespace: "stratumn",
+			Namespace: Stratumn,
 			Subsystem: "fossilizer",
 			Name:      "request_latency_ms",
 			Help:      "latency of fossilizer requests",
@@ -105,7 +106,7 @@ func init() {
 
 	fossilizerRequestErr = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: Stratumn,
 			Subsystem: "fossilizer",
 			Name:      "request_error",
 			Help:      "number of fossilizer request errors",

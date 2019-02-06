@@ -17,6 +17,7 @@ package batchfossilizer
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 var (
@@ -27,7 +28,7 @@ var (
 func init() {
 	batchCount = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "batchfossilizer",
 			Name:      "batch_count",
 			Help:      "number of batches sent",
@@ -36,7 +37,7 @@ func init() {
 
 	fossilizedLinksCount = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "batchfossilizer",
 			Name:      "fossilized_links_count",
 			Help:      "number of links fossilized",

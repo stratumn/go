@@ -42,7 +42,7 @@ var (
 func init() {
 	blockCount = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "tmpop",
 			Name:      "block_count",
 			Help:      "number of blocks created",
@@ -51,7 +51,7 @@ func init() {
 
 	txCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "tmpop",
 			Name:      "tx_count",
 			Help:      "number of transactions received",
@@ -61,7 +61,7 @@ func init() {
 
 	txPerBlock = promauto.NewHistogram(
 		prometheus.HistogramOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "tmpop",
 			Name:      "tx_per_block",
 			Help:      "number of transactions per block",

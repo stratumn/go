@@ -38,7 +38,7 @@ var (
 func init() {
 	requestCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "btc",
 			Name:      "request_count",
 			Help:      "number of requests to the bitcoin blockchain",
@@ -48,7 +48,7 @@ func init() {
 
 	requestErr = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "btc",
 			Name:      "request_error",
 			Help:      "number of request errors",
@@ -58,7 +58,7 @@ func init() {
 
 	requestLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "btc",
 			Name:      "request_latency_ms",
 			Help:      "latency of requests to the bitcoin blockchain",
@@ -69,7 +69,7 @@ func init() {
 
 	accountBalance = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "btc",
 			Name:      "account_balance_satoshi",
 			Help:      "balance of the bitcoin addresses used",

@@ -17,6 +17,7 @@ package validators
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 const (
@@ -30,7 +31,7 @@ var (
 func init() {
 	linksErr = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "validators",
 			Name:      "links_error",
 			Help:      "number of invalid links",

@@ -17,6 +17,7 @@ package validation
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 var (
@@ -26,7 +27,7 @@ var (
 func init() {
 	linksCount = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: "stratumn",
+			Namespace: monitoring.Stratumn,
 			Subsystem: "validation",
 			Name:      "links_count",
 			Help:      "number of links validated",
