@@ -89,10 +89,10 @@ func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.
 	defer span.End()
 
 	if err := link.Validate(ctx); err != nil {
+		err = types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")
 		monitoring.LogWithTxFields(ctx).Errorf("%v+", err)
-		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
-		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
-		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {

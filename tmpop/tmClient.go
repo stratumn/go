@@ -68,9 +68,9 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 
 	tmBlock, err := c.tmClient.Block(&height)
 	if err != nil {
-		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.Unavailable))
-		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
-		return nil, types.WrapError(err, errorcode.Unavailable, Name, "could not get block from Tendermint Core")
+		err = types.WrapError(err, errorcode.Unavailable, Name, "could not get block from Tendermint Core")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	// The votes in block N are voting on block N-1.
@@ -82,9 +82,9 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 	}
 	validators, err := c.tmClient.Validators(&prevHeight)
 	if err != nil {
-		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.Unavailable))
-		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
-		return nil, types.WrapError(err, errorcode.Unavailable, Name, "could not get validators from Tendermint Core")
+		err = types.WrapError(err, errorcode.Unavailable, Name, "could not get validators from Tendermint Core")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	block := &Block{
