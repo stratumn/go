@@ -18,7 +18,7 @@ import (
 	"flag"
 	"os"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/util"
 )
 
@@ -34,34 +34,37 @@ var (
 func Initialize(config *Config, create, drop bool) *Store {
 	a, err := New(config)
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to create RethinkDB store")
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to create RethinkDB store")
 	}
 
 	if create {
 		if err := a.Create(); err != nil {
-			log.Fatalf("Fatal: %s", err)
+			monitoring.LogEntry().Fatalf("Fatal: %s", err)
 		}
-		log.WithField("error", err).Fatal("Failed to create RethinkDB tables and indexes")
+
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to create RethinkDB tables and indexes")
 		os.Exit(0)
 	}
 
 	if drop {
 		if err := a.Drop(); err != nil {
-			log.WithField("error", err).Fatal("Failed to drop RethinkDB tables and indexes")
+			monitoring.LogEntry().WithField("error", err).Fatal("Failed to drop RethinkDB tables and indexes")
 		}
-		log.Info("Dropped tables and indexes")
+
+		monitoring.LogEntry().Info("Dropped tables and indexes")
 		os.Exit(0)
 	}
 
 	exists, err := a.Exists()
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to check RethinkDB tables and indexes")
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to check RethinkDB tables and indexes")
 	}
 	if !exists {
 		if err = a.Create(); err != nil {
-			log.WithField("error", err).Fatal("Failed to create RethinkDB tables and indexes")
+			monitoring.LogEntry().WithField("error", err).Fatal("Failed to create RethinkDB tables and indexes")
 		}
-		log.Info("Created tables and indexes")
+
+		monitoring.LogEntry().Info("Created tables and indexes")
 	}
 
 	return a

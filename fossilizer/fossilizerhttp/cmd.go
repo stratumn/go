@@ -21,8 +21,6 @@ import (
 	"runtime"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/jsonhttp"
 	"github.com/stratumn/go-core/jsonws"
@@ -61,27 +59,28 @@ func Run(
 	bufConnConfig *jsonws.BufferedConnConfig,
 	shutdownTimeout time.Duration,
 ) {
-	log.Info("Copyright (c) 2017 Stratumn SAS")
-	log.Info("Apache License 2.0")
-	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	monitoring.LogEntry().Info("Copyright (c) 2017 Stratumn SAS")
+	monitoring.LogEntry().Info("Apache License 2.0")
+	monitoring.LogEntry().Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	h := New(a, config, httpConfig, basicConfig, bufConnConfig)
 	if err := h.exposeMetrics(monitoringConfig); err != nil {
-		log.Fatal(err)
+		monitoring.LogEntry().Fatal(err)
 	}
 
 	go func() {
 		<-ctx.Done()
-		log.Info("Cleaning up")
+		monitoring.LogEntry().Info("Cleaning up")
 		if err := h.Shutdown(ctx); err != nil {
-			log.WithField("error", err).Fatal("Failed to shutdown server")
+			monitoring.LogEntry().WithField("error", err).Fatal("Failed to shutdown server")
 		}
-		log.Info("Stopped")
+
+		monitoring.LogEntry().Info("Stopped")
 	}()
 
-	log.WithField("http", httpConfig.Address).Info("Listening")
+	monitoring.LogEntry().WithField("http", httpConfig.Address).Info("Listening")
 	if err := h.ListenAndServe(); err != http.ErrServerClosed {
-		log.WithField("error", err).Fatal("Server stopped")
+		monitoring.LogEntry().WithField("error", err).Fatal("Server stopped")
 	}
 }
 

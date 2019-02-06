@@ -19,7 +19,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/util"
 )
@@ -40,7 +40,7 @@ var (
 func Initialize(config *Config, create, drop, uniqueMapEntry bool) *Store {
 	a, err := New(config)
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to create PostgreSQL store")
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to create PostgreSQL store")
 	}
 
 	if drop {
@@ -60,7 +60,7 @@ func Initialize(config *Config, create, drop, uniqueMapEntry bool) *Store {
 	if uniqueMapEntry {
 		err = store.AdapterConfig(a).EnforceUniqueMapEntry()
 		if err != nil {
-			log.WithField("uniqueMapEntry", err.Error()).Fatal("Unable to configure unique map entry.")
+			monitoring.LogEntry().WithField("uniqueMapEntry", err.Error()).Fatal("Unable to configure unique map entry.")
 		}
 	}
 
@@ -71,7 +71,7 @@ func Initialize(config *Config, create, drop, uniqueMapEntry bool) *Store {
 func createDB(a *Store) {
 	err := util.Retry(func(attempt int) (bool, error) {
 		if err := a.Create(); err != nil {
-			log.WithField("error", err).Warn("Failed to create PostgreSQL tables and indexes. Retrying...")
+			monitoring.LogEntry().WithField("error", err).Warn("Failed to create PostgreSQL tables and indexes. Retrying...")
 			time.Sleep(connectTimeout)
 			return true, err
 		}
@@ -80,17 +80,17 @@ func createDB(a *Store) {
 	}, connectAttempts)
 
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes.")
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to create PostgreSQL tables and indexes.")
 	}
 
-	log.Info("Created tables and indexes.")
+	monitoring.LogEntry().Info("Created tables and indexes.")
 }
 
 // prepareDB prepares statements.
 func prepareDB(a *Store) {
 	err := util.Retry(func(attempt int) (bool, error) {
 		if err := a.Prepare(); err != nil {
-			log.WithField("error", err).Warn("Failed to prepare PostgreSQL statements. Retrying...")
+			monitoring.LogEntry().WithField("error", err).Warn("Failed to prepare PostgreSQL statements. Retrying...")
 			time.Sleep(connectTimeout)
 			return true, err
 		}
@@ -99,17 +99,17 @@ func prepareDB(a *Store) {
 	}, connectAttempts)
 
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to prepare PostgreSQL statements.")
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to prepare PostgreSQL statements.")
 	}
 
-	log.Info("Prepared PostgreSQL statements.")
+	monitoring.LogEntry().Info("Prepared PostgreSQL statements.")
 }
 
 // dropDB drops schemas, tables and indexes.
 func dropDB(a *Store) {
 	err := util.Retry(func(attempt int) (bool, error) {
 		if err := a.Drop(); err != nil {
-			log.WithField("error", err).Warn("Failed to drop PostgreSQL tables and indexes. Retrying...")
+			monitoring.LogEntry().WithField("error", err).Warn("Failed to drop PostgreSQL tables and indexes. Retrying...")
 			time.Sleep(connectTimeout)
 			return true, err
 		}
@@ -118,10 +118,10 @@ func dropDB(a *Store) {
 	}, connectAttempts)
 
 	if err != nil {
-		log.WithField("error", err).Fatal("Failed to drop PostgreSQL tables and indexes.")
+		monitoring.LogEntry().WithField("error", err).Fatal("Failed to drop PostgreSQL tables and indexes.")
 	}
 
-	log.Info("Dropped tables and indexes.")
+	monitoring.LogEntry().Info("Dropped tables and indexes.")
 }
 
 // RegisterFlags registers the flags used by InitializeWithFlags.

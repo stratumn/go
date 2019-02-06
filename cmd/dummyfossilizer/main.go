@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/dummyfossilizer"
 	"github.com/stratumn/go-core/fossilizer/fossilizerhttp"
 	"github.com/stratumn/go-core/monitoring"
@@ -45,7 +44,7 @@ func main() {
 	ctx := context.Background()
 	ctx = util.CancelOnInterrupt(ctx)
 
-	log.Infof("%s v%s@%s", dummyfossilizer.Description, version, commit[:7])
+	monitoring.LogEntry().Infof("%s v%s@%s", dummyfossilizer.Description, version, commit[:7])
 	a := monitoring.NewFossilizerAdapter(
 		dummyfossilizer.New(&dummyfossilizer.Config{Version: version, Commit: commit}),
 		"dummyfossilizer",

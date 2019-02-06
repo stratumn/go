@@ -77,7 +77,7 @@ func (s *State) UpdateValidators(ctx context.Context) {
 	// This will change once the new governance flows are implemented.
 	v, err := validation.LoadFromFile(ctx, s.validationCfg)
 	if err != nil {
-		monitoring.LogWithTxFields(ctx).
+		monitoring.TxLogEntry(ctx).
 			WithError(err).
 			Warn("could not load validation rules")
 		return

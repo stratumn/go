@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
@@ -99,13 +98,13 @@ func New(ctx context.Context, a store.Adapter, kv store.KeyValueStore, config *C
 		return nil, err
 	}
 	if initialized == nil {
-		log.Debug("No existing db, creating new db")
+		monitoring.LogEntry().Debug("No existing db, creating new db")
 		saveLastBlock(ctx, kv, LastBlock{
 			AppHash: nil,
 			Height:  0,
 		})
 	} else {
-		log.Debug("Loading existing db")
+		monitoring.LogEntry().Debug("Loading existing db")
 	}
 
 	lastBlock, err := ReadLastBlock(ctx, kv)
@@ -131,7 +130,7 @@ func New(ctx context.Context, a store.Adapter, kv store.KeyValueStore, config *C
 // ConnectTendermint connects TMPoP to a Tendermint node
 func (t *TMPop) ConnectTendermint(tmClient TendermintClient) {
 	t.tmClient = tmClient
-	log.Info("TMPoP connected to Tendermint Core")
+	monitoring.LogEntry().Info("TMPoP connected to Tendermint Core")
 }
 
 // Info implements github.com/tendermint/abci/types.Application.Info.
@@ -162,7 +161,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
 	t.currentHeader = &req.Header
 	if t.currentHeader == nil {
-		log.Error("Cannot begin block without header")
+		monitoring.LogEntry().Error("Cannot begin block without header")
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
 		span.Context.SetTag(monitoring.ErrorLabel, "Cannot begin block without header")
 		return abci.ResponseBeginBlock{}
@@ -183,7 +182,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 			t.currentHeader.AppHash,
 			t.lastBlock.AppHash,
 		)
-		log.Warn(errorMessage)
+		monitoring.LogEntry().Warn(errorMessage)
 		span.Context.SetTag(monitoring.ErrorLabel, errorMessage)
 	}
 
@@ -241,19 +240,19 @@ func (t *TMPop) Commit() abci.ResponseCommit {
 
 	appHash, links, err := t.state.Commit(ctx)
 	if err != nil {
-		log.Errorf("Error while committing: %s", err)
+		monitoring.LogEntry().Errorf("Error while committing: %s", err)
 		monitoring.SetSpanStatus(span, err)
 		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveValidatorHash(ctx); err != nil {
-		log.Errorf("Error while saving validator hash: %s", err)
+		monitoring.LogEntry().Errorf("Error while saving validator hash: %s", err)
 		monitoring.SetSpanStatus(span, err)
 		return abci.ResponseCommit{}
 	}
 
 	if err := t.saveCommitLinkHashes(ctx, links); err != nil {
-		log.Errorf("Error while saving committed link hashes: %s", err)
+		monitoring.LogEntry().Errorf("Error while saving committed link hashes: %s", err)
 		monitoring.SetSpanStatus(span, err)
 		return abci.ResponseCommit{}
 	}
@@ -405,7 +404,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	defer span.End()
 
 	if t.tmClient == nil {
-		log.Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
+		monitoring.LogEntry().Warn("TMPoP not connected to Tendermint Core. Evidence will not be generated.")
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.Unavailable))
 		span.Context.SetTag(monitoring.ErrorLabel, "TMPoP not connected to Tendermint Core.")
 		return
@@ -425,7 +424,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 	linkHashes, err := t.getCommitLinkHashes(ctx, evidenceHeight)
 	if err != nil {
-		log.Warnf("Could not get link hashes for block %d. Evidence will not be generated.", header.Height)
+		monitoring.LogEntry().Warnf("Could not get link hashes for block %d. Evidence will not be generated.", header.Height)
 		monitoring.SetSpanStatus(span, err)
 		return
 	}
@@ -438,14 +437,14 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 	validatorHash, err := t.getValidatorHash(ctx, evidenceHeight)
 	if err != nil {
-		log.Warnf("Could not get validator hash for block %d. Evidence will not be generated.", header.Height)
+		monitoring.LogEntry().Warnf("Could not get validator hash for block %d. Evidence will not be generated.", header.Height)
 		monitoring.SetSpanStatus(span, err)
 		return
 	}
 
 	evidenceBlock, err := t.tmClient.Block(ctx, evidenceHeight)
 	if err != nil {
-		log.Warnf("Could not get block %d header: %v", header.Height, err)
+		monitoring.LogEntry().Warnf("Could not get block %d header: %v", header.Height, err)
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.Unavailable))
 		span.Context.SetTag(monitoring.ErrorLabel, "Could not get block")
 		return
@@ -453,7 +452,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 	evidenceNextBlock, err := t.tmClient.Block(ctx, evidenceHeight+1)
 	if err != nil {
-		log.Warnf("Could not get next block %d header: %v", header.Height, err)
+		monitoring.LogEntry().Warnf("Could not get next block %d header: %v", header.Height, err)
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.Unavailable))
 		span.Context.SetTag(monitoring.ErrorLabel, "Could not get next block")
 		return
@@ -461,14 +460,14 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 	evidenceLastBlock, err := t.tmClient.Block(ctx, evidenceHeight+2)
 	if err != nil {
-		log.Warnf("Could not get last block %d header: %v", header.Height, err)
+		monitoring.LogEntry().Warnf("Could not get last block %d header: %v", header.Height, err)
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.Unavailable))
 		span.Context.SetTag(monitoring.ErrorLabel, "Could not get last block")
 		return
 	}
 
 	if len(evidenceNextBlock.Votes) == 0 || len(evidenceLastBlock.Votes) == 0 {
-		log.Warnf("Block %d isn't signed by validator nodes. Evidence will not be generated.", header.Height)
+		monitoring.LogEntry().Warnf("Block %d isn't signed by validator nodes. Evidence will not be generated.", header.Height)
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.FailedPrecondition))
 		span.Context.SetTag(monitoring.ErrorLabel, "Votes are missing")
 		return
@@ -482,7 +481,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	}
 	merkle, err := merkle.NewStaticTree(leaves)
 	if err != nil {
-		log.Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
+		monitoring.LogEntry().Warnf("Could not create merkle tree for block %d. Evidence will not be generated.", header.Height)
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
 		span.Context.SetTag(monitoring.ErrorLabel, "Could not create merkle tree")
 		return
@@ -492,7 +491,7 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 	appHash := ComputeAppHash(evidenceBlockAppHash, validatorHash, merkleRoot)
 
 	if !bytes.Equal(appHash, evidenceNextBlock.Header.AppHash) {
-		log.Warnf("App hash %x of block %d doesn't match the header's: %x. Evidence will not be generated.",
+		monitoring.LogEntry().Warnf("App hash %x of block %d doesn't match the header's: %x. Evidence will not be generated.",
 			appHash,
 			header.Height,
 			header.AppHash)
@@ -528,13 +527,13 @@ func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) 
 
 			evidence, err := proof.Evidence(header.ChainID)
 			if err != nil {
-				log.Warnf("Evidence could not be created: %v", err)
+				monitoring.LogEntry().Warnf("Evidence could not be created: %v", err)
 				span.Context.SetTag(linkHash.String(), err.Error())
 				continue
 			}
 
 			if err := t.adapter.AddEvidence(ctx, linkHash, evidence); err != nil {
-				log.Warnf("Evidence could not be added to local store: %v", err)
+				monitoring.LogEntry().Warnf("Evidence could not be added to local store: %v", err)
 				span.Context.SetTag(linkHash.String(), err.Error())
 				continue
 			}

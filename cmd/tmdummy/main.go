@@ -19,7 +19,6 @@ import (
 	"flag"
 	"runtime"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/tendermint"
 	"github.com/tendermint/abci/types"
@@ -39,10 +38,10 @@ func init() {
 func main() {
 	flag.Parse()
 
-	log.Infof("TMDummy v%s@%s", version, commit[:7])
-	log.Info("Copyright (c) 2017 Stratumn SAS")
-	log.Info("Apache License 2.0")
-	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	monitoring.LogEntry().Infof("TMDummy v%s@%s", version, commit[:7])
+	monitoring.LogEntry().Info("Copyright (c) 2017 Stratumn SAS")
+	monitoring.LogEntry().Info("Apache License 2.0")
+	monitoring.LogEntry().Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	tendermint.RunNodeForever(tendermint.GetConfig(), types.NewBaseApplication())
 }

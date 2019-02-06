@@ -20,7 +20,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 
 	"go.elastic.co/apm"
 	"go.elastic.co/apm/module/apmprometheus"
@@ -60,7 +59,7 @@ func Configure(config *Config, serviceName string) (http.Handler, error) {
 	switch config.Exporter {
 	case PrometheusExporter:
 		handler := promhttp.Handler()
-		log.Info("Prometheus handler registered: metrics are available for pulling")
+		LogEntry().Info("Prometheus handler registered: metrics are available for pulling")
 		return handler, nil
 	case ElasticExporter:
 		// Plug the default prometheus gatherer to APM.
@@ -70,7 +69,7 @@ func Configure(config *Config, serviceName string) (http.Handler, error) {
 			apmprometheus.Wrap(prometheus.DefaultGatherer),
 		)
 
-		log.Info("Elastic APM registered: metrics and traces will be pushed regularly")
+		LogEntry().Info("Elastic APM registered: metrics and traces will be pushed regularly")
 		return nil, nil
 	default:
 		return nil, ErrInvalidExporter

@@ -16,6 +16,7 @@ package tendermint
 
 import (
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	abci "github.com/tendermint/abci/types"
 	cfg "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/node"
@@ -49,7 +50,8 @@ func NewNode(config *cfg.Config, app abci.Application) *node.Node {
 		node.DefaultDBProvider,
 		logger)
 	if err != nil {
-		log.Errorf("Error on new node creation: %s", err.Error())
+		monitoring.LogEntry().WithError(err).Error("Error on new node creation")
 	}
+
 	return ret
 }

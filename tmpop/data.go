@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
@@ -56,7 +56,7 @@ func ReadLastBlock(ctx context.Context, kv store.KeyValueReader) (*LastBlock, er
 func saveLastBlock(ctx context.Context, a store.KeyValueWriter, l LastBlock) {
 	err := a.SetValue(ctx, tmpopLastBlockKey, wire.BinaryBytes(l))
 	if err != nil {
-		log.Warn(err)
+		monitoring.LogEntry().Warn(err)
 	}
 }
 

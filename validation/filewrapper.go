@@ -19,7 +19,6 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
@@ -57,7 +56,7 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 	}
 
 	if cfg == nil || len(cfg.RulesPath) == 0 {
-		log.Warn("No custom validation rules provided. Only default link validations will be applied.")
+		monitoring.LogEntry().Warn("No custom validation rules provided. Only default link validations will be applied.")
 		return wrapped, nil
 	}
 
@@ -90,7 +89,7 @@ func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.
 
 	if err := link.Validate(ctx); err != nil {
 		err = types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")
-		monitoring.LogWithTxFields(ctx).Errorf("%v+", err)
+		monitoring.TxLogEntry(ctx).Errorf("%v+", err)
 		monitoring.SetSpanStatus(span, err)
 		return nil, err
 	}

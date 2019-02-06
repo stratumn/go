@@ -20,6 +20,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 const (
@@ -161,7 +162,7 @@ func (s *Basic) AddMsgChannel(c chan BasicConnMsg) {
 func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 	conn, err := s.upgradeHandle(w, r, nil)
 	if err != nil {
-		log.WithFields(log.Fields{
+		monitoring.LogEntry().WithFields(log.Fields{
 			"error":   err,
 			"request": r,
 		}).Warn("Failed to upgrade request to web socket connection")
@@ -182,7 +183,7 @@ func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 		errChan <- bufConn.Start()
 	}()
 
-	log.WithFields(log.Fields{
+	monitoring.LogEntry().WithFields(log.Fields{
 		"request":    r,
 		"connection": bufConn,
 	}).Info("Listening to web socket connection")
@@ -192,7 +193,7 @@ func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 		s.msgAllocator(&connMsg.Msg)
 
 		if err = bufConn.ReadJSON(&connMsg.Msg); err != nil {
-			log.WithFields(log.Fields{
+			monitoring.LogEntry().WithFields(log.Fields{
 				"error":      err,
 				"request":    r,
 				"connection": bufConn,
@@ -208,14 +209,14 @@ func (s *Basic) Handle(w http.ResponseWriter, r *http.Request) {
 	s.Unregister(bufConn)
 
 	if err = bufConn.Close(); err != nil {
-		log.WithFields(log.Fields{
+		monitoring.LogEntry().WithFields(log.Fields{
 			"connection": bufConn,
 			"error":      err,
 		}).Warn("Failed to close web socket connection")
 	}
 
 	if err = <-errChan; err != nil {
-		log.WithFields(log.Fields{
+		monitoring.LogEntry().WithFields(log.Fields{
 			"error":      err,
 			"request":    r,
 			"connection": bufConn,

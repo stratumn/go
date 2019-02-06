@@ -19,7 +19,6 @@ import (
 	"flag"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/batchfossilizer"
 	"github.com/stratumn/go-core/blockchain/btc"
 	"github.com/stratumn/go-core/blockchain/btc/blockcypher"
@@ -62,12 +61,12 @@ func main() {
 	ctx := util.CancelOnInterrupt(context.Background())
 
 	if *key == "" {
-		log.Fatal("A WIF encoded private key is required")
+		monitoring.LogEntry().Fatal("A WIF encoded private key is required")
 	}
 
 	network, err := btc.GetNetworkFromWIF(*key)
 	if err != nil {
-		log.WithField("error", err).Fatal()
+		monitoring.LogEntry().WithField("error", err).Fatal()
 	}
 
 	bcy := blockcypher.New(&blockcypher.Config{
@@ -82,7 +81,7 @@ func main() {
 		UnspentFinder: bcy,
 	})
 	if err != nil {
-		log.WithField("error", err).Fatal()
+		monitoring.LogEntry().WithField("error", err).Fatal()
 	}
 
 	a := monitoring.NewFossilizerAdapter(

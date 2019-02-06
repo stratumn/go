@@ -37,6 +37,6 @@ func (e *DummyEventExporter) Push(ctx context.Context, event *fossilizer.Event) 
 		return err
 	}
 
-	monitoring.LogWithTxFields(ctx).WithField("event", string(b)).Info(event.EventType)
+	monitoring.TxLogEntry(ctx).WithField("event", string(b)).Info(event.EventType)
 	return nil
 }

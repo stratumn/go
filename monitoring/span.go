@@ -46,13 +46,13 @@ func SetSpanStatus(span *apm.Span, err error) {
 		case *types.Error:
 			// We want to include a stack trace to make it easy to
 			// investigate, hence the format.
-			LogWithSpanFields(span).Errorf("%v+", e)
+			SpanLogEntry(span).Errorf("%v+", e)
 
 			span.Context.SetTag(ErrorLabel, e.Error())
 			span.Context.SetTag(ErrorCodeLabel, errorcode.Text(e.Code))
 			span.Context.SetTag(ErrorComponentLabel, e.Component)
 		default:
-			LogWithSpanFields(span).Errorf("%v+", err)
+			SpanLogEntry(span).Errorf("%v+", err)
 			span.Context.SetTag(ErrorLabel, err.Error())
 		}
 	}

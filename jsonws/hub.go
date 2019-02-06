@@ -14,7 +14,10 @@
 
 package jsonws
 
-import log "github.com/sirupsen/logrus"
+import (
+	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
+)
 
 // Hub manages a list of web socket connections.
 // Messages can be broadcasted in JSON form to the list of connections.
@@ -135,7 +138,7 @@ func (h *Hub) Broadcast(msg interface{}, tag interface{}) {
 // Writes a message to a connection and logs errors.
 func writeMsg(conn Writer, msg interface{}) {
 	if err := conn.WriteJSON(msg); err != nil {
-		log.WithFields(log.Fields{
+		monitoring.LogEntry().WithFields(log.Fields{
 			"error":      err,
 			"connection": conn,
 			"message":    msg,

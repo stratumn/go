@@ -57,7 +57,7 @@ func (b *Batch) Write(ctx context.Context) (err error) {
 	if b.txFactory.rollback {
 		err := b.tx.Rollback()
 		if err != nil {
-			monitoring.LogWithTxFields(ctx).
+			monitoring.TxLogEntry(ctx).
 				WithError(err).
 				Warn("Error during transaction rollback")
 		}

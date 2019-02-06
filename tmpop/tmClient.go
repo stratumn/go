@@ -110,7 +110,7 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 	for _, tx := range tmBlock.Block.Txs {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {
-			monitoring.LogWithTxFields(ctx).Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
+			monitoring.TxLogEntry(ctx).Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
 			span.Context.SetTag(monitoring.ErrorLabel, fmt.Sprintf("Could not unmarshall block Tx %+v.", tx))
 			continue
 		}

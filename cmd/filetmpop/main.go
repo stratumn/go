@@ -18,7 +18,6 @@ package main
 import (
 	"flag"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/filestore"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/tendermint"
@@ -45,7 +44,7 @@ func main() {
 
 	a, err := filestore.New(&filestore.Config{Path: *path, Version: version, Commit: commit})
 	if err != nil {
-		log.Fatal(err)
+		monitoring.LogEntry().Fatal(err)
 	}
 
 	tmpopConfig := &tmpop.Config{

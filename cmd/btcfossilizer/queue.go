@@ -16,10 +16,10 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/sqs"
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/cloud/aws"
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/fossilizer/dummyqueue"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 // Queues that can be used by the BTC fossilizer.
@@ -44,7 +44,7 @@ func QueueFromFlags() fossilizer.FossilsQueue {
 		queueURL := QueueURL(client, fossilsQueue)
 		return aws.NewFossilsQueue(client, queueURL)
 	default:
-		log.WithField("queueType", *queueType).Fatal("unknown queue type")
+		monitoring.LogEntry().WithField("queueType", *queueType).Fatal("unknown queue type")
 		return nil
 	}
 }
@@ -53,7 +53,7 @@ func QueueFromFlags() fossilizer.FossilsQueue {
 func QueueURL(client *sqs.SQS, queueName *string) *string {
 	r, err := client.GetQueueUrl(&sqs.GetQueueUrlInput{QueueName: queueName})
 	if err != nil {
-		log.WithField("error", err.Error()).Fatal("aws configuration is invalid")
+		monitoring.LogEntry().WithField("error", err.Error()).Fatal("aws configuration is invalid")
 	}
 
 	return r.QueueUrl
