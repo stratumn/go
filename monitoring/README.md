@@ -18,7 +18,7 @@ We support two ways of exposing metrics:
 
 If you want to pull Prometheus metrics, set `monitoring.exporter` to `prometheus`.
 When using Prometheus, you should also set `monitoring.metrics.port`.
-Your metrics can the be pulled at `{baseURL}:{port}/metrics`.
+Your metrics can then be pulled at `{baseURL}:{port}/metrics`.
 
 ### Elastic APM
 
