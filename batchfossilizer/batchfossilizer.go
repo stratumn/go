@@ -20,16 +20,16 @@ package batchfossilizer
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/merkle"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -136,12 +136,14 @@ func (a *Fossilizer) fossilizeLoop(ctx context.Context) {
 }
 
 func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
-	ctx, span := trace.StartSpan(ctx, "batchfossilizer/fossilizeBatch")
+	span, ctx := apm.StartSpan(ctx, "batchfossilizer/fossilizeBatch", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	batchSize := a.config.GetMaxLeaves()
 
 	for i := 0; i < a.config.GetMaxSimBatches(); i++ {
+		batchCount.Inc()
+
 		fossils, err := a.queue.Pop(ctx, batchSize)
 		if err != nil {
 			monitoring.SetSpanStatus(span, err)
@@ -169,8 +171,10 @@ func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
 		err = a.foss.Fossilize(ctx, root, nil)
 		if err != nil {
 			monitoring.SetSpanStatus(span, err)
-
-			log.Warnf("Batch fossilization failed. Pushing %d pending fossils back to the queue.", len(fossils))
+			monitoring.LogWithTxFields(ctx).
+				WithField("fossils_count", len(fossils)).
+				WithError(err).
+				Warn("Batch fossilization failed. Pushing pending fossils back to the queue.")
 
 			a.removePendingProofs(root)
 
@@ -181,10 +185,10 @@ func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
 			for _, fossil := range fossils {
 				err := a.queue.Push(ctx, fossil)
 				if err != nil {
-					log.Errorf("Could not enqueue fossil. %s won't be fossilized, please investigate. %s",
-						hex.EncodeToString(fossil.Data),
-						err.Error(),
-					)
+					monitoring.LogWithTxFields(ctx).
+						WithField("fossil", hex.EncodeToString(fossil.Data)).
+						WithError(err).
+						Error("Could not enqueue fossil. Fossilization failed, please investigate.")
 				}
 			}
 
@@ -246,7 +250,7 @@ func (a *Fossilizer) eventLoop(ctx context.Context, fChan chan *fossilizer.Event
 // individual fossilization events for each fossil included in the merkle tree.
 // It then sends these events to all registered listeners.
 func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
-	_, span := trace.StartSpan(ctx, "batchfossilizer/eventBatch")
+	span, _ := apm.StartSpan(ctx, "batchfossilizer/eventBatch", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	if e.EventType != fossilizer.DidFossilize {
@@ -261,7 +265,7 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 
 	pendingProofs, ok := a.pendingProofs[key]
 	if !ok {
-		span.Annotatef(nil, "pending proofs not found for root %s", key)
+		monitoring.SetSpanStatus(span, fmt.Errorf("pending proofs not found for root %s", key))
 		return
 	}
 
@@ -274,14 +278,13 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 		p.proof.Proof = r.Evidence.Proof
 		ev, err := p.proof.Evidence(Name)
 		if err != nil {
-			span.Annotate(
-				[]trace.Attribute{trace.StringAttribute("error", err.Error())},
-				"could not create evidence",
-			)
+			monitoring.LogWithTxFields(ctx).WithError(err).Warnf("could not create evidence")
 			continue
 		}
 
 		for _, l := range a.eventChans {
+			fossilizedLinksCount.Inc()
+
 			go func(l chan *fossilizer.Event) {
 				l <- &fossilizer.Event{
 					EventType: fossilizer.DidFossilize,

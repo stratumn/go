@@ -39,7 +39,7 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 	}
 
 	if len(link.PrevLinkHash()) == 0 {
-		err = s.createLink(linkHash, data, link)
+		err = s.createLink(ctx, linkHash, data, link)
 		return linkHash, err
 	}
 
@@ -50,7 +50,7 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 
 	parentDegree := parent.Link.Meta.OutDegree
 	if parentDegree < 0 {
-		err = s.createLink(linkHash, data, link)
+		err = s.createLink(ctx, linkHash, data, link)
 		return linkHash, err
 	}
 
@@ -66,7 +66,7 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 		return linkHash, err
 	}
 
-	currentDegree, err := s.getLinkDegree(tx, link.PrevLinkHash())
+	currentDegree, err := s.getLinkDegree(ctx, tx, link.PrevLinkHash())
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return linkHash, err
@@ -77,13 +77,13 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 		return linkHash, types.WrapError(chainscript.ErrOutDegree, errorcode.FailedPrecondition, store.Component, "could not create link")
 	}
 
-	err = s.createLinkInTx(tx, linkHash, data, link)
+	err = s.createLinkInTx(ctx, tx, linkHash, data, link)
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return linkHash, err
 	}
 
-	err = s.incrementLinkDegree(tx, link.PrevLinkHash(), currentDegree)
+	err = s.incrementLinkDegree(ctx, tx, link.PrevLinkHash(), currentDegree)
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return linkHash, err
@@ -94,13 +94,13 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 
 // getLinkDegree reads the current degree of the given link.
 // It locks the associated row until the transaction completes.
-func (s *scopedStore) getLinkDegree(tx *sql.Tx, linkHash chainscript.LinkHash) (int, error) {
+func (s *scopedStore) getLinkDegree(ctx context.Context, tx *sql.Tx, linkHash chainscript.LinkHash) (int, error) {
 	degreeLock, err := tx.Prepare(SQLLockLinkDegree)
 	if err != nil {
 		return 0, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not lock link degree")
 	}
 
-	row := degreeLock.QueryRow(linkHash)
+	row := degreeLock.QueryRowContext(ctx, linkHash)
 	currentDegree := 0
 	err = row.Scan(&currentDegree)
 
@@ -120,13 +120,13 @@ func (s *scopedStore) getLinkDegree(tx *sql.Tx, linkHash chainscript.LinkHash) (
 // incrementLinkDegree increments the degree of the given link.
 // A lock should have been acquired previously by the transaction to ensure
 // consistency.
-func (s *scopedStore) incrementLinkDegree(tx *sql.Tx, linkHash chainscript.LinkHash, currentDegree int) error {
+func (s *scopedStore) incrementLinkDegree(ctx context.Context, tx *sql.Tx, linkHash chainscript.LinkHash, currentDegree int) error {
 	updateDegree, err := tx.Prepare(SQLUpdateLinkDegree)
 	if err != nil {
 		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not increment link degree")
 	}
 
-	_, err = updateDegree.Exec(linkHash, currentDegree+1)
+	_, err = updateDegree.ExecContext(ctx, linkHash, currentDegree+1)
 	if err != nil {
 		return types.WrapError(err, errorcode.Internal, store.Component, "could not increment link degree")
 	}
@@ -136,6 +136,7 @@ func (s *scopedStore) incrementLinkDegree(tx *sql.Tx, linkHash chainscript.LinkH
 
 // createLink adds the given link to the DB.
 func (s *scopedStore) createLink(
+	ctx context.Context,
 	linkHash chainscript.LinkHash,
 	data []byte,
 	link *chainscript.Link,
@@ -145,7 +146,7 @@ func (s *scopedStore) createLink(
 		return err
 	}
 
-	err = s.createLinkInTx(tx, linkHash, data, link)
+	err = s.createLinkInTx(ctx, tx, linkHash, data, link)
 	if err != nil {
 		s.txFactory.RollbackTx(tx, err)
 		return err
@@ -157,6 +158,7 @@ func (s *scopedStore) createLink(
 // createLink inserts the given link in a transaction context.
 // If the link already exists it will return an error.
 func (s *scopedStore) createLinkInTx(
+	ctx context.Context,
 	tx *sql.Tx,
 	linkHash chainscript.LinkHash,
 	data []byte,
@@ -173,7 +175,8 @@ func (s *scopedStore) createLinkInTx(
 		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not create link")
 	}
 
-	res, err := createLink.Exec(
+	res, err := createLink.ExecContext(
+		ctx,
 		linkHash,
 		link.Meta.Priority,
 		link.Meta.MapId,
@@ -203,7 +206,7 @@ func (s *scopedStore) createLinkInTx(
 	}
 
 	for _, ref := range link.Meta.Refs {
-		_, err = addRef.Exec(ref.LinkHash, linkHash)
+		_, err = addRef.ExecContext(ctx, ref.LinkHash, linkHash)
 		if err != nil {
 			return types.WrapError(err, errorcode.Internal, store.Component, "could not add reference")
 		}
@@ -216,7 +219,7 @@ func (s *scopedStore) createLinkInTx(
 			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not initialize map")
 		}
 
-		_, err = initMap.Exec(link.Meta.Process.Name, link.Meta.MapId)
+		_, err = initMap.ExecContext(ctx, link.Meta.Process.Name, link.Meta.MapId)
 		if err != nil {
 			return types.WrapError(store.ErrUniqueMapEntry, errorcode.FailedPrecondition, store.Component, "could not initialize map")
 		}
@@ -228,7 +231,7 @@ func (s *scopedStore) createLinkInTx(
 		return types.WrapError(err, errorcode.Internal, store.Component, "could not update link degree")
 	}
 
-	_, err = initDegree.Exec(linkHash)
+	_, err = initDegree.ExecContext(ctx, linkHash)
 	if err != nil {
 		return types.WrapError(err, errorcode.Internal, store.Component, "could not update link degree")
 	}
@@ -240,7 +243,7 @@ func (s *scopedStore) createLinkInTx(
 func (s *scopedStore) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (*chainscript.Segment, error) {
 	var segments = make(types.SegmentSlice, 0, 1)
 
-	rows, err := s.stmts.GetSegment.Query(linkHash)
+	rows, err := s.stmts.GetSegment.QueryContext(ctx, linkHash)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.Unavailable, store.Component, "could not get segment")
 	}
@@ -259,7 +262,7 @@ func (s *scopedStore) GetSegment(ctx context.Context, linkHash chainscript.LinkH
 
 // FindSegments implements github.com/stratumn/go-core/store.SegmentReader.FindSegments.
 func (s *scopedStore) FindSegments(ctx context.Context, filter *store.SegmentFilter) (*types.PaginatedSegments, error) {
-	rows, err := s.stmts.FindSegmentsWithFilters(filter)
+	rows, err := s.stmts.FindSegmentsWithFilters(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +340,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 
 // GetMapIDs implements github.com/stratumn/go-core/store.SegmentReader.GetMapIDs.
 func (s *scopedStore) GetMapIDs(ctx context.Context, filter *store.MapFilter) ([]string, error) {
-	rows, err := s.stmts.GetMapIDsWithFilters(filter)
+	rows, err := s.stmts.GetMapIDsWithFilters(ctx, filter)
 	if err != nil {
 		return nil, err
 	}

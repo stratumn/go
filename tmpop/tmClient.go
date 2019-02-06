@@ -19,8 +19,9 @@ package tmpop
 import (
 	"bytes"
 	"context"
+	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/tmpop/evidences"
 	"github.com/stratumn/go-core/types"
@@ -28,7 +29,7 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 // TendermintClient is a light interface to query Tendermint Core.
@@ -62,13 +63,14 @@ func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 
 // Block queries for a block at a specific height.
 func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Block, error) {
-	_, span := trace.StartSpan(ctx, "tmclient/Block")
+	span, _ := apm.StartSpan(ctx, "tmclient/Block", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	tmBlock, err := c.tmClient.Block(&height)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.Unavailable, Name, "could not get block from Tendermint Core")
+		err = types.WrapError(err, errorcode.Unavailable, Name, "could not get block from Tendermint Core")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	// The votes in block N are voting on block N-1.
@@ -80,8 +82,9 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 	}
 	validators, err := c.tmClient.Validators(&prevHeight)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.Unavailable, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.Unavailable, Name, "could not get validators from Tendermint Core")
+		err = types.WrapError(err, errorcode.Unavailable, Name, "could not get validators from Tendermint Core")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	block := &Block{
@@ -107,8 +110,8 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 	for _, tx := range tmBlock.Block.Txs {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {
-			log.Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
-			span.Annotatef(nil, "Could not unmarshall block Tx %+v.", tx)
+			monitoring.LogWithTxFields(ctx).Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
+			span.Context.SetTag(monitoring.ErrorLabel, fmt.Sprintf("Could not unmarshall block Tx %+v.", tx))
 			continue
 		}
 

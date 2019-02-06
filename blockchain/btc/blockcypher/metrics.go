@@ -15,88 +15,65 @@
 package blockcypher
 
 import (
-	"log"
-
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/stratumn/go-core/monitoring"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+)
+
+// Private labels used only inside this package.
+const (
+	requestType    = "request_type"
+	accountAddress = "address"
 )
 
 // Private metrics used only inside this package.
 var (
-	requestType    tag.Key
-	requestCount   *stats.Int64Measure
-	requestErr     *stats.Int64Measure
-	requestLatency *stats.Float64Measure
+	requestCount   *prometheus.CounterVec
+	requestErr     *prometheus.CounterVec
+	requestLatency *prometheus.HistogramVec
 
-	accountAddress tag.Key
-	accountBalance *stats.Int64Measure
+	accountBalance *prometheus.GaugeVec
 )
 
 func init() {
-	requestCount = stats.Int64(
-		"stratumn/core/blockchain/btc/request_count",
-		"number of requests to the bitcoin blockchain",
-		stats.UnitDimensionless,
-	)
-
-	requestErr = stats.Int64(
-		"stratumn/core/blockchain/btc/request_error",
-		"number of request errors",
-		stats.UnitDimensionless,
-	)
-
-	requestLatency = stats.Float64(
-		"stratumn/core/blockchain/btc/request_latency",
-		"latency of requests to the bitcoin blockchain",
-		stats.UnitMilliseconds,
-	)
-
-	accountBalance = stats.Int64(
-		"stratumn/core/blockchain/btc/account_balance",
-		"balance of the bitcoin addresses used",
-		stats.UnitDimensionless,
-	)
-
-	var err error
-	if requestType, err = tag.NewKey("stratumn/core/blockchain/btc/request_type"); err != nil {
-		log.Fatal(err)
-	}
-	if accountAddress, err = tag.NewKey("stratumn/core/blockchain/btc/address"); err != nil {
-		log.Fatal(err)
-	}
-
-	err = view.Register(
-		&view.View{
-			Name:        "stratumn/core/blockchain/btc/request_count",
-			Description: "number of requests to the bitcoin blockchain",
-			Measure:     requestCount,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{requestType},
+	requestCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "btc",
+			Name:      "request_count",
+			Help:      "number of requests to the bitcoin blockchain",
 		},
-		&view.View{
-			Name:        "stratumn/core/blockchain/btc/request_error",
-			Description: "number of request errors",
-			Measure:     requestErr,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{requestType},
+		[]string{requestType},
+	)
+
+	requestErr = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "btc",
+			Name:      "request_error",
+			Help:      "number of request errors",
 		},
-		&view.View{
-			Name:        "stratumn/core/blockchain/btc/request_latency",
-			Description: "latency of requests to the bitcoin blockchain",
-			Measure:     requestLatency,
-			Aggregation: monitoring.DefaultLatencyDistribution,
-			TagKeys:     []tag.Key{requestType},
+		[]string{requestType},
+	)
+
+	requestLatency = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "btc",
+			Name:      "request_latency_ms",
+			Help:      "latency of requests to the bitcoin blockchain",
+			Buckets:   monitoring.DefaultLatencyBuckets,
 		},
-		&view.View{
-			Name:        "stratumn/core/blockchain/btc/account_balance",
-			Description: "balance of the bitcoin addresses used",
-			Measure:     accountBalance,
-			Aggregation: view.LastValue(),
-			TagKeys:     []tag.Key{accountAddress},
-		})
-	if err != nil {
-		log.Fatal(err)
-	}
+		[]string{requestType},
+	)
+
+	accountBalance = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "btc",
+			Name:      "account_balance_satoshi",
+			Help:      "balance of the bitcoin addresses used",
+		},
+		[]string{accountAddress},
+	)
 }

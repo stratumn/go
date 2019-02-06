@@ -21,14 +21,12 @@ import (
 
 	cj "github.com/gibson042/canonicaljson-go"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-crypto/keys"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -172,8 +170,7 @@ func (pv PKIValidator) Validate(ctx context.Context, _ store.SegmentReader, link
 		}
 
 		if !fulfilled {
-			ctx, _ = tag.New(ctx, tag.Upsert(linkErr, PKIValidatorName))
-			stats.Record(ctx, linksErr.M(1))
+			linksErr.With(prometheus.Labels{linkErr: PKIValidatorName}).Inc()
 			return types.WrapErrorf(ErrMissingSignature, errorcode.InvalidArgument, PKIValidatorName, "%s.%s requires a signature from %s", pv.process, pv.step, required)
 		}
 	}

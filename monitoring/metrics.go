@@ -15,85 +15,102 @@
 package monitoring
 
 import (
-	log "github.com/sirupsen/logrus"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Default distributions used by views.
+// Default buckets used by histograms.
 var (
-	DefaultLatencyDistribution = view.Distribution(0, 1, 2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 250, 300, 400, 500, 650, 800, 1000, 2000, 5000, 10000, 20000, 50000, 100000)
+	DefaultLatencyBuckets = []float64{0, 1, 2, 3, 4, 5, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 65, 80, 100, 130, 160, 200, 250, 300, 400, 500, 650, 800, 1000, 2000, 5000, 10000, 20000, 50000, 100000}
 )
 
-// Metrics and tags available to all packages.
-var (
-	ErrorCodeTag      tag.Key
-	ErrorComponentTag tag.Key
+// Metrics and labels available to all packages.
+const (
+	Stratumn            = "stratumn"
+	ErrorLabel          = "error"
+	ErrorCodeLabel      = "error_code"
+	ErrorComponentLabel = "error_component"
 )
 
-// Private metrics used only inside this package.
+// Private labels used only inside this package.
+const (
+	adapterRequest = "adapter_request"
+)
+
+// Store metrics used only inside this package.
 var (
-	storeRequestType    tag.Key
-	storeRequestCount   *stats.Int64Measure
-	storeRequestErr     *stats.Int64Measure
-	storeRequestLatency *stats.Float64Measure
+	storeRequestCount   *prometheus.CounterVec
+	storeRequestErr     *prometheus.CounterVec
+	storeRequestLatency *prometheus.HistogramVec
+)
+
+// Fossilizer metrics used only inside this package.
+var (
+	fossilizerRequestCount   *prometheus.CounterVec
+	fossilizerRequestErr     *prometheus.CounterVec
+	fossilizerRequestLatency *prometheus.HistogramVec
 )
 
 func init() {
-	storeRequestCount = stats.Int64(
-		"stratumn/core/store/request_count",
-		"number of requests to the store",
-		stats.UnitDimensionless,
-	)
-
-	storeRequestErr = stats.Int64(
-		"stratumn/core/store/request_error",
-		"number of request errors",
-		stats.UnitDimensionless,
-	)
-
-	storeRequestLatency = stats.Float64(
-		"stratumn/core/store/request_latency",
-		"latency of store requests",
-		stats.UnitMilliseconds,
-	)
-
-	var err error
-	if storeRequestType, err = tag.NewKey("stratumn/core/store/request_type"); err != nil {
-		log.Fatal(err)
-	}
-	if ErrorCodeTag, err = tag.NewKey("stratumn/core/error_code"); err != nil {
-		log.Fatal(err)
-	}
-	if ErrorComponentTag, err = tag.NewKey("stratumn/core/error_component"); err != nil {
-		log.Fatal(err)
-	}
-
-	err = view.Register(
-		&view.View{
-			Name:        "stratumn/core/store/request_count",
-			Description: "number of requests to the store",
-			Measure:     storeRequestCount,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{storeRequestType},
+	storeRequestCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Stratumn,
+			Subsystem: "store",
+			Name:      "request_count",
+			Help:      "number of requests to the store",
 		},
-		&view.View{
-			Name:        "stratumn/core/store/request_error",
-			Description: "number of request errors",
-			Measure:     storeRequestErr,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{storeRequestType, ErrorCodeTag, ErrorComponentTag},
+		[]string{adapterRequest},
+	)
+
+	storeRequestLatency = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: Stratumn,
+			Subsystem: "store",
+			Name:      "request_latency_ms",
+			Help:      "latency of store requests",
+			Buckets:   DefaultLatencyBuckets,
 		},
-		&view.View{
-			Name:        "stratumn/core/store/request_latency",
-			Description: "latency of store requests",
-			Measure:     storeRequestLatency,
-			Aggregation: DefaultLatencyDistribution,
-			TagKeys:     []tag.Key{storeRequestType},
-		})
-	if err != nil {
-		log.Fatal(err)
-	}
+		[]string{adapterRequest},
+	)
+
+	storeRequestErr = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Stratumn,
+			Subsystem: "store",
+			Name:      "request_error",
+			Help:      "number of fossilizer request errors",
+		},
+		[]string{adapterRequest, ErrorCodeLabel, ErrorComponentLabel},
+	)
+
+	fossilizerRequestCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Stratumn,
+			Subsystem: "fossilizer",
+			Name:      "request_count",
+			Help:      "number of requests to the fossilizer",
+		},
+		[]string{adapterRequest},
+	)
+
+	fossilizerRequestLatency = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: Stratumn,
+			Subsystem: "fossilizer",
+			Name:      "request_latency_ms",
+			Help:      "latency of fossilizer requests",
+			Buckets:   DefaultLatencyBuckets,
+		},
+		[]string{adapterRequest},
+	)
+
+	fossilizerRequestErr = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Stratumn,
+			Subsystem: "fossilizer",
+			Name:      "request_error",
+			Help:      "number of fossilizer request errors",
+		},
+		[]string{adapterRequest, ErrorCodeLabel, ErrorComponentLabel},
+	)
 }

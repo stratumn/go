@@ -17,63 +17,25 @@ package monitoring
 import "flag"
 
 var (
-	monitor            bool
-	traceSamplingRatio float64
-	metricsPort        int
-	reportingPeriod    int
-
-	metricsExporter string
-	tracesExporter  string
-
-	jaegerEndpoint       string
-	stackdriverProjectID string
+	monitor     bool
+	metricsPort int
+	exporter    string
 )
 
 // RegisterFlags registers the command-line monitoring flags.
 func RegisterFlags() {
 	flag.BoolVar(&monitor, "monitoring.active", true, "Set to true to activate monitoring")
 	flag.IntVar(&metricsPort, "monitoring.metrics.port", 0, "Port to use to expose metrics, for example 5001")
-	flag.IntVar(&reportingPeriod, "monitoring.metrics.reporting_period", DefaultReportingPeriod, "Interval between reporting aggregated views (in seconds)")
-	flag.Float64Var(&traceSamplingRatio, "monitoring.trace_sampling_ratio", 1.0, "Set an appropriate sampling ratio depending on your load")
-
-	flag.StringVar(&metricsExporter, "monitoring.exporter.metrics", PrometheusExporter, "Exporter for metrics (either Prometheus or Stackdriver)")
-	flag.StringVar(&tracesExporter, "monitoring.exporter.traces", JaegerExporter, "Exporter for traces (either Jaeger or Stackdriver)")
-
-	flag.StringVar(&jaegerEndpoint, "monitoring.jaeger.endpoint", DefaultJaegerEndpoint, "Endpoint where a Jaeger agent is running")
-	flag.StringVar(&stackdriverProjectID, "monitoring.stackdriver.projectID", "", "ID of the project for which we want to export traces or metrics")
+	flag.StringVar(&exporter, "monitoring.exporter", PrometheusExporter, "Exporter for metrics and traces (either prometheus or elastic)")
 }
 
 // ConfigurationFromFlags builds configuration from user-provided
 // command-line flags.
 func ConfigurationFromFlags() *Config {
 	config := &Config{
-		Monitor: monitor,
-
-		TraceSamplingRatio:     traceSamplingRatio,
-		MetricsReportingPeriod: reportingPeriod,
-
-		MetricsExporter: metricsExporter,
-		TracesExporter:  tracesExporter,
-	}
-
-	switch metricsExporter {
-	case PrometheusExporter:
-		break
-	case StackdriverExporter:
-		config.StackdriverConfig = &StackdriverConfig{
-			ProjectID: stackdriverProjectID,
-		}
-	}
-
-	switch tracesExporter {
-	case JaegerExporter:
-		config.JaegerConfig = &JaegerConfig{
-			Endpoint: jaegerEndpoint,
-		}
-	case StackdriverExporter:
-		config.StackdriverConfig = &StackdriverConfig{
-			ProjectID: stackdriverProjectID,
-		}
+		Monitor:     monitor,
+		Exporter:    exporter,
+		MetricsPort: metricsPort,
 	}
 
 	return config

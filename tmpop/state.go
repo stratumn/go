@@ -19,9 +19,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
@@ -77,7 +77,9 @@ func (s *State) UpdateValidators(ctx context.Context) {
 	// This will change once the new governance flows are implemented.
 	v, err := validation.LoadFromFile(ctx, s.validationCfg)
 	if err != nil {
-		log.Warnf("could not load validation rules: %s", err.Error())
+		monitoring.LogWithTxFields(ctx).
+			WithError(err).
+			Warn("could not load validation rules")
 		return
 	}
 

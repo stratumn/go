@@ -17,41 +17,24 @@ package monitoring
 import (
 	"errors"
 	"net/http"
-	"time"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
-	"github.com/stratumn/go-core/monitoring/gcloud"
-	"go.opencensus.io/exporter/jaeger"
-	"go.opencensus.io/exporter/prometheus"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/trace"
-	"google.golang.org/api/option"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
+
+	"go.elastic.co/apm"
+	"go.elastic.co/apm/module/apmprometheus"
 )
 
 // Available exporters.
 const (
-	PrometheusExporter  = "prometheus"
-	JaegerExporter      = "jaeger"
-	StackdriverExporter = "stackdriver"
-)
-
-const (
-	// DefaultJaegerEndpoint is the default endpoint exposed
-	// by the Jaeger collector.
-	DefaultJaegerEndpoint = "http://jaeger:14268"
-
-	// DefaultReportingPeriod is the default interval between
-	// reporting aggregated views (in seconds).
-	DefaultReportingPeriod = 10
+	PrometheusExporter = "prometheus"
+	ElasticExporter    = "elastic"
 )
 
 // Errors used by the configuration module.
 var (
-	ErrInvalidMetricsExporter = errors.New("metrics exporter should be 'prometheus' or 'stackdriver'")
-	ErrInvalidTracesExporter  = errors.New("traces exporter should be 'jaeger' or 'stackdriver'")
-	ErrMissingExporterConfig  = errors.New("missing exporter configuration section")
-	ErrMissingProjectID       = errors.New("missing stackdriver project id")
-	ErrInvalidReportingPeriod = errors.New("reporting period needs to be >60 when using stackdriver exporter")
+	ErrInvalidExporter = errors.New("exporter should be 'prometheus' or 'elastic'")
 )
 
 // Config contains options for monitoring.
@@ -62,135 +45,8 @@ type Config struct {
 	// Port used to expose metrics.
 	MetricsPort int
 
-	// Interval between reporting aggregated views (in seconds).
-	// This interval needs to be >60 when using the Stackdriver exporter.
-	MetricsReportingPeriod int
-
-	// Ratio of traces to record.
-	// If set to 1.0, all traces will be recorded.
-	// This is what you should do locally or during a beta.
-	// For production, you should set this to 0.25 or 0.5,
-	// depending on your load.
-	TraceSamplingRatio float64
-
-	// MetricsExporter is the name of the metrics exporter.
-	MetricsExporter string
-
-	// TraceExporter is the name of the trace exporter.
-	TracesExporter string
-
-	// JaegerConfig options (if enabled).
-	JaegerConfig *JaegerConfig
-
-	// StackdriverConfig options (if enabled).
-	StackdriverConfig *StackdriverConfig
-}
-
-// StackdriverConfig contains configuration options for Stackdriver (metrics and tracing).
-type StackdriverConfig struct {
-	// ProjectID is the identifier of the Stackdriver project
-	ProjectID string
-}
-
-// JaegerConfig contains configuration options for Jaeger (tracing).
-type JaegerConfig struct {
-	// Endpoint is the address of the Jaeger agent to collect traces.
-	Endpoint string
-}
-
-// Validate the stackdriver configuration section.
-func (c *StackdriverConfig) Validate() error {
-	if c == nil {
-		return ErrMissingExporterConfig
-	}
-
-	if c.ProjectID == "" {
-		return ErrMissingProjectID
-	}
-
-	return nil
-}
-
-// Exporter finds the appropriate google credentials
-// and returns a stackdriver exporter.
-func (c *StackdriverConfig) Exporter() (*stackdriver.Exporter, error) {
-	opt, err := gcloud.GetCredentials()
-	if err != nil {
-		return nil, err
-	}
-	return stackdriver.NewExporter(stackdriver.Options{
-		ProjectID:               c.ProjectID,
-		MonitoringClientOptions: []option.ClientOption{opt},
-		TraceClientOptions:      []option.ClientOption{opt},
-	})
-}
-
-// Validate the jaeger configuration section.
-func (c *JaegerConfig) Validate() error {
-	if c == nil {
-		return ErrMissingExporterConfig
-	}
-
-	return nil
-}
-
-func configureMetricsExporter(config *Config) (exporter view.Exporter, err error) {
-	switch config.MetricsExporter {
-	case PrometheusExporter:
-		exporter, err = prometheus.NewExporter(prometheus.Options{})
-		if err != nil {
-			return nil, err
-		}
-	case StackdriverExporter:
-		if err := config.StackdriverConfig.Validate(); err != nil {
-			return nil, err
-		}
-		if config.MetricsReportingPeriod < 60 {
-			return nil, ErrInvalidReportingPeriod
-		}
-		if exporter, err = config.StackdriverConfig.Exporter(); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, ErrInvalidMetricsExporter
-	}
-
-	view.RegisterExporter(exporter)
-	view.SetReportingPeriod(time.Duration(config.MetricsReportingPeriod) * time.Second)
-	return exporter, nil
-}
-
-func configureTracesExporter(config *Config, serviceName string) (exporter trace.Exporter, err error) {
-	switch config.TracesExporter {
-	case JaegerExporter:
-		if err := config.JaegerConfig.Validate(); err != nil {
-			return nil, err
-		}
-		if len(config.JaegerConfig.Endpoint) == 0 {
-			config.JaegerConfig.Endpoint = DefaultJaegerEndpoint
-		}
-		exporter, err = jaeger.NewExporter(jaeger.Options{
-			Endpoint:    config.JaegerConfig.Endpoint,
-			ServiceName: serviceName,
-		})
-		if err != nil {
-			return nil, err
-		}
-	case StackdriverExporter:
-		if err := config.StackdriverConfig.Validate(); err != nil {
-			return nil, err
-		}
-		if exporter, err = config.StackdriverConfig.Exporter(); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, ErrInvalidTracesExporter
-	}
-
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler(config.TraceSamplingRatio)})
-	trace.RegisterExporter(exporter)
-
-	return exporter, nil
+	// Exporter is the name of the metrics and traces exporter.
+	Exporter string
 }
 
 // Configure configures metrics and trace monitoring.
@@ -200,18 +56,23 @@ func Configure(config *Config, serviceName string) (http.Handler, error) {
 	if !config.Monitor {
 		return nil, nil
 	}
-	_, err := configureTracesExporter(config, serviceName)
-	if err != nil {
-		return nil, err
-	}
 
-	metricsExporter, err := configureMetricsExporter(config)
-	if err != nil {
-		return nil, err
-	}
-	if handler, ok := metricsExporter.(http.Handler); ok {
+	switch config.Exporter {
+	case PrometheusExporter:
+		handler := promhttp.Handler()
+		log.Info("Prometheus handler registered: metrics are available for pulling")
 		return handler, nil
-	}
+	case ElasticExporter:
+		// Plug the default prometheus gatherer to APM.
+		// This will export custom metrics regularly.
+		// It doesn't need to expose a handler, it uses a push model.
+		apm.DefaultTracer.RegisterMetricsGatherer(
+			apmprometheus.Wrap(prometheus.DefaultGatherer),
+		)
 
-	return nil, nil
+		log.Info("Elastic APM registered: metrics and traces will be pushed regularly")
+		return nil, nil
+	default:
+		return nil, ErrInvalidExporter
+	}
 }

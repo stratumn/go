@@ -43,7 +43,7 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -168,7 +168,7 @@ func (s *Server) handleEvents() {
 }
 
 func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "fossilizerhttp/root")
+	span, ctx := apm.StartSpan(r.Context(), "fossilizerhttp/root", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	adapterInfo, err := s.adapter.GetInfo(ctx)
@@ -182,7 +182,7 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 }
 
 func (s *Server) fossilize(w http.ResponseWriter, r *http.Request, p httprouter.Params) (_ interface{}, err error) {
-	ctx, span := trace.StartSpan(r.Context(), "fossilizerhttp/fossilize")
+	span, ctx := apm.StartSpan(r.Context(), "fossilizerhttp/fossilize", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

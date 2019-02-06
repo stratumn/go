@@ -24,7 +24,7 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -51,7 +51,7 @@ func NewFossilsQueue(client *sqs.SQS, queueURL *string) fossilizer.FossilsQueue 
 
 // Push a fossil to the queue.
 func (q *FossilsQueue) Push(ctx context.Context, f *fossilizer.Fossil) (err error) {
-	_, span := trace.StartSpan(ctx, "cloud/aws/queue/push")
+	span, _ := apm.StartSpan(ctx, "cloud/aws/queue/push", monitoring.SpanTypeOutgoingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -76,7 +76,7 @@ func (q *FossilsQueue) Push(ctx context.Context, f *fossilizer.Fossil) (err erro
 
 // Pop fossils from the queue.
 func (q *FossilsQueue) Pop(ctx context.Context, count int) ([]*fossilizer.Fossil, error) {
-	ctx, span := trace.StartSpan(ctx, "cloud/aws/queue/pop")
+	span, ctx := apm.StartSpan(ctx, "cloud/aws/queue/pop", monitoring.SpanTypeOutgoingRequest)
 	defer span.End()
 
 	var results []*fossilizer.Fossil

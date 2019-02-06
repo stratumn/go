@@ -19,7 +19,8 @@ import (
 
 	"github.com/stratumn/go-core/bufferedbatch"
 	"github.com/stratumn/go-core/monitoring"
-	"go.opencensus.io/trace"
+
+	"go.elastic.co/apm"
 )
 
 // Batch is the type that implements github.com/stratumn/go-core/store.Batch.
@@ -39,7 +40,7 @@ func NewBatch(ctx context.Context, a *FileStore) *Batch {
 
 // Write implements github.com/stratumn/go-core/store.Batch.Write
 func (b *Batch) Write(ctx context.Context) (err error) {
-	_, span := trace.StartSpan(ctx, "filestore/batch/Write")
+	span, _ := apm.StartSpan(ctx, "filestore/batch/Write", monitoring.SpanTypeProcessing)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

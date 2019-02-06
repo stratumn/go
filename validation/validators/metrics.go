@@ -15,40 +15,28 @@
 package validators
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stratumn/go-core/monitoring"
+)
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
+const (
+	linkErr = "link_error"
 )
 
 var (
-	linksErr *stats.Int64Measure
-	linkErr  tag.Key
+	linksErr *prometheus.CounterVec
 )
 
 func init() {
-	linksErr = stats.Int64(
-		"stratumn/core/validation/links_error",
-		"number of invalid links",
-		stats.UnitDimensionless,
-	)
-
-	var err error
-	if linkErr, err = tag.NewKey("stratumn/core/validation/link_error"); err != nil {
-		log.Fatal(err)
-	}
-
-	err = view.Register(
-		&view.View{
-			Name:        "stratumn/core/validation/links_error",
-			Description: "number of invalid links",
-			Measure:     linksErr,
-			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{linkErr},
+	linksErr = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "validators",
+			Name:      "links_error",
+			Help:      "number of invalid links",
 		},
+		[]string{linkErr},
 	)
-	if err != nil {
-		log.Fatal(err)
-	}
+
 }

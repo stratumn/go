@@ -18,15 +18,14 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 // Batch can be used as a base class for types
@@ -40,13 +39,13 @@ type Batch struct {
 
 // NewBatch creates a new Batch.
 func NewBatch(ctx context.Context, a store.Adapter) *Batch {
-	stats.Record(ctx, batchCount.M(1))
+	batchCount.Inc()
 	return &Batch{originalStore: a}
 }
 
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chainscript.LinkHash, err error) {
-	_, span := trace.StartSpan(ctx, "bufferedbatch/CreateLink")
+	span, _ := apm.StartSpan(ctx, "bufferedbatch/CreateLink", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -61,7 +60,7 @@ func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chain
 
 // GetSegment returns a segment from the cache or delegates the call to the store.
 func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (segment *chainscript.Segment, err error) {
-	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetSegment")
+	span, ctx := apm.StartSpan(ctx, "bufferedbatch/GetSegment", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -91,7 +90,7 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 
 // FindSegments returns the union of segments in the store and not committed yet.
 func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ *types.PaginatedSegments, err error) {
-	ctx, span := trace.StartSpan(ctx, "bufferedbatch/FindSegments")
+	span, ctx := apm.StartSpan(ctx, "bufferedbatch/FindSegments", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -118,7 +117,7 @@ func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 
 // GetMapIDs returns the union of mapIds in the store and not committed yet.
 func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
-	ctx, span := trace.StartSpan(ctx, "bufferedbatch/GetMapIDs")
+	span, ctx := apm.StartSpan(ctx, "bufferedbatch/GetMapIDs", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -149,12 +148,12 @@ func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []str
 
 // Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
-	ctx, span := trace.StartSpan(ctx, "bufferedbatch/Write")
+	span, ctx := apm.StartSpan(ctx, "bufferedbatch/Write", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
 
-	stats.Record(ctx, linksPerBatch.M(int64(len(b.Links))))
+	linksPerBatch.Observe(float64(len(b.Links)))
 
 	for _, link := range b.Links {
 		_, err = b.originalStore.CreateLink(ctx, link)
@@ -164,12 +163,10 @@ func (b *Batch) Write(ctx context.Context) (err error) {
 	}
 
 	if err == nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(writeStatus, "success"))
+		writeCount.With(prometheus.Labels{writeStatus: "success"}).Inc()
 	} else {
-		ctx, _ = tag.New(ctx, tag.Upsert(writeStatus, "failure"))
+		writeCount.With(prometheus.Labels{writeStatus: "failure"}).Inc()
 	}
-
-	stats.Record(ctx, writeCount.M(1))
 
 	return
 }

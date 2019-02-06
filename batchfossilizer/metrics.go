@@ -15,42 +15,32 @@
 package batchfossilizer
 
 import (
-	"log"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 var (
-	batchCount           *stats.Int64Measure
-	fossilizedLinksCount *stats.Int64Measure
+	batchCount           prometheus.Counter
+	fossilizedLinksCount prometheus.Counter
 )
 
 func init() {
-	batchCount = stats.Int64(
-		"stratumn/core/batchfossilizer/batch_count",
-		"number of batches sent",
-		stats.UnitDimensionless,
+	batchCount = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "batchfossilizer",
+			Name:      "batch_count",
+			Help:      "number of batches sent",
+		},
 	)
 
-	fossilizedLinksCount = stats.Int64(
-		"stratumn/core/batchfossilizer/fossilized_links_count",
-		"number of links fossilized",
-		stats.UnitDimensionless,
-	)
-	if err := view.Register(
-		&view.View{
-			Name:        "stratumn/core/batchfossilizer/batch_count",
-			Description: "number of batches sent",
-			Measure:     batchCount,
-			Aggregation: view.Count(),
+	fossilizedLinksCount = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: monitoring.Stratumn,
+			Subsystem: "batchfossilizer",
+			Name:      "fossilized_links_count",
+			Help:      "number of links fossilized",
 		},
-		&view.View{
-			Name:        "stratumn/core/batchfossilizer/fossilized_links_count",
-			Description: "number of links fossilized",
-			Measure:     fossilizedLinksCount,
-			Aggregation: view.Count(),
-		}); err != nil {
-		log.Fatal(err)
-	}
+	)
 }

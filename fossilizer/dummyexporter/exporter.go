@@ -18,8 +18,8 @@ import (
 	"context"
 	"encoding/json"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/fossilizer"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 // DummyEventExporter exports fossilizer events to the console.
@@ -31,12 +31,12 @@ func New() fossilizer.EventExporter {
 }
 
 // Push prints the event to the console.
-func (e *DummyEventExporter) Push(_ context.Context, event *fossilizer.Event) error {
+func (e *DummyEventExporter) Push(ctx context.Context, event *fossilizer.Event) error {
 	b, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
-	log.WithField("event", string(b)).Info(event.EventType)
+	monitoring.LogWithTxFields(ctx).WithField("event", string(b)).Info(event.EventType)
 	return nil
 }

@@ -18,18 +18,8 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
-
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/stats/view"
 )
-
-func init() {
-	if err := view.Register(ochttp.DefaultServerViews...); err != nil {
-		log.Fatal(err)
-	}
-}
 
 // exposeMetrics configures metrics and traces exporters and
 // exposes them to collectors.
@@ -42,6 +32,7 @@ func (s *Server) exposeMetrics(config *monitoring.Config) error {
 	if err != nil {
 		return err
 	}
+
 	if metricsHandler != nil {
 		s.GetRaw(
 			"/metrics",
@@ -50,5 +41,6 @@ func (s *Server) exposeMetrics(config *monitoring.Config) error {
 			},
 		)
 	}
+
 	return nil
 }

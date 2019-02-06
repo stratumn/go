@@ -4,25 +4,10 @@
 [[projects]]
   digest = "1:eaf30a0c8af70a3370d149a2df0fb8b153cf0e2f04b009acd59cd72a2407e147"
   name = "cloud.google.com/go"
-  packages = [
-    "compute/metadata",
-    "monitoring/apiv3",
-    "trace/apiv2",
-  ]
+  packages = ["compute/metadata"]
   pruneopts = ""
   revision = "bb12be1742b232539b22ad8d0efc7afb02bbae39"
   version = "v0.33.0"
-
-[[projects]]
-  digest = "1:b6f2e97ae241056f5ab5af4c37e82b79339d64fe7c1c73ca26ce19b470661e3b"
-  name = "contrib.go.opencensus.io/exporter/stackdriver"
-  packages = [
-    ".",
-    "monitoredresource",
-  ]
-  pruneopts = ""
-  revision = "f6033e3f5e239c2fac5d6443ccdc2116d8c2850d"
-  version = "v0.7.0"
 
 [[projects]]
   digest = "1:ce24f8f5a32e5d349aa62427c924fc1f9cd0c6640405bf601c1542b4d7230fc7"
@@ -51,21 +36,20 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:cd1dcf6818e66d5003126e82d046425a6bdac5ae8113110b17d7b592e4c9c3d6"
-  name = "git.apache.org/thrift.git"
-  packages = ["lib/go/thrift"]
-  pruneopts = ""
-  revision = "24918abba929282d6e405fedbc2ef68c3e894136"
-  source = "github.com/apache/thrift"
-
-[[projects]]
   digest = "1:c7937d6337f88193ad8aade88c92d7e72b3d5fc6e5002a9515dabca5802624cd"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
   pruneopts = ""
   revision = "97e4973ce50b2ff5f09635a57e2b88a037aae829"
   version = "v0.4.11"
+
+[[projects]]
+  digest = "1:5680f8c40e48f07cb77aece3165a866aaf8276305258b3b70db8ec7ad6ddb78d"
+  name = "github.com/armon/go-radix"
+  packages = ["."]
+  pruneopts = ""
+  revision = "1a2de0c21c94309923825da3df33a4381872c795"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:e7bc25f207f70bb7e2a1b88c726bffa8eb4256ea17e5c8ab6e88f9b3c8f43a6f"
@@ -98,6 +82,7 @@
     "private/protocol/query/queryutil",
     "private/protocol/rest",
     "private/protocol/xml/xmlutil",
+    "service/sqs",
     "service/sts",
   ]
   pruneopts = ""
@@ -209,6 +194,30 @@
   revision = "95f809107225be108efcf10a3509e4ea6ceef3c4"
 
 [[projects]]
+  branch = "master"
+  digest = "1:10808a231991506e33d92579224ad81e649bc0b2874d99e0c8be8e234a52c3ab"
+  name = "github.com/elastic/go-sysinfo"
+  packages = [
+    ".",
+    "internal/registry",
+    "providers/darwin",
+    "providers/linux",
+    "providers/shared",
+    "providers/windows",
+    "types",
+  ]
+  pruneopts = ""
+  revision = "59ef8c0eae46c0929e3b219ac86368d4b5934f91"
+
+[[projects]]
+  branch = "master"
+  digest = "1:63509fc7f9aac866d56904b62131b2d1e71291d36513e072c560c3deaad704a0"
+  name = "github.com/elastic/go-windows"
+  packages = ["."]
+  pruneopts = ""
+  revision = "bb1581babc04d5cb29a2bfa7a9ac6781c730c8dd"
+
+[[projects]]
   digest = "1:eb53021a8aa3f599d29c7102e65026242bdedce998a54837dc67f14b6a97c5fd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -280,14 +289,10 @@
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
-    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
-    "ptypes/empty",
-    "ptypes/struct",
     "ptypes/timestamp",
-    "ptypes/wrappers",
   ]
   pruneopts = ""
   revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
@@ -300,14 +305,6 @@
   packages = ["."]
   pruneopts = ""
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
-
-[[projects]]
-  digest = "1:463579773f7f97e3a97ae6fb32abc90c03493e903a11c756a588bed06d0535e2"
-  name = "github.com/googleapis/gax-go"
-  packages = ["."]
-  pruneopts = ""
-  revision = "b001040cd31805261cbd978842099e326dfa857b"
-  version = "v2.0.2"
 
 [[projects]]
   digest = "1:64d212c703a2b94054be0ce470303286b177ad260b2f89a307e3d1bb6c073ef6"
@@ -339,6 +336,14 @@
   packages = ["."]
   pruneopts = ""
   revision = "c42d9e0ca023e2198120196f842701bb4c55d7b9"
+
+[[projects]]
+  branch = "master"
+  digest = "1:521a4970efd87aee222f294b7f0c281266fd4325a3e5c31bda725dff082d120a"
+  name = "github.com/joeshaw/multierror"
+  packages = ["."]
+  pruneopts = ""
+  revision = "69b34d4ec901851247ae7e77d33909caf9df99ed"
 
 [[projects]]
   digest = "1:deeb6536ebbcb66ab11213ecfaac9daadfcd004dd057446a4980ffd6c15c36e2"
@@ -456,16 +461,17 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:8b2082f564fe20dbb43a621ee0d57ae2777656ab14111d100d3d92d1b5b958b9"
+  digest = "1:6f218995d6a74636cfcab45ce03005371e682b4b9bee0e5eb0ccfd83ef85364f"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
     "prometheus/internal",
+    "prometheus/promauto",
     "prometheus/promhttp",
   ]
   pruneopts = ""
-  revision = "abad2d1bd44235a26707c172eab6bca5bf2dbad3"
-  version = "v0.9.1"
+  revision = "505eaef017263e299324067d40ca2c48f6a2cf50"
+  version = "v0.9.2"
 
 [[projects]]
   branch = "master"
@@ -507,6 +513,20 @@
   packages = ["."]
   pruneopts = ""
   revision = "3113b8401b8a98917cde58f8bbd42a1b1c03b1fd"
+
+[[projects]]
+  digest = "1:4b73a0659a08dd32fb042bfee9e62f4481bddf18cfc4dbff7dc68084e6ea4460"
+  name = "github.com/santhosh-tekuri/jsonschema"
+  packages = [
+    ".",
+    "decoders",
+    "formats",
+    "loader",
+    "mediatypes",
+  ]
+  pruneopts = ""
+  revision = "534765aa6277d702a0aaf99c986492dda697d48f"
+  version = "v1.2.4"
 
 [[projects]]
   digest = "1:9d57e200ef5ccc4217fe0a34287308bac652435e7c6513f6263e0493d2245c56"
@@ -710,30 +730,42 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:8c8ec859c77fccd10a347b7219b597c4c21c448949e8bdf3fc3e6f4c78f952b4"
-  name = "go.opencensus.io"
+  digest = "1:a98315339728e075197d04be6a57a46b141aa382db3728392f0771e9a54cf77b"
+  name = "go.elastic.co/apm"
   packages = [
     ".",
-    "exporter/jaeger",
-    "exporter/jaeger/internal/gen-go/jaeger",
-    "exporter/prometheus",
-    "internal",
-    "internal/tagencoding",
-    "plugin/ocgrpc",
-    "plugin/ochttp",
-    "plugin/ochttp/propagation/b3",
-    "stats",
-    "stats/internal",
-    "stats/view",
-    "tag",
-    "trace",
-    "trace/internal",
-    "trace/propagation",
-    "trace/tracestate",
+    "internal/apmconfig",
+    "internal/apmcontext",
+    "internal/apmhostutil",
+    "internal/apmhttputil",
+    "internal/apmlog",
+    "internal/apmschema",
+    "internal/apmstrings",
+    "internal/iochan",
+    "internal/ringbuffer",
+    "internal/sqlscanner",
+    "internal/sqlutil",
+    "internal/wildcard",
+    "model",
+    "module/apmhttp",
+    "module/apmhttprouter",
+    "module/apmprometheus",
+    "module/apmsql",
+    "module/apmsql/pq",
+    "stacktrace",
+    "transport",
   ]
   pruneopts = ""
-  revision = "79993219becaa7e29e3b60cb67f5b8e82dee11d6"
-  version = "v0.17.0"
+  revision = "cc1e77d6cd8552403fc3f91464308b1d3ceebab4"
+  version = "v1.2.0"
+
+[[projects]]
+  digest = "1:e05c654acb77a3d7c00aecaf64fdb66310f5f063f896a0d749be8a8d1fb168df"
+  name = "go.elastic.co/fastjson"
+  packages = ["."]
+  pruneopts = ""
+  revision = "676cec79bd027a8a4618de0991f27cfe632978f1"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -792,19 +824,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:88ecca26e54f601a8733c9a31d9f0883b915216a177673f0467f6b864fd0d90f"
-  name = "golang.org/x/sync"
-  packages = ["semaphore"]
-  pruneopts = ""
-  revision = "42b317875d0fa942474b76e1b46a6060d720ae6e"
-
-[[projects]]
-  branch = "master"
   digest = "1:3f5c191d90f1cf365ff1f88e4b08eb766ee6ade1cb2e4efd7c316cf7e015ac17"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
+    "windows/registry",
   ]
   pruneopts = ""
   revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
@@ -837,15 +862,8 @@
   digest = "1:e052ac016676b0750da59a64debe6110fbd2ccd1cb368d5d561b5e721edbb1bc"
   name = "google.golang.org/api"
   packages = [
-    "googleapi/transport",
     "internal",
-    "iterator",
     "option",
-    "support/bundler",
-    "transport",
-    "transport/grpc",
-    "transport/http",
-    "transport/http/internal/propagation",
   ]
   pruneopts = ""
   revision = "c5e41677a12edeac5437ebceb220505ec6b90669"
@@ -862,9 +880,7 @@
     "internal/log",
     "internal/modules",
     "internal/remote_api",
-    "internal/socket",
     "internal/urlfetch",
-    "socket",
     "urlfetch",
   ]
   pruneopts = ""
@@ -875,17 +891,7 @@
   branch = "master"
   digest = "1:212d4045ef941b209a154001718705dc723bd77e0200fcea36d15ec87ed49dec"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/api/annotations",
-    "googleapis/api/distribution",
-    "googleapis/api/label",
-    "googleapis/api/metric",
-    "googleapis/api/monitoredres",
-    "googleapis/devtools/cloudtrace/v2",
-    "googleapis/monitoring/v3",
-    "googleapis/rpc/status",
-    "protobuf/field_mask",
-  ]
+  packages = ["googleapis/rpc/status"]
   pruneopts = ""
   revision = "b5d43981345bdb2c233eb4bf3277847b48c6fdc6"
 
@@ -900,7 +906,6 @@
     "codes",
     "connectivity",
     "credentials",
-    "credentials/oauth",
     "encoding",
     "encoding/proto",
     "grpclog",
@@ -953,15 +958,25 @@
   revision = "64076e7cb29082288c24da773249419b82b20050"
   version = "v4.1.0"
 
+[[projects]]
+  branch = "master"
+  digest = "1:e43acd1190dde7223727f1f8aeac537156d33bf87776d5637e672e1c6b354be4"
+  name = "howett.net/plist"
+  packages = ["."]
+  pruneopts = ""
+  revision = "591f970eefbbeb04d7b37f334a0c4c3256e32876"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "contrib.go.opencensus.io/exporter/stackdriver",
     "docker.io/go-docker",
     "docker.io/go-docker/api/types",
     "docker.io/go-docker/api/types/container",
     "docker.io/go-docker/api/types/network",
+    "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/sqs",
     "github.com/blockcypher/gobcy",
     "github.com/btcsuite/btcd/btcec",
     "github.com/btcsuite/btcd/chaincfg",
@@ -979,6 +994,9 @@
     "github.com/lib/pq",
     "github.com/olivere/elastic",
     "github.com/pkg/errors",
+    "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/promauto",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/sirupsen/logrus",
     "github.com/stratumn/go-chainscript",
     "github.com/stratumn/go-chainscript/chainscripttest",
@@ -1002,13 +1020,12 @@
     "github.com/tendermint/tmlibs/db",
     "github.com/tendermint/tmlibs/log",
     "github.com/xeipuuv/gojsonschema",
-    "go.opencensus.io/exporter/jaeger",
-    "go.opencensus.io/exporter/prometheus",
-    "go.opencensus.io/plugin/ochttp",
-    "go.opencensus.io/stats",
-    "go.opencensus.io/stats/view",
-    "go.opencensus.io/tag",
-    "go.opencensus.io/trace",
+    "go.elastic.co/apm",
+    "go.elastic.co/apm/module/apmhttp",
+    "go.elastic.co/apm/module/apmhttprouter",
+    "go.elastic.co/apm/module/apmprometheus",
+    "go.elastic.co/apm/module/apmsql",
+    "go.elastic.co/apm/module/apmsql/pq",
     "google.golang.org/api/option",
     "gopkg.in/dancannon/gorethink.v4",
   ]

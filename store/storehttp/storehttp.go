@@ -56,7 +56,7 @@ import (
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -171,7 +171,7 @@ func (s *Server) loop() {
 }
 
 func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "storehttp/root")
+	span, ctx := apm.StartSpan(r.Context(), "storehttp/root", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	adapterInfo, err := s.adapter.GetInfo(ctx)
@@ -186,14 +186,15 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 }
 
 func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "storehttp/createLink")
+	span, ctx := apm.StartSpan(r.Context(), "storehttp/createLink", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	decoder := json.NewDecoder(r.Body)
 
 	var link chainscript.Link
 	if err := decoder.Decode(&link); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
+		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
 		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Decode"))
 	}
 
@@ -206,12 +207,13 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 }
 
 func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "storehttp/addEvidence")
+	span, ctx := apm.StartSpan(r.Context(), "storehttp/addEvidence", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
+		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
 		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not parse link hash"))
 	}
 
@@ -219,7 +221,8 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 
 	var evidence chainscript.Evidence
 	if err := decoder.Decode(&evidence); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
+		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
 		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Decode"))
 	}
 
@@ -232,12 +235,13 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 }
 
 func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "storehttp/getSegment")
+	span, ctx := apm.StartSpan(r.Context(), "storehttp/getSegment", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
+		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
 		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not parse link hash"))
 	}
 
@@ -247,7 +251,7 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 		return nil, jsonhttp.NewErrHTTP(err)
 	}
 	if seg == nil {
-		span.SetStatus(trace.Status{Code: errorcode.NotFound})
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.NotFound))
 		return nil, jsonhttp.NewErrNotFound()
 	}
 
@@ -255,7 +259,7 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 }
 
 func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "storehttp/findSegments")
+	span, ctx := apm.StartSpan(r.Context(), "storehttp/findSegments", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	filter, e := parseSegmentFilter(r)
@@ -274,7 +278,7 @@ func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprout
 }
 
 func (s *Server) getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	ctx, span := trace.StartSpan(r.Context(), "storehttp/getMapIDs")
+	span, ctx := apm.StartSpan(r.Context(), "storehttp/getMapIDs", monitoring.SpanTypeIncomingRequest)
 	defer span.End()
 
 	filter, e := parseMapFilter(r)

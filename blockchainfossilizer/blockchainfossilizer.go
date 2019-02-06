@@ -28,7 +28,7 @@ import (
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/monitoring"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 const (
@@ -93,7 +93,7 @@ func (a *Fossilizer) AddFossilizerEventChan(fossilizerEventChan chan *fossilizer
 
 // Fossilize data to the configured blockchain.
 func (a *Fossilizer) Fossilize(ctx context.Context, data []byte, meta []byte) (err error) {
-	ctx, span := trace.StartSpan(ctx, "blockchainfossilizer/Fossilize")
+	span, ctx := apm.StartSpan(ctx, "blockchainfossilizer/Fossilize", monitoring.SpanTypeIncomingRequest)
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

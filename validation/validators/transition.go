@@ -19,13 +19,11 @@ import (
 	"crypto/sha256"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 )
 
 const (
@@ -75,8 +73,7 @@ func (tv TransitionValidator) Hash() ([]byte, error) {
 // an empty string.
 func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentReader, link *chainscript.Link) error {
 	error := func(src string) error {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, TransitionValidatorName))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: TransitionValidatorName}).Inc()
 		return types.WrapErrorf(ErrInvalidTransition, errorcode.InvalidArgument, TransitionValidatorName, "%s --> %s", src, tv.step)
 	}
 
@@ -93,13 +90,11 @@ func (tv TransitionValidator) Validate(ctx context.Context, store store.SegmentR
 
 	parent, err := store.GetSegment(ctx, prevLinkHash)
 	if err != nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "TransitionParentErr"))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: "TransitionParentErr"}).Inc()
 		return types.WrapError(err, errorcode.NotFound, TransitionValidatorName, prevLinkHash.String())
 	}
 	if parent == nil {
-		ctx, _ = tag.New(ctx, tag.Upsert(linkErr, "TransitionParentNil"))
-		stats.Record(ctx, linksErr.M(1))
+		linksErr.With(prometheus.Labels{linkErr: "TransitionParentNil"}).Inc()
 		return types.NewError(errorcode.NotFound, TransitionValidatorName, prevLinkHash.String())
 	}
 

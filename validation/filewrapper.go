@@ -27,8 +27,7 @@ import (
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 // StoreWithConfigFile wraps a store adapter with a layer of validations
@@ -85,13 +84,15 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 
 // CreateLink applies validations before creating the link.
 func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
-	stats.Record(ctx, linksCount.M(1))
-	ctx, span := trace.StartSpan(ctx, "validation/CreateLink")
+	linksCount.Inc()
+	span, ctx := apm.StartSpan(ctx, "validation/CreateLink", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	if err := link.Validate(ctx); err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")
+		err = types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")
+		monitoring.LogWithTxFields(ctx).Errorf("%v+", err)
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	if err := a.defaultValidator.Validate(ctx, a, link); err != nil {

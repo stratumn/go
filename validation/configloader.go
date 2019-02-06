@@ -20,36 +20,40 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
 
-	"go.opencensus.io/trace"
+	"go.elastic.co/apm"
 )
 
 // LoadFromFile loads the validation rules from a json file.
 func LoadFromFile(ctx context.Context, validationCfg *Config) (validators.ProcessesValidators, error) {
-	_, span := trace.StartSpan(ctx, "validation/LoadFromFile")
+	span, _ := apm.StartSpan(ctx, "validation/LoadFromFile", monitoring.SpanTypeProcessing)
 	defer span.End()
 
 	f, err := os.Open(validationCfg.RulesPath)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not load validation rules")
+		err = types.WrapError(err, errorcode.InvalidArgument, Component, "could not load validation rules")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 	defer f.Close()
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not load validation rules")
+		err = types.WrapError(err, errorcode.InvalidArgument, Component, "could not load validation rules")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	var rules ProcessesRules
 	err = json.Unmarshal(data, &rules)
 	if err != nil {
-		span.SetStatus(trace.Status{Code: errorcode.InvalidArgument, Message: err.Error()})
-		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "json.Unmarshal")
+		err = types.WrapError(err, errorcode.InvalidArgument, Component, "json.Unmarshal")
+		monitoring.SetSpanStatus(span, err)
+		return nil, err
 	}
 
 	return rules.Validators(validationCfg.PluginsPath)

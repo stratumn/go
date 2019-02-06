@@ -26,7 +26,10 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
-	"go.opencensus.io/plugin/ochttp"
+	"github.com/stratumn/go-core/monitoring"
+
+	"go.elastic.co/apm/module/apmhttp"
+	"go.elastic.co/apm/module/apmhttprouter"
 )
 
 const (
@@ -68,7 +71,7 @@ type Config struct {
 // Server is the type that implements net/http.Handler.
 type Server struct {
 	server *http.Server
-	router *httprouter.Router
+	router *apmhttprouter.Router
 	config *Config
 }
 
@@ -92,12 +95,12 @@ func SetCORSHeaders(w http.ResponseWriter, _ *http.Request, _ httprouter.Params)
 
 // New creates an instance of Server.
 func New(config *Config) *Server {
-	router := httprouter.New()
+	router := apmhttprouter.New()
 	router.NotFound = notFoundHandler{config: config, serve: NotFound}
 
 	server := &http.Server{
 		Addr:           config.Address,
-		Handler:        &ochttp.Handler{Handler: router},
+		Handler:        apmhttp.Wrap(router),
 		ReadTimeout:    config.ReadTimeout,
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
@@ -211,7 +214,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(js)
 	if err != nil {
-		log.Warn(err)
+		monitoring.LogWithTxFields(r.Context()).
+			WithError(err).
+			Warn("could not send HTTP response")
 	}
 }
 
@@ -227,21 +232,25 @@ func (h rawHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprout
 func renderErr(w http.ResponseWriter, r *http.Request, err error) {
 	e, ok := err.(ErrHTTP)
 	if ok {
-		log.WithFields(log.Fields{
-			"status": e.Status(),
-			"method": r.Method,
-			"url":    r.RequestURI,
-			"origin": r.RemoteAddr,
-			"error":  err,
-		}).Warn("Failed to handle request")
+		monitoring.LogWithTxFields(r.Context()).
+			WithFields(log.Fields{
+				"status": e.Status(),
+				"method": r.Method,
+				"url":    r.RequestURI,
+				"origin": r.RemoteAddr,
+				"error":  err,
+			}).
+			Warn("Failed to handle request")
 	} else {
-		log.WithFields(log.Fields{
-			"status": 500,
-			"method": r.Method,
-			"url":    r.RequestURI,
-			"origin": r.RemoteAddr,
-			"error":  err,
-		}).Error("Failed to handle request")
+		monitoring.LogWithTxFields(r.Context()).
+			WithFields(log.Fields{
+				"status": 500,
+				"method": r.Method,
+				"url":    r.RequestURI,
+				"origin": r.RemoteAddr,
+				"error":  err,
+			}).
+			Error("Failed to handle request")
 		e = NewErrInternalServer()
 	}
 
