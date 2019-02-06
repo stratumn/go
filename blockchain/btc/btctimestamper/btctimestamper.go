@@ -182,7 +182,7 @@ func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid typ
 
 	remaining := res.Total - ts.config.Fee
 
-	log.WithFields(log.Fields{
+	monitoring.LogWithTxFields(ctx).WithFields(log.Fields{
 		"txid":      txHash32,
 		"remaining": remaining,
 	}).Info("Broadcasted transaction")

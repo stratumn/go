@@ -89,7 +89,7 @@ func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.
 	defer span.End()
 
 	if err := link.Validate(ctx); err != nil {
-		log.Errorf("%v+", err)
+		monitoring.LogWithTxFields(ctx).Errorf("%v+", err)
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
 		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create link")

@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/monitoring"
@@ -172,8 +171,10 @@ func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
 		err = a.foss.Fossilize(ctx, root, nil)
 		if err != nil {
 			monitoring.SetSpanStatus(span, err)
-
-			log.Warnf("Batch fossilization failed. Pushing %d pending fossils back to the queue.", len(fossils))
+			monitoring.LogWithTxFields(ctx).
+				WithField("fossils_count", len(fossils)).
+				WithError(err).
+				Warn("Batch fossilization failed. Pushing pending fossils back to the queue.")
 
 			a.removePendingProofs(root)
 
@@ -184,10 +185,10 @@ func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
 			for _, fossil := range fossils {
 				err := a.queue.Push(ctx, fossil)
 				if err != nil {
-					log.Errorf("Could not enqueue fossil. %s won't be fossilized, please investigate. %s",
-						hex.EncodeToString(fossil.Data),
-						err.Error(),
-					)
+					monitoring.LogWithTxFields(ctx).
+						WithField("fossil", hex.EncodeToString(fossil.Data)).
+						WithError(err).
+						Error("Could not enqueue fossil. Fossilization failed, please investigate.")
 				}
 			}
 
@@ -277,7 +278,7 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 		p.proof.Proof = r.Evidence.Proof
 		ev, err := p.proof.Evidence(Name)
 		if err != nil {
-			log.WithError(err).Warnf("could not create evidence")
+			monitoring.LogWithTxFields(ctx).WithError(err).Warnf("could not create evidence")
 			continue
 		}
 

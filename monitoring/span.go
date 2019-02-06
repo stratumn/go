@@ -15,7 +15,6 @@
 package monitoring
 
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
@@ -47,13 +46,13 @@ func SetSpanStatus(span *apm.Span, err error) {
 		case *types.Error:
 			// We want to include a stack trace to make it easy to
 			// investigate, hence the format.
-			log.Errorf("%v+", e)
+			LogWithSpanFields(span).Errorf("%v+", e)
 
 			span.Context.SetTag(ErrorLabel, e.Error())
 			span.Context.SetTag(ErrorCodeLabel, errorcode.Text(e.Code))
 			span.Context.SetTag(ErrorComponentLabel, e.Component)
 		default:
-			log.Error(err)
+			LogWithSpanFields(span).Errorf("%v+", err)
 			span.Context.SetTag(ErrorLabel, err.Error())
 		}
 	}

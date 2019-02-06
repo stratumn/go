@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/tmpop/evidences"
@@ -111,7 +110,7 @@ func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Blo
 	for _, tx := range tmBlock.Block.Txs {
 		tmTx, err := unmarshallTx(tx)
 		if !err.IsOK() || tmTx.TxType != CreateLink {
-			log.Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
+			monitoring.LogWithTxFields(ctx).Warnf("Could not unmarshall block Tx %+v. Evidence will not be created.", tx)
 			span.Context.SetTag(monitoring.ErrorLabel, fmt.Sprintf("Could not unmarshall block Tx %+v.", tx))
 			continue
 		}

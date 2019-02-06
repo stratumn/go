@@ -18,7 +18,6 @@ import (
 	"context"
 	"database/sql"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
 
 	"go.elastic.co/apm"
@@ -58,7 +57,9 @@ func (b *Batch) Write(ctx context.Context) (err error) {
 	if b.txFactory.rollback {
 		err := b.tx.Rollback()
 		if err != nil {
-			log.Warnf("Error during transaction rollback: %s", err.Error())
+			monitoring.LogWithTxFields(ctx).
+				WithError(err).
+				Warn("Error during transaction rollback")
 		}
 
 		return b.txFactory.err

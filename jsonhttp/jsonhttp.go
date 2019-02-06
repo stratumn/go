@@ -26,6 +26,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 
 	"go.elastic.co/apm/module/apmhttp"
 	"go.elastic.co/apm/module/apmhttprouter"
@@ -213,7 +214,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(js)
 	if err != nil {
-		log.Warn(err)
+		monitoring.LogWithTxFields(r.Context()).
+			WithError(err).
+			Warn("could not send HTTP response")
 	}
 }
 
@@ -229,21 +232,25 @@ func (h rawHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprout
 func renderErr(w http.ResponseWriter, r *http.Request, err error) {
 	e, ok := err.(ErrHTTP)
 	if ok {
-		log.WithFields(log.Fields{
-			"status": e.Status(),
-			"method": r.Method,
-			"url":    r.RequestURI,
-			"origin": r.RemoteAddr,
-			"error":  err,
-		}).Warn("Failed to handle request")
+		monitoring.LogWithTxFields(r.Context()).
+			WithFields(log.Fields{
+				"status": e.Status(),
+				"method": r.Method,
+				"url":    r.RequestURI,
+				"origin": r.RemoteAddr,
+				"error":  err,
+			}).
+			Warn("Failed to handle request")
 	} else {
-		log.WithFields(log.Fields{
-			"status": 500,
-			"method": r.Method,
-			"url":    r.RequestURI,
-			"origin": r.RemoteAddr,
-			"error":  err,
-		}).Error("Failed to handle request")
+		monitoring.LogWithTxFields(r.Context()).
+			WithFields(log.Fields{
+				"status": 500,
+				"method": r.Method,
+				"url":    r.RequestURI,
+				"origin": r.RemoteAddr,
+				"error":  err,
+			}).
+			Error("Failed to handle request")
 		e = NewErrInternalServer()
 	}
 
