@@ -33,10 +33,6 @@
   version = "^1.7.3"
 
 [[constraint]]
-  name = "go.opencensus.io"
-  version = "^0.17.0"
-
-[[constraint]]
   name = "github.com/stratumn/go-chainscript"
   version = "=1.0.1"
 

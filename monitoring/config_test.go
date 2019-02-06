@@ -16,124 +16,56 @@ package monitoring_test
 
 import (
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConfig(t *testing.T) {
-	serviceName := "svc"
-	credentialsFile := "./testdata/credentials_test.json"
+	t.Run("monitoring turned off", func(t *testing.T) {
+		c := &monitoring.Config{Monitor: false}
+		handler, err := monitoring.Configure(c, "test")
 
-	t.Run("with default values", func(t *testing.T) {
-		c := &monitoring.Config{
-			Monitor:            true,
-			MetricsPort:        1,
-			TraceSamplingRatio: 1,
-			MetricsExporter:    monitoring.PrometheusExporter,
-			TracesExporter:     monitoring.JaegerExporter,
-			JaegerConfig:       &monitoring.JaegerConfig{},
-		}
-		handler, err := monitoring.Configure(c, serviceName)
 		require.NoError(t, err)
+		require.Nil(t, handler)
+	})
+
+	t.Run("invalid exporter", func(t *testing.T) {
+		c := &monitoring.Config{
+			Monitor:     true,
+			MetricsPort: 1,
+			Exporter:    "stackdriver",
+		}
+
+		handler, err := monitoring.Configure(c, "test")
+		require.EqualError(t, err, monitoring.ErrInvalidExporter.Error())
+		require.Nil(t, handler)
+	})
+
+	t.Run("prometheus exporter", func(t *testing.T) {
+		c := &monitoring.Config{
+			Monitor:  true,
+			Exporter: monitoring.PrometheusExporter,
+		}
+
+		handler, err := monitoring.Configure(c, "test")
+		require.NoError(t, err)
+		require.NotNil(t, handler)
+
 		_, ok := handler.(http.Handler)
-		require.True(t, ok)
+		assert.True(t, ok)
 	})
 
-	t.Run("with stackdriver", func(t *testing.T) {
-		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", credentialsFile)
-
+	t.Run("elastic exporter", func(t *testing.T) {
 		c := &monitoring.Config{
-			Monitor:                true,
-			MetricsPort:            1,
-			MetricsReportingPeriod: 60,
-			TraceSamplingRatio:     1,
-			MetricsExporter:        monitoring.StackdriverExporter,
-			TracesExporter:         monitoring.StackdriverExporter,
-			StackdriverConfig: &monitoring.StackdriverConfig{
-				ProjectID: "projectID",
-			},
+			Monitor:  true,
+			Exporter: monitoring.ElasticExporter,
 		}
-		handler, err := monitoring.Configure(c, serviceName)
+
+		handler, err := monitoring.Configure(c, "test")
 		require.NoError(t, err)
-		require.Nil(t, handler)
-	})
-
-	t.Run("invalid traces exporter", func(t *testing.T) {
-		c := &monitoring.Config{
-			Monitor:            true,
-			MetricsPort:        1,
-			TraceSamplingRatio: 1,
-			MetricsExporter:    monitoring.StackdriverExporter,
-			TracesExporter:     "invalid",
-			StackdriverConfig: &monitoring.StackdriverConfig{
-				ProjectID: "projectID",
-			},
-		}
-		handler, err := monitoring.Configure(c, serviceName)
-		require.EqualError(t, err, monitoring.ErrInvalidTracesExporter.Error())
-		require.Nil(t, handler)
-	})
-
-	t.Run("invalid metrics exporter", func(t *testing.T) {
-		c := &monitoring.Config{
-			Monitor:            true,
-			MetricsPort:        1,
-			TraceSamplingRatio: 1,
-			MetricsExporter:    "invalid",
-			TracesExporter:     monitoring.StackdriverExporter,
-			StackdriverConfig: &monitoring.StackdriverConfig{
-				ProjectID: "projectID",
-			},
-		}
-		handler, err := monitoring.Configure(c, serviceName)
-		require.EqualError(t, err, monitoring.ErrInvalidMetricsExporter.Error())
-		require.Nil(t, handler)
-	})
-
-	t.Run("missing exporter config", func(t *testing.T) {
-		c := &monitoring.Config{
-			Monitor:            true,
-			MetricsPort:        1,
-			TraceSamplingRatio: 1,
-			MetricsExporter:    monitoring.PrometheusExporter,
-			TracesExporter:     monitoring.JaegerExporter,
-			JaegerConfig:       nil,
-		}
-		handler, err := monitoring.Configure(c, serviceName)
-		require.EqualError(t, err, monitoring.ErrMissingExporterConfig.Error())
-		require.Nil(t, handler)
-	})
-
-	t.Run("missing stackdriver project ID", func(t *testing.T) {
-		c := &monitoring.Config{
-			Monitor:                true,
-			MetricsPort:            1,
-			TraceSamplingRatio:     1,
-			MetricsReportingPeriod: 60,
-			MetricsExporter:        monitoring.StackdriverExporter,
-			TracesExporter:         monitoring.StackdriverExporter,
-			StackdriverConfig:      &monitoring.StackdriverConfig{},
-		}
-		handler, err := monitoring.Configure(c, serviceName)
-		require.EqualError(t, err, monitoring.ErrMissingProjectID.Error())
-		require.Nil(t, handler)
-	})
-
-	t.Run("invalid reporting period", func(t *testing.T) {
-		c := &monitoring.Config{
-			Monitor:                true,
-			MetricsPort:            1,
-			MetricsReportingPeriod: 1,
-			TraceSamplingRatio:     1,
-			MetricsExporter:        monitoring.StackdriverExporter,
-			TracesExporter:         monitoring.StackdriverExporter,
-			StackdriverConfig:      &monitoring.StackdriverConfig{ProjectID: "yea"},
-		}
-		handler, err := monitoring.Configure(c, serviceName)
-		require.EqualError(t, err, monitoring.ErrInvalidReportingPeriod.Error())
 		require.Nil(t, handler)
 	})
 }

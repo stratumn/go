@@ -26,7 +26,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
-	"go.opencensus.io/plugin/ochttp"
+
+	"go.elastic.co/apm/module/apmhttp"
+	"go.elastic.co/apm/module/apmhttprouter"
 )
 
 const (
@@ -68,7 +70,7 @@ type Config struct {
 // Server is the type that implements net/http.Handler.
 type Server struct {
 	server *http.Server
-	router *httprouter.Router
+	router *apmhttprouter.Router
 	config *Config
 }
 
@@ -92,12 +94,12 @@ func SetCORSHeaders(w http.ResponseWriter, _ *http.Request, _ httprouter.Params)
 
 // New creates an instance of Server.
 func New(config *Config) *Server {
-	router := httprouter.New()
+	router := apmhttprouter.New()
 	router.NotFound = notFoundHandler{config: config, serve: NotFound}
 
 	server := &http.Server{
 		Addr:           config.Address,
-		Handler:        &ochttp.Handler{Handler: router},
+		Handler:        apmhttp.Wrap(router),
 		ReadTimeout:    config.ReadTimeout,
 		WriteTimeout:   config.WriteTimeout,
 		MaxHeaderBytes: config.MaxHeaderBytes,
