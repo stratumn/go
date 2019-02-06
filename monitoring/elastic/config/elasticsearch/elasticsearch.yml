@@ -1,0 +1,9 @@
+cluster.name: "docker-cluster"
+network.host: 0.0.0.0
+
+# Set to 1 to allow single node clusters.
+# See https://github.com/elastic/elasticsearch/pull/17288
+discovery.zen.minimum_master_nodes: 1
+
+## See https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+discovery.type: single-node
