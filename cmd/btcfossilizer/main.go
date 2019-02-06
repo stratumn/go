@@ -52,6 +52,8 @@ func init() {
 	batchfossilizer.RegisterFlags()
 	monitoring.RegisterFlags()
 	aws.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {

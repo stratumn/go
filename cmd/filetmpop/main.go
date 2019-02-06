@@ -36,6 +36,8 @@ func init() {
 	tendermint.RegisterFlags()
 	monitoring.RegisterFlags()
 	validation.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {

@@ -20,6 +20,10 @@ var (
 	monitor     bool
 	metricsPort int
 	exporter    string
+
+	// These should be set by the executable at start-up.
+	version string
+	commit  string
 )
 
 // RegisterFlags registers the command-line monitoring flags.
@@ -27,6 +31,12 @@ func RegisterFlags() {
 	flag.BoolVar(&monitor, "monitoring.active", true, "Set to true to activate monitoring")
 	flag.IntVar(&metricsPort, "monitoring.metrics.port", 0, "Port to use to expose metrics, for example 5001")
 	flag.StringVar(&exporter, "monitoring.exporter", PrometheusExporter, "Exporter for metrics and traces (either prometheus or elastic)")
+}
+
+// SetVersion sets the current code's version and commit.
+func SetVersion(v, c string) {
+	version = v
+	commit = c
 }
 
 // ConfigurationFromFlags builds configuration from user-provided

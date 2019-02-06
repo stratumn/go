@@ -41,10 +41,13 @@ func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
 	validation.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {
 	flag.Parse()
+
 	log.Infof("%s v%s@%s", couchstore.Description, version, commit[:7])
 
 	var a store.Adapter

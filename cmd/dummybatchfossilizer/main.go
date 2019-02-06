@@ -35,6 +35,8 @@ func init() {
 	fossilizerhttp.RegisterFlags()
 	batchfossilizer.RegisterFlags()
 	monitoring.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {

@@ -20,6 +20,7 @@ import (
 	"runtime"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/tendermint"
 	"github.com/tendermint/abci/types"
 )
@@ -31,6 +32,8 @@ var (
 
 func init() {
 	tendermint.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {

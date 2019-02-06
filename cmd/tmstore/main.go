@@ -36,6 +36,8 @@ var (
 func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {
