@@ -24,13 +24,11 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
-
-	"go.elastic.co/apm"
 )
 
 // LoadFromFile loads the validation rules from a json file.
 func LoadFromFile(ctx context.Context, validationCfg *Config) (validators.ProcessesValidators, error) {
-	span, _ := apm.StartSpan(ctx, "validation/LoadFromFile", monitoring.SpanTypeProcessing)
+	span, _ := monitoring.StartSpanProcessing(ctx, "validation/LoadFromFile")
 	defer span.End()
 
 	f, err := os.Open(validationCfg.RulesPath)

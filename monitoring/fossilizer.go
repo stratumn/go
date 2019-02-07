@@ -19,8 +19,6 @@ import (
 	"fmt"
 
 	"github.com/stratumn/go-core/fossilizer"
-
-	"go.elastic.co/apm"
 )
 
 // FossilizerAdapter is a decorator for the Fossilizer interface.
@@ -37,7 +35,7 @@ func NewFossilizerAdapter(f fossilizer.Adapter, name string) fossilizer.Adapter 
 
 // GetInfo instruments the call and delegates to the underlying fossilizer.
 func (a *FossilizerAdapter) GetInfo(ctx context.Context) (res interface{}, err error) {
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/GetInfo", a.name), SpanTypeIncomingRequest)
+	span, ctx := StartSpanIncomingRequest(ctx, fmt.Sprintf("%s/GetInfo", a.name))
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 	}()
@@ -48,7 +46,7 @@ func (a *FossilizerAdapter) GetInfo(ctx context.Context) (res interface{}, err e
 
 // AddFossilizerEventChan instruments the call and delegates to the underlying fossilizer.
 func (a *FossilizerAdapter) AddFossilizerEventChan(c chan *fossilizer.Event) {
-	span, _ := apm.StartSpan(context.Background(), fmt.Sprintf("%s/AddFossilizerEventChan", a.name), SpanTypeIncomingRequest)
+	span, _ := StartSpanIncomingRequest(context.Background(), fmt.Sprintf("%s/AddFossilizerEventChan", a.name))
 	defer span.End()
 
 	a.f.AddFossilizerEventChan(c)
@@ -57,7 +55,7 @@ func (a *FossilizerAdapter) AddFossilizerEventChan(c chan *fossilizer.Event) {
 // Fossilize instruments the call and delegates to the underlying fossilizer.
 func (a *FossilizerAdapter) Fossilize(ctx context.Context, data []byte, meta []byte) (err error) {
 	tracker := newFossilizerRequestTracker("Fossilize")
-	span, ctx := apm.StartSpan(ctx, fmt.Sprintf("%s/Fossilize", a.name), SpanTypeIncomingRequest)
+	span, ctx := StartSpanIncomingRequest(ctx, fmt.Sprintf("%s/Fossilize", a.name))
 	defer func() {
 		SetSpanStatusAndEnd(span, err)
 		tracker.End(err)

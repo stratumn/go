@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
@@ -74,13 +75,13 @@ type ESStore struct {
 type errorLogger struct{}
 
 func (l errorLogger) Printf(format string, vars ...interface{}) {
-	log.Errorf(format, vars...)
+	monitoring.LogEntry().Errorf(format, vars...)
 }
 
 type debugLogger struct{}
 
 func (l debugLogger) Printf(format string, vars ...interface{}) {
-	log.Debugf(format, vars...)
+	monitoring.LogEntry().Debugf(format, vars...)
 }
 
 // New creates a new instance of an ElasticSearch store.

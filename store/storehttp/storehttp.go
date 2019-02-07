@@ -55,8 +55,6 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
-	"go.elastic.co/apm"
 )
 
 const (
@@ -171,7 +169,7 @@ func (s *Server) loop() {
 }
 
 func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	span, ctx := apm.StartSpan(r.Context(), "storehttp/root", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/root")
 	defer span.End()
 
 	adapterInfo, err := s.adapter.GetInfo(ctx)
@@ -186,7 +184,7 @@ func (s *Server) root(w http.ResponseWriter, r *http.Request, _ httprouter.Param
 }
 
 func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	span, ctx := apm.StartSpan(r.Context(), "storehttp/createLink", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/createLink")
 	defer span.End()
 
 	decoder := json.NewDecoder(r.Body)
@@ -207,7 +205,7 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 }
 
 func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	span, ctx := apm.StartSpan(r.Context(), "storehttp/addEvidence", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/addEvidence")
 	defer span.End()
 
 	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
@@ -235,7 +233,7 @@ func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httproute
 }
 
 func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
-	span, ctx := apm.StartSpan(r.Context(), "storehttp/getSegment", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/getSegment")
 	defer span.End()
 
 	linkHash, err := chainscript.NewLinkHashFromString(p.ByName("linkHash"))
@@ -259,7 +257,7 @@ func (s *Server) getSegment(w http.ResponseWriter, r *http.Request, p httprouter
 }
 
 func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	span, ctx := apm.StartSpan(r.Context(), "storehttp/findSegments", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/findSegments")
 	defer span.End()
 
 	filter, e := parseSegmentFilter(r)
@@ -278,7 +276,7 @@ func (s *Server) findSegments(w http.ResponseWriter, r *http.Request, _ httprout
 }
 
 func (s *Server) getMapIDs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
-	span, ctx := apm.StartSpan(r.Context(), "storehttp/getMapIDs", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/getMapIDs")
 	defer span.End()
 
 	filter, e := parseMapFilter(r)

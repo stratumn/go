@@ -214,7 +214,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprouter.
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(js)
 	if err != nil {
-		monitoring.LogWithTxFields(r.Context()).
+		monitoring.TxLogEntry(r.Context()).
 			WithError(err).
 			Warn("could not send HTTP response")
 	}
@@ -232,7 +232,7 @@ func (h rawHandler) ServeHTTP(w http.ResponseWriter, r *http.Request, p httprout
 func renderErr(w http.ResponseWriter, r *http.Request, err error) {
 	e, ok := err.(ErrHTTP)
 	if ok {
-		monitoring.LogWithTxFields(r.Context()).
+		monitoring.TxLogEntry(r.Context()).
 			WithFields(log.Fields{
 				"status": e.Status(),
 				"method": r.Method,
@@ -242,7 +242,7 @@ func renderErr(w http.ResponseWriter, r *http.Request, err error) {
 			}).
 			Warn("Failed to handle request")
 	} else {
-		monitoring.LogWithTxFields(r.Context()).
+		monitoring.TxLogEntry(r.Context()).
 			WithFields(log.Fields{
 				"status": 500,
 				"method": r.Method,

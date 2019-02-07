@@ -17,7 +17,7 @@ package postgresstore
 import (
 	"database/sql"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
@@ -64,7 +64,7 @@ func (f *StandardTxFactory) CommitTx(tx *sql.Tx) error {
 func (f *StandardTxFactory) RollbackTx(tx *sql.Tx, _ error) {
 	err := tx.Rollback()
 	if err != nil {
-		log.Warnf("Error during transaction rollback: %s", err.Error())
+		monitoring.LogEntry().Warnf("Error during transaction rollback: %s", err.Error())
 	}
 }
 

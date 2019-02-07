@@ -18,6 +18,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 // BufferedConn wraps a connection so that writes are buffered and not blocking
@@ -56,7 +57,7 @@ func (c *BufferedConn) Start() error {
 	c.conn.SetReadLimit(c.config.MaxMsgSize)
 
 	if err := c.conn.SetReadDeadline(time.Now().Add(c.config.PongTimeout)); err != nil {
-		log.WithFields(log.Fields{
+		monitoring.LogEntry().WithFields(log.Fields{
 			"error":      err,
 			"connection": c,
 		}).Error("Failed to set read deadline")
@@ -64,7 +65,7 @@ func (c *BufferedConn) Start() error {
 	c.conn.SetPongHandler(func(string) error {
 		e := c.conn.SetReadDeadline(time.Now().Add(c.config.PongTimeout))
 		if e != nil {
-			log.WithFields(log.Fields{
+			monitoring.LogEntry().WithFields(log.Fields{
 				"error":      e,
 				"connection": c,
 			}).Error("Failed to set read deadline")

@@ -20,8 +20,6 @@ import (
 	"time"
 
 	"github.com/stratumn/go-core/monitoring"
-
-	"go.elastic.co/apm"
 )
 
 var (
@@ -30,7 +28,7 @@ var (
 
 // RetryWithBackOff will retry the given call with an exponential backoff.
 func RetryWithBackOff(ctx context.Context, call func() error) (err error) {
-	span, _ := apm.StartSpan(ctx, "blockchain/btc/blockcypher/RetryWithBackOff", monitoring.SpanTypeOutgoingRequest)
+	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "blockchain/btc/blockcypher/RetryWithBackOff")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

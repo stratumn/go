@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/olivere/elastic"
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/util"
 )
 
@@ -44,7 +44,7 @@ func Initialize(config *Config) *ESStore {
 		}
 
 		if elastic.IsConnErr(storeErr) {
-			log.Infof("Unable to connect to elasticsearch. Retrying in 5s.")
+			monitoring.LogEntry().Infof("Unable to connect to elasticsearch. Retrying in 5s.")
 			time.Sleep(5 * time.Second)
 			return true, storeErr
 		}
@@ -54,14 +54,14 @@ func Initialize(config *Config) *ESStore {
 	}, 10)
 
 	if err != nil {
-		log.Fatal(storeErr)
+		monitoring.LogEntry().Fatal(storeErr)
 	}
 
 	if drop {
 		if dropErr := es.deleteAllIndex(); dropErr != nil {
-			log.Fatalf("Failed to drop ElasticSearch index: %v", dropErr)
+			monitoring.LogEntry().Fatalf("Failed to drop ElasticSearch index: %v", dropErr)
 		} else {
-			log.Infof("Dropped ElasticSearch index")
+			monitoring.LogEntry().Infof("Dropped ElasticSearch index")
 		}
 		os.Exit(0)
 	}

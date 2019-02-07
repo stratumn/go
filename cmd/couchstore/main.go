@@ -20,7 +20,6 @@ import (
 	"flag"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/couchstore"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
@@ -41,11 +40,14 @@ func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
 	validation.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {
 	flag.Parse()
-	log.Infof("%s v%s@%s", couchstore.Description, version, commit[:7])
+
+	monitoring.LogEntry().Infof("%s v%s@%s", couchstore.Description, version, commit[:7])
 
 	var a store.Adapter
 	var storeErr error
@@ -63,7 +65,7 @@ func main() {
 
 		structErr, ok := storeErr.(*types.Error)
 		if ok && structErr.Code == errorcode.Unavailable {
-			log.Infof("Unable to connect to couchdb (%v). Retrying in 5s.", storeErr.Error())
+			monitoring.LogEntry().Infof("Unable to connect to couchdb (%v). Retrying in 5s.", storeErr.Error())
 			time.Sleep(5 * time.Second)
 			return true, storeErr
 		}
@@ -72,12 +74,12 @@ func main() {
 	}, 10)
 
 	if err != nil {
-		log.Fatal(storeErr)
+		monitoring.LogEntry().Fatal(storeErr)
 	}
 
 	a, err = validation.WrapStoreWithConfigFile(a, validation.ConfigurationFromFlags())
 	if err != nil {
-		log.Fatal(err)
+		monitoring.LogEntry().Fatal(err)
 	}
 
 	storehttp.RunWithFlags(monitoring.WrapStore(a, "couchstore"))

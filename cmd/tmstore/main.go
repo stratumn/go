@@ -19,7 +19,6 @@ import (
 	"context"
 	"flag"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store/storehttp"
 	"github.com/stratumn/go-core/tmstore"
@@ -36,11 +35,14 @@ var (
 func init() {
 	storehttp.RegisterFlags()
 	monitoring.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {
 	flag.Parse()
-	log.Infof("%s v%s@%s", tmstore.Description, version, commit[:7])
+
+	monitoring.LogEntry().Infof("%s v%s@%s", tmstore.Description, version, commit[:7])
 
 	tmClient := client.NewHTTP(*endpoint, "/websocket")
 	a := tmstore.New(
@@ -53,7 +55,7 @@ func main() {
 	go func() {
 		err := a.RetryStartWebsocket(context.Background(), *tmWsRetryInterval)
 		if err != nil {
-			log.Warn(err)
+			monitoring.LogEntry().Warn(err)
 		}
 	}()
 

@@ -20,7 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 // CancelOnInterrupt creates a context and calls the context cancel function when an interrupt signal is caught
@@ -36,7 +36,7 @@ func CancelOnInterrupt(ctx context.Context) context.Context {
 		}()
 		select {
 		case sig := <-c:
-			log.WithField("signal", sig).Info("Got exit signal")
+			monitoring.LogEntry().WithField("signal", sig).Info("Got exit signal")
 			cancel()
 		case <-ctx.Done():
 		}

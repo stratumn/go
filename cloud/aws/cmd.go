@@ -18,7 +18,7 @@ import (
 	"flag"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 // Flags variables.
@@ -35,7 +35,7 @@ func RegisterFlags() {
 func SessionFromFlags() *session.Session {
 	sess, err := NewSession(region)
 	if err != nil {
-		log.WithField("error", err.Error()).Fatal("could not create AWS session")
+		monitoring.LogEntry().WithField("error", err.Error()).Fatal("could not create AWS session")
 	}
 
 	return sess

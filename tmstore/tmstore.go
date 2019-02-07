@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/bufferedbatch"
 	"github.com/stratumn/go-core/monitoring"
@@ -36,8 +35,6 @@ import (
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
 	tmcommon "github.com/tendermint/tmlibs/common"
-
-	"go.elastic.co/apm"
 )
 
 const (
@@ -93,7 +90,7 @@ func New(config *Config, tmClient client.Client) *TMStore {
 
 // StartWebsocket starts the websocket client and wait for New Block events.
 func (t *TMStore) StartWebsocket(ctx context.Context) (err error) {
-	span, ctx := apm.StartSpan(ctx, "tmstore/StartWebSocket", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "tmstore/StartWebSocket")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -121,7 +118,7 @@ func (t *TMStore) StartWebsocket(ctx context.Context) (err error) {
 		return
 	}
 
-	log.Info("Connected to TMPoP")
+	monitoring.LogEntry().Info("Connected to TMPoP")
 	return nil
 }
 
@@ -133,7 +130,8 @@ func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duratio
 			if err.Error() == ErrAlreadySubscribed {
 				return false, nil
 			}
-			log.Infof("%v, retrying...", err)
+
+			monitoring.LogEntry().Infof("%v, retrying...", err)
 			time.Sleep(interval)
 		}
 		return true, err
@@ -142,20 +140,20 @@ func (t *TMStore) RetryStartWebsocket(ctx context.Context, interval time.Duratio
 
 // StopWebsocket stops the websocket client.
 func (t *TMStore) StopWebsocket(ctx context.Context) (err error) {
-	span, ctx := apm.StartSpan(ctx, "tmstore/StopWebSocket", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "tmstore/StopWebSocket")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
 
 	// Note: no need to close t.tmEventChan, unsubscribing handles it
 	if err = t.tmClient.UnsubscribeAll(ctx, Name); err != nil {
-		log.Warnf("Error unsubscribing to Tendermint events: %s", err.Error())
+		monitoring.LogEntry().Warnf("Error unsubscribing to Tendermint events: %s", err.Error())
 		return
 	}
 
 	if t.tmClient.IsRunning() {
 		if err = t.tmClient.Stop(); err != nil && err != tmcommon.ErrAlreadyStopped {
-			log.Warnf("Error stopping Tendermint client: %s", err.Error())
+			monitoring.LogEntry().Warnf("Error stopping Tendermint client: %s", err.Error())
 			return
 		}
 	}
@@ -164,20 +162,20 @@ func (t *TMStore) StopWebsocket(ctx context.Context) (err error) {
 }
 
 func (t *TMStore) notifyStoreChans(ctx context.Context) {
-	span, ctx := apm.StartSpan(ctx, "tmstore/notifyStoreChans", monitoring.SpanTypeProcessing)
+	span, ctx := monitoring.StartSpanProcessing(ctx, "tmstore/notifyStoreChans")
 	defer span.End()
 
 	var pendingEvents []*store.Event
 	response, err := t.sendQuery(ctx, tmpop.PendingEvents, nil)
 	if err != nil || response.Value == nil {
-		log.Warn("Could not get pending events from TMPoP.")
+		monitoring.LogEntry().Warn("Could not get pending events from TMPoP.")
 	}
 
 	err = json.Unmarshal(response.Value, &pendingEvents)
 	if err != nil {
 		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
 		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
-		log.Warnf("TMPoP pending events could not be unmarshalled: %v+", err)
+		monitoring.LogEntry().Warnf("TMPoP pending events could not be unmarshalled: %v+", err)
 	}
 
 	span.Context.SetTag("event_count", fmt.Sprintf("%d", len(pendingEvents)))
@@ -349,7 +347,7 @@ func (t *TMStore) NewBatch(ctx context.Context) (store.Batch, error) {
 }
 
 func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
-	span, _ := apm.StartSpan(ctx, "tmstore/broadcastTx", monitoring.SpanTypeOutgoingRequest)
+	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "tmstore/broadcastTx")
 	defer span.End()
 
 	txBytes, err := json.Marshal(tx)
@@ -388,7 +386,7 @@ func (t *TMStore) broadcastTx(ctx context.Context, tx *tmpop.Tx) (*ctypes.Result
 }
 
 func (t *TMStore) sendQuery(ctx context.Context, name string, args interface{}) (res *abci.ResponseQuery, err error) {
-	span, _ := apm.StartSpan(ctx, "tmstore/sendQuery", monitoring.SpanTypeOutgoingRequest)
+	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "tmstore/sendQuery")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

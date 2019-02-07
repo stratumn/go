@@ -15,6 +15,8 @@
 package monitoring
 
 import (
+	"context"
+
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
 
@@ -27,6 +29,36 @@ const (
 	SpanTypeOutgoingRequest = "app.request.outgoing"
 	SpanTypeProcessing      = "app.processing"
 )
+
+// StartSpanIncomingRequest starts a new span for an incoming request and fills
+// some common flags.
+func StartSpanIncomingRequest(ctx context.Context, name string) (*apm.Span, context.Context) {
+	span, ctx := apm.StartSpan(ctx, name, SpanTypeIncomingRequest)
+	span.Context.SetTag("version", version)
+	span.Context.SetTag("commit", commit)
+
+	return span, ctx
+}
+
+// StartSpanOutgoingRequest starts a new span for an outgoing request and fills
+// some common flags.
+func StartSpanOutgoingRequest(ctx context.Context, name string) (*apm.Span, context.Context) {
+	span, ctx := apm.StartSpan(ctx, name, SpanTypeOutgoingRequest)
+	span.Context.SetTag("version", version)
+	span.Context.SetTag("commit", commit)
+
+	return span, ctx
+}
+
+// StartSpanProcessing starts a new span for an internal processing task and
+// fills some common flags.
+func StartSpanProcessing(ctx context.Context, name string) (*apm.Span, context.Context) {
+	span, ctx := apm.StartSpan(ctx, name, SpanTypeProcessing)
+	span.Context.SetTag("version", version)
+	span.Context.SetTag("commit", commit)
+
+	return span, ctx
+}
 
 // SetSpanStatusAndEnd sets the status of the span depending on the error
 // and ends it.
@@ -46,13 +78,13 @@ func SetSpanStatus(span *apm.Span, err error) {
 		case *types.Error:
 			// We want to include a stack trace to make it easy to
 			// investigate, hence the format.
-			LogWithSpanFields(span).Errorf("%v+", e)
+			SpanLogEntry(span).Errorf("%v+", e)
 
 			span.Context.SetTag(ErrorLabel, e.Error())
 			span.Context.SetTag(ErrorCodeLabel, errorcode.Text(e.Code))
 			span.Context.SetTag(ErrorComponentLabel, e.Component)
 		default:
-			LogWithSpanFields(span).Errorf("%v+", err)
+			SpanLogEntry(span).Errorf("%v+", err)
 			span.Context.SetTag(ErrorLabel, err.Error())
 		}
 	}

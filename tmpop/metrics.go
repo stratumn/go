@@ -20,7 +20,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/monitoring"
 )
 
@@ -88,7 +87,7 @@ func exposeMetrics(config *monitoring.Config) error {
 	if metricsHandler != nil {
 		metricsAddr := fmt.Sprintf(":%d", config.MetricsPort)
 
-		log.Infof("Exposing metrics on %s", metricsAddr)
+		monitoring.LogEntry().Infof("Exposing metrics on %s", metricsAddr)
 		http.Handle("/metrics", metricsHandler)
 		err := http.ListenAndServe(metricsAddr, nil)
 		if err != nil {

@@ -23,8 +23,6 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
-
-	"go.elastic.co/apm"
 )
 
 const (
@@ -48,7 +46,7 @@ func NewEventExporter(client *sqs.SQS, queueURL *string) fossilizer.EventExporte
 
 // Push an event to the queue.
 func (e *EventExporter) Push(ctx context.Context, event *fossilizer.Event) (err error) {
-	span, _ := apm.StartSpan(ctx, "cloud/aws/exporter/push", monitoring.SpanTypeOutgoingRequest)
+	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "cloud/aws/exporter/push")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

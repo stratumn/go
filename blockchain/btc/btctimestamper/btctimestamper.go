@@ -33,8 +33,6 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
-
-	"go.elastic.co/apm"
 )
 
 const (
@@ -122,7 +120,7 @@ func (ts *Timestamper) GetInfo() *blockchain.Info {
 // TimestampHash implements
 // github.com/stratumn/go-core/blockchain.HashTimestamper.
 func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid types.TransactionID, err error) {
-	span, ctx := apm.StartSpan(ctx, "blockchain/btc/btctimestamper/TimestampHash", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "blockchain/btc/btctimestamper/TimestampHash")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -182,7 +180,7 @@ func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid typ
 
 	remaining := res.Total - ts.config.Fee
 
-	monitoring.LogWithTxFields(ctx).WithFields(log.Fields{
+	monitoring.TxLogEntry(ctx).WithFields(log.Fields{
 		"txid":      txHash32,
 		"remaining": remaining,
 	}).Info("Broadcasted transaction")

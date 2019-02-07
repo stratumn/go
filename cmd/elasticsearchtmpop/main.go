@@ -35,6 +35,8 @@ func init() {
 	elasticsearchstore.RegisterFlags()
 	monitoring.RegisterFlags()
 	validation.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {

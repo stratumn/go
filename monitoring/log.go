@@ -25,28 +25,34 @@ import (
 
 const (
 	txID = "apm_tx_id"
-	noTx = "not sampled"
 )
 
-// LogWithTxFields adds transaction fields to a log entry.
-// This makes it easier to correlate transactions/spans with logs.
-func LogWithTxFields(ctx context.Context) *log.Entry {
-	tx := apm.TransactionFromContext(ctx)
-	if tx != nil {
-		traceID := tx.TraceContext().Trace
-		return log.WithField(txID, hex.EncodeToString(traceID[:]))
-	}
-
-	return log.WithField(txID, noTx)
+// LogEntry creates a new log entry with some default fields set.
+func LogEntry() *log.Entry {
+	return log.WithField("version", version).WithField("commit", commit)
 }
 
-// LogWithSpanFields adds span fields to a log entry.
+// TxLogEntry creates a new log entry with the transaction ID set.
 // This makes it easier to correlate transactions/spans with logs.
-func LogWithSpanFields(span *apm.Span) *log.Entry {
-	if !span.Dropped() {
-		traceID := span.TraceContext().Trace
-		return log.WithField(txID, hex.EncodeToString(traceID[:]))
+func TxLogEntry(ctx context.Context) *log.Entry {
+	entry := LogEntry()
+	tx := apm.TransactionFromContext(ctx)
+	if tx == nil {
+		return entry
 	}
 
-	return log.WithField(txID, noTx)
+	traceID := tx.TraceContext().Trace
+	return entry.WithField(txID, hex.EncodeToString(traceID[:]))
+}
+
+// SpanLogEntry creates a new log entry with the transaction ID set.
+// This makes it easier to correlate transactions/spans with logs.
+func SpanLogEntry(span *apm.Span) *log.Entry {
+	entry := LogEntry()
+	if span.Dropped() {
+		return entry
+	}
+
+	traceID := span.TraceContext().Trace
+	return log.WithField(txID, hex.EncodeToString(traceID[:]))
 }

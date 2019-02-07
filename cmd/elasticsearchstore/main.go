@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/elasticsearchstore"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store/storehttp"
@@ -36,18 +35,20 @@ func init() {
 	elasticsearchstore.RegisterFlags()
 	monitoring.RegisterFlags()
 	validation.RegisterFlags()
+
+	monitoring.SetVersion(version, commit)
 }
 
 func main() {
 	flag.Parse()
-	log.Infof("%s v%s@%s", elasticsearchstore.Description, version, commit[:7])
+	monitoring.LogEntry().Infof("%s v%s@%s", elasticsearchstore.Description, version, commit[:7])
 
 	a, err := validation.WrapStoreWithConfigFile(
 		elasticsearchstore.InitializeWithFlags(version, commit),
 		validation.ConfigurationFromFlags(),
 	)
 	if err != nil {
-		log.Fatal(err)
+		monitoring.LogEntry().Fatal(err)
 	}
 
 	storehttp.RunWithFlags(monitoring.WrapStore(a, "elasticsearchstore"))

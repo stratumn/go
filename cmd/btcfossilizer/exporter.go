@@ -16,10 +16,10 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/sqs"
-	log "github.com/sirupsen/logrus"
 	"github.com/stratumn/go-core/cloud/aws"
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/fossilizer/dummyexporter"
+	"github.com/stratumn/go-core/monitoring"
 )
 
 // Exporters that can be used by the BTC fossilizer.
@@ -48,7 +48,7 @@ func ExporterFromFlags() fossilizer.EventExporter {
 		queueURL := QueueURL(client, exporterQueue)
 		return aws.NewEventExporter(client, queueURL)
 	default:
-		log.WithField("exporter", *exporter).Fatal("unknown exporter type")
+		monitoring.LogEntry().WithField("exporter", *exporter).Fatal("unknown exporter type")
 		return nil
 	}
 }

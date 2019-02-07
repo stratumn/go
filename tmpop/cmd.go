@@ -18,7 +18,7 @@ import (
 	"context"
 	"runtime"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/tendermint"
 	"github.com/tendermint/tendermint/rpc/client"
@@ -30,25 +30,25 @@ func Run(a store.Adapter, kv store.KeyValueStore, config *Config) {
 
 	adapterInfo, err := a.GetInfo(ctx)
 	if err != nil {
-		log.Fatal(err)
+		monitoring.LogEntry().Fatal(err)
 	}
 
 	tmpop, err := New(ctx, a, kv, config)
 	if err != nil {
-		log.Fatal(err)
+		monitoring.LogEntry().Fatal(err)
 	}
 
 	go func() {
 		if err := exposeMetrics(config.Monitoring); err != nil {
-			log.Fatal(err)
+			monitoring.LogEntry().Fatal(err)
 		}
 	}()
 
-	log.Infof("TMPop v%s@%s", config.Version, config.Commit[:7])
-	log.Infof("Adapter %v", adapterInfo)
-	log.Info("Copyright (c) 2017 Stratumn SAS")
-	log.Info("Apache License 2.0")
-	log.Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	monitoring.LogEntry().Infof("TMPop v%s@%s", config.Version, config.Commit[:7])
+	monitoring.LogEntry().Infof("Adapter %v", adapterInfo)
+	monitoring.LogEntry().Info("Copyright (c) 2017 Stratumn SAS")
+	monitoring.LogEntry().Info("Apache License 2.0")
+	monitoring.LogEntry().Infof("Runtime %s %s %s", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	tendermintNode := tendermint.NewNode(tendermint.GetConfig(), tmpop)
 	tendermintClient := NewTendermintClient(client.NewLocal(tendermintNode))
