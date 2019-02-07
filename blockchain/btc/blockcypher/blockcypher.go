@@ -28,8 +28,6 @@ import (
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/types"
-
-	"go.elastic.co/apm"
 )
 
 const (
@@ -67,7 +65,7 @@ func New(c *Config) *Client {
 // FindUnspent implements
 // github.com/stratumn/go-core/blockchain/btc.UnspentFinder.FindUnspent.
 func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20, amount int64) (res btc.UnspentResult, err error) {
-	span, ctx := apm.StartSpan(ctx, "blockchain/btc/blockcypher/FindUnspent", monitoring.SpanTypeOutgoingRequest)
+	span, ctx := monitoring.StartSpanOutgoingRequest(ctx, "blockchain/btc/blockcypher/FindUnspent")
 	start := time.Now()
 	defer func() {
 		if err != nil {
@@ -134,7 +132,7 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 // Broadcast implements
 // github.com/stratumn/go-core/blockchain/btc.Broadcaster.Broadcast.
 func (c *Client) Broadcast(ctx context.Context, raw []byte) error {
-	span, ctx := apm.StartSpan(ctx, "blockchain/btc/blockcypher/Broadcast", monitoring.SpanTypeOutgoingRequest)
+	span, ctx := monitoring.StartSpanOutgoingRequest(ctx, "blockchain/btc/blockcypher/Broadcast")
 	defer span.End()
 
 	start := time.Now()

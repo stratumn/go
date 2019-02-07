@@ -19,8 +19,6 @@ import (
 	"database/sql"
 
 	"github.com/stratumn/go-core/monitoring"
-
-	"go.elastic.co/apm"
 )
 
 // Batch is the type that implements github.com/stratumn/go-core/store.Batch.
@@ -48,7 +46,7 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 
 // Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
-	span, _ := apm.StartSpan(ctx, "postgresstore/batch/Write", monitoring.SpanTypeOutgoingRequest)
+	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "postgresstore/batch/Write")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

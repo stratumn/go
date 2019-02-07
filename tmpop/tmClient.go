@@ -28,8 +28,6 @@ import (
 	"github.com/tendermint/tendermint/rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
-
-	"go.elastic.co/apm"
 )
 
 // TendermintClient is a light interface to query Tendermint Core.
@@ -63,7 +61,7 @@ func NewTendermintClient(tmClient client.Client) *TendermintClientWrapper {
 
 // Block queries for a block at a specific height.
 func (c *TendermintClientWrapper) Block(ctx context.Context, height int64) (*Block, error) {
-	span, _ := apm.StartSpan(ctx, "tmclient/Block", monitoring.SpanTypeIncomingRequest)
+	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "tmclient/Block")
 	defer span.End()
 
 	tmBlock, err := c.tmClient.Block(&height)

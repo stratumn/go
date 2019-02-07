@@ -28,8 +28,6 @@ import (
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/monitoring"
 	"github.com/stratumn/merkle"
-
-	"go.elastic.co/apm"
 )
 
 const (
@@ -136,7 +134,7 @@ func (a *Fossilizer) fossilizeLoop(ctx context.Context) {
 }
 
 func (a *Fossilizer) fossilizeBatch(ctx context.Context) {
-	span, ctx := apm.StartSpan(ctx, "batchfossilizer/fossilizeBatch", monitoring.SpanTypeProcessing)
+	span, ctx := monitoring.StartSpanProcessing(ctx, "batchfossilizer/fossilizeBatch")
 	defer span.End()
 
 	batchSize := a.config.GetMaxLeaves()
@@ -250,7 +248,7 @@ func (a *Fossilizer) eventLoop(ctx context.Context, fChan chan *fossilizer.Event
 // individual fossilization events for each fossil included in the merkle tree.
 // It then sends these events to all registered listeners.
 func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
-	span, _ := apm.StartSpan(ctx, "batchfossilizer/eventBatch", monitoring.SpanTypeProcessing)
+	span, _ := monitoring.StartSpanProcessing(ctx, "batchfossilizer/eventBatch")
 	defer span.End()
 
 	if e.EventType != fossilizer.DidFossilize {

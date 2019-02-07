@@ -25,8 +25,6 @@ import (
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stratumn/go-core/validation/validators"
-
-	"go.elastic.co/apm"
 )
 
 // StoreWithConfigFile wraps a store adapter with a layer of validations
@@ -84,7 +82,7 @@ func WrapStoreWithConfigFile(a store.Adapter, cfg *Config) (store.Adapter, error
 // CreateLink applies validations before creating the link.
 func (a *StoreWithConfigFile) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
 	linksCount.Inc()
-	span, ctx := apm.StartSpan(ctx, "validation/CreateLink", monitoring.SpanTypeProcessing)
+	span, ctx := monitoring.StartSpanProcessing(ctx, "validation/CreateLink")
 	defer span.End()
 
 	if err := link.Validate(ctx); err != nil {

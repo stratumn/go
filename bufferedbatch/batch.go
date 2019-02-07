@@ -24,8 +24,6 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
-
-	"go.elastic.co/apm"
 )
 
 // Batch can be used as a base class for types
@@ -45,7 +43,7 @@ func NewBatch(ctx context.Context, a store.Adapter) *Batch {
 
 // CreateLink implements github.com/stratumn/go-core/store.LinkWriter.CreateLink.
 func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chainscript.LinkHash, err error) {
-	span, _ := apm.StartSpan(ctx, "bufferedbatch/CreateLink", monitoring.SpanTypeIncomingRequest)
+	span, _ := monitoring.StartSpanIncomingRequest(ctx, "bufferedbatch/CreateLink")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -60,7 +58,7 @@ func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (_ chain
 
 // GetSegment returns a segment from the cache or delegates the call to the store.
 func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (segment *chainscript.Segment, err error) {
-	span, ctx := apm.StartSpan(ctx, "bufferedbatch/GetSegment", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "bufferedbatch/GetSegment")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -90,7 +88,7 @@ func (b *Batch) GetSegment(ctx context.Context, linkHash chainscript.LinkHash) (
 
 // FindSegments returns the union of segments in the store and not committed yet.
 func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (_ *types.PaginatedSegments, err error) {
-	span, ctx := apm.StartSpan(ctx, "bufferedbatch/FindSegments", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "bufferedbatch/FindSegments")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -117,7 +115,7 @@ func (b *Batch) FindSegments(ctx context.Context, filter *store.SegmentFilter) (
 
 // GetMapIDs returns the union of mapIds in the store and not committed yet.
 func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []string, err error) {
-	span, ctx := apm.StartSpan(ctx, "bufferedbatch/GetMapIDs", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "bufferedbatch/GetMapIDs")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
@@ -148,7 +146,7 @@ func (b *Batch) GetMapIDs(ctx context.Context, filter *store.MapFilter) (_ []str
 
 // Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
-	span, ctx := apm.StartSpan(ctx, "bufferedbatch/Write", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(ctx, "bufferedbatch/Write")
 	defer func() {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()

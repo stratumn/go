@@ -30,8 +30,6 @@ import (
 	"github.com/stratumn/go-core/validation"
 	"github.com/stratumn/merkle"
 	abci "github.com/tendermint/abci/types"
-
-	"go.elastic.co/apm"
 )
 
 // tmpopLastBlockKey is the database key where last block information are saved.
@@ -135,7 +133,7 @@ func (t *TMPop) ConnectTendermint(tmClient TendermintClient) {
 
 // Info implements github.com/tendermint/abci/types.Application.Info.
 func (t *TMPop) Info(req abci.RequestInfo) abci.ResponseInfo {
-	span, _ := apm.StartSpan(context.Background(), "tmpop/Info", monitoring.SpanTypeIncomingRequest)
+	span, _ := monitoring.StartSpanIncomingRequest(context.Background(), "tmpop/Info")
 	defer span.End()
 
 	return abci.ResponseInfo{
@@ -156,7 +154,7 @@ func (t *TMPop) SetOption(req abci.RequestSetOption) abci.ResponseSetOption {
 
 // BeginBlock implements github.com/tendermint/abci/types.Application.BeginBlock.
 func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
-	span, ctx := apm.StartSpan(context.Background(), "tmpop/BeginBlock", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(context.Background(), "tmpop/BeginBlock")
 	defer span.End()
 
 	t.currentHeader = &req.Header
@@ -195,7 +193,7 @@ func (t *TMPop) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
 
 // DeliverTx implements github.com/tendermint/abci/types.Application.DeliverTx.
 func (t *TMPop) DeliverTx(tx []byte) abci.ResponseDeliverTx {
-	span, ctx := apm.StartSpan(context.Background(), "tmpop/DeliverTx", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(context.Background(), "tmpop/DeliverTx")
 	defer span.End()
 
 	err := t.doTx(ctx, t.state.Deliver, tx)
@@ -216,7 +214,7 @@ func (t *TMPop) DeliverTx(tx []byte) abci.ResponseDeliverTx {
 
 // CheckTx implements github.com/tendermint/abci/types.Application.CheckTx.
 func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
-	span, ctx := apm.StartSpan(context.Background(), "tmpop/CheckTx", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(context.Background(), "tmpop/CheckTx")
 	defer span.End()
 
 	err := t.doTx(ctx, t.state.Check, tx)
@@ -235,7 +233,7 @@ func (t *TMPop) CheckTx(tx []byte) abci.ResponseCheckTx {
 // Commit implements github.com/tendermint/abci/types.Application.Commit.
 // It actually commits the current state in the Store.
 func (t *TMPop) Commit() abci.ResponseCommit {
-	span, ctx := apm.StartSpan(context.Background(), "tmpop/Commit", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(context.Background(), "tmpop/Commit")
 	defer span.End()
 
 	appHash, links, err := t.state.Commit(ctx)
@@ -271,7 +269,7 @@ func (t *TMPop) Commit() abci.ResponseCommit {
 
 // Query implements github.com/tendermint/abci/types.Application.Query.
 func (t *TMPop) Query(reqQuery abci.RequestQuery) (resQuery abci.ResponseQuery) {
-	span, ctx := apm.StartSpan(context.Background(), "tmpop/Query", monitoring.SpanTypeIncomingRequest)
+	span, ctx := monitoring.StartSpanIncomingRequest(context.Background(), "tmpop/Query")
 	span.Context.SetTag("path", reqQuery.Path)
 	defer span.End()
 
@@ -399,7 +397,7 @@ func (t *TMPop) doTx(ctx context.Context, createLink func(context.Context, *chai
 
 // addTendermintEvidence computes and stores new evidence
 func (t *TMPop) addTendermintEvidence(ctx context.Context, header *abci.Header) {
-	span, ctx := apm.StartSpan(ctx, "tmpop/addTendermintEvidence", monitoring.SpanTypeProcessing)
+	span, ctx := monitoring.StartSpanProcessing(ctx, "tmpop/addTendermintEvidence")
 	span.Context.SetTag("height", fmt.Sprintf("%d", header.Height))
 	defer span.End()
 
