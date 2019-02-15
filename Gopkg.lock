@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  digest = "1:eaf30a0c8af70a3370d149a2df0fb8b153cf0e2f04b009acd59cd72a2407e147"
-  name = "cloud.google.com/go"
-  packages = ["compute/metadata"]
-  pruneopts = ""
-  revision = "bb12be1742b232539b22ad8d0efc7afb02bbae39"
-  version = "v0.33.0"
-
-[[projects]]
   digest = "1:ce24f8f5a32e5d349aa62427c924fc1f9cd0c6640405bf601c1542b4d7230fc7"
   name = "docker.io/go-docker"
   packages = [
@@ -730,7 +722,8 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:a98315339728e075197d04be6a57a46b141aa382db3728392f0771e9a54cf77b"
+  branch = "master"
+  digest = "1:788d55c7612c52f724c0f10d78a161ccbfc92f7c4b47caa4b4bed71a0b0ff81d"
   name = "go.elastic.co/apm"
   packages = [
     ".",
@@ -756,8 +749,7 @@
     "transport",
   ]
   pruneopts = ""
-  revision = "cc1e77d6cd8552403fc3f91464308b1d3ceebab4"
-  version = "v1.2.0"
+  revision = "525c5c425aa9cbbecc6bc6435d55cdf41d6182e7"
 
 [[projects]]
   digest = "1:e05c654acb77a3d7c00aecaf64fdb66310f5f063f896a0d749be8a8d1fb168df"
@@ -810,20 +802,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:51d339a1d79f5c617fba14414aefb7dfd184b8ba0ddbb9f95251430b67c8aab8"
-  name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "google",
-    "internal",
-    "jws",
-    "jwt",
-  ]
-  pruneopts = ""
-  revision = "f42d05182288abf10faef86d16c0d07b8d40ea2d"
-
-[[projects]]
-  branch = "master"
   digest = "1:3f5c191d90f1cf365ff1f88e4b08eb766ee6ade1cb2e4efd7c316cf7e015ac17"
   name = "golang.org/x/sys"
   packages = [
@@ -856,36 +834,6 @@
   pruneopts = ""
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:e052ac016676b0750da59a64debe6110fbd2ccd1cb368d5d561b5e721edbb1bc"
-  name = "google.golang.org/api"
-  packages = [
-    "internal",
-    "option",
-  ]
-  pruneopts = ""
-  revision = "c5e41677a12edeac5437ebceb220505ec6b90669"
-
-[[projects]]
-  digest = "1:77d3cff3a451d50be4b52db9c7766c0d8570ba47593f0c9dc72173adb208e788"
-  name = "google.golang.org/appengine"
-  packages = [
-    ".",
-    "internal",
-    "internal/app_identity",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/modules",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch",
-  ]
-  pruneopts = ""
-  revision = "4a4468ece617fc8205e99368fa2200e9d1fad421"
-  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -1026,7 +974,6 @@
     "go.elastic.co/apm/module/apmprometheus",
     "go.elastic.co/apm/module/apmsql",
     "go.elastic.co/apm/module/apmsql/pq",
-    "google.golang.org/api/option",
     "gopkg.in/dancannon/gorethink.v4",
   ]
   solver-name = "gps-cdcl"
