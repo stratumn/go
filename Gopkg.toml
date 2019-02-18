@@ -51,4 +51,4 @@
 
 [[constraint]]
   name = "go.elastic.co/apm"
-  version = "1.2.0"
+  branch = "master"
