@@ -129,12 +129,14 @@ func RegisterFlags() {
 	flag.BoolVar(&create, "create", false, "create tables and indexes then exit")
 	flag.BoolVar(&drop, "drop", false, "drop tables and indexes then exit")
 	flag.BoolVar(&uniqueMapEntry, "uniquemapentry", false, "enforce unicity of the first link in each process map")
-	flag.StringVar(&url, "url", util.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL), "URL of the PostgreSQL database")
+	flag.StringVar(&url, "url", DefaultURL, "URL of the PostgreSQL database (should be set via the POSTGRESSTORE_URL environment variable)")
 }
 
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
 // a postgres adapter using flag values.
 func InitializeWithFlags(version, commit string) *Store {
-	config := &Config{URL: url, Version: version, Commit: commit}
+	dbURL := util.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL)
+
+	config := &Config{URL: dbURL, Version: version, Commit: commit}
 	return Initialize(config, create, drop, uniqueMapEntry)
 }
