@@ -135,7 +135,7 @@ func RegisterFlags() {
 // InitializeWithFlags should be called after RegisterFlags and flag.Parse to initialize
 // a postgres adapter using flag values.
 func InitializeWithFlags(version, commit string) *Store {
-	dbURL := util.OrStrings(os.Getenv("POSTGRESSTORE_URL"), DefaultURL)
+	dbURL := util.OrStrings(os.Getenv("POSTGRESSTORE_URL"), url)
 
 	config := &Config{URL: dbURL, Version: version, Commit: commit}
 	return Initialize(config, create, drop, uniqueMapEntry)
