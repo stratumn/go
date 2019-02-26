@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 
 	"github.com/lib/pq"
 	"github.com/stratumn/go-chainscript"
@@ -34,7 +35,7 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 		return linkHash, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not hash link")
 	}
 
-	data, err := chainscript.MarshalLink(link)
+	data, err := json.Marshal(link)
 	if err != nil {
 		return linkHash, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not marshal link")
 	}
@@ -186,7 +187,7 @@ func (s *scopedStore) createLinkInTx(
 		link.Meta.MapId,
 		prevLinkHash,
 		pq.Array(link.Meta.Tags),
-		data,
+		string(data),
 		link.Meta.Process.Name,
 		link.Meta.Step,
 	)
@@ -285,9 +286,9 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 	for rows.Next() {
 		var (
 			linkHash     chainscript.LinkHash
-			linkData     []byte
+			linkData     string
 			link         *chainscript.Link
-			evidenceData []byte
+			evidenceData sql.NullString
 			evidence     *chainscript.Evidence
 			err          error
 		)
@@ -303,7 +304,7 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 		}
 
 		if !bytes.Equal(currentHash, linkHash) {
-			link, err = chainscript.UnmarshalLink(linkData)
+			err = json.Unmarshal([]byte(linkData), &link)
 			if err != nil {
 				return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not unmarshal link")
 			}
@@ -322,8 +323,8 @@ func scanLinkAndEvidences(rows *sql.Rows, segments *types.SegmentSlice, totalCou
 			*segments = append(*segments, currentSegment)
 		}
 
-		if len(evidenceData) > 0 {
-			evidence, err = chainscript.UnmarshalEvidence(evidenceData)
+		if evidenceData.Valid && len(evidenceData.String) > 0 {
+			err = json.Unmarshal([]byte(evidenceData.String), &evidence)
 			if err != nil {
 				return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not unmarshal evidence")
 			}
