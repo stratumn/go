@@ -71,6 +71,9 @@ func (f Factory) TestEvidenceStore(t *testing.T) {
 		storedEvidences, err := s.GetEvidences(ctx, linkHash)
 		assert.NoError(t, err, "s.GetEvidences()")
 		assert.Equal(t, 6, len(storedEvidences), "Invalid number of evidences")
-		assert.EqualValues(t, e.Backend, storedEvidences.GetEvidence("TMPop", "42").Backend, "Invalid evidence backend")
+
+		stored := storedEvidences.GetEvidence("TMPop", "42")
+		assert.NotNil(t, stored)
+		assert.EqualValues(t, e.Backend, stored.Backend, "Invalid evidence backend")
 	})
 }
