@@ -1,5 +1,15 @@
 # Change log
 
+## 0.4.0 - BREAKING CHANGES
+
+- Postgresstore schema change: data changed back to JSON to allow search
+
+If you are updating from 0.3.x, you need to run a database migration or drop
+your existing data.
+The migration is pretty simple: list all rows in the `store.links` and `store.evidences`
+tables, deserialize the protobuf `data` and serialize it to JSON instead.
+You'll also need to change the column format from `bytea` to `jsonb`.
+
 ## 0.3.2
 
 Added support for batch link creation.
