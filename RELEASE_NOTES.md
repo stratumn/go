@@ -2,7 +2,7 @@
 
 ## Getting started
 
-Read the documentation on our [developer portal](https://developer.stratumn.com).
+Read the documentation on our [developer portal](https://developers.stratumn.com).
 
 ## What's new
 
