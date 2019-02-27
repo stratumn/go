@@ -1,5 +1,14 @@
 # Change log
 
+## 0.4.0 - BREAKING CHANGES
+
+- Postgresstore schema change: data changed back to JSON to allow searches
+
+If you are updating from 0.3.1, you need to run a database migration or drop
+your existing data.
+The migration is pretty simple: list all rows in `store.links` and `store.evidences`,
+deserialize the protobuf `data` and serialize it to JSON instead.
+
 ## 0.3.1 - BREAKING CHANGES
 
 - Repository was renamed to _go-core_
