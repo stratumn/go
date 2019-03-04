@@ -19,7 +19,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-chainscript/chainscripttest"
+	"github.com/stratumn/go-core/postgresstore"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
 	"github.com/stretchr/testify/assert"
@@ -57,6 +59,59 @@ func (f Factory) TestBatch(t *testing.T) {
 		found, err := a.GetSegment(ctx, linkHash)
 		assert.NoError(t, err, "a.GetSegment()")
 		assert.Nil(t, found, "Link should not be found in adapter until Write is called")
+	})
+
+	t.Run("CreateLink should handle previous link in batch", func(t *testing.T) {
+		ctx := context.Background()
+		b := initBatch(t, a)
+
+		l1 := chainscripttest.RandomLink(t)
+		lh1, err := b.CreateLink(ctx, l1)
+		require.NoError(t, err, "b.CreateLink()")
+
+		l2 := chainscripttest.NewLinkBuilder(t).
+			WithRandomData().
+			WithParent(t, l1).
+			WithProcess(l1.Meta.Process.Name).
+			WithMapID(l1.Meta.MapId).
+			Build()
+		lh2, err := b.CreateLink(ctx, l2)
+		require.NoError(t, err, "b.CreateLink()")
+
+		err = b.Write(ctx)
+		require.NoError(t, err, "b.Write()")
+
+		for _, lh := range []chainscript.LinkHash{lh1, lh2} {
+			found, err := a.GetSegment(ctx, lh)
+			assert.NoError(t, err, "a.GetSegment()")
+			require.NotNil(t, found, "a.GetSegment()")
+		}
+	})
+
+	t.Run("CreateLink should rejects links after failure", func(t *testing.T) {
+		ctx := context.Background()
+		b := initBatch(t, a)
+
+		// Only the postgres batch actually enforces that at the moment.
+		// Bufferedbatch fails when Write() is called.
+		_, ok := b.(*postgresstore.Batch)
+		if !ok {
+			t.Skip("Test not applicable to current batch implementation")
+		}
+
+		parentNotInStore := chainscripttest.RandomLink(t)
+		invalidLink := chainscripttest.NewLinkBuilder(t).
+			WithRandomData().
+			WithParent(t, parentNotInStore).
+			WithProcess(parentNotInStore.Meta.Process.Name).
+			WithMapID(parentNotInStore.Meta.MapId).
+			Build()
+		_, err := b.CreateLink(ctx, invalidLink)
+		assert.Error(t, err)
+
+		validLink := chainscripttest.RandomLink(t)
+		_, err = b.CreateLink(ctx, validLink)
+		assert.EqualError(t, err, store.ErrBatchFailed.Error())
 	})
 
 	t.Run("Write should write to the underlying store", func(t *testing.T) {
