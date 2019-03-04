@@ -48,11 +48,11 @@ func createStoreB() (*postgresstore.Store, error) {
 }
 
 func createAdapterB() (store.Adapter, error) {
-	return createStore()
+	return createStoreB()
 }
 
 func createKeyValueStoreB() (store.KeyValueStore, error) {
-	return createStore()
+	return createStoreB()
 }
 
 func freeStoreB(s *postgresstore.Store) {
@@ -62,9 +62,9 @@ func freeStoreB(s *postgresstore.Store) {
 }
 
 func freeAdapterB(s store.Adapter) {
-	freeStore(s.(*postgresstore.Store))
+	freeStoreB(s.(*postgresstore.Store))
 }
 
 func freeKeyValueStoreB(s store.KeyValueStore) {
-	freeStore(s.(*postgresstore.Store))
+	freeStoreB(s.(*postgresstore.Store))
 }
