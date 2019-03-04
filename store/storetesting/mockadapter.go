@@ -186,7 +186,7 @@ type MockNewBatch struct {
 	CalledCount int
 
 	// An optional implementation of the function.
-	Fn func() store.Batch
+	Fn func() (store.Batch, error)
 }
 
 // MockSetValue mocks the SetValue function.
@@ -340,7 +340,7 @@ func (a *MockAdapter) NewBatch(ctx context.Context) (store.Batch, error) {
 	a.MockNewBatch.CalledCount++
 
 	if a.MockNewBatch.Fn != nil {
-		return a.MockNewBatch.Fn(), nil
+		return a.MockNewBatch.Fn()
 	}
 
 	return &MockBatch{}, nil

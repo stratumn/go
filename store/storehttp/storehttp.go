@@ -22,6 +22,11 @@
 //		Saves then renders a link.
 //		Body should be a JSON encoded link.
 //
+//	POST /batch/links
+//		Atomically saves then renders a collection of links.
+//		If any of the links is invalid, the whole batch is dropped.
+//		Body should be a JSON encoded array of links.
+//
 //	POST /evidences/:linkHash
 //		Adds evidence to a link.
 //		Body should be a JSON encoded evidence.
@@ -101,6 +106,7 @@ func New(
 
 	s.Get("/", s.root)
 	s.Post("/links", s.createLink)
+	s.Post("/batch/links", s.batchCreateLink)
 	s.Post("/evidences/:linkHash", s.addEvidence)
 	s.Get("/segments/:linkHash", s.getSegment)
 	s.Get("/segments", s.findSegments)
@@ -202,6 +208,51 @@ func (s *Server) createLink(w http.ResponseWriter, r *http.Request, _ httprouter
 	}
 
 	return link.Segmentify()
+}
+
+func (s *Server) batchCreateLink(w http.ResponseWriter, r *http.Request, _ httprouter.Params) (interface{}, error) {
+	span, ctx := monitoring.StartSpanIncomingRequest(r.Context(), "storehttp/batchCreateLink")
+	defer span.End()
+
+	decoder := json.NewDecoder(r.Body)
+
+	var links []chainscript.Link
+	if err := decoder.Decode(&links); err != nil {
+		span.Context.SetTag(monitoring.ErrorCodeLabel, errorcode.Text(errorcode.InvalidArgument))
+		span.Context.SetTag(monitoring.ErrorLabel, err.Error())
+		return nil, jsonhttp.NewErrHTTP(types.WrapError(err, errorcode.InvalidArgument, store.Component, "json.Decode"))
+	}
+
+	batch, err := s.adapter.NewBatch(ctx)
+	if err != nil {
+		monitoring.SetSpanStatus(span, err)
+		return nil, jsonhttp.NewErrHTTP(err)
+	}
+
+	var segments []*chainscript.Segment
+	for _, link := range links {
+		l, _ := link.Clone()
+		segment, err := l.Segmentify()
+		if err != nil {
+			monitoring.SetSpanStatus(span, err)
+			return nil, jsonhttp.NewErrHTTP(err)
+		}
+
+		_, err = batch.CreateLink(ctx, segment.Link)
+		if err != nil {
+			monitoring.SetSpanStatus(span, err)
+			return nil, jsonhttp.NewErrHTTP(err)
+		}
+
+		segments = append(segments, segment)
+	}
+
+	if err = batch.Write(ctx); err != nil {
+		monitoring.SetSpanStatus(span, err)
+		return nil, jsonhttp.NewErrHTTP(err)
+	}
+
+	return segments, nil
 }
 
 func (s *Server) addEvidence(w http.ResponseWriter, r *http.Request, p httprouter.Params) (interface{}, error) {
