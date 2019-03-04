@@ -88,7 +88,7 @@ func (f Factory) TestBatch(t *testing.T) {
 		}
 	})
 
-	t.Run("CreateLink should rejects links after failure", func(t *testing.T) {
+	t.Run("CreateLink should reject links after failure", func(t *testing.T) {
 		ctx := context.Background()
 		b := initBatch(t, a)
 
