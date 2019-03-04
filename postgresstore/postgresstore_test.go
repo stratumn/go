@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresstore
+package postgresstore_test
 
 import (
 	"testing"
 
+	"github.com/stratumn/go-core/postgresstore"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storetestcases"
 	"github.com/stratumn/go-core/tmpop/tmpoptestcases"
@@ -42,8 +43,10 @@ func TestPostgresTMPop(t *testing.T) {
 	}.RunTests(t)
 }
 
-func createStore() (*Store, error) {
-	a, err := New(&Config{URL: "postgres://postgres@localhost:5433/sdk_test?sslmode=disable"})
+func createStore() (*postgresstore.Store, error) {
+	a, err := postgresstore.New(&postgresstore.Config{
+		URL: "postgres://postgres@localhost:5433/sdk_test?sslmode=disable",
+	})
 	if err := a.Create(); err != nil {
 		return nil, err
 	}
@@ -61,7 +64,7 @@ func createKeyValueStore() (store.KeyValueStore, error) {
 	return createStore()
 }
 
-func freeStore(s *Store) {
+func freeStore(s *postgresstore.Store) {
 	if err := s.Drop(); err != nil {
 		panic(err)
 	}
@@ -71,11 +74,11 @@ func freeStore(s *Store) {
 }
 
 func freeAdapter(s store.Adapter) {
-	freeStore(s.(*Store))
+	freeStore(s.(*postgresstore.Store))
 }
 
 func freeKeyValueStore(s store.KeyValueStore) {
-	freeStore(s.(*Store))
+	freeStore(s.(*postgresstore.Store))
 }
 
 func createAdapterTMPop() (store.Adapter, store.KeyValueStore, error) {

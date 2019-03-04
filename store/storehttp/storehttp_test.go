@@ -101,6 +101,102 @@ func TestCreateLink_invalidJSON(t *testing.T) {
 	assert.Zero(t, a.MockCreateLink.CalledCount)
 }
 
+func TestCreateLinkBatch(t *testing.T) {
+	s, a := createServer()
+	mockBatch := &storetesting.MockBatch{}
+	mockBatch.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return l.Hash() }
+	a.MockNewBatch.Fn = func() (store.Batch, error) { return mockBatch, nil }
+
+	links := []*chainscript.Link{
+		chainscripttest.RandomLink(t),
+		chainscripttest.RandomLink(t),
+	}
+
+	var ss []*chainscript.Segment
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/batch/links", links, &ss)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 1, a.MockNewBatch.CalledCount)
+	assert.Equal(t, 2, mockBatch.MockCreateLink.CalledCount)
+	assert.Equal(t, 1, mockBatch.MockWrite.CalledCount)
+
+	chainscripttest.LinksEqual(t, links[0], mockBatch.MockCreateLink.CalledWith[0])
+	chainscripttest.LinksEqual(t, links[1], mockBatch.MockCreateLink.CalledWith[1])
+	chainscripttest.LinksEqual(t, links[0], ss[0].Link)
+	chainscripttest.LinksEqual(t, links[1], ss[1].Link)
+}
+
+func TestCreateLinkBatch_invalidJSON(t *testing.T) {
+	s, a := createServer()
+
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/batch/links", `{"data": "not a link"}`, &body)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Zero(t, a.MockNewBatch.CalledCount)
+}
+
+func TestCreateLinkBatch_newBatchErr(t *testing.T) {
+	s, a := createServer()
+	a.MockNewBatch.Fn = func() (store.Batch, error) { return nil, errors.New("can't create batch") }
+
+	links := []*chainscript.Link{
+		chainscripttest.RandomLink(t),
+		chainscripttest.RandomLink(t),
+	}
+
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/batch/links", links, &body)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, 1, a.MockNewBatch.CalledCount)
+}
+
+func TestCreateLinkBatch_writeBatchErr(t *testing.T) {
+	s, a := createServer()
+	mockBatch := &storetesting.MockBatch{}
+	mockBatch.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return l.Hash() }
+	mockBatch.MockWrite.Fn = func() error { return errors.New("can't write batch") }
+	a.MockNewBatch.Fn = func() (store.Batch, error) { return mockBatch, nil }
+
+	links := []*chainscript.Link{
+		chainscripttest.RandomLink(t),
+		chainscripttest.RandomLink(t),
+	}
+
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/batch/links", links, &body)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, 1, a.MockNewBatch.CalledCount)
+	assert.Equal(t, 2, mockBatch.MockCreateLink.CalledCount)
+	assert.Equal(t, 1, mockBatch.MockWrite.CalledCount)
+}
+
+func TestCreateLinkBatch_createLinkErr(t *testing.T) {
+	s, a := createServer()
+	mockBatch := &storetesting.MockBatch{}
+	mockBatch.MockCreateLink.Fn = func(l *chainscript.Link) (chainscript.LinkHash, error) { return nil, errors.New("hasher is down") }
+	a.MockNewBatch.Fn = func() (store.Batch, error) { return mockBatch, nil }
+
+	links := []*chainscript.Link{
+		chainscripttest.RandomLink(t),
+		chainscripttest.RandomLink(t),
+	}
+
+	var body map[string]interface{}
+	w, err := testutil.RequestJSON(s.ServeHTTP, "POST", "/batch/links", links, &body)
+	require.NoError(t, err, "testutil.RequestJSON()")
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, 1, a.MockNewBatch.CalledCount)
+	assert.Equal(t, 1, mockBatch.MockCreateLink.CalledCount)
+}
+
 func TestAddEvidence(t *testing.T) {
 	s, a := createServer()
 	a.MockAddEvidence.Fn = func(chainscript.LinkHash, *chainscript.Evidence) error { return nil }

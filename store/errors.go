@@ -24,4 +24,5 @@ var (
 	ErrOutDegreeNotSupported   = errors.New("out degree is not supported by the current implementation")
 	ErrUniqueMapEntry          = errors.New("unique map entry is set and map already has an initial link")
 	ErrReferencingNotSupported = errors.New("filtering on referencing segments is not supported by the current implementation")
+	ErrBatchFailed             = errors.New("cannot add to batch: failures have been detected")
 )

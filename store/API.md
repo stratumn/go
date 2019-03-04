@@ -58,6 +58,79 @@ HTTP/1.1 200 OK
 }
 ```
 
+## POST /batch/links
+
+Add a collection of JSON-encoded links to the store atomically.
+If one of the links is invalid nothing will be added to the store.
+
+```http
+POST /batch/links
+[
+  {
+    "version": "1.0.0",
+    "data": "ewogICJvd25lciI6ICJhbGljZSIKfQ==",
+    "meta": {
+      "clientId": "github.com/stratumn/go-chainscript",
+      "outDegree": 3,
+      "process": { "name": "asset-tracker", "state": "asset-created" },
+      "mapId": "123456",
+      "action": "init",
+      "step": "init",
+      "tags": ["alice"]
+    }
+  },
+  {
+    "version": "1.0.0",
+    "meta": {
+      "clientId": "github.com/stratumn/go-chainscript",
+      "outDegree": -1,
+      "process": { "name": "voting-protocol" },
+      "mapId": "234567",
+      "action": "create",
+      "step": "create",
+      "tags": ["bob"]
+    }
+  }
+]
+
+HTTP/1.1 200 OK
+[
+  {
+    "link": {
+      "version": "1.0.0",
+      "data": "ewogICJvd25lciI6ICJhbGljZSIKfQ==",
+      "meta": {
+        "clientId": "github.com/stratumn/go-chainscript",
+        "outDegree": 3,
+        "process": { "name": "asset-tracker", "state": "asset-created" },
+        "mapId": "123456",
+        "action": "init",
+        "step": "init",
+        "tags": ["alice"]
+      }
+    },
+    "meta": {
+      "linkHash": "z+w01ZMHQ4dyuA1ro5BcKM5NPV6vpgLmZ0XjDTwf7Hw="
+    }
+  },
+  {
+    "link": {
+      "version": "1.0.0",
+      "meta": {
+        "clientId": "github.com/stratumn/go-chainscript",
+        "outDegree": -1,
+        "process": { "name": "voting-protocol" },
+        "mapId": "234567",
+        "action": "create",
+        "step": "create",
+        "tags": ["bob"]
+      }
+    },
+    "meta": { "linkHash": "9s1Zv+dWfcUzrqUgsbfgeVykRz0tq5bCaPLZMYMOQ4c=" }
+  }
+]
+```
+
 ## POST /evidences/:linkHash
 
 Add a JSON-encoded evidence to a link (identified by its hex-encoded hash).

@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresstore
+package postgresstore_test
 
 import (
 	"testing"
 
+	"github.com/stratumn/go-core/postgresstore"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/store/storetestcases"
 )
@@ -33,8 +34,10 @@ func BenchmarkStore(b *testing.B) {
 	factory.RunKeyValueStoreBenchmarks(b)
 }
 
-func createStoreB() (*Store, error) {
-	a, err := New(&Config{URL: "postgres://postgres@localhost/postgres?sslmode=disable"})
+func createStoreB() (*postgresstore.Store, error) {
+	a, err := postgresstore.New(&postgresstore.Config{
+		URL: "postgres://postgres@localhost/postgres?sslmode=disable",
+	})
 	if err := a.Create(); err != nil {
 		return nil, err
 	}
@@ -45,23 +48,23 @@ func createStoreB() (*Store, error) {
 }
 
 func createAdapterB() (store.Adapter, error) {
-	return createStore()
+	return createStoreB()
 }
 
 func createKeyValueStoreB() (store.KeyValueStore, error) {
-	return createStore()
+	return createStoreB()
 }
 
-func freeStoreB(s *Store) {
+func freeStoreB(s *postgresstore.Store) {
 	if err := s.Drop(); err != nil {
 		panic(err)
 	}
 }
 
 func freeAdapterB(s store.Adapter) {
-	freeStore(s.(*Store))
+	freeStoreB(s.(*postgresstore.Store))
 }
 
 func freeKeyValueStoreB(s store.KeyValueStore) {
-	freeStore(s.(*Store))
+	freeStoreB(s.(*postgresstore.Store))
 }

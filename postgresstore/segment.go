@@ -24,6 +24,7 @@ import (
 	"github.com/stratumn/go-core/monitoring/errorcode"
 	"github.com/stratumn/go-core/store"
 	"github.com/stratumn/go-core/types"
+	"github.com/stratumn/go-core/validation/validators"
 )
 
 // CreateLink implements github.com/stratumn/go-core/store.Adapter.CreateLink.
@@ -46,6 +47,9 @@ func (s *scopedStore) CreateLink(ctx context.Context, link *chainscript.Link) (c
 	parent, err := s.GetSegment(ctx, link.PrevLinkHash())
 	if err != nil {
 		return linkHash, err
+	}
+	if parent == nil {
+		return linkHash, validators.ErrParentNotFound
 	}
 
 	parentDegree := parent.Link.Meta.OutDegree

@@ -1,5 +1,10 @@
 # Change log
 
+## 0.3.2
+
+Added support for batch link creation.
+It is now possible to create multiple links atomically.
+
 ## 0.3.1 - BREAKING CHANGES
 
 - Repository was renamed to _go-core_

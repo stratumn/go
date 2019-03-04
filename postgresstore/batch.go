@@ -17,14 +17,20 @@ package postgresstore
 import (
 	"context"
 	"database/sql"
+	"sync"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring"
+	"github.com/stratumn/go-core/store"
 )
 
 // Batch is the type that implements github.com/stratumn/go-core/store.Batch.
 type Batch struct {
 	*scopedStore
-	done      bool
+
+	lock sync.RWMutex
+	done bool
+
 	tx        *sql.Tx
 	txFactory *SingletonTxFactory
 }
@@ -44,6 +50,34 @@ func NewBatch(tx *sql.Tx) (*Batch, error) {
 	}, nil
 }
 
+// CreateLink wraps the underlying link creation and stops the batch as soon as
+// an invalid link is encountered.
+func (b *Batch) CreateLink(ctx context.Context, link *chainscript.Link) (chainscript.LinkHash, error) {
+	b.lock.RLock()
+	done := b.done
+	b.lock.RUnlock()
+
+	if done {
+		return nil, store.ErrBatchFailed
+	}
+
+	lh, err := b.scopedStore.CreateLink(ctx, link)
+	if err != nil {
+		b.lock.Lock()
+		defer b.lock.Unlock()
+
+		b.done = true
+		err := b.tx.Rollback()
+		if err != nil {
+			monitoring.TxLogEntry(ctx).
+				WithError(err).
+				Warn("Error during transaction rollback")
+		}
+	}
+
+	return lh, err
+}
+
 // Write implements github.com/stratumn/go-core/store.Batch.Write.
 func (b *Batch) Write(ctx context.Context) (err error) {
 	span, _ := monitoring.StartSpanOutgoingRequest(ctx, "postgresstore/batch/Write")
@@ -51,7 +85,11 @@ func (b *Batch) Write(ctx context.Context) (err error) {
 		monitoring.SetSpanStatusAndEnd(span, err)
 	}()
 
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	b.done = true
+
 	if b.txFactory.rollback {
 		err := b.tx.Rollback()
 		if err != nil {
