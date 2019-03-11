@@ -16,6 +16,7 @@ package postgresstore
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/monitoring/errorcode"
@@ -25,12 +26,12 @@ import (
 
 // AddEvidence implements github.com/stratumn/go-core/store.EvidenceWriter.AddEvidence.
 func (s *scopedStore) AddEvidence(ctx context.Context, linkHash chainscript.LinkHash, evidence *chainscript.Evidence) error {
-	data, err := chainscript.MarshalEvidence(evidence)
+	data, err := json.Marshal(evidence)
 	if err != nil {
 		return types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not marshal evidence")
 	}
 
-	_, err = s.stmts.AddEvidence.ExecContext(ctx, linkHash, evidence.Provider, data)
+	_, err = s.stmts.AddEvidence.ExecContext(ctx, linkHash, evidence.Provider, string(data))
 	if err != nil {
 		return types.WrapError(err, errorcode.Unavailable, store.Component, "could not add evidence")
 	}
@@ -49,7 +50,7 @@ func (s *scopedStore) GetEvidences(ctx context.Context, linkHash chainscript.Lin
 
 	for rows.Next() {
 		var (
-			data     []byte
+			data     string
 			evidence *chainscript.Evidence
 		)
 
@@ -57,7 +58,7 @@ func (s *scopedStore) GetEvidences(ctx context.Context, linkHash chainscript.Lin
 			return nil, types.WrapError(err, errorcode.Internal, store.Component, "could not get evidence")
 		}
 
-		evidence, err = chainscript.UnmarshalEvidence(data)
+		err = json.Unmarshal([]byte(data), &evidence)
 		if err != nil {
 			return nil, types.WrapError(err, errorcode.InvalidArgument, store.Component, "could not unmarshal evidence")
 		}

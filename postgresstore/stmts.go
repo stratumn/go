@@ -126,7 +126,7 @@ var sqlCreate = []string{
 			map_id text NOT NULL,
 			prev_link_hash bytea DEFAULT NULL,
 			tags text[] DEFAULT NULL,
-			data bytea NOT NULL,
+			data jsonb NOT NULL,
 			process text NOT NULL,
 			step text NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -165,7 +165,7 @@ var sqlCreate = []string{
 			id BIGSERIAL PRIMARY KEY,
 			link_hash bytea references store.links(link_hash),
 			provider text NOT NULL,
-			data bytea NOT NULL,
+			data jsonb NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(link_hash, provider)
