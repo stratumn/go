@@ -274,7 +274,7 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 		// Wrap the underlying (blockchain) proof.
 		p.proof.Timestamp = time.Now().Unix()
 		p.proof.Proof = r.Evidence.Proof
-		ev, err := p.proof.Evidence(Name)
+		ev, err := p.proof.Evidence(r.Evidence.Provider)
 		if err != nil {
 			monitoring.TxLogEntry(ctx).WithError(err).Warnf("could not create evidence")
 			continue
