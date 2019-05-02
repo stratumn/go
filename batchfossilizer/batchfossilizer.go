@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stratumn/go-chainscript"
 	"github.com/stratumn/go-core/batchfossilizer/evidences"
 	"github.com/stratumn/go-core/fossilizer"
 	"github.com/stratumn/go-core/monitoring"
@@ -279,19 +280,18 @@ func (a *Fossilizer) eventBatch(ctx context.Context, e *fossilizer.Event) {
 			monitoring.TxLogEntry(ctx).WithError(err).Warnf("could not create evidence")
 			continue
 		}
-
 		for _, l := range a.eventChans {
 			fossilizedLinksCount.Inc()
 
-			go func(l chan *fossilizer.Event) {
+			go func(l chan *fossilizer.Event, fossil fossilizer.Fossil, evidence chainscript.Evidence) {
 				l <- &fossilizer.Event{
 					EventType: fossilizer.DidFossilize,
 					Data: &fossilizer.Result{
-						Fossil:   *p.fossil,
-						Evidence: *ev,
+						Fossil:   fossil,
+						Evidence: evidence,
 					},
 				}
-			}(l)
+			}(l, *p.fossil, *ev)
 		}
 	}
 
