@@ -197,10 +197,14 @@ func TestFossilize(t *testing.T) {
 		}
 
 		trees := make(map[string]struct{})
+		var data []byte
 		for i := byte(0); i < 5; i++ {
 			e := <-eventChan
 			r, ok := e.Data.(*fossilizer.Result)
 			require.True(t, ok)
+
+			assert.NotEqual(t, data, r.Data, "duplicate fossil")
+			data = r.Data
 
 			p := batchProof(t, &r.Evidence)
 			trees[hex.EncodeToString(p.Root)] = struct{}{}
