@@ -94,7 +94,14 @@ func New(config *Config) (*Timestamper, error) {
 		return nil, types.NewError(errorcode.InvalidArgument, Component, "unsupported network")
 	}
 
-	pubKeyHash := btcutil.Hash160(ts.pubKey.SerializeCompressed())
+	var pubKeyHash []byte
+	switch WIF.CompressPubKey {
+	case true:
+		pubKeyHash = btcutil.Hash160(ts.pubKey.SerializeCompressed())
+	case false:
+		pubKeyHash = btcutil.Hash160(ts.pubKey.SerializeUncompressed())
+	}
+
 	ts.address, err = btcutil.NewAddressPubKeyHash(pubKeyHash, ts.netParams)
 	if err != nil {
 		return nil, types.WrapError(err, errorcode.InvalidArgument, Component, "could not create new address")

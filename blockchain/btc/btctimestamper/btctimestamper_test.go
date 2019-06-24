@@ -28,21 +28,48 @@ import (
 )
 
 func TestNetwork_NetworkTest3(t *testing.T) {
-	ts, err := New(&Config{
-		WIF: "cMptgcyVp9nPpmvWM9tSR6SyCMkGH4xUX1LkJ2ZTTwfUfbZGXfXB",
-		Fee: int64(10000),
+	t.Run("Handles uncompressed keys", func(t *testing.T) {
+		ts, err := New(&Config{
+			WIF: "91cH7CBcQDEhtfu12qPd9ZzeD2aGtKRBE5raJvig81GntJwfJ7R",
+			Fee: int64(10000),
+		})
+		require.NoError(t, err)
+		assert.Equal(t, btc.NetworkTest3.String(), ts.Network().String())
+		assert.Equal(t, ts.address.EncodeAddress(), "mfcFnCqjbRafqPA3XHMfoHjHe1TCmHfjWZ")
 	})
-	require.NoError(t, err)
-	assert.Equal(t, btc.NetworkTest3, ts.Network())
+
+	t.Run("Handles compressed keys", func(t *testing.T) {
+		ts, err := New(&Config{
+			WIF: "cTqzoRGya8Dw5aBxcojLTtbSKnMo1LiAjS25JNjjjxCuopSHekmV",
+			Fee: int64(10000),
+		})
+		require.NoError(t, err)
+		assert.Equal(t, btc.NetworkTest3.String(), ts.Network().String())
+		assert.Equal(t, ts.address.EncodeAddress(), "mxxP8z8DXp4Gzb5XAcTRFQnAphVZ13Qti8")
+	})
 }
 
 func TestNetwork_NetworkMain(t *testing.T) {
-	ts, err := New(&Config{
-		WIF: "L3Wbnfn57Fc547FLSkm6iCzAaHmLArNUBCYx6q8LdxWoEMoFZmLH",
-		Fee: int64(10000),
+	t.Run("Handles uncompressed keys", func(t *testing.T) {
+		ts, err := New(&Config{
+			WIF: "5JZSYpPRedE3Thajcm5ink8KJaX9hC87Gk9wFHGH9VDvzuDFFTR",
+			Fee: int64(10000),
+		})
+		require.NoError(t, err)
+		assert.Equal(t, btc.NetworkMain, ts.Network())
+		assert.Equal(t, ts.address.EncodeAddress(), "1MTPL1Ni2iD34eD4WVMpPHzbX4V5QUq1em")
 	})
-	require.NoError(t, err)
-	assert.Equal(t, btc.NetworkMain, ts.Network())
+
+	t.Run("Handles compressed keys", func(t *testing.T) {
+		ts, err := New(&Config{
+			WIF: "L2utUUeVtvkzduyTmvjRb2Mxy4jAbtJjtHLdqFa6Ph1WTGNQo13H",
+			Fee: int64(10000),
+		})
+		require.NoError(t, err)
+		assert.Equal(t, btc.NetworkMain, ts.Network())
+		assert.Equal(t, ts.address.EncodeAddress(), "1EXGUstoazmXFu2E9VRRPThWz6T9C3vK2V")
+	})
+
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
