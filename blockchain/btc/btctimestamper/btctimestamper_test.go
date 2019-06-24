@@ -73,31 +73,63 @@ func TestNetwork_NetworkMain(t *testing.T) {
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
-	ctx := context.Background()
-	mock := &btctesting.Mock{}
-	mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
-		PKScriptHex := "76a914bf1e72331f8018f66faec356a04ca98b35bf5ee288ac"
-		PKScript, _ := hex.DecodeString(PKScriptHex)
-		output := btc.Output{Index: 0, PKScript: PKScript}
-		if err := output.TXHash.Unstring("e35297e10fde340e5d0e2200de20f314f3851ea683d06feccf2f8bef6dd337d5"); err != nil {
-			return btc.UnspentResult{}, err
+	t.Run("Handles compressed keys", func(t *testing.T) {
+		ctx := context.Background()
+		mock := &btctesting.Mock{}
+		mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
+			PKScriptHex := "76a914bf1e72331f8018f66faec356a04ca98b35bf5ee288ac"
+			PKScript, _ := hex.DecodeString(PKScriptHex)
+			output := btc.Output{Index: 0, PKScript: PKScript}
+			if err := output.TXHash.Unstring("e35297e10fde340e5d0e2200de20f314f3851ea683d06feccf2f8bef6dd337d5"); err != nil {
+				return btc.UnspentResult{}, err
+			}
+
+			return btc.UnspentResult{
+				Outputs: []btc.Output{output},
+				Sum:     14745268,
+			}, nil
 		}
 
-		return btc.UnspentResult{
-			Outputs: []btc.Output{output},
-			Sum:     14745268,
-		}, nil
-	}
+		ts, err := New(&Config{
+			WIF:           "cQNA7W1beoBJsefQQeznRoYT6XH9HkpU98V2S4ZUaWNxVPPT1qEk",
+			UnspentFinder: mock,
+			Broadcaster:   mock,
+			Fee:           int64(15000),
+		})
+		require.NoError(t, err)
 
-	ts, err := New(&Config{
-		WIF:           "cQNA7W1beoBJsefQQeznRoYT6XH9HkpU98V2S4ZUaWNxVPPT1qEk",
-		UnspentFinder: mock,
-		Broadcaster:   mock,
-		Fee:           int64(15000),
+		_, err = ts.TimestampHash(ctx, chainscripttest.RandomHash())
+		assert.NoError(t, err)
+		assert.Equal(t, 1, mock.MockBroadcast.CalledCount)
 	})
-	require.NoError(t, err)
 
-	_, err = ts.TimestampHash(ctx, chainscripttest.RandomHash())
-	assert.NoError(t, err)
-	assert.Equal(t, 1, mock.MockBroadcast.CalledCount)
+	t.Run("Handles uncompressed keys", func(t *testing.T) {
+		ctx := context.Background()
+		mock := &btctesting.Mock{}
+		mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
+			PKScriptHex := "76a914105647e641ac3104eef924e16b77378964d2930b88ac"
+			PKScript, _ := hex.DecodeString(PKScriptHex)
+			output := btc.Output{Index: 0, PKScript: PKScript}
+			if err := output.TXHash.Unstring("60c8c843f29be77134097d105743013093cc115d4468690d8a9c2f9c8950ed20"); err != nil {
+				return btc.UnspentResult{}, err
+			}
+
+			return btc.UnspentResult{
+				Outputs: []btc.Output{output},
+				Sum:     14745268,
+			}, nil
+		}
+
+		ts, err := New(&Config{
+			WIF:           "92EPR478AMbsHGqkPqN2TdMEe6BboHRjPUhhM1qTxQEWsmrD461",
+			UnspentFinder: mock,
+			Broadcaster:   mock,
+			Fee:           int64(15000),
+		})
+		require.NoError(t, err)
+
+		_, err = ts.TimestampHash(ctx, chainscripttest.RandomHash())
+		assert.NoError(t, err)
+		assert.Equal(t, 1, mock.MockBroadcast.CalledCount)
+	})
 }

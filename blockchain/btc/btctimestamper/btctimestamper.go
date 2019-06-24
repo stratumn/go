@@ -61,12 +61,13 @@ type Config struct {
 // Timestamper is the type that implements
 // github.com/stratumn/go-core/blockchain.Timestamper.
 type Timestamper struct {
-	config    *Config
-	net       btc.Network
-	netParams *chaincfg.Params
-	privKey   *btcec.PrivateKey
-	pubKey    *btcec.PublicKey
-	address   *btcutil.AddressPubKeyHash
+	config           *Config
+	net              btc.Network
+	netParams        *chaincfg.Params
+	privKey          *btcec.PrivateKey
+	pubKey           *btcec.PublicKey
+	address          *btcutil.AddressPubKeyHash
+	compressedPubKey bool
 }
 
 // New creates an instance of a Timestamper.
@@ -77,9 +78,10 @@ func New(config *Config) (*Timestamper, error) {
 	}
 
 	ts := &Timestamper{
-		config:  config,
-		privKey: WIF.PrivKey,
-		pubKey:  WIF.PrivKey.PubKey(),
+		config:           config,
+		privKey:          WIF.PrivKey,
+		pubKey:           WIF.PrivKey.PubKey(),
+		compressedPubKey: WIF.CompressPubKey,
 	}
 
 	if WIF.IsForNet(&chaincfg.TestNet3Params) {
@@ -252,6 +254,5 @@ func (ts *Timestamper) validateTx(tx *wire.MsgTx, prevPKScripts [][]byte) error 
 }
 
 func (ts *Timestamper) lookupKey(btcutil.Address) (*btcec.PrivateKey, bool, error) {
-	// Second value means uncompressed.
-	return ts.privKey, true, nil
+	return ts.privKey, ts.compressedPubKey, nil
 }
