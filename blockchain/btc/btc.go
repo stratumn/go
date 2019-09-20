@@ -88,6 +88,7 @@ type Output struct {
 	TXHash   types.ReversedBytes32
 	PKScript []byte
 	Index    int
+	Value    int
 }
 
 // UnspentResult contains the result of a call to UnspentFinder.FindUnspent.

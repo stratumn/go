@@ -143,13 +143,34 @@ func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid typ
 	}
 
 	tx := wire.NewMsgTx(wire.TxVersion)
+	var utxoAmount int64
 	for _, output := range res.Outputs {
-		prevPKScripts = append(prevPKScripts, output.PKScript)
-		out := wire.NewOutPoint((*chainhash.Hash)(&output.TXHash), uint32(output.Index))
-		tx.AddTxIn(wire.NewTxIn(out, nil, nil))
+		// DO NOT TAKE INTO ACCOUNT UTXO THAT ARE BELOW `amount`.
+		// THIS IS A QUICK FIX FOR AN ISSUE THAT OCCURED IN THE FOSSILIZER :
+		// when adding multiple inputs (among which some are lower than the sum of outputs) to a transaction,
+		// blockcypher API returns either this error:
+		// "Error validating transaction: Sum of inputs <lower_input_amount> lesser than outputs <sum_of_outputs>"
+		// or the following one:
+		// "Error running script for input 1 referencing <tx_hash> at 0: Script was NOT verified successfully.."
+		// The solution consists in only adding as input an UTXO higher than `amount`.
+		if int64(output.Value) > ts.config.Fee {
+			prevPKScripts = append(prevPKScripts, output.PKScript)
+			out := wire.NewOutPoint((*chainhash.Hash)(&output.TXHash), uint32(output.Index))
+			tx.AddTxIn(wire.NewTxIn(out, nil, nil))
+			utxoAmount = int64(output.Value)
+		}
 	}
 
-	payToAddrOut, err := ts.createPayToAddrTxOut(res.Sum - ts.config.Fee)
+	// If no UTXO were high enough to cover the transaction fee, abort the transaction
+	if len(tx.TxIn) == 0 {
+		return nil, types.NewErrorf(errorcode.FailedPrecondition,
+			Component,
+			"adress %s: no UTXO greater than transaction fee amount, refill required",
+			addr,
+		)
+	}
+
+	payToAddrOut, err := ts.createPayToAddrTxOut(utxoAmount - ts.config.Fee)
 	if err != nil {
 		return nil, err
 	}

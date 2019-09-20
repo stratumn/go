@@ -99,7 +99,7 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 	accountBalance.With(prometheus.Labels{accountAddress: addr}).Set(float64(res.Total))
 
 	for _, TXRef := range addrInfo.TXRefs {
-		output := btc.Output{Index: TXRef.TXOutputN}
+		output := btc.Output{Index: TXRef.TXOutputN, Value: TXRef.Value}
 
 		if err = output.TXHash.Unstring(TXRef.TXHash); err != nil {
 			return
