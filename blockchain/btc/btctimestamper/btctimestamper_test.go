@@ -73,13 +73,14 @@ func TestNetwork_NetworkMain(t *testing.T) {
 }
 
 func TestTimestamperTimestampHash(t *testing.T) {
+	feeAmount := 15000
 	t.Run("Handles compressed keys", func(t *testing.T) {
 		ctx := context.Background()
 		mock := &btctesting.Mock{}
 		mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
 			PKScriptHex := "76a914bf1e72331f8018f66faec356a04ca98b35bf5ee288ac"
 			PKScript, _ := hex.DecodeString(PKScriptHex)
-			output := btc.Output{Index: 0, PKScript: PKScript}
+			output := btc.Output{Index: 0, PKScript: PKScript, Value: 14745268}
 			if err := output.TXHash.Unstring("e35297e10fde340e5d0e2200de20f314f3851ea683d06feccf2f8bef6dd337d5"); err != nil {
 				return btc.UnspentResult{}, err
 			}
@@ -94,7 +95,7 @@ func TestTimestamperTimestampHash(t *testing.T) {
 			WIF:           "cQNA7W1beoBJsefQQeznRoYT6XH9HkpU98V2S4ZUaWNxVPPT1qEk",
 			UnspentFinder: mock,
 			Broadcaster:   mock,
-			Fee:           int64(15000),
+			Fee:           int64(feeAmount),
 		})
 		require.NoError(t, err)
 
@@ -109,7 +110,7 @@ func TestTimestamperTimestampHash(t *testing.T) {
 		mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
 			PKScriptHex := "76a914105647e641ac3104eef924e16b77378964d2930b88ac"
 			PKScript, _ := hex.DecodeString(PKScriptHex)
-			output := btc.Output{Index: 0, PKScript: PKScript}
+			output := btc.Output{Index: 0, PKScript: PKScript, Value: 14745268}
 			if err := output.TXHash.Unstring("60c8c843f29be77134097d105743013093cc115d4468690d8a9c2f9c8950ed20"); err != nil {
 				return btc.UnspentResult{}, err
 			}
@@ -124,12 +125,46 @@ func TestTimestamperTimestampHash(t *testing.T) {
 			WIF:           "92EPR478AMbsHGqkPqN2TdMEe6BboHRjPUhhM1qTxQEWsmrD461",
 			UnspentFinder: mock,
 			Broadcaster:   mock,
-			Fee:           int64(15000),
+			Fee:           int64(feeAmount),
 		})
 		require.NoError(t, err)
 
 		_, err = ts.TimestampHash(ctx, chainscripttest.RandomHash())
 		assert.NoError(t, err)
 		assert.Equal(t, 1, mock.MockBroadcast.CalledCount)
+	})
+
+	t.Run("Only use UTXO greater than transaction fee", func(t *testing.T) {
+		ctx := context.Background()
+		feeAmount := 15000
+		mock := &btctesting.Mock{}
+		mock.MockFindUnspent.Fn = func(context.Context, *types.ReversedBytes20, int64) (btc.UnspentResult, error) {
+			PKScriptHex := "76a914105647e641ac3104eef924e16b77378964d2930b88ac"
+			PKScript, _ := hex.DecodeString(PKScriptHex)
+			output1 := btc.Output{Index: 0, PKScript: PKScript, Value: feeAmount / 2}
+			if err := output1.TXHash.Unstring("60c8c843f29be77134097d105743013093cc115d4468690d8a9c2f9c8950ed20"); err != nil {
+				return btc.UnspentResult{}, err
+			}
+			output2 := btc.Output{Index: 0, PKScript: PKScript, Value: feeAmount / 2}
+			if err := output2.TXHash.Unstring("60c8c843f29be77134097d105743013093cc115d4468690d8a9c2f9c8950ed20"); err != nil {
+				return btc.UnspentResult{}, err
+			}
+
+			return btc.UnspentResult{
+				Outputs: []btc.Output{output1, output2},
+				Sum:     int64(feeAmount),
+			}, nil
+		}
+
+		ts, err := New(&Config{
+			WIF:           "92EPR478AMbsHGqkPqN2TdMEe6BboHRjPUhhM1qTxQEWsmrD461",
+			UnspentFinder: mock,
+			Broadcaster:   mock,
+			Fee:           int64(feeAmount),
+		})
+		require.NoError(t, err)
+
+		_, err = ts.TimestampHash(ctx, chainscripttest.RandomHash())
+		assert.EqualError(t, err, "btc error 9: adress 0b93d2648937776be124f9ee0431ac41e6475610: no UTXO greater than transaction fee amount, refill required")
 	})
 }
