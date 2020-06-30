@@ -112,19 +112,17 @@ func (c *Client) FindUnspent(ctx context.Context, address *types.ReversedBytes20
 
 		res.Outputs = append(res.Outputs, output)
 		res.Sum += int64(TXRef.Value)
-
-		if res.Sum >= amount {
-			return
-		}
 	}
 
-	err = types.NewErrorf(errorcode.FailedPrecondition,
-		Component,
-		"not enough Bitcoins available on %s, expected at least %d satoshis got %d",
-		addr,
-		amount,
-		res.Sum,
-	)
+	if res.Sum < amount {
+		err = types.NewErrorf(errorcode.FailedPrecondition,
+			Component,
+			"not enough Bitcoins available on %s, expected at least %d satoshis got %d",
+			addr,
+			amount,
+			res.Sum,
+		)
+	}
 
 	return
 }

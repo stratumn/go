@@ -1,5 +1,9 @@
 # Change log
 
+## 0.4.7
+
+Fix a bug in the fossilizer UTXO selection
+
 ## 0.4.0 - BREAKING CHANGES
 
 - Postgresstore schema change: data changed back to JSON to allow search
