@@ -158,6 +158,7 @@ func (ts *Timestamper) TimestampHash(ctx context.Context, hash []byte) (txid typ
 			out := wire.NewOutPoint((*chainhash.Hash)(&output.TXHash), uint32(output.Index))
 			tx.AddTxIn(wire.NewTxIn(out, nil, nil))
 			utxoAmount = int64(output.Value)
+			break
 		}
 	}
 
